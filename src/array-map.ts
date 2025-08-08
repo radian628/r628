@@ -75,4 +75,20 @@ export class ArrayMap<K, V, Arr extends [K, ...K[]] = [K, ...K[]]> {
       r(n, map, []);
     }
   }
+
+  serialize(): [Arr, V][] {
+    const out: [Arr, V][] = [];
+    this.forEach((arr, v) => out.push([arr, v]));
+    return out;
+  }
+
+  static fromSerialized<K, V, Arr extends [K, ...K[]] = [K, ...K[]]>(
+    s: [Arr, V][]
+  ): ArrayMap<K, V, Arr> {
+    const am = new ArrayMap<K, V, Arr>();
+    for (const [k, v] of s) {
+      am.set(k, v);
+    }
+    return am;
+  }
 }
