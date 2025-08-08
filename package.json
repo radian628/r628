@@ -2,5 +2,6 @@
   "dependencies": {
     "@types/node": "^24.2.0",
     "esbuild": "^0.25.8"
-  }
+  },
+  "main": "./src/index.ts"
 }
