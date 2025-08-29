@@ -21,6 +21,7 @@ export const bundledPrecompiledTypescript = (
         outfile: "index.js",
         write: false,
         plugins: [],
+        metafile: true,
         ...buildSettings,
       });
 
@@ -29,7 +30,7 @@ export const bundledPrecompiledTypescript = (
           return {
             contents: new TextDecoder("utf8").decode(file.contents),
             loader: "text",
-            watchFiles: [fspath],
+            watchFiles: [fspath, ...Object.keys(result.metafile?.inputs ?? {})],
           };
         }
       }
