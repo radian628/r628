@@ -21,9 +21,10 @@ export const bundledPrecompiledTypescript = (
         outfile: "index.js",
         write: false,
         plugins: [],
+        ...buildSettings,
       });
 
-      for (const file of result.outputFiles) {
+      for (const file of result.outputFiles ?? []) {
         if (file.path.endsWith("index.js")) {
           return {
             contents: new TextDecoder("utf8").decode(file.contents),
