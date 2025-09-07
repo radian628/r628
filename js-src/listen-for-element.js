@@ -60,8 +60,47 @@ function alterElements(selector, callback) {
     for (const cb of unmountCallbacks) cb();
   };
 }
+var injectedCallbackId = 0;
+function injectElementsAt(selector, position, element) {
+  const myid = injectedCallbackId++;
+  const key = "injectedBy" + injectedCallbackId;
+  let shouldStop = false;
+  let currentElements = [];
+  const observer = new MutationObserver(() => {
+    currentElements = currentElements.filter((e) => {
+      if (document.body.contains(e.anchor)) {
+        return true;
+      } else {
+        e.unmount();
+        e.element.parentElement?.removeChild(e.element);
+        return false;
+      }
+    });
+    const elems = document.querySelectorAll(selector);
+    for (const e of elems) {
+      if (!(e instanceof HTMLElement) || e.dataset[key]) continue;
+      e.dataset[key] = "true";
+      const r = element(e);
+      e.insertAdjacentElement(position, r.element);
+      currentElements.push({
+        element: r.element,
+        unmount: r.unmount,
+        anchor: e
+      });
+    }
+  });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+  return () => {
+    observer.disconnect();
+    shouldStop = true;
+  };
+}
 export {
   alterElements,
+  injectElementsAt,
   listenForNoSelector,
   listenForSelector
 };
