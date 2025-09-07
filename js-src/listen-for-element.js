@@ -66,7 +66,7 @@ function injectElementsAt(selector, position, element) {
   const key = "injectedBy" + injectedCallbackId;
   let shouldStop = false;
   let currentElements = [];
-  const observer = new MutationObserver(() => {
+  function observerCallback() {
     currentElements = currentElements.filter((e) => {
       if (document.body.contains(e.anchor)) {
         return true;
@@ -88,11 +88,15 @@ function injectElementsAt(selector, position, element) {
         anchor: e
       });
     }
+  }
+  const observer = new MutationObserver(() => {
+    observerCallback();
   });
   observer.observe(document.body, {
     childList: true,
     subtree: true
   });
+  observerCallback();
   return () => {
     observer.disconnect();
     shouldStop = true;
