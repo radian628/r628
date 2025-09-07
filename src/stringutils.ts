@@ -110,3 +110,19 @@ export function randUnicode(
     .split("")
     .map((e) => String.fromCharCode(Math.floor(random() * (hi - lo)) + lo));
 }
+
+export function getLinesAndCols(str: string): [number, number][] {
+  let line = 1;
+  let col = 1;
+  let out: [number, number][] = [];
+  for (const char of str) {
+    out.push([line, col]);
+    if (char === "\n") {
+      line++;
+      col = 1;
+    } else {
+      col++;
+    }
+  }
+  return out;
+}

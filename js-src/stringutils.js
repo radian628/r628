@@ -65,7 +65,23 @@ function randUnicode(lo, hi, count, random) {
   if (!random) random = () => Math.random();
   return "".padEnd(count).split("").map((e) => String.fromCharCode(Math.floor(random() * (hi - lo)) + lo));
 }
+function getLinesAndCols(str) {
+  let line = 1;
+  let col = 1;
+  let out = [];
+  for (const char of str) {
+    out.push([line, col]);
+    if (char === "\n") {
+      line++;
+      col = 1;
+    } else {
+      col++;
+    }
+  }
+  return out;
+}
 export {
+  getLinesAndCols,
   multiDelimit,
   randUnicode,
   smartAsyncReplaceAll
