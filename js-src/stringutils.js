@@ -78,6 +78,7 @@ function getLinesAndCols(str) {
       col++;
     }
   }
+  out.push([line, col]);
   return out;
 }
 export {

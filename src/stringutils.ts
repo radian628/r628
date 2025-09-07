@@ -124,5 +124,6 @@ export function getLinesAndCols(str: string): [number, number][] {
       col++;
     }
   }
+  out.push([line, col]);
   return out;
 }
