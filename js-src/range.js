@@ -6,6 +6,13 @@ function range(hi) {
   }
   return arr;
 }
+function rangeFrom(lo, hi) {
+  let arr = [];
+  for (let i = lo; i < hi && i < 1e7; i++) {
+    arr.push(i);
+  }
+  return arr;
+}
 function stringRangeMapJoin(hi, f, s = "\\n") {
   const r = range(hi);
   return r.map(f).join(s);
@@ -59,11 +66,21 @@ function rand(lo, hi, random) {
 function pickrand(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
+function cartesianProductInner(ts, arr) {
+  if (ts.length === 0) return [arr];
+  return ts[0].map((e) => cartesianProductInner(ts.slice(1), [...arr, e])).flat(1);
+}
+function cartesianProduct(...ts) {
+  const res = cartesianProductInner(ts, []);
+  return res;
+}
 export {
+  cartesianProduct,
   id,
   pickrand,
   rand,
   range,
+  rangeFrom,
   smartRangeMap,
   smartRangeStringMapJoin,
   stringMapJoin,

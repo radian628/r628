@@ -2,6 +2,7 @@ export type Debounced<T extends Function> = T & { _debounced: true };
 
 // make any function finish its current execution
 // before executing itself again
+// unlike "throttle", this may sometimes not execute
 export function debounce<Params extends any[], RetType>(
   callback: (...params: Params) => Promise<RetType>
 ): Debounced<(...params: Params) => Promise<RetType | undefined>> {

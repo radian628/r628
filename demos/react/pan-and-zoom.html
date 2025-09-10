@@ -19592,97 +19592,111 @@
     }
   });
 
-  // demos-src/react-number-field.react-demo.tsx
+  // demos-src/pan-and-zoom.react-demo.tsx
   var import_react2 = __toESM(require_react());
 
-  // src/ui/react-number-field.tsx
+  // src/ui/pan-and-zoom.tsx
   var import_react = __toESM(require_react());
+
+  // src/interpolation.ts
+  function lerp(x, a, b) {
+    return a * (1 - x) + b * x;
+  }
+  function unlerp(x, a, b) {
+    return (x - a) / (b - a);
+  }
+  function rescale(x, a1, b1, a2, b2) {
+    return lerp(unlerp(x, a1, b1), a2, b2);
+  }
+
+  // src/ui/pan-and-zoom.tsx
   var import_jsx_runtime = __toESM(require_jsx_runtime());
-  function stringifyNumber(x) {
-    return x.toLocaleString("fullwide", {
-      useGrouping: false,
-      maximumFractionDigits: 10
-    });
+  function panAndZoomMatrix(rect, containerWidth, containerHeight) {
+    const scaleX = 1 / (rect.x2 - rect.x1) * containerWidth;
+    const scaleY = 1 / (rect.y2 - rect.y1) * containerHeight;
+    const translateX = -rect.x1 * scaleX;
+    const translateY = -rect.y1 * scaleY;
+    return [scaleX, 0, 0, scaleY, translateX, translateY];
   }
-  function roundAndClamp(x, min, max, step, offset) {
-    x = Math.max(Math.min(x, max), min);
-    if (step === 0) return x;
-    return Math.round((x - offset) / step) * step + offset;
+  function panAndZoomCanvas2d(canvas, ctx, rect) {
+    ctx.transform(...panAndZoomMatrix(rect, canvas.width, canvas.height));
   }
-  function NumberField(propsOpt) {
-    const props = {
-      scale: "log",
-      sensitivity: 0.01,
-      min: -Infinity,
-      max: Infinity,
-      step: 0,
-      offset: 0,
-      displayPrecision: 3,
-      defaultIfNaN: 0,
-      ...propsOpt
-    };
-    const value = isNaN(props.value) ? props.defaultIfNaN : props.value;
-    const [valueTemp, _setValueTemp] = (0, import_react.useState)(stringifyNumber(value));
-    const lastNumberRef = (0, import_react.useRef)(value);
-    function constrain(n) {
-      return roundAndClamp(n, props.min, props.max, props.step, props.offset);
-    }
-    function setValueTemp(vt, forceConstrain) {
-      if (!forceConstrain) _setValueTemp(vt);
-      const num = Number(vt);
-      if (!isNaN(num)) {
-        const cn = constrain(num);
-        props.setValue(cn);
-        lastNumberRef.current = cn;
-        if (forceConstrain) {
-          _setValueTemp(stringifyNumber(cn));
-        }
-      }
-    }
-    function setValueTempNum(n, forceConstrain) {
-      return setValueTemp(
-        stringifyNumber(forceConstrain ? constrain(n) : n),
-        forceConstrain
-      );
-    }
+  function PanAndZoom(props) {
+    const scrollSensitivity = props.scrollSensitivity ?? 1;
+    const scrollDecay = props.scrollDecay ?? 0.01;
+    const scrollSnapToZero = props.scrollSnapToZero ?? 1e-3;
+    const scrollVel = (0, import_react.useRef)(0);
+    const mouseDown = (0, import_react.useRef)(false);
+    const normalizedMousePos = (0, import_react.useRef)({ x: 0, y: 0 });
     (0, import_react.useEffect)(() => {
-      if (lastNumberRef.current !== value) {
-        lastNumberRef.current = value;
-        _setValueTemp(stringifyNumber(value));
-      }
-    }, [value]);
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-      "input",
-      {
-        value: valueTemp,
-        onInput: (e) => {
-          setValueTemp(e.currentTarget.value, false);
-        },
-        ref: (e) => {
-          e?.addEventListener("change", () => {
-            setValueTemp(e.value, true);
+      let stopped = false;
+      let lastTime = performance.now();
+      const cb = (time) => {
+        if (stopped) return;
+        const deltaTime = time - lastTime;
+        lastTime = time;
+        scrollVel.current *= Math.pow(scrollDecay, deltaTime / 1e3);
+        if (Math.abs(scrollVel.current) > scrollSnapToZero) {
+          props.setCoords((c) => {
+            const targetOriginX = lerp(normalizedMousePos.current.x, c.x1, c.x2);
+            const targetOriginY = lerp(normalizedMousePos.current.y, c.y1, c.y2);
+            const scrollAmount = scrollVel.current * deltaTime / 1e3;
+            return {
+              x1: lerp(scrollAmount, c.x1, targetOriginX),
+              y1: lerp(scrollAmount, c.y1, targetOriginY),
+              x2: lerp(scrollAmount, c.x2, targetOriginX),
+              y2: lerp(scrollAmount, c.y2, targetOriginY)
+            };
           });
-        },
-        onMouseDown: async (e) => {
-          await e.currentTarget.requestPointerLock();
-          let dragnum = value;
-          const mousemoveListener = (e2) => {
-            const x = e2.movementX;
-            if (props.scale === "log") {
-              dragnum = dragnum * (2 ** props.sensitivity) ** x;
-            } else {
-              dragnum += x * props.sensitivity;
-            }
-            setValueTempNum(dragnum, true);
-          };
-          const mouseupListener = (e2) => {
-            document.removeEventListener("mousemove", mousemoveListener);
-            document.removeEventListener("mouseup", mouseupListener);
-            document.exitPointerLock();
-          };
-          document.addEventListener("mousemove", mousemoveListener);
-          document.addEventListener("mouseup", mouseupListener);
+          props.onUpdate?.();
         }
+        requestAnimationFrame(cb);
+      };
+      requestAnimationFrame(cb);
+      return () => {
+        stopped = true;
+      };
+    }, []);
+    const divref = (0, import_react.useRef)(null);
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+      "div",
+      {
+        style: {
+          width: "fit-content",
+          display: "flex"
+        },
+        ref: divref,
+        onWheel: (e) => {
+          e.preventDefault();
+          scrollVel.current += Math.sign(e.deltaY) * scrollSensitivity * (props.swapScroll ? -1 : 1);
+        },
+        onMouseDown: (e) => {
+          mouseDown.current = true;
+        },
+        onMouseUp: (e) => {
+          mouseDown.current = false;
+        },
+        onMouseMove: (e) => {
+          const rect = divref.current?.getBoundingClientRect();
+          if (!rect) return;
+          normalizedMousePos.current = {
+            x: rescale(e.nativeEvent.offsetX, 0, rect.width, 0, 1),
+            y: rescale(e.nativeEvent.offsetY, 0, rect.height, 0, 1)
+          };
+          if (!mouseDown.current) return;
+          props.setCoords((c) => {
+            const dx = -rescale(e.movementX, 0, rect.width, 0, c.x2 - c.x1);
+            const dy = -rescale(e.movementY, 0, rect.height, 0, c.y2 - c.y1);
+            return {
+              x1: c.x1 + dx,
+              y1: c.y1 + dy,
+              x2: c.x2 + dx,
+              y2: c.y2 + dy
+            };
+          });
+          props.onUpdate?.();
+        },
+        children: props.children
       }
     );
   }
@@ -19694,11 +19708,29 @@
     const root = (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)(E, {}));
   }
 
-  // demos-src/react-number-field.react-demo.tsx
+  // demos-src/pan-and-zoom.react-demo.tsx
   var import_jsx_runtime3 = __toESM(require_jsx_runtime());
   mount(() => {
-    const [value, setValue] = (0, import_react2.useState)(10);
-    return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(NumberField, { value, setValue, step: 1 });
+    const [rect, setRect] = (0, import_react2.useState)({
+      x1: 0,
+      y1: 0,
+      x2: 100,
+      y2: 100
+    });
+    const canvasRef = (0, import_react2.useRef)(null);
+    (0, import_react2.useEffect)(() => {
+      if (!canvasRef.current) return;
+      const ctx = canvasRef.current.getContext("2d");
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      ctx.save();
+      panAndZoomCanvas2d(canvasRef.current, ctx, rect);
+      ctx.fillText("Test pan/zoom", 10, 10);
+      ctx.fillRect(rect.x1, rect.y1, 10, 10);
+      ctx.fillRect(rect.x2 - 10, rect.y2 - 10, 10, 10);
+      ctx.restore();
+    }, [rect]);
+    return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(PanAndZoom, { coords: rect, setCoords: setRect, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("canvas", { width: "512", height: "512", ref: canvasRef }) });
   });
 })();
 /*! Bundled license information:

@@ -8,7 +8,3 @@ export function rectIntersects(a, b) {
     rangeIntersects(a.top, a.bottom, b.top, b.bottom)
   );
 }
-
-export function clamp(x, lo, hi) {
-  return Math.min(Math.max(x, lo), hi);
-}

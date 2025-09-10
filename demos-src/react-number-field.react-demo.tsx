@@ -1,6 +1,6 @@
 import React from "react";
 import { useState } from "react";
-import { NumberField } from "../../src/ui/react-number-field";
+import { NumberField } from "../src/ui/react-number-field";
 import { mount } from "./react-boilerplate";
 
 mount(() => {

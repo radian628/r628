@@ -6,6 +6,14 @@ export function range(hi: number) {
   return arr;
 }
 
+export function rangeFrom(lo: number, hi: number) {
+  let arr: number[] = [];
+  for (let i = lo; i < hi && i < 10_000_000; i++) {
+    arr.push(i);
+  }
+  return arr;
+}
+
 export type MapCallback<T, U> = (e: T, i: number, arr: T[]) => U;
 
 export function stringRangeMapJoin(
@@ -83,4 +91,22 @@ export function rand(lo: number, hi: number, random?: () => number) {
 
 export function pickrand<T>(arr: T[]) {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function cartesianProductInner<Ts extends any[][]>(
+  ts: Ts,
+  arr: any[]
+): { [K in keyof Ts]: Ts[K][number] }[] {
+  // @ts-expect-error
+  if (ts.length === 0) return [arr];
+  return ts[0]
+    .map((e) => cartesianProductInner(ts.slice(1), [...arr, e]))
+    .flat(1) as ReturnType<typeof cartesianProduct<Ts>>;
+}
+
+export function cartesianProduct<Ts extends any[][]>(
+  ...ts: Ts
+): { [K in keyof Ts]: Ts[K][number] }[] {
+  const res = cartesianProductInner(ts, []);
+  return res;
 }

@@ -1,8 +1,23 @@
 import * as esbuild from "esbuild";
+import { glob } from "glob";
 import * as fs from "node:fs/promises";
 
+const codegenFiles = await glob("**/*.codegen.ts", {
+  ignore: "node_modules/**",
+});
+await Promise.all(
+  codegenFiles.map((c) => {
+    Bun.spawn(["bun", "run", c]);
+  })
+);
+
+const libFiles = [
+  ...(await glob("src/**/*.ts")),
+  ...(await glob("src/**/*.tsx")),
+].filter((f) => !f.match(/\.codegen\.(ts|tsx)+/));
+
 await esbuild.build({
-  entryPoints: ["src/**/*"],
+  entryPoints: libFiles,
   outdir: "js-src",
   minify: false,
   bundle: true,
@@ -10,7 +25,7 @@ await esbuild.build({
 });
 
 await esbuild.build({
-  entryPoints: ["src-node/**/*"],
+  entryPoints: ["src-node/**/*.ts"],
   outdir: "js-src-node",
   minify: false,
   bundle: true,
@@ -20,7 +35,7 @@ await esbuild.build({
 });
 
 const reactDemos = await esbuild.build({
-  entryPoints: ["demos-src/react/**/*.demo.*"],
+  entryPoints: ["demos-src/**/*.react-demo.*"],
   outdir: "demos-build",
   minify: false,
   bundle: true,
@@ -36,7 +51,7 @@ for (let out of reactDemos.outputFiles) {
     out.path
       .split("/")
       .at(-1)!
-      .replace(/\.demo\.js$/g, ".html");
+      .replace(/\.react-demo\.js$/g, ".html");
   fs.writeFile(
     dst,
     `
@@ -45,6 +60,37 @@ for (let out of reactDemos.outputFiles) {
 <head></head> 
 <body>
   <div id="root"></div>
+  <script>
+    ${new TextDecoder().decode(out.contents)}
+  </script>
+</body>
+    `
+  );
+}
+
+const nonReactDemos = await esbuild.build({
+  entryPoints: ["demos-src/**/*.demo.*"],
+  outdir: "demos-build",
+  minify: false,
+  bundle: true,
+  format: "iife",
+  write: false,
+});
+
+for (let out of nonReactDemos.outputFiles) {
+  const dst =
+    "./demos/" +
+    out.path
+      .split("/")
+      .at(-1)!
+      .replace(/\.demo\.js$/g, ".html");
+  fs.writeFile(
+    dst,
+    `
+<!DOCTYPE html>
+<html>
+<head></head> 
+<body>
   <script>
     ${new TextDecoder().decode(out.contents)}
   </script>
