@@ -99,6 +99,18 @@ function memo(callback, serializeParams) {
   fn.getCache = () => map;
   return fn;
 }
+function lazy(callback) {
+  let executed = false;
+  let cached;
+  return () => {
+    if (!executed) {
+      cached = callback();
+      executed = true;
+    }
+    return cached;
+  };
+}
 export {
+  lazy,
   memo
 };

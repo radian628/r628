@@ -6,3 +6,8 @@ export function download(file: Blob, name: string) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+export function downloadText(text: string, name: string) {
+  const blob = new Blob([text], { type: "text/plain" });
+  download(blob, name);
+}

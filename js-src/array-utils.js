@@ -9,6 +9,15 @@ function interleave(arr, cb) {
   }
   return out;
 }
+function splitBy(arr, amount) {
+  let outarr = [[]];
+  for (let i = 0; i < arr.length; i++) {
+    if (i % amount === amount - 1) outarr.push([]);
+    outarr.at(-1).push(arr[i]);
+  }
+  return outarr;
+}
 export {
-  interleave
+  interleave,
+  splitBy
 };

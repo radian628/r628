@@ -235,6 +235,17 @@ function memo(callback, serializeParams) {
   fn.getCache = () => map;
   return fn;
 }
+function lazy(callback) {
+  let executed = false;
+  let cached;
+  return () => {
+    if (!executed) {
+      cached = callback();
+      executed = true;
+    }
+    return cached;
+  };
+}
 
 // src/quadtree.ts
 function makeQuadtree(data, x1, y1, x2, y2, maxPoints, maxDepth) {
@@ -510,10 +521,45 @@ function workerifyClientIframe(discriminator, target) {
     }
   );
 }
+function createWorkerWithInterface(discriminator, src) {
+  const worker = new Worker(src);
+  return workerifyClient(
+    discriminator,
+    (cb) => {
+      const listener = (e) => cb(e.data);
+      window.addEventListener("message", listener);
+      return () => {
+        window.removeEventListener("message", listener);
+      };
+    },
+    (req) => {
+      worker.postMessage(req);
+    }
+  );
+}
+function createWorkerReceiver(discriminator, t) {
+  return workerifyServer(
+    t,
+    discriminator,
+    (cb) => {
+      const listener = (e) => cb(e.data);
+      globalThis.addEventListener("message", listener);
+      return () => {
+        globalThis.removeEventListener("message", listener);
+      };
+    },
+    (req) => {
+      postMessage(req);
+    }
+  );
+}
 export {
   ArrayMap,
   alterElements,
+  createWorkerReceiver,
+  createWorkerWithInterface,
   injectElementsAt,
+  lazy,
   listenForNoSelector,
   listenForSelector,
   lookupQuadtree,

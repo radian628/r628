@@ -80,7 +80,41 @@ function workerifyClientIframe(discriminator, target) {
     }
   );
 }
+function createWorkerWithInterface(discriminator, src) {
+  const worker = new Worker(src);
+  return workerifyClient(
+    discriminator,
+    (cb) => {
+      const listener = (e) => cb(e.data);
+      window.addEventListener("message", listener);
+      return () => {
+        window.removeEventListener("message", listener);
+      };
+    },
+    (req) => {
+      worker.postMessage(req);
+    }
+  );
+}
+function createWorkerReceiver(discriminator, t) {
+  return workerifyServer(
+    t,
+    discriminator,
+    (cb) => {
+      const listener = (e) => cb(e.data);
+      globalThis.addEventListener("message", listener);
+      return () => {
+        globalThis.removeEventListener("message", listener);
+      };
+    },
+    (req) => {
+      postMessage(req);
+    }
+  );
+}
 export {
+  createWorkerReceiver,
+  createWorkerWithInterface,
   workerifyClient,
   workerifyClientIframe,
   workerifyServer,

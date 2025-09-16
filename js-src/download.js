@@ -7,6 +7,11 @@ function download(file, name) {
   a.click();
   URL.revokeObjectURL(url);
 }
+function downloadText(text, name) {
+  const blob = new Blob([text], { type: "text/plain" });
+  download(blob, name);
+}
 export {
-  download
+  download,
+  downloadText
 };

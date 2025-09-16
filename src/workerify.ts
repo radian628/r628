@@ -132,3 +132,43 @@ export function workerifyClientIframe<T extends InterfaceWithMethods>(
     }
   );
 }
+
+export function createWorkerWithInterface<T extends InterfaceWithMethods>(
+  discriminator: string,
+  src: string
+) {
+  const worker = new Worker(src);
+  return workerifyClient<T>(
+    discriminator,
+    (cb) => {
+      const listener = (e: MessageEvent) => cb(e.data);
+      window.addEventListener("message", listener);
+      return () => {
+        window.removeEventListener("message", listener);
+      };
+    },
+    (req) => {
+      worker.postMessage(req);
+    }
+  );
+}
+
+export function createWorkerReceiver<T extends InterfaceWithMethods>(
+  discriminator: string,
+  t: T
+) {
+  return workerifyServer<T>(
+    t,
+    discriminator,
+    (cb) => {
+      const listener = (e: MessageEvent) => cb(e.data);
+      globalThis.addEventListener("message", listener);
+      return () => {
+        globalThis.removeEventListener("message", listener);
+      };
+    },
+    (req) => {
+      postMessage(req);
+    }
+  );
+}

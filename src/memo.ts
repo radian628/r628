@@ -25,3 +25,15 @@ export function memo<Params extends [any, ...any[]], RetType>(
 
   return fn;
 }
+
+export function lazy<T>(callback: () => T): () => T {
+  let executed = false;
+  let cached: T;
+  return () => {
+    if (!executed) {
+      cached = callback();
+      executed = true;
+    }
+    return cached;
+  };
+}
