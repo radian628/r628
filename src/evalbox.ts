@@ -11,7 +11,7 @@ export type Evalbox = {
   reload(): Promise<void>;
 };
 
-function createEvalbox(): Promise<Evalbox> {
+export function createEvalbox(): Promise<Evalbox> {
   const evalbox = document.createElement("iframe");
   evalbox.sandbox = "allow-scripts";
   let index = 0;
