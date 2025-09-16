@@ -549,7 +549,7 @@ function createWorkerReceiver(discriminator, t) {
       };
     },
     (req) => {
-      postMessage(req);
+      globalThis.postMessage(req);
     }
   );
 }

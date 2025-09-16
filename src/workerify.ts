@@ -168,7 +168,7 @@ export function createWorkerReceiver<T extends InterfaceWithMethods>(
       };
     },
     (req) => {
-      postMessage(req);
+      globalThis.postMessage(req);
     }
   );
 }
