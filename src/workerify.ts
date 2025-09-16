@@ -142,9 +142,9 @@ export function createWorkerWithInterface<T extends InterfaceWithMethods>(
     discriminator,
     (cb) => {
       const listener = (e: MessageEvent) => cb(e.data);
-      window.addEventListener("message", listener);
+      worker.addEventListener("message", listener);
       return () => {
-        window.removeEventListener("message", listener);
+        worker.removeEventListener("message", listener);
       };
     },
     (req) => {

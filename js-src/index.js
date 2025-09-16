@@ -527,9 +527,9 @@ function createWorkerWithInterface(discriminator, src) {
     discriminator,
     (cb) => {
       const listener = (e) => cb(e.data);
-      window.addEventListener("message", listener);
+      worker.addEventListener("message", listener);
       return () => {
-        window.removeEventListener("message", listener);
+        worker.removeEventListener("message", listener);
       };
     },
     (req) => {
