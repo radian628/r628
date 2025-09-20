@@ -1,4 +1,4 @@
-type InterfaceWithMethods = Record<string, (...args: any[]) => any>;
+export type InterfaceWithMethods = Record<string, (...args: any[]) => any>;
 
 export type WorkerifyInterface<T extends InterfaceWithMethods> = {
   [K in keyof T]: (
@@ -8,7 +8,7 @@ export type WorkerifyInterface<T extends InterfaceWithMethods> = {
     : Promise<ReturnType<T[K]>>;
 };
 
-type WorkerifyRequest<T extends InterfaceWithMethods> = {
+export type WorkerifyRequest<T extends InterfaceWithMethods> = {
   [K in keyof T]: {
     type: K;
     contents: Parameters<T[K]>;
@@ -17,7 +17,7 @@ type WorkerifyRequest<T extends InterfaceWithMethods> = {
   };
 }[keyof T];
 
-type WorkerifyResponse<T extends InterfaceWithMethods> = {
+export type WorkerifyResponse<T extends InterfaceWithMethods> = {
   [K in keyof T]: {
     contents: ReturnType<T[K]>;
     _discriminator: string;
