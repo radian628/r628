@@ -20,7 +20,9 @@ function createRoundRobinThreadpool(src) {
           id++;
           const nextWorker2 = getNextWorker();
           const onResponse = (e) => {
+            console.log("A", e.data);
             if (e.data.id !== myid) return;
+            console.log("B", e.data);
             nextWorker2.removeEventListener("message", onResponse);
             resolve(e.data.returnValue);
           };

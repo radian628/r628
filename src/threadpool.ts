@@ -31,7 +31,9 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
           id++;
           const nextWorker = getNextWorker();
           const onResponse = (e: MessageEvent) => {
+            console.log("A", e.data);
             if (e.data.id !== myid) return;
+            console.log("B", e.data);
             nextWorker.removeEventListener("message", onResponse);
             resolve(e.data.returnValue);
           };
