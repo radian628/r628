@@ -1,0 +1,120 @@
+export type GL = WebGL2RenderingContext;
+
+export type BufferLayout = Record<
+  string,
+  {
+    type: GLenum;
+    size: 1 | 2 | 3 | 4;
+    normalized?: boolean;
+    isInt?: boolean;
+  }
+>;
+
+function getDatatypeSize(gl: GL, datatype: GLenum): number {
+  return {
+    [gl.BYTE]: 1,
+    [gl.SHORT]: 2,
+    [gl.UNSIGNED_BYTE]: 1,
+    [gl.UNSIGNED_SHORT]: 2,
+    [gl.FLOAT]: 4,
+
+    [gl.HALF_FLOAT]: 2,
+    [gl.INT]: 4,
+    [gl.UNSIGNED_INT]: 4,
+    [gl.INT_2_10_10_10_REV]: 4,
+    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4,
+  }[datatype]!;
+}
+
+export type BufferWithLayout = {
+  vertexCount: number;
+  buffer: WebGLBuffer;
+  setLayout(prog: WebGLProgram): void;
+  bindArray(gl: GL): void;
+  bindIndex(gl: GL): void;
+};
+
+export function createBufferWithLayout(
+  gl: GL,
+  layout: BufferLayout,
+  data: any
+): BufferWithLayout {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+
+  const layoutEntries = Object.entries(layout);
+
+  let stride = 0;
+
+  const offsets = new Map();
+
+  for (const [name, attrs] of layoutEntries) {
+    offsets.set(name, stride);
+    stride += attrs.size * getDatatypeSize(gl, attrs.type);
+  }
+
+  const arraybuf = new ArrayBuffer(stride * data.length);
+
+  const rawdata = new DataView(arraybuf);
+
+  let i = 0;
+  for (const d of data) {
+    for (const [name, attrs] of layoutEntries) {
+      for (let j = 0; j < attrs.size; j++) {
+        const val = d[name][j];
+        let pos =
+          i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
+        if (attrs.type === gl.BYTE) {
+          rawdata.setInt8(pos, val);
+        } else if (attrs.type === gl.UNSIGNED_BYTE) {
+          rawdata.setUint8(pos, val);
+        } else if (attrs.type === gl.FLOAT) {
+          rawdata.setFloat32(pos, val, true);
+        } else if (attrs.type === gl.SHORT) {
+          rawdata.setInt16(pos, val, true);
+        } else if (attrs.type === gl.UNSIGNED_SHORT) {
+          rawdata.setUint16(pos, val, true);
+        }
+      }
+    }
+    i++;
+  }
+
+  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
+
+  return {
+    vertexCount: data.length,
+    buffer,
+    setLayout(prog: WebGLProgram) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      for (const [name, attrs] of layoutEntries) {
+        const loc = gl.getAttribLocation(prog, name);
+        if (attrs.isInt) {
+          gl.vertexAttribIPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            stride,
+            offsets.get(name)
+          );
+        } else {
+          gl.vertexAttribPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            attrs.normalized ?? false,
+            stride,
+            offsets.get(name)
+          );
+        }
+        gl.enableVertexAttribArray(loc);
+      }
+    },
+    bindArray(gl: GL) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    },
+    bindIndex(gl: GL) {
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+    },
+  };
+}

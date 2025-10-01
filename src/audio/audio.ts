@@ -148,6 +148,27 @@ export function resample<Channels extends number = 2>(
   };
 }
 
+export function modulateSampleTime(a: Audio, b: Audio) {
+  if (b.sampleRate !== a.sampleRate) {
+    b = resample(b, a.sampleRate);
+  }
+
+  for (let ci = 0; ci < a.channels.length; ci++) {
+    const newChannel = new Float32Array(a.channels[ci].length);
+
+    for (let i = 0; i < b.channels[ci].length; i++) {
+      const index = Math.floor(b.channels[ci][i] * a.sampleRate);
+
+      newChannel[i] =
+        a.channels[ci][Math.min(Math.max(index, 0), a.channels[ci].length - 1)];
+    }
+
+    a.channels[ci] = newChannel;
+  }
+
+  return a;
+}
+
 // destructive to "a" for perf reasons
 export function add<Channels extends number = 2>(
   a: Audio,

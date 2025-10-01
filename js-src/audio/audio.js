@@ -3488,6 +3488,20 @@ function resample(audio, newSampleRate) {
     channels
   };
 }
+function modulateSampleTime(a, b) {
+  if (b.sampleRate !== a.sampleRate) {
+    b = resample(b, a.sampleRate);
+  }
+  for (let ci = 0; ci < a.channels.length; ci++) {
+    const newChannel = new Float32Array(a.channels[ci].length);
+    for (let i = 0; i < b.channels[ci].length; i++) {
+      const index = Math.floor(b.channels[ci][i] * a.sampleRate);
+      newChannel[i] = a.channels[ci][Math.min(Math.max(index, 0), a.channels[ci].length - 1)];
+    }
+    a.channels[ci] = newChannel;
+  }
+  return a;
+}
 function add(a, b, offsetB = 0) {
   if (b.sampleRate !== a.sampleRate) {
     b = resample(b, a.sampleRate);
@@ -3630,6 +3644,7 @@ export {
   getOgg,
   graphAudio,
   modulateGain,
+  modulateSampleTime,
   monoToStereo,
   play,
   resample,

@@ -1,6 +1,7 @@
 import * as esbuild from "esbuild";
 import { glob } from "glob";
 import * as fs from "node:fs/promises";
+import { demosPlugin } from "./src-node/esbuild-demos";
 
 const codegenFiles = await glob("**/*.codegen.ts", {
   ignore: "node_modules/**",
@@ -74,27 +75,28 @@ const nonReactDemos = await esbuild.build({
   minify: false,
   bundle: true,
   format: "iife",
-  write: false,
+  // write: false,
+  plugins: [demosPlugin()],
 });
 
-for (let out of nonReactDemos.outputFiles) {
-  const dst =
-    "./demos/" +
-    out.path
-      .split("/")
-      .at(-1)!
-      .replace(/\.demo\.js$/g, ".html");
-  fs.writeFile(
-    dst,
-    `
-<!DOCTYPE html>
-<html>
-<head></head> 
-<body>
-  <script>
-    ${new TextDecoder().decode(out.contents)}
-  </script>
-</body>
-    `
-  );
-}
+// for (let out of nonReactDemos.outputFiles) {
+//   const dst =
+//     "./demos/" +
+//     out.path
+//       .split("/")
+//       .at(-1)!
+//       .replace(/\.demo\.js$/g, ".html");
+//   fs.writeFile(
+//     dst,
+//     `
+// <!DOCTYPE html>
+// <html>
+// <head></head>
+// <body>
+//   <script>
+//     ${new TextDecoder().decode(out.contents)}
+//   </script>
+// </body>
+//     `
+//   );
+// }
