@@ -21,11 +21,11 @@ export function demosPlugin(_opts?: DemosOptions): esbuild.Plugin {
   const opts = _opts ?? {};
 
   if (!opts.template)
-    opts.template = (name) => `<DOCTYPE html>
+    opts.template = (name) => `<!DOCTYPE html>
 <html>
   <head></head>
   <body>
-    <script src="/${name}"></script>
+    <script src="${name.split("/").at(-1)!}"></script>
   </body>
 </html>`;
 
