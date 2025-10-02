@@ -37,8 +37,6 @@ mount(() => {
 `)}`
       );
 
-      document.body.appendChild(imgAfter);
-
       canvasBefore.width = imgBefore.width;
       canvasBefore.height = imgBefore.height;
       canvas.width = imgBefore.width;
