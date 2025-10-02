@@ -13,10 +13,10 @@ import { sources2program } from "../src/webgl/shader";
 
 const canvas = document.createElement("canvas");
 canvas.style =
-  "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none;";
+  "position: fixed; top: 0; left: 0; width: 100lvw; height: 100lvh; pointer-events: none;";
 document.body.appendChild(canvas);
 
-document.body.style.height = "500vh";
+document.body.style.height = "600lvh";
 
 const gl = canvas.getContext("webgl2");
 
@@ -125,7 +125,7 @@ function loop(t: number) {
     mvp: [
       "mat4",
       mulMat4(
-        translate([0, window.scrollY / window.innerHeight - 2.5, 0]),
+        translate([0, window.scrollY / window.outerHeight - 2.5, 0]),
         perspective(1, ASPECT, 0.1, 100)
       ),
     ],
