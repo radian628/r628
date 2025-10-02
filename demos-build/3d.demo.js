@@ -431,13 +431,13 @@ void main() {
         )
       ]
     });
-    t += 1e6;
+    t += 1e9;
     for (let i = 0; i < 100; i++) {
       let scaleFactor = 0.3 + i * 0.01;
       obj.updateUniforms({
         mvp: [
           "mat4",
-          mulMat4(rotate([1 - i / 100, i / 100, 1], i * t / 1e5), [
+          mulMat4(rotate([1, 1, 1], i * t / 1e7), [
             scaleFactor,
             0,
             0,

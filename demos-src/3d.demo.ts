@@ -130,13 +130,13 @@ function loop(t: number) {
       ),
     ],
   });
-  t += 1000000;
+  t += 1000000000;
   for (let i = 0; i < 100; i++) {
     let scaleFactor = 0.3 + i * 0.01;
     obj.updateUniforms({
       mvp: [
         "mat4",
-        mulMat4(rotate([1 - i / 100, i / 100, 1], (i * t) / 100000), [
+        mulMat4(rotate([1, 1, 1], (i * t) / 10000000), [
           scaleFactor,
           0,
           0,
