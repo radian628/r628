@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
+import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { lerp, rescale } from "../interpolation";
 import { Mat3x2 } from "../math/vector";
 
@@ -51,7 +51,7 @@ export function PanAndZoom(props: {
   useEffect(() => {
     let stopped = false;
     let lastTime = performance.now();
-    const cb = (time) => {
+    const cb = (time: number) => {
       if (stopped) return;
       const deltaTime = time - lastTime;
       lastTime = time;

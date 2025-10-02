@@ -103,7 +103,7 @@ export function injectElementsAt(
     });
 
     const elems = document.querySelectorAll(selector);
-    for (const e of elems) {
+    for (const e of Array.from(elems)) {
       if (!(e instanceof HTMLElement) || e.dataset[key]) continue;
 
       e.dataset[key] = "true";

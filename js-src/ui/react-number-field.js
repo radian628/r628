@@ -1034,7 +1034,7 @@ function NumberField(propsOpt) {
       _setValueTemp(stringifyNumber(value));
     }
   }, [value]);
-  return /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ import_react.default.createElement(
     "input",
     {
       value: valueTemp,

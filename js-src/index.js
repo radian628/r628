@@ -2124,7 +2124,7 @@ function injectElementsAt(selector, position, element) {
       }
     });
     const elems = document.querySelectorAll(selector);
-    for (const e of elems) {
+    for (const e of Array.from(elems)) {
       if (!(e instanceof HTMLElement) || e.dataset[key]) continue;
       e.dataset[key] = "true";
       const r = element(e);
@@ -2330,6 +2330,35 @@ function download(file, name) {
 function downloadText(text, name) {
   const blob = new Blob([text], { type: "text/plain" });
   download(blob, name);
+}
+function canvasToBlob(c, type, quality) {
+  return new Promise((resolve, reject) => {
+    c.toBlob(
+      (blob) => {
+        resolve(blob);
+      },
+      type,
+      quality
+    );
+  });
+}
+function blobToDataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      resolve(reader.result);
+    });
+    reader.readAsDataURL(blob);
+  });
+}
+function loadImg(url) {
+  const img = new Image();
+  return new Promise((resolve, reject) => {
+    img.onload = () => {
+      resolve(img);
+    };
+    img.src = url;
+  });
 }
 
 // src/debounce.ts
@@ -5571,6 +5600,197 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
+// src/webgl/shader.ts
+function source2shader(gl, type, source) {
+  const shader = gl.createShader(
+    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
+  );
+  if (!shader) return err(void 0);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
+    return err(void 0);
+  }
+  return ok(shader);
+}
+function shaders2program(gl, v, f) {
+  const program = gl.createProgram();
+  gl.attachShader(program, v);
+  gl.attachShader(program, f);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+    return err(void 0);
+  }
+  return ok(program);
+}
+function sources2program(gl, vs, fs) {
+  const v = source2shader(gl, "v", vs);
+  const f = source2shader(gl, "f", fs);
+  if (!v.ok || !f.ok) return err(void 0);
+  return shaders2program(gl, v.data, f.data);
+}
+function fullscreenQuadBuffer(gl) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      -1,
+      -1,
+      1,
+      -1,
+      -1,
+      1,
+      1,
+      1,
+      -1,
+      1,
+      1,
+      -1
+    ]),
+    gl.STATIC_DRAW
+  );
+  return ok(buffer);
+}
+function glRenderToQuad(options) {
+  const canvas = document.createElement("canvas");
+  canvas.width = options.width;
+  canvas.height = options.height;
+  const gl = canvas.getContext(options.version ?? "webgl2");
+  gl.viewport(0, 0, options.width, options.height);
+  if (!gl) return err(void 0);
+  const buf = fullscreenQuadBuffer(gl);
+  const prog = sources2program(
+    gl,
+    `#version 300 es
+precision highp float;
+
+in vec2 in_vpos;
+out vec2 pos;
+
+void main() {
+  pos = in_vpos * 0.5 + 0.5;
+  gl_Position = vec4(in_vpos, 0.5, 1.0);
+}`,
+    (options.noheader ? "" : `#version 300 es
+precision highp float;
+in vec2 pos;
+out vec4 col;
+`) + (options.noAutoUniforms ? "" : [
+      [options.uniforms, "", "float"],
+      [options.intUniforms, "i", "int"],
+      [options.uintUniforms, "u", "uint"]
+    ].map(
+      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
+        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
+      }).join("\n")
+    ).join("\n")) + options.fragsource
+  );
+  if (!prog.data) return err(void 0);
+  gl.useProgram(prog.data);
+  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
+  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(attrloc);
+  for (const [uniforms, type] of [
+    [options.uniforms, "i"],
+    [options.intUniforms, "i"],
+    [options.uintUniforms, "ui"]
+  ]) {
+    for (const [k, v] of Object.entries(uniforms ?? {})) {
+      const v2 = Array.isArray(v) ? v : [v];
+      gl[`uniform${v2.length}${type}v`](
+        gl.getUniformLocation(prog.data, k),
+        v2
+      );
+    }
+  }
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  return ok(canvas);
+}
+
+// src/webgl/scene.ts
+function applyUniform(gl, prog, name, spec) {
+  const [t, d] = spec;
+  const l = gl.getUniformLocation(prog, name);
+  if (l === null) {
+    throw new Error(
+      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
+    );
+  }
+  if (t === "float") gl.uniform1f(l, d);
+  if (t === "vec2") gl.uniform2f(l, ...d);
+  if (t === "vec3") gl.uniform3f(l, ...d);
+  if (t === "vec4") gl.uniform4f(l, ...d);
+  if (t === "int") gl.uniform1i(l, d);
+  if (t === "ivec2") gl.uniform2i(l, ...d);
+  if (t === "ivec3") gl.uniform3i(l, ...d);
+  if (t === "ivec4") gl.uniform4i(l, ...d);
+  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
+  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
+  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
+  if (t === "float[]") gl.uniform1fv(l, d);
+  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
+  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
+  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
+  if (t === "int[]") gl.uniform1iv(l, d);
+  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
+  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
+  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
+  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
+  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
+  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
+}
+function applyUniforms(gl, prog, uniforms) {
+  for (const [k, v] of Object.entries(uniforms)) {
+    applyUniform(gl, prog, k, v);
+  }
+}
+function createScene(sceneSpec) {
+  const gl = sceneSpec.gl;
+  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
+  let sceneUniforms = sceneSpec.uniforms ?? {};
+  return {
+    uniforms() {
+      return sceneUniforms;
+    },
+    resetUniforms(u) {
+      sceneUniforms = u;
+    },
+    updateUniforms(u) {
+      sceneUniforms = { ...sceneUniforms, ...u };
+    },
+    addObject3D(spec) {
+      let objectUniforms = spec.uniforms ?? {};
+      return {
+        gl() {
+          return gl;
+        },
+        draw() {
+          gl.useProgram(spec.program);
+          spec.buffer.setLayout(spec.program);
+          applyUniforms(
+            gl,
+            spec.program,
+            combineUniforms(sceneUniforms, objectUniforms)
+          );
+          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
+        },
+        uniforms() {
+          return objectUniforms;
+        },
+        resetUniforms(u) {
+          objectUniforms = u;
+        },
+        updateUniforms(u) {
+          objectUniforms = { ...objectUniforms, ...u };
+        }
+      };
+    }
+  };
+}
+
 // src/math/vector.ts
 function xxxx(a) {
   return [a[0], a[0], a[0], a[0]];
@@ -7275,197 +7495,6 @@ function scale4(a, b) {
   return [a[0] * b, a[1] * b, a[2] * b, a[3] * b];
 }
 
-// src/webgl/shader.ts
-function source2shader(gl, type, source) {
-  const shader = gl.createShader(
-    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
-  );
-  if (!shader) return err(void 0);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader));
-    return err(void 0);
-  }
-  return ok(shader);
-}
-function shaders2program(gl, v, f) {
-  const program = gl.createProgram();
-  gl.attachShader(program, v);
-  gl.attachShader(program, f);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(program));
-    return err(void 0);
-  }
-  return ok(program);
-}
-function sources2program(gl, vs, fs) {
-  const v = source2shader(gl, "v", vs);
-  const f = source2shader(gl, "f", fs);
-  if (!v.ok || !f.ok) return err(void 0);
-  return shaders2program(gl, v.data, f.data);
-}
-function fullscreenQuadBuffer(gl) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      -1,
-      -1,
-      1,
-      -1,
-      -1,
-      1,
-      1,
-      1,
-      -1,
-      1,
-      1,
-      -1
-    ]),
-    gl.STATIC_DRAW
-  );
-  return ok(buffer);
-}
-function glRenderToQuad(options) {
-  const canvas = document.createElement("canvas");
-  canvas.width = options.width;
-  canvas.height = options.height;
-  const gl = canvas.getContext(options.version ?? "webgl2");
-  gl.viewport(0, 0, options.width, options.height);
-  if (!gl) return err(void 0);
-  const buf = fullscreenQuadBuffer(gl);
-  const prog = sources2program(
-    gl,
-    `#version 300 es
-precision highp float;
-
-in vec2 in_vpos;
-out vec2 pos;
-
-void main() {
-  pos = in_vpos * 0.5 + 0.5;
-  gl_Position = vec4(in_vpos, 0.5, 1.0);
-}`,
-    (options.noheader ? "" : `#version 300 es
-precision highp float;
-in vec2 pos;
-out vec4 col;
-`) + (options.noAutoUniforms ? "" : [
-      [options.uniforms, "", "float"],
-      [options.intUniforms, "i", "int"],
-      [options.uintUniforms, "u", "uint"]
-    ].map(
-      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
-        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
-      }).join("\n")
-    ).join("\n")) + options.fragsource
-  );
-  if (!prog.data) return err(void 0);
-  gl.useProgram(prog.data);
-  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
-  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(attrloc);
-  for (const [uniforms, type] of [
-    [options.uniforms, "i"],
-    [options.intUniforms, "i"],
-    [options.uintUniforms, "ui"]
-  ]) {
-    for (const [k, v] of Object.entries(uniforms ?? {})) {
-      const v2 = Array.isArray(v) ? v : [v];
-      gl[`uniform${v2.length}${type}v`](
-        gl.getUniformLocation(prog.data, k),
-        v2
-      );
-    }
-  }
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-  return ok(canvas);
-}
-
-// src/webgl/scene.ts
-function applyUniform(gl, prog, name, spec) {
-  const [t, d] = spec;
-  const l = gl.getUniformLocation(prog, name);
-  if (l === null) {
-    throw new Error(
-      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
-    );
-  }
-  if (t === "float") gl.uniform1f(l, d);
-  if (t === "vec2") gl.uniform2f(l, ...d);
-  if (t === "vec3") gl.uniform3f(l, ...d);
-  if (t === "vec4") gl.uniform4f(l, ...d);
-  if (t === "int") gl.uniform1i(l, d);
-  if (t === "ivec2") gl.uniform2i(l, ...d);
-  if (t === "ivec3") gl.uniform3i(l, ...d);
-  if (t === "ivec4") gl.uniform4i(l, ...d);
-  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
-  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
-  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
-  if (t === "float[]") gl.uniform1fv(l, d);
-  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
-  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
-  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
-  if (t === "int[]") gl.uniform1iv(l, d);
-  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
-  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
-  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
-  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
-  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
-  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
-}
-function applyUniforms(gl, prog, uniforms) {
-  for (const [k, v] of Object.entries(uniforms)) {
-    applyUniform(gl, prog, k, v);
-  }
-}
-function createScene(sceneSpec) {
-  const gl = sceneSpec.gl;
-  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
-  let sceneUniforms = sceneSpec.uniforms ?? {};
-  return {
-    uniforms() {
-      return sceneUniforms;
-    },
-    resetUniforms(u) {
-      sceneUniforms = u;
-    },
-    updateUniforms(u) {
-      sceneUniforms = { ...sceneUniforms, ...u };
-    },
-    addObject3D(spec) {
-      let objectUniforms = spec.uniforms ?? {};
-      return {
-        gl() {
-          return gl;
-        },
-        draw() {
-          gl.useProgram(spec.program);
-          spec.buffer.setLayout(spec.program);
-          applyUniforms(
-            gl,
-            spec.program,
-            combineUniforms(sceneUniforms, objectUniforms)
-          );
-          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
-        },
-        uniforms() {
-          return objectUniforms;
-        },
-        resetUniforms(u) {
-          objectUniforms = u;
-        },
-        updateUniforms(u) {
-          objectUniforms = { ...objectUniforms, ...u };
-        }
-      };
-    }
-  };
-}
-
 // src/webgl/mesh.ts
 function parametric2D(x2, y2, attr, getPoint) {
   const data = [];
@@ -7690,8 +7719,20 @@ function createBufferWithLayout(gl, layout, data) {
 }
 
 // src/ui/react-string-field.tsx
+var import_react = __toESM(require_react());
 function StringField(props) {
-  return /* @__PURE__ */ React.createElement(
+  if (props.isTextarea) {
+    return /* @__PURE__ */ import_react.default.createElement(
+      "textarea",
+      {
+        value: props.value,
+        onInput: (e) => {
+          props.setValue(e.currentTarget.value);
+        }
+      }
+    );
+  }
+  return /* @__PURE__ */ import_react.default.createElement(
     "input",
     {
       value: props.value,
@@ -7703,7 +7744,7 @@ function StringField(props) {
 }
 
 // src/ui/react-number-field.tsx
-var import_react = __toESM(require_react());
+var import_react2 = __toESM(require_react());
 function stringifyNumber(x2) {
   return x2.toLocaleString("fullwide", {
     useGrouping: false,
@@ -7728,8 +7769,8 @@ function NumberField(propsOpt) {
     ...propsOpt
   };
   const value = isNaN(props.value) ? props.defaultIfNaN : props.value;
-  const [valueTemp, _setValueTemp] = (0, import_react.useState)(stringifyNumber(value));
-  const lastNumberRef = (0, import_react.useRef)(value);
+  const [valueTemp, _setValueTemp] = (0, import_react2.useState)(stringifyNumber(value));
+  const lastNumberRef = (0, import_react2.useRef)(value);
   function constrain(n) {
     return roundAndClamp(n, props.min, props.max, props.step, props.offset);
   }
@@ -7751,13 +7792,13 @@ function NumberField(propsOpt) {
       forceConstrain
     );
   }
-  (0, import_react.useEffect)(() => {
+  (0, import_react2.useEffect)(() => {
     if (lastNumberRef.current !== value) {
       lastNumberRef.current = value;
       _setValueTemp(stringifyNumber(value));
     }
   }, [value]);
-  return /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ import_react2.default.createElement(
     "input",
     {
       value: valueTemp,
@@ -7794,7 +7835,7 @@ function NumberField(propsOpt) {
 }
 
 // src/ui/pan-and-zoom.tsx
-var import_react2 = __toESM(require_react());
+var import_react3 = __toESM(require_react());
 function panAndZoomMatrix(rect, containerWidth, containerHeight) {
   const scaleX = 1 / (rect.x2 - rect.x1) * containerWidth;
   const scaleY = 1 / (rect.y2 - rect.y1) * containerHeight;
@@ -7809,10 +7850,10 @@ function PanAndZoom(props) {
   const scrollSensitivity = props.scrollSensitivity ?? 1;
   const scrollDecay = props.scrollDecay ?? 0.01;
   const scrollSnapToZero = props.scrollSnapToZero ?? 1e-3;
-  const scrollVel = (0, import_react2.useRef)(0);
-  const mouseDown = (0, import_react2.useRef)(false);
-  const normalizedMousePos = (0, import_react2.useRef)({ x: 0, y: 0 });
-  (0, import_react2.useEffect)(() => {
+  const scrollVel = (0, import_react3.useRef)(0);
+  const mouseDown = (0, import_react3.useRef)(false);
+  const normalizedMousePos = (0, import_react3.useRef)({ x: 0, y: 0 });
+  (0, import_react3.useEffect)(() => {
     let stopped = false;
     let lastTime = performance.now();
     const cb = (time) => {
@@ -7841,8 +7882,8 @@ function PanAndZoom(props) {
       stopped = true;
     };
   }, []);
-  const divref = (0, import_react2.useRef)(null);
-  return /* @__PURE__ */ React.createElement(
+  const divref = (0, import_react3.useRef)(null);
+  return /* @__PURE__ */ import_react3.default.createElement(
     "div",
     {
       style: {
@@ -7897,6 +7938,8 @@ export {
   alterElements,
   applyUniform,
   applyUniforms,
+  blobToDataURL,
+  canvasToBlob,
   cartesianProduct,
   clamp,
   clampToArray,
@@ -7937,6 +7980,7 @@ export {
   lerp,
   listenForNoSelector,
   listenForSelector,
+  loadImg,
   lookupQuadtree,
   makeQuadtree,
   memo,

@@ -1041,7 +1041,7 @@ function PanAndZoom(props) {
     };
   }, []);
   const divref = (0, import_react.useRef)(null);
-  return /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ import_react.default.createElement(
     "div",
     {
       style: {
