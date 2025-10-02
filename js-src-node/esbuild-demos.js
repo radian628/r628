@@ -15,7 +15,9 @@ function demosPlugin(_opts) {
   if (!opts.template)
     opts.template = (name) => `<!DOCTYPE html>
 <html>
-  <head></head>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
+  </head>
   <body>
     <script src="${name.split("/").at(-1)}"></script>
   </body>
