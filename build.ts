@@ -2,6 +2,7 @@ import * as esbuild from "esbuild";
 import { glob } from "glob";
 import * as fs from "node:fs/promises";
 import { demosPlugin } from "./src-node/esbuild-demos";
+import * as path from "node:path";
 
 const codegenFiles = await glob("**/*.codegen.ts", {
   ignore: "node_modules/**",
@@ -16,6 +17,11 @@ const libFiles = [
   ...(await glob("src/**/*.ts")),
   ...(await glob("src/**/*.tsx")),
 ].filter((f) => !f.match(/\.codegen\.(ts|tsx)+/));
+
+await fs.writeFile(
+  "src/index.ts",
+  libFiles.map((e) => `export * from "./${path.relative("src", e)}"\n`)
+);
 
 await esbuild.build({
   entryPoints: libFiles,
