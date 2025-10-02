@@ -5,6 +5,7 @@ import {
   perspective,
   ring,
   rotate,
+  scale,
   translate,
   uvSphere,
 } from "../src/webgl/mesh";
@@ -130,32 +131,21 @@ function loop(t: number) {
       ),
     ],
   });
-  t += 1000000000;
-  for (let i = 0; i < 100; i++) {
+  t += 10000000;
+  for (let i = 0; i < 200; i++) {
     let scaleFactor = 0.3 + i * 0.01;
     obj.updateUniforms({
       mvp: [
         "mat4",
-        mulMat4(rotate([1, 1, 1], (i * t) / 10000000), [
-          scaleFactor,
-          0,
-          0,
-          0,
-          0,
-          scaleFactor,
-          0,
-          0,
-          0,
-          0,
-          scaleFactor,
-          0,
-          0,
-          0,
-          0,
-          1,
-        ]),
+        mulMat4(
+          rotate([0.5, 1, 0], Math.PI / 4),
+          mulMat4(
+            rotate([0, 0, 1], (i * t + 5) / 100000),
+            scale([scaleFactor, scaleFactor, scaleFactor])
+          )
+        ),
       ],
-      color: ["vec4", [i / 100, 0, 0, 1]],
+      color: ["vec4", [i / 200, 0, 0, 1]],
     });
     obj.draw();
   }

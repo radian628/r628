@@ -204,6 +204,9 @@
       1
     ];
   }
+  function scale(axes) {
+    return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
+  }
   function translate(v) {
     return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
   }
@@ -431,32 +434,21 @@ void main() {
         )
       ]
     });
-    t += 1e9;
-    for (let i = 0; i < 100; i++) {
+    t += 1e7;
+    for (let i = 0; i < 200; i++) {
       let scaleFactor = 0.3 + i * 0.01;
       obj.updateUniforms({
         mvp: [
           "mat4",
-          mulMat4(rotate([1, 1, 1], i * t / 1e7), [
-            scaleFactor,
-            0,
-            0,
-            0,
-            0,
-            scaleFactor,
-            0,
-            0,
-            0,
-            0,
-            scaleFactor,
-            0,
-            0,
-            0,
-            0,
-            1
-          ])
+          mulMat4(
+            rotate([0.5, 1, 0], Math.PI / 4),
+            mulMat4(
+              rotate([0, 0, 1], (i * t + 5) / 1e5),
+              scale([scaleFactor, scaleFactor, scaleFactor])
+            )
+          )
         ],
-        color: ["vec4", [i / 100, 0, 0, 1]]
+        color: ["vec4", [i / 200, 0, 0, 1]]
       });
       obj.draw();
     }
