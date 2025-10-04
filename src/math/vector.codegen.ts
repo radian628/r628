@@ -105,11 +105,11 @@ const matDisplay = (a: CC, b: CC) => {
   return `Mat${a}x${b}`;
 };
 
-const genericVec = (i) => (i === 1 ? "number" : vec(i));
-const genericVecDisplay = (i) => (i === 1 ? "Scalar" : vec(i));
+const genericVec = (i: number) => (i === 1 ? "number" : vec(i));
+const genericVecDisplay = (i: number) => (i === 1 ? "Scalar" : vec(i));
 
-const vec = (i) => `Vec${i}`;
-const num = (i) => "number";
+const vec = (i: number) => `Vec${i}`;
+const num = (i: number) => "number";
 
 let matmuls = new Set<string>();
 
@@ -125,12 +125,12 @@ function genMatmul(a: CC, b: CC, c: CC) {
   if (matmuls.has(name)) return "";
   matmuls.add(name);
 
-  return `export function mul${name}(a: ${mat(b, a)}, b: ${mat(c, b)}): ${mat(a, c)} {
+  return `export function mul${name}(a: ${mat(b, a)}, b: ${mat(c, b)}): ${mat(c, a)} {
     return [
-      ${cartesianProduct(range(c), range(a))
+      ${cartesianProduct(range(a), range(c))
         .map(([col, row]) => {
           return range(b)
-            .map((i) => `a[${row * b + i}] * b[${col + i * c}]`)
+            .map((i) => `a[${col * b + i}] * b[${row + i * c}]`)
             .join("+");
         })
         .join(",")}

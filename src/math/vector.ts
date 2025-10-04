@@ -1185,27 +1185,27 @@ export function mulVec2ByScalar(a: Vec2, b: number): Vec2 {
   return [a[0] * b[0], a[1] * b[0]]
 }
 export function mulVec2ByVec2(a: Vec2, b: Vec2): Mat2 {
-  return [a[0] * b[0], a[1] * b[0], a[0] * b[1], a[1] * b[1]]
+  return [a[0] * b[0], a[0] * b[1], a[1] * b[0], a[1] * b[1]]
 }
-export function mulVec2ByVec3(a: Vec2, b: Vec3): Mat2x3 {
+export function mulVec2ByVec3(a: Vec2, b: Vec3): Mat3x2 {
   return [
     a[0] * b[0],
-    a[1] * b[0],
     a[0] * b[1],
-    a[1] * b[1],
     a[0] * b[2],
+    a[1] * b[0],
+    a[1] * b[1],
     a[1] * b[2],
   ]
 }
-export function mulVec2ByVec4(a: Vec2, b: Vec4): Mat2x4 {
+export function mulVec2ByVec4(a: Vec2, b: Vec4): Mat4x2 {
   return [
     a[0] * b[0],
-    a[1] * b[0],
     a[0] * b[1],
-    a[1] * b[1],
     a[0] * b[2],
-    a[1] * b[2],
     a[0] * b[3],
+    a[1] * b[0],
+    a[1] * b[1],
+    a[1] * b[2],
     a[1] * b[3],
   ]
 }
@@ -1215,30 +1215,30 @@ export function mulMat2ByVec2(a: Mat2, b: Vec2): Vec2 {
 export function mulMat2(a: Mat2, b: Mat2): Mat2 {
   return [
     a[0] * b[0] + a[1] * b[2],
-    a[2] * b[0] + a[3] * b[2],
     a[0] * b[1] + a[1] * b[3],
+    a[2] * b[0] + a[3] * b[2],
     a[2] * b[1] + a[3] * b[3],
   ]
 }
-export function mulMat2ByMat3x2(a: Mat2, b: Mat3x2): Mat2x3 {
+export function mulMat2ByMat3x2(a: Mat2, b: Mat3x2): Mat3x2 {
   return [
     a[0] * b[0] + a[1] * b[3],
-    a[2] * b[0] + a[3] * b[3],
     a[0] * b[1] + a[1] * b[4],
-    a[2] * b[1] + a[3] * b[4],
     a[0] * b[2] + a[1] * b[5],
+    a[2] * b[0] + a[3] * b[3],
+    a[2] * b[1] + a[3] * b[4],
     a[2] * b[2] + a[3] * b[5],
   ]
 }
-export function mulMat2ByMat4x2(a: Mat2, b: Mat4x2): Mat2x4 {
+export function mulMat2ByMat4x2(a: Mat2, b: Mat4x2): Mat4x2 {
   return [
     a[0] * b[0] + a[1] * b[4],
-    a[2] * b[0] + a[3] * b[4],
     a[0] * b[1] + a[1] * b[5],
-    a[2] * b[1] + a[3] * b[5],
     a[0] * b[2] + a[1] * b[6],
-    a[2] * b[2] + a[3] * b[6],
     a[0] * b[3] + a[1] * b[7],
+    a[2] * b[0] + a[3] * b[4],
+    a[2] * b[1] + a[3] * b[5],
+    a[2] * b[2] + a[3] * b[6],
     a[2] * b[3] + a[3] * b[7],
   ]
 }
@@ -1251,30 +1251,30 @@ export function mulMat3x2ByVec3(a: Mat3x2, b: Vec3): Vec2 {
 export function mulMat3x2ByMat2x3(a: Mat3x2, b: Mat2x3): Mat2 {
   return [
     a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
-    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
     a[0] * b[1] + a[1] * b[3] + a[2] * b[5],
+    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
     a[3] * b[1] + a[4] * b[3] + a[5] * b[5],
   ]
 }
-export function mulMat3x2ByMat3(a: Mat3x2, b: Mat3): Mat2x3 {
+export function mulMat3x2ByMat3(a: Mat3x2, b: Mat3): Mat3x2 {
   return [
     a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
-    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
     a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
-    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
     a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
+    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
+    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
     a[3] * b[2] + a[4] * b[5] + a[5] * b[8],
   ]
 }
-export function mulMat3x2ByMat4x3(a: Mat3x2, b: Mat4x3): Mat2x4 {
+export function mulMat3x2ByMat4x3(a: Mat3x2, b: Mat4x3): Mat4x2 {
   return [
     a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
-    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
     a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
-    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
     a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
-    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
     a[0] * b[3] + a[1] * b[7] + a[2] * b[11],
+    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
+    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
+    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
     a[3] * b[3] + a[4] * b[7] + a[5] * b[11],
   ]
 }
@@ -1287,72 +1287,72 @@ export function mulMat4x2ByVec4(a: Mat4x2, b: Vec4): Vec2 {
 export function mulMat4x2ByMat2x4(a: Mat4x2, b: Mat2x4): Mat2 {
   return [
     a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
-    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
     a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7],
+    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
     a[4] * b[1] + a[5] * b[3] + a[6] * b[5] + a[7] * b[7],
   ]
 }
-export function mulMat4x2ByMat3x4(a: Mat4x2, b: Mat3x4): Mat2x3 {
+export function mulMat4x2ByMat3x4(a: Mat4x2, b: Mat3x4): Mat3x2 {
   return [
     a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
-    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
     a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
-    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
     a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11],
+    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
+    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
     a[4] * b[2] + a[5] * b[5] + a[6] * b[8] + a[7] * b[11],
   ]
 }
-export function mulMat4x2ByMat4(a: Mat4x2, b: Mat4): Mat2x4 {
+export function mulMat4x2ByMat4(a: Mat4x2, b: Mat4): Mat4x2 {
   return [
     a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
     a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
     a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
     a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
+    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
+    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
+    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
     a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15],
   ]
 }
 export function mulVec3ByScalar(a: Vec3, b: number): Vec3 {
   return [a[0] * b[0], a[1] * b[0], a[2] * b[0]]
 }
-export function mulVec3ByVec2(a: Vec3, b: Vec2): Mat3x2 {
+export function mulVec3ByVec2(a: Vec3, b: Vec2): Mat2x3 {
   return [
     a[0] * b[0],
-    a[1] * b[0],
-    a[2] * b[0],
     a[0] * b[1],
+    a[1] * b[0],
     a[1] * b[1],
+    a[2] * b[0],
     a[2] * b[1],
   ]
 }
 export function mulVec3ByVec3(a: Vec3, b: Vec3): Mat3 {
   return [
     a[0] * b[0],
-    a[1] * b[0],
-    a[2] * b[0],
     a[0] * b[1],
-    a[1] * b[1],
-    a[2] * b[1],
     a[0] * b[2],
+    a[1] * b[0],
+    a[1] * b[1],
     a[1] * b[2],
+    a[2] * b[0],
+    a[2] * b[1],
     a[2] * b[2],
   ]
 }
-export function mulVec3ByVec4(a: Vec3, b: Vec4): Mat3x4 {
+export function mulVec3ByVec4(a: Vec3, b: Vec4): Mat4x3 {
   return [
     a[0] * b[0],
-    a[1] * b[0],
-    a[2] * b[0],
     a[0] * b[1],
-    a[1] * b[1],
-    a[2] * b[1],
     a[0] * b[2],
-    a[1] * b[2],
-    a[2] * b[2],
     a[0] * b[3],
+    a[1] * b[0],
+    a[1] * b[1],
+    a[1] * b[2],
     a[1] * b[3],
+    a[2] * b[0],
+    a[2] * b[1],
+    a[2] * b[2],
     a[2] * b[3],
   ]
 }
@@ -1363,42 +1363,42 @@ export function mulMat2x3ByVec2(a: Mat2x3, b: Vec2): Vec3 {
     a[4] * b[0] + a[5] * b[1],
   ]
 }
-export function mulMat2x3ByMat2(a: Mat2x3, b: Mat2): Mat3x2 {
+export function mulMat2x3ByMat2(a: Mat2x3, b: Mat2): Mat2x3 {
   return [
     a[0] * b[0] + a[1] * b[2],
-    a[2] * b[0] + a[3] * b[2],
-    a[4] * b[0] + a[5] * b[2],
     a[0] * b[1] + a[1] * b[3],
+    a[2] * b[0] + a[3] * b[2],
     a[2] * b[1] + a[3] * b[3],
+    a[4] * b[0] + a[5] * b[2],
     a[4] * b[1] + a[5] * b[3],
   ]
 }
 export function mulMat2x3ByMat3x2(a: Mat2x3, b: Mat3x2): Mat3 {
   return [
     a[0] * b[0] + a[1] * b[3],
-    a[2] * b[0] + a[3] * b[3],
-    a[4] * b[0] + a[5] * b[3],
     a[0] * b[1] + a[1] * b[4],
-    a[2] * b[1] + a[3] * b[4],
-    a[4] * b[1] + a[5] * b[4],
     a[0] * b[2] + a[1] * b[5],
+    a[2] * b[0] + a[3] * b[3],
+    a[2] * b[1] + a[3] * b[4],
     a[2] * b[2] + a[3] * b[5],
+    a[4] * b[0] + a[5] * b[3],
+    a[4] * b[1] + a[5] * b[4],
     a[4] * b[2] + a[5] * b[5],
   ]
 }
-export function mulMat2x3ByMat4x2(a: Mat2x3, b: Mat4x2): Mat3x4 {
+export function mulMat2x3ByMat4x2(a: Mat2x3, b: Mat4x2): Mat4x3 {
   return [
     a[0] * b[0] + a[1] * b[4],
-    a[2] * b[0] + a[3] * b[4],
-    a[4] * b[0] + a[5] * b[4],
     a[0] * b[1] + a[1] * b[5],
-    a[2] * b[1] + a[3] * b[5],
-    a[4] * b[1] + a[5] * b[5],
     a[0] * b[2] + a[1] * b[6],
-    a[2] * b[2] + a[3] * b[6],
-    a[4] * b[2] + a[5] * b[6],
     a[0] * b[3] + a[1] * b[7],
+    a[2] * b[0] + a[3] * b[4],
+    a[2] * b[1] + a[3] * b[5],
+    a[2] * b[2] + a[3] * b[6],
     a[2] * b[3] + a[3] * b[7],
+    a[4] * b[0] + a[5] * b[4],
+    a[4] * b[1] + a[5] * b[5],
+    a[4] * b[2] + a[5] * b[6],
     a[4] * b[3] + a[5] * b[7],
   ]
 }
@@ -1409,42 +1409,42 @@ export function mulMat3ByVec3(a: Mat3, b: Vec3): Vec3 {
     a[6] * b[0] + a[7] * b[1] + a[8] * b[2],
   ]
 }
-export function mulMat3ByMat2x3(a: Mat3, b: Mat2x3): Mat3x2 {
+export function mulMat3ByMat2x3(a: Mat3, b: Mat2x3): Mat2x3 {
   return [
     a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
-    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
-    a[6] * b[0] + a[7] * b[2] + a[8] * b[4],
     a[0] * b[1] + a[1] * b[3] + a[2] * b[5],
+    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
     a[3] * b[1] + a[4] * b[3] + a[5] * b[5],
+    a[6] * b[0] + a[7] * b[2] + a[8] * b[4],
     a[6] * b[1] + a[7] * b[3] + a[8] * b[5],
   ]
 }
 export function mulMat3(a: Mat3, b: Mat3): Mat3 {
   return [
     a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
-    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
-    a[6] * b[0] + a[7] * b[3] + a[8] * b[6],
     a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
-    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
-    a[6] * b[1] + a[7] * b[4] + a[8] * b[7],
     a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
+    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
+    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
     a[3] * b[2] + a[4] * b[5] + a[5] * b[8],
+    a[6] * b[0] + a[7] * b[3] + a[8] * b[6],
+    a[6] * b[1] + a[7] * b[4] + a[8] * b[7],
     a[6] * b[2] + a[7] * b[5] + a[8] * b[8],
   ]
 }
-export function mulMat3ByMat4x3(a: Mat3, b: Mat4x3): Mat3x4 {
+export function mulMat3ByMat4x3(a: Mat3, b: Mat4x3): Mat4x3 {
   return [
     a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
-    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
-    a[6] * b[0] + a[7] * b[4] + a[8] * b[8],
     a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
-    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
-    a[6] * b[1] + a[7] * b[5] + a[8] * b[9],
     a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
-    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
-    a[6] * b[2] + a[7] * b[6] + a[8] * b[10],
     a[0] * b[3] + a[1] * b[7] + a[2] * b[11],
+    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
+    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
+    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
     a[3] * b[3] + a[4] * b[7] + a[5] * b[11],
+    a[6] * b[0] + a[7] * b[4] + a[8] * b[8],
+    a[6] * b[1] + a[7] * b[5] + a[8] * b[9],
+    a[6] * b[2] + a[7] * b[6] + a[8] * b[10],
     a[6] * b[3] + a[7] * b[7] + a[8] * b[11],
   ]
 }
@@ -1455,93 +1455,93 @@ export function mulMat4x3ByVec4(a: Mat4x3, b: Vec4): Vec3 {
     a[8] * b[0] + a[9] * b[1] + a[10] * b[2] + a[11] * b[3],
   ]
 }
-export function mulMat4x3ByMat2x4(a: Mat4x3, b: Mat2x4): Mat3x2 {
+export function mulMat4x3ByMat2x4(a: Mat4x3, b: Mat2x4): Mat2x3 {
   return [
     a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
-    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
-    a[8] * b[0] + a[9] * b[2] + a[10] * b[4] + a[11] * b[6],
     a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7],
+    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
     a[4] * b[1] + a[5] * b[3] + a[6] * b[5] + a[7] * b[7],
+    a[8] * b[0] + a[9] * b[2] + a[10] * b[4] + a[11] * b[6],
     a[8] * b[1] + a[9] * b[3] + a[10] * b[5] + a[11] * b[7],
   ]
 }
 export function mulMat4x3ByMat3x4(a: Mat4x3, b: Mat3x4): Mat3 {
   return [
     a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
-    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
-    a[8] * b[0] + a[9] * b[3] + a[10] * b[6] + a[11] * b[9],
     a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
-    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
-    a[8] * b[1] + a[9] * b[4] + a[10] * b[7] + a[11] * b[10],
     a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11],
+    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
+    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
     a[4] * b[2] + a[5] * b[5] + a[6] * b[8] + a[7] * b[11],
+    a[8] * b[0] + a[9] * b[3] + a[10] * b[6] + a[11] * b[9],
+    a[8] * b[1] + a[9] * b[4] + a[10] * b[7] + a[11] * b[10],
     a[8] * b[2] + a[9] * b[5] + a[10] * b[8] + a[11] * b[11],
   ]
 }
-export function mulMat4x3ByMat4(a: Mat4x3, b: Mat4): Mat3x4 {
+export function mulMat4x3ByMat4(a: Mat4x3, b: Mat4): Mat4x3 {
   return [
     a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
-    a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12],
     a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
-    a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13],
     a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
-    a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14],
     a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
+    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
+    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
+    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
     a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15],
+    a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12],
+    a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13],
+    a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14],
     a[8] * b[3] + a[9] * b[7] + a[10] * b[11] + a[11] * b[15],
   ]
 }
 export function mulVec4ByScalar(a: Vec4, b: number): Vec4 {
   return [a[0] * b[0], a[1] * b[0], a[2] * b[0], a[3] * b[0]]
 }
-export function mulVec4ByVec2(a: Vec4, b: Vec2): Mat4x2 {
+export function mulVec4ByVec2(a: Vec4, b: Vec2): Mat2x4 {
   return [
     a[0] * b[0],
-    a[1] * b[0],
-    a[2] * b[0],
-    a[3] * b[0],
     a[0] * b[1],
+    a[1] * b[0],
     a[1] * b[1],
+    a[2] * b[0],
     a[2] * b[1],
+    a[3] * b[0],
     a[3] * b[1],
   ]
 }
-export function mulVec4ByVec3(a: Vec4, b: Vec3): Mat4x3 {
+export function mulVec4ByVec3(a: Vec4, b: Vec3): Mat3x4 {
   return [
     a[0] * b[0],
-    a[1] * b[0],
-    a[2] * b[0],
-    a[3] * b[0],
     a[0] * b[1],
-    a[1] * b[1],
-    a[2] * b[1],
-    a[3] * b[1],
     a[0] * b[2],
+    a[1] * b[0],
+    a[1] * b[1],
     a[1] * b[2],
+    a[2] * b[0],
+    a[2] * b[1],
     a[2] * b[2],
+    a[3] * b[0],
+    a[3] * b[1],
     a[3] * b[2],
   ]
 }
 export function mulVec4ByVec4(a: Vec4, b: Vec4): Mat4 {
   return [
     a[0] * b[0],
-    a[1] * b[0],
-    a[2] * b[0],
-    a[3] * b[0],
     a[0] * b[1],
-    a[1] * b[1],
-    a[2] * b[1],
-    a[3] * b[1],
     a[0] * b[2],
-    a[1] * b[2],
-    a[2] * b[2],
-    a[3] * b[2],
     a[0] * b[3],
+    a[1] * b[0],
+    a[1] * b[1],
+    a[1] * b[2],
     a[1] * b[3],
+    a[2] * b[0],
+    a[2] * b[1],
+    a[2] * b[2],
     a[2] * b[3],
+    a[3] * b[0],
+    a[3] * b[1],
+    a[3] * b[2],
     a[3] * b[3],
   ]
 }
@@ -1553,51 +1553,51 @@ export function mulMat2x4ByVec2(a: Mat2x4, b: Vec2): Vec4 {
     a[6] * b[0] + a[7] * b[1],
   ]
 }
-export function mulMat2x4ByMat2(a: Mat2x4, b: Mat2): Mat4x2 {
+export function mulMat2x4ByMat2(a: Mat2x4, b: Mat2): Mat2x4 {
   return [
     a[0] * b[0] + a[1] * b[2],
-    a[2] * b[0] + a[3] * b[2],
-    a[4] * b[0] + a[5] * b[2],
-    a[6] * b[0] + a[7] * b[2],
     a[0] * b[1] + a[1] * b[3],
+    a[2] * b[0] + a[3] * b[2],
     a[2] * b[1] + a[3] * b[3],
+    a[4] * b[0] + a[5] * b[2],
     a[4] * b[1] + a[5] * b[3],
+    a[6] * b[0] + a[7] * b[2],
     a[6] * b[1] + a[7] * b[3],
   ]
 }
-export function mulMat2x4ByMat3x2(a: Mat2x4, b: Mat3x2): Mat4x3 {
+export function mulMat2x4ByMat3x2(a: Mat2x4, b: Mat3x2): Mat3x4 {
   return [
     a[0] * b[0] + a[1] * b[3],
-    a[2] * b[0] + a[3] * b[3],
-    a[4] * b[0] + a[5] * b[3],
-    a[6] * b[0] + a[7] * b[3],
     a[0] * b[1] + a[1] * b[4],
-    a[2] * b[1] + a[3] * b[4],
-    a[4] * b[1] + a[5] * b[4],
-    a[6] * b[1] + a[7] * b[4],
     a[0] * b[2] + a[1] * b[5],
+    a[2] * b[0] + a[3] * b[3],
+    a[2] * b[1] + a[3] * b[4],
     a[2] * b[2] + a[3] * b[5],
+    a[4] * b[0] + a[5] * b[3],
+    a[4] * b[1] + a[5] * b[4],
     a[4] * b[2] + a[5] * b[5],
+    a[6] * b[0] + a[7] * b[3],
+    a[6] * b[1] + a[7] * b[4],
     a[6] * b[2] + a[7] * b[5],
   ]
 }
 export function mulMat2x4ByMat4x2(a: Mat2x4, b: Mat4x2): Mat4 {
   return [
     a[0] * b[0] + a[1] * b[4],
-    a[2] * b[0] + a[3] * b[4],
-    a[4] * b[0] + a[5] * b[4],
-    a[6] * b[0] + a[7] * b[4],
     a[0] * b[1] + a[1] * b[5],
-    a[2] * b[1] + a[3] * b[5],
-    a[4] * b[1] + a[5] * b[5],
-    a[6] * b[1] + a[7] * b[5],
     a[0] * b[2] + a[1] * b[6],
-    a[2] * b[2] + a[3] * b[6],
-    a[4] * b[2] + a[5] * b[6],
-    a[6] * b[2] + a[7] * b[6],
     a[0] * b[3] + a[1] * b[7],
+    a[2] * b[0] + a[3] * b[4],
+    a[2] * b[1] + a[3] * b[5],
+    a[2] * b[2] + a[3] * b[6],
     a[2] * b[3] + a[3] * b[7],
+    a[4] * b[0] + a[5] * b[4],
+    a[4] * b[1] + a[5] * b[5],
+    a[4] * b[2] + a[5] * b[6],
     a[4] * b[3] + a[5] * b[7],
+    a[6] * b[0] + a[7] * b[4],
+    a[6] * b[1] + a[7] * b[5],
+    a[6] * b[2] + a[7] * b[6],
     a[6] * b[3] + a[7] * b[7],
   ]
 }
@@ -1609,51 +1609,51 @@ export function mulMat3x4ByVec3(a: Mat3x4, b: Vec3): Vec4 {
     a[9] * b[0] + a[10] * b[1] + a[11] * b[2],
   ]
 }
-export function mulMat3x4ByMat2x3(a: Mat3x4, b: Mat2x3): Mat4x2 {
+export function mulMat3x4ByMat2x3(a: Mat3x4, b: Mat2x3): Mat2x4 {
   return [
     a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
-    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
-    a[6] * b[0] + a[7] * b[2] + a[8] * b[4],
-    a[9] * b[0] + a[10] * b[2] + a[11] * b[4],
     a[0] * b[1] + a[1] * b[3] + a[2] * b[5],
+    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
     a[3] * b[1] + a[4] * b[3] + a[5] * b[5],
+    a[6] * b[0] + a[7] * b[2] + a[8] * b[4],
     a[6] * b[1] + a[7] * b[3] + a[8] * b[5],
+    a[9] * b[0] + a[10] * b[2] + a[11] * b[4],
     a[9] * b[1] + a[10] * b[3] + a[11] * b[5],
   ]
 }
-export function mulMat3x4ByMat3(a: Mat3x4, b: Mat3): Mat4x3 {
+export function mulMat3x4ByMat3(a: Mat3x4, b: Mat3): Mat3x4 {
   return [
     a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
-    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
-    a[6] * b[0] + a[7] * b[3] + a[8] * b[6],
-    a[9] * b[0] + a[10] * b[3] + a[11] * b[6],
     a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
-    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
-    a[6] * b[1] + a[7] * b[4] + a[8] * b[7],
-    a[9] * b[1] + a[10] * b[4] + a[11] * b[7],
     a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
+    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
+    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
     a[3] * b[2] + a[4] * b[5] + a[5] * b[8],
+    a[6] * b[0] + a[7] * b[3] + a[8] * b[6],
+    a[6] * b[1] + a[7] * b[4] + a[8] * b[7],
     a[6] * b[2] + a[7] * b[5] + a[8] * b[8],
+    a[9] * b[0] + a[10] * b[3] + a[11] * b[6],
+    a[9] * b[1] + a[10] * b[4] + a[11] * b[7],
     a[9] * b[2] + a[10] * b[5] + a[11] * b[8],
   ]
 }
 export function mulMat3x4ByMat4x3(a: Mat3x4, b: Mat4x3): Mat4 {
   return [
     a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
-    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
-    a[6] * b[0] + a[7] * b[4] + a[8] * b[8],
-    a[9] * b[0] + a[10] * b[4] + a[11] * b[8],
     a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
-    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
-    a[6] * b[1] + a[7] * b[5] + a[8] * b[9],
-    a[9] * b[1] + a[10] * b[5] + a[11] * b[9],
     a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
-    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
-    a[6] * b[2] + a[7] * b[6] + a[8] * b[10],
-    a[9] * b[2] + a[10] * b[6] + a[11] * b[10],
     a[0] * b[3] + a[1] * b[7] + a[2] * b[11],
+    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
+    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
+    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
     a[3] * b[3] + a[4] * b[7] + a[5] * b[11],
+    a[6] * b[0] + a[7] * b[4] + a[8] * b[8],
+    a[6] * b[1] + a[7] * b[5] + a[8] * b[9],
+    a[6] * b[2] + a[7] * b[6] + a[8] * b[10],
     a[6] * b[3] + a[7] * b[7] + a[8] * b[11],
+    a[9] * b[0] + a[10] * b[4] + a[11] * b[8],
+    a[9] * b[1] + a[10] * b[5] + a[11] * b[9],
+    a[9] * b[2] + a[10] * b[6] + a[11] * b[10],
     a[9] * b[3] + a[10] * b[7] + a[11] * b[11],
   ]
 }
@@ -1665,51 +1665,51 @@ export function mulMat4ByVec4(a: Mat4, b: Vec4): Vec4 {
     a[12] * b[0] + a[13] * b[1] + a[14] * b[2] + a[15] * b[3],
   ]
 }
-export function mulMat4ByMat2x4(a: Mat4, b: Mat2x4): Mat4x2 {
+export function mulMat4ByMat2x4(a: Mat4, b: Mat2x4): Mat2x4 {
   return [
     a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
-    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
-    a[8] * b[0] + a[9] * b[2] + a[10] * b[4] + a[11] * b[6],
-    a[12] * b[0] + a[13] * b[2] + a[14] * b[4] + a[15] * b[6],
     a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7],
+    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
     a[4] * b[1] + a[5] * b[3] + a[6] * b[5] + a[7] * b[7],
+    a[8] * b[0] + a[9] * b[2] + a[10] * b[4] + a[11] * b[6],
     a[8] * b[1] + a[9] * b[3] + a[10] * b[5] + a[11] * b[7],
+    a[12] * b[0] + a[13] * b[2] + a[14] * b[4] + a[15] * b[6],
     a[12] * b[1] + a[13] * b[3] + a[14] * b[5] + a[15] * b[7],
   ]
 }
-export function mulMat4ByMat3x4(a: Mat4, b: Mat3x4): Mat4x3 {
+export function mulMat4ByMat3x4(a: Mat4, b: Mat3x4): Mat3x4 {
   return [
     a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
-    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
-    a[8] * b[0] + a[9] * b[3] + a[10] * b[6] + a[11] * b[9],
-    a[12] * b[0] + a[13] * b[3] + a[14] * b[6] + a[15] * b[9],
     a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
-    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
-    a[8] * b[1] + a[9] * b[4] + a[10] * b[7] + a[11] * b[10],
-    a[12] * b[1] + a[13] * b[4] + a[14] * b[7] + a[15] * b[10],
     a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11],
+    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
+    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
     a[4] * b[2] + a[5] * b[5] + a[6] * b[8] + a[7] * b[11],
+    a[8] * b[0] + a[9] * b[3] + a[10] * b[6] + a[11] * b[9],
+    a[8] * b[1] + a[9] * b[4] + a[10] * b[7] + a[11] * b[10],
     a[8] * b[2] + a[9] * b[5] + a[10] * b[8] + a[11] * b[11],
+    a[12] * b[0] + a[13] * b[3] + a[14] * b[6] + a[15] * b[9],
+    a[12] * b[1] + a[13] * b[4] + a[14] * b[7] + a[15] * b[10],
     a[12] * b[2] + a[13] * b[5] + a[14] * b[8] + a[15] * b[11],
   ]
 }
 export function mulMat4(a: Mat4, b: Mat4): Mat4 {
   return [
     a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
-    a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12],
-    a[12] * b[0] + a[13] * b[4] + a[14] * b[8] + a[15] * b[12],
     a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
-    a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13],
-    a[12] * b[1] + a[13] * b[5] + a[14] * b[9] + a[15] * b[13],
     a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
-    a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14],
-    a[12] * b[2] + a[13] * b[6] + a[14] * b[10] + a[15] * b[14],
     a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
+    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
+    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
+    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
     a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15],
+    a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12],
+    a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13],
+    a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14],
     a[8] * b[3] + a[9] * b[7] + a[10] * b[11] + a[11] * b[15],
+    a[12] * b[0] + a[13] * b[4] + a[14] * b[8] + a[15] * b[12],
+    a[12] * b[1] + a[13] * b[5] + a[14] * b[9] + a[15] * b[13],
+    a[12] * b[2] + a[13] * b[6] + a[14] * b[10] + a[15] * b[14],
     a[12] * b[3] + a[13] * b[7] + a[14] * b[11] + a[15] * b[15],
   ]
 }
