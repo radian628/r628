@@ -1020,13 +1020,13 @@ function w(a) {
   return a[3];
 }
 function mulScalarByVec2(a, b) {
-  return [a[0] * b[0], a[0] * b[1]];
+  return [a * b[0], a * b[1]];
 }
 function mulScalarByVec3(a, b) {
-  return [a[0] * b[0], a[0] * b[1], a[0] * b[2]];
+  return [a * b[0], a * b[1], a * b[2]];
 }
 function mulScalarByVec4(a, b) {
-  return [a[0] * b[0], a[0] * b[1], a[0] * b[2], a[0] * b[3]];
+  return [a * b[0], a * b[1], a * b[2], a * b[3]];
 }
 function mulVec2ByMat2(a, b) {
   return [a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3]];
@@ -1089,7 +1089,7 @@ function mulVec4ByMat4(a, b) {
   ];
 }
 function mulVec2ByScalar(a, b) {
-  return [a[0] * b[0], a[1] * b[0]];
+  return [a[0] * b, a[1] * b];
 }
 function mulVec2ByVec2(a, b) {
   return [a[0] * b[0], a[0] * b[1], a[1] * b[0], a[1] * b[1]];
@@ -1222,7 +1222,7 @@ function mulMat4x2ByMat4(a, b) {
   ];
 }
 function mulVec3ByScalar(a, b) {
-  return [a[0] * b[0], a[1] * b[0], a[2] * b[0]];
+  return [a[0] * b, a[1] * b, a[2] * b];
 }
 function mulVec3ByVec2(a, b) {
   return [
@@ -1402,7 +1402,7 @@ function mulMat4x3ByMat4(a, b) {
   ];
 }
 function mulVec4ByScalar(a, b) {
-  return [a[0] * b[0], a[1] * b[0], a[2] * b[0], a[3] * b[0]];
+  return [a[0] * b, a[1] * b, a[2] * b, a[3] * b];
 }
 function mulVec4ByVec2(a, b) {
   return [
@@ -1674,6 +1674,15 @@ function normalize3(a) {
 function normalize4(a) {
   return scale4(a, 1 / Math.sqrt(dot4(a, a)));
 }
+function length2(a) {
+  return Math.sqrt(dot2(a, a));
+}
+function length3(a) {
+  return Math.sqrt(dot3(a, a));
+}
+function length4(a) {
+  return Math.sqrt(dot4(a, a));
+}
 function sum2(a) {
   return a[0] + a[1];
 }
@@ -1711,6 +1720,9 @@ export {
   dot2,
   dot3,
   dot4,
+  length2,
+  length3,
+  length4,
   mul2,
   mul3,
   mul4,

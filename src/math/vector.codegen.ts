@@ -130,7 +130,10 @@ function genMatmul(a: CC, b: CC, c: CC) {
       ${cartesianProduct(range(a), range(c))
         .map(([col, row]) => {
           return range(b)
-            .map((i) => `a[${col * b + i}] * b[${row + i * c}]`)
+            .map(
+              (i) =>
+                `${b === 1 && a === 1 ? "a" : `a[${col * b + i}]`} * ${b === 1 && c === 1 ? "b" : `b[${row + i * c}]`}`
+            )
             .join("+");
         })
         .join(",")}
@@ -189,6 +192,14 @@ export type Mat3x4 = [
   ${stringRangeMapJoin(12, () => "number", ",")}
 ];
 
+function cross(a: Vec3, b: Vec3) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+}
+
 ${cartesianProduct(
   rangeFrom(1, 5) as (2 | 3 | 4)[],
   rangeFrom(1, 5) as (2 | 3 | 4)[],
@@ -208,6 +219,12 @@ ${cartesianProduct(
     [vec],
     vec,
     (i) => `scale${i}(a, 1 / Math.sqrt(dot${i}(a, a)))`
+  ) +
+  createFunctionVariantsFullBody(
+    "length",
+    [vec],
+    num,
+    (i) => `Math.sqrt(dot${i}(a, a))`
   ) +
   createFunctionVariantsFullBody("sum", [vec], num, (i) =>
     i == 4

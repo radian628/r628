@@ -1109,14 +1109,22 @@ export type Mat3x4 = [
   number,
 ]
 
+function cross(a: Vec3, b: Vec3) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ]
+}
+
 export function mulScalarByVec2(a: number, b: Vec2): Vec2 {
-  return [a[0] * b[0], a[0] * b[1]]
+  return [a * b[0], a * b[1]]
 }
 export function mulScalarByVec3(a: number, b: Vec3): Vec3 {
-  return [a[0] * b[0], a[0] * b[1], a[0] * b[2]]
+  return [a * b[0], a * b[1], a * b[2]]
 }
 export function mulScalarByVec4(a: number, b: Vec4): Vec4 {
-  return [a[0] * b[0], a[0] * b[1], a[0] * b[2], a[0] * b[3]]
+  return [a * b[0], a * b[1], a * b[2], a * b[3]]
 }
 
 export function mulVec2ByMat2(a: Vec2, b: Mat2): Vec2 {
@@ -1182,7 +1190,7 @@ export function mulVec4ByMat4(a: Vec4, b: Mat4): Vec4 {
   ]
 }
 export function mulVec2ByScalar(a: Vec2, b: number): Vec2 {
-  return [a[0] * b[0], a[1] * b[0]]
+  return [a[0] * b, a[1] * b]
 }
 export function mulVec2ByVec2(a: Vec2, b: Vec2): Mat2 {
   return [a[0] * b[0], a[0] * b[1], a[1] * b[0], a[1] * b[1]]
@@ -1315,7 +1323,7 @@ export function mulMat4x2ByMat4(a: Mat4x2, b: Mat4): Mat4x2 {
   ]
 }
 export function mulVec3ByScalar(a: Vec3, b: number): Vec3 {
-  return [a[0] * b[0], a[1] * b[0], a[2] * b[0]]
+  return [a[0] * b, a[1] * b, a[2] * b]
 }
 export function mulVec3ByVec2(a: Vec3, b: Vec2): Mat2x3 {
   return [
@@ -1495,7 +1503,7 @@ export function mulMat4x3ByMat4(a: Mat4x3, b: Mat4): Mat4x3 {
   ]
 }
 export function mulVec4ByScalar(a: Vec4, b: number): Vec4 {
-  return [a[0] * b[0], a[1] * b[0], a[2] * b[0], a[3] * b[0]]
+  return [a[0] * b, a[1] * b, a[2] * b, a[3] * b]
 }
 export function mulVec4ByVec2(a: Vec4, b: Vec2): Mat2x4 {
   return [
@@ -1767,6 +1775,15 @@ export function normalize3(a: Vec3): Vec3 {
 }
 export function normalize4(a: Vec4): Vec4 {
   return scale4(a, 1 / Math.sqrt(dot4(a, a)))
+}
+export function length2(a: Vec2): number {
+  return Math.sqrt(dot2(a, a))
+}
+export function length3(a: Vec3): number {
+  return Math.sqrt(dot3(a, a))
+}
+export function length4(a: Vec4): number {
+  return Math.sqrt(dot4(a, a))
 }
 export function sum2(a: Vec2): number {
   return a[0] + a[1]
