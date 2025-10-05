@@ -78,6 +78,97 @@ var ArrayMap = class _ArrayMap {
     return am;
   }
 };
+function table(data, indexPaths, indexes, propFilterKeys, propFilterValues) {
+  if (!data) data = /* @__PURE__ */ new Set();
+  if (!indexes) indexes = new ArrayMap();
+  if (!indexPaths) indexPaths = new ArrayMap();
+  if (!propFilterKeys) propFilterKeys = [];
+  if (!propFilterValues) propFilterValues = [];
+  return {
+    // @ts-expect-error
+    filter: new Proxy(
+      {},
+      {
+        get(target, prop, receiver) {
+          return (v) => table(
+            data,
+            indexPaths,
+            indexes,
+            propFilterKeys.concat(prop),
+            propFilterValues.concat(v)
+          );
+        }
+      }
+    ),
+    get() {
+      if (propFilterKeys.length === 0) {
+        return [...data];
+      }
+      propFilterKeys = [...new Set(propFilterKeys)].sort();
+      const indexPathExists = indexPaths.get(propFilterKeys);
+      if (!indexPathExists) {
+        for (const d of data) {
+          const filter = propFilterKeys.flatMap((e) => [e, d[e]]);
+          const set2 = indexes.change(
+            filter,
+            (s) => (s ?? /* @__PURE__ */ new Set()).add(d)
+          );
+        }
+        indexPaths.set(propFilterKeys, true);
+      }
+      const fullFilter = propFilterKeys.flatMap((e, i) => [
+        e,
+        propFilterValues[i]
+      ]);
+      const set = indexes.get(fullFilter);
+      return set ? [...set] : [];
+    },
+    getOne() {
+      const data2 = this.get();
+      if (data2.length !== 1)
+        throw new Error(
+          `Expected a single result. path=${propFilterKeys.join(
+            ","
+          )}, values=${propFilterValues.join(",")}`
+        );
+      return data2[0];
+    },
+    delete() {
+      propFilterKeys = [...new Set(propFilterKeys)].sort();
+      const toDelete = this.get();
+      indexPaths.forEach((path, set) => {
+        for (const d of toDelete) {
+          const filter = path.flatMap((e) => [e, d[e]]);
+          indexes.change(filter, (s) => (s?.delete(d), s ?? /* @__PURE__ */ new Set()));
+        }
+      });
+      for (const d of toDelete) {
+        data.delete(d);
+      }
+      return toDelete;
+    },
+    add(t) {
+      propFilterKeys = [...new Set(propFilterKeys)].sort();
+      indexPaths.forEach((path, set) => {
+        const filter = path.flatMap((e) => [e, t[e]]);
+        indexes.change(filter, (s) => (s ?? /* @__PURE__ */ new Set()).add(t));
+      });
+      data.add(t);
+    },
+    [Symbol.iterator]() {
+      return this.get()[Symbol.iterator]();
+    }
+  };
+}
+function tableWithData(data) {
+  const tbl = table();
+  for (const d of data) {
+    tbl.add(d);
+  }
+  return tbl;
+}
 export {
-  ArrayMap
+  ArrayMap,
+  table,
+  tableWithData
 };
