@@ -37,6 +37,8 @@ type SmartRangeElement = {
   get<T>(arr: T[]): T;
   i: number;
   next: number;
+  end(): boolean;
+  start(): boolean;
 };
 
 export function smartRangeMap<T>(
@@ -44,43 +46,50 @@ export function smartRangeMap<T>(
   cb: MapCallback<SmartRangeElement, T>
 ): T[] {
   const a = range(n);
-  const res = a.map((i, index, arr) => {
-    return cb(
-      {
-        remap(lo: number, hi: number, inclEnd?: boolean) {
-          return (i / (inclEnd ? n - 1 : n)) * (hi - lo) + lo;
-        },
-        segment(lo: number, hi: number): [number, number] {
-          return [(i / n) * (hi - lo) + lo, ((i + 1) / n) * (hi - lo) + lo];
-        },
-        slidingWindow<T>(arr: T[]): [T, T] {
-          return [arr[i], arr[i + 1]];
-        },
-        randkf() {
-          if (i === 0) return 0;
-          if (i === n - 1) return 100;
-          const lo = (i / (n - 2)) * 100;
-          const hi = ((i + 1) / (n - 2)) * 100;
-          return rand(lo, hi);
-        },
-        get<T>(arr: T[]): T {
-          return arr[i];
-        },
-        i,
-        next: i + 1,
+  const res1 = a.map((i, index, arr) => {
+    return {
+      remap(lo: number, hi: number, inclEnd?: boolean) {
+        return (i / (inclEnd ? n - 1 : n)) * (hi - lo) + lo;
       },
-      index,
-      res
-    );
+      segment(lo: number, hi: number): [number, number] {
+        return [(i / n) * (hi - lo) + lo, ((i + 1) / n) * (hi - lo) + lo];
+      },
+      slidingWindow<T>(arr: T[]): [T, T] {
+        return [arr[i], arr[i + 1]];
+      },
+      randkf() {
+        if (i === 0) return 0;
+        if (i === n - 1) return 100;
+        const lo = (i / (n - 2)) * 100;
+        const hi = ((i + 1) / (n - 2)) * 100;
+        return rand(lo, hi);
+      },
+      get<T>(arr: T[]): T {
+        return arr[i];
+      },
+      i,
+      next: i + 1,
+      end: () => i === n - 1,
+      start: () => i === 0,
+    };
   });
+  const res = res1.map(cb);
   return res;
+}
+
+export function smartRange(n: number) {
+  return smartRangeMap(n, id);
 }
 
 export function id<T>(x: T) {
   return x;
 }
 
-export function smartRangeStringMapJoin(n: number, cb, s = "\\n") {
+export function smartRangeStringMapJoin(
+  n: number,
+  cb: MapCallback<SmartRangeElement, string>,
+  s = "\\n"
+) {
   return stringMapJoin(smartRangeMap(n, id), cb, s);
 }
 

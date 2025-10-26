@@ -22,36 +22,38 @@ function stringMapJoin(a, f, s = "\\n") {
 }
 function smartRangeMap(n, cb) {
   const a = range(n);
-  const res = a.map((i, index, arr) => {
-    return cb(
-      {
-        remap(lo, hi, inclEnd) {
-          return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
-        },
-        segment(lo, hi) {
-          return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
-        },
-        slidingWindow(arr2) {
-          return [arr2[i], arr2[i + 1]];
-        },
-        randkf() {
-          if (i === 0) return 0;
-          if (i === n - 1) return 100;
-          const lo = i / (n - 2) * 100;
-          const hi = (i + 1) / (n - 2) * 100;
-          return rand(lo, hi);
-        },
-        get(arr2) {
-          return arr2[i];
-        },
-        i,
-        next: i + 1
+  const res1 = a.map((i, index, arr) => {
+    return {
+      remap(lo, hi, inclEnd) {
+        return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
       },
-      index,
-      res
-    );
+      segment(lo, hi) {
+        return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
+      },
+      slidingWindow(arr2) {
+        return [arr2[i], arr2[i + 1]];
+      },
+      randkf() {
+        if (i === 0) return 0;
+        if (i === n - 1) return 100;
+        const lo = i / (n - 2) * 100;
+        const hi = (i + 1) / (n - 2) * 100;
+        return rand(lo, hi);
+      },
+      get(arr2) {
+        return arr2[i];
+      },
+      i,
+      next: i + 1,
+      end: () => i === n - 1,
+      start: () => i === 0
+    };
   });
+  const res = res1.map(cb);
   return res;
+}
+function smartRange(n) {
+  return smartRangeMap(n, id);
 }
 function id(x) {
   return x;
@@ -81,6 +83,7 @@ export {
   rand,
   range,
   rangeFrom,
+  smartRange,
   smartRangeMap,
   smartRangeStringMapJoin,
   stringMapJoin,

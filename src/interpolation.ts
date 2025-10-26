@@ -15,6 +15,15 @@ export function rescale(
 ) {
   return lerp(unlerp(x, a1, b1), a2, b2);
 }
+export function rescaleClamped(
+  x: number,
+  a1: number,
+  b1: number,
+  a2: number,
+  b2: number
+) {
+  return lerp(clamp(unlerp(x, a1, b1), 0, 1), a2, b2);
+}
 
 export function clamp(x: number, lo: number, hi: number) {
   return Math.max(Math.min(x, hi), lo);

@@ -17,7 +17,12 @@ function splitBy(arr, amount) {
   }
   return outarr;
 }
+function bifurcate(arr, fn) {
+  const bools = arr.map(fn);
+  return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
+}
 export {
+  bifurcate,
   interleave,
   splitBy
 };

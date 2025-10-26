@@ -1719,18 +1719,33 @@ function stringField(src) {
   };
 }
 
-// src/result.ts
-function ok(t) {
-  return {
-    ok: true,
-    data: t
-  };
+// src/interpolation.ts
+function lerp(x2, a, b) {
+  return a * (1 - x2) + b * x2;
 }
-function err(e) {
-  return {
-    ok: false,
-    error: e
-  };
+function unlerp(x2, a, b) {
+  return (x2 - a) / (b - a);
+}
+function rescale(x2, a1, b1, a2, b2) {
+  return lerp(unlerp(x2, a1, b1), a2, b2);
+}
+function rescaleClamped(x2, a1, b1, a2, b2) {
+  return lerp(clamp(unlerp(x2, a1, b1), 0, 1), a2, b2);
+}
+function clamp(x2, lo, hi) {
+  return Math.max(Math.min(x2, hi), lo);
+}
+function clampToArray(x2, array) {
+  return clamp(x2, 0, array.length - 1);
+}
+function getClamped(arr, i) {
+  return arr[clampToArray(i, arr)];
+}
+function unclampedSmoothstep(x2) {
+  return x2 * x2 * (3 - 2 * x2);
+}
+function smoothstep(x2) {
+  return unclampedSmoothstep(clamp(x2, 0, 1));
 }
 
 // src/range.ts
@@ -1757,36 +1772,38 @@ function stringMapJoin(a, f, s = "\\n") {
 }
 function smartRangeMap(n, cb) {
   const a = range(n);
-  const res = a.map((i, index, arr) => {
-    return cb(
-      {
-        remap(lo, hi, inclEnd) {
-          return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
-        },
-        segment(lo, hi) {
-          return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
-        },
-        slidingWindow(arr2) {
-          return [arr2[i], arr2[i + 1]];
-        },
-        randkf() {
-          if (i === 0) return 0;
-          if (i === n - 1) return 100;
-          const lo = i / (n - 2) * 100;
-          const hi = (i + 1) / (n - 2) * 100;
-          return rand(lo, hi);
-        },
-        get(arr2) {
-          return arr2[i];
-        },
-        i,
-        next: i + 1
+  const res1 = a.map((i, index, arr) => {
+    return {
+      remap(lo, hi, inclEnd) {
+        return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
       },
-      index,
-      res
-    );
+      segment(lo, hi) {
+        return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
+      },
+      slidingWindow(arr2) {
+        return [arr2[i], arr2[i + 1]];
+      },
+      randkf() {
+        if (i === 0) return 0;
+        if (i === n - 1) return 100;
+        const lo = i / (n - 2) * 100;
+        const hi = (i + 1) / (n - 2) * 100;
+        return rand(lo, hi);
+      },
+      get(arr2) {
+        return arr2[i];
+      },
+      i,
+      next: i + 1,
+      end: () => i === n - 1,
+      start: () => i === 0
+    };
   });
+  const res = res1.map(cb);
   return res;
+}
+function smartRange(n) {
+  return smartRangeMap(n, id);
 }
 function id(x2) {
   return x2;
@@ -1808,6 +1825,113 @@ function cartesianProductInner(ts, arr) {
 function cartesianProduct(...ts) {
   const res = cartesianProductInner(ts, []);
   return res;
+}
+
+// src/spatial-hash-table.ts
+function spatialHashTable(htBounds, resolution, getBounds) {
+  const objects = /* @__PURE__ */ new Map();
+  const buckets = range(resolution[0] * resolution[1]).map((e) => /* @__PURE__ */ new Set());
+  function getBucketIndexes(bounds) {
+    const bucketXStart = Math.floor(
+      rescaleClamped(
+        bounds.a[0],
+        htBounds.a[0],
+        htBounds.b[0],
+        0,
+        resolution[0]
+      )
+    );
+    const bucketXEnd = Math.ceil(
+      rescaleClamped(
+        bounds.b[0],
+        htBounds.a[0],
+        htBounds.b[0],
+        0,
+        resolution[0]
+      )
+    );
+    const bucketYStart = Math.floor(
+      rescaleClamped(
+        bounds.a[1],
+        htBounds.a[1],
+        htBounds.b[1],
+        0,
+        resolution[1]
+      )
+    );
+    const bucketYEnd = Math.ceil(
+      rescaleClamped(
+        bounds.b[1],
+        htBounds.a[1],
+        htBounds.b[1],
+        0,
+        resolution[1]
+      )
+    );
+    const indexes = [];
+    for (let x2 = bucketXStart; x2 < bucketXEnd; x2++) {
+      for (let y2 = bucketYStart; y2 < bucketYEnd; y2++) {
+        indexes.push(x2 + y2 * resolution[0]);
+      }
+    }
+    return indexes;
+  }
+  return {
+    objects,
+    buckets,
+    resolution,
+    getBounds,
+    bounds: htBounds,
+    insert(t) {
+      const indexes = getBucketIndexes(getBounds(t));
+      for (const i of indexes) {
+        buckets[i].add(t);
+      }
+      objects.set(t, { buckets: indexes });
+    },
+    delete(t) {
+      const obj = objects.get(t);
+      if (!obj) return false;
+      for (const b of obj.buckets) {
+        buckets[b].delete(t);
+      }
+      objects.delete(t);
+      return true;
+    },
+    queryRect(r) {
+      const queryBuckets = getBucketIndexes(r);
+      const output = /* @__PURE__ */ new Set();
+      for (const b of queryBuckets) {
+        for (const t of buckets[b]) {
+          output.add(t);
+        }
+      }
+      return output;
+    },
+    queryPoint(r) {
+      return this.queryRect({
+        a: r,
+        b: r
+      });
+    },
+    all() {
+      return new Set(objects.keys());
+    }
+  };
+}
+
+// src/result.ts
+function ok(t) {
+  return {
+    ok: true,
+    data: t
+  };
+}
+function err(e) {
+  return {
+    ok: false,
+    error: e
+  };
 }
 
 // src/quadtree.ts
@@ -2281,32 +2405,6 @@ function rectIntersects(a, b) {
   return rangeIntersects(a.left, a.right, b.left, b.right) && rangeIntersects(a.top, a.bottom, b.top, b.bottom);
 }
 
-// src/interpolation.ts
-function lerp(x2, a, b) {
-  return a * (1 - x2) + b * x2;
-}
-function unlerp(x2, a, b) {
-  return (x2 - a) / (b - a);
-}
-function rescale(x2, a1, b1, a2, b2) {
-  return lerp(unlerp(x2, a1, b1), a2, b2);
-}
-function clamp(x2, lo, hi) {
-  return Math.max(Math.min(x2, hi), lo);
-}
-function clampToArray(x2, array) {
-  return clamp(x2, 0, array.length - 1);
-}
-function getClamped(arr, i) {
-  return arr[clampToArray(i, arr)];
-}
-function unclampedSmoothstep(x2) {
-  return x2 * x2 * (3 - 2 * x2);
-}
-function smoothstep(x2) {
-  return unclampedSmoothstep(clamp(x2, 0, 1));
-}
-
 // src/inject.ts
 async function injectFunction(get, set, injector) {
   return new Promise((resolve, reject) => {
@@ -2491,6 +2589,10 @@ function splitBy(arr, amount) {
     outarr.at(-1).push(arr[i]);
   }
   return outarr;
+}
+function bifurcate(arr, fn) {
+  const bools = arr.map(fn);
+  return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
 }
 
 // src/webgl/shader.ts
@@ -8069,6 +8171,7 @@ export {
   alterElements,
   applyUniform,
   applyUniforms,
+  bifurcate,
   blobToDataURL,
   canvasToBlob,
   cartesianProduct,
@@ -8210,6 +8313,7 @@ export {
   registerStorageItem,
   resample,
   rescale,
+  rescaleClamped,
   ring,
   rodrigues,
   rotate,
@@ -8225,11 +8329,13 @@ export {
   sine,
   slice,
   smartAsyncReplaceAll,
+  smartRange,
   smartRangeMap,
   smartRangeStringMapJoin,
   smoothstep,
   source2shader,
   sources2program,
+  spatialHashTable,
   splitBy,
   square,
   stringField,

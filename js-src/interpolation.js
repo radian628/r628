@@ -8,6 +8,9 @@ function unlerp(x, a, b) {
 function rescale(x, a1, b1, a2, b2) {
   return lerp(unlerp(x, a1, b1), a2, b2);
 }
+function rescaleClamped(x, a1, b1, a2, b2) {
+  return lerp(clamp(unlerp(x, a1, b1), 0, 1), a2, b2);
+}
 function clamp(x, lo, hi) {
   return Math.max(Math.min(x, hi), lo);
 }
@@ -29,6 +32,7 @@ export {
   getClamped,
   lerp,
   rescale,
+  rescaleClamped,
   smoothstep,
   unclampedSmoothstep,
   unlerp

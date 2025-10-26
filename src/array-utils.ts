@@ -17,3 +17,8 @@ export function splitBy<T>(arr: T[], amount: number): T[][] {
   }
   return outarr;
 }
+
+export function bifurcate<T>(arr: T[], fn: (t: T) => boolean): [T[], T[]] {
+  const bools = arr.map(fn);
+  return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
+}
