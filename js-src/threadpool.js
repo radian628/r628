@@ -1,6 +1,6 @@
 // src/threadpool.ts
-function createRoundRobinThreadpool(src2) {
-  const count = navigator.hardwareConcurrency;
+function createRoundRobinThreadpool(src2, workerCount2) {
+  const count = workerCount2 ?? navigator.hardwareConcurrency;
   const workers = [];
   let nextWorker = 0;
   for (let i = 0; i < count; i++) {
@@ -58,18 +58,26 @@ function createRoundRobinThread(t) {
     });
   });
 }
-function createCombinedRoundRobinThreadpool(getInterface, src) {
+function createCombinedRoundRobinThreadpool(getInterface, src, workerCount) {
   if (eval("self.WorkerGlobalScope")) {
     createRoundRobinThread(getInterface());
     return;
   } else {
     return createRoundRobinThreadpool(
-      src ?? document.currentScript.src
+      src ?? document.currentScript.src,
+      workerCount
     );
   }
+}
+async function inMainThread(cb) {
+  if (eval("self.WorkerGlobalScope")) {
+    return;
+  }
+  return await cb();
 }
 export {
   createCombinedRoundRobinThreadpool,
   createRoundRobinThread,
-  createRoundRobinThreadpool
+  createRoundRobinThreadpool,
+  inMainThread
 };

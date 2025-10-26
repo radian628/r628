@@ -10,10 +10,11 @@ import { bifurcate } from "../src/array-utils";
 import { makeQuadtree } from "../src/quadtree";
 import { clamp, lerp, unlerp } from "../src/interpolation";
 import { spatialHashTable, SpatialHashTable } from "../src/spatial-hash-table";
-
-const canvas = document.createElement("canvas");
-
-const ctx = canvas.getContext("2d")!;
+import {
+  createCombinedRoundRobinThreadpool,
+  inMainThread,
+} from "../src/threadpool";
+import { simpleProgressBar } from "../src/ui/progress-bar";
 
 type Point = { pos: Vec2; fixed: boolean; resistance: number };
 
@@ -24,26 +25,8 @@ type Edges = Edge[];
 let points: Points = [];
 let edges: Edges = [];
 
-const LINE_COUNT = 500;
+const LINE_COUNT = 1000;
 const POINTS_PER_LINE = 100;
-
-cartesianProduct(smartRange(LINE_COUNT), smartRange(POINTS_PER_LINE)).map(
-  ([iLine, iPoint]) => {
-    const pos: Vec2 = [iPoint.remap(-0.1, 1.1, true), iLine.remap(0, 1, true)];
-    const point: Point = {
-      pos,
-      fixed: iPoint.start() || iPoint.end(),
-      resistance: 1,
-    };
-    points.push(point);
-
-    if (!iPoint.start()) {
-      edges.push({ points: [points.at(-1)!, points.at(-2)!], force: 0.025 });
-    }
-  }
-);
-
-console.log(points, edges);
 
 function physicsIter(points: Points, edges: Edges, push: (pt: Point) => Vec2) {
   for (const p of points) {
@@ -110,23 +93,33 @@ function splitLongEdges(
   return newEdges;
 }
 
-function drawEdges(
+function waitForAnimationFrame() {
+  return new Promise<number>((resolve, reject) => {
+    requestAnimationFrame(resolve);
+  });
+}
+
+async function drawEdges(
   edges: Edges,
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number
 ) {
+  let i = 0;
+
   ctx.beginPath();
   for (const e of edges) {
+    i++;
     ctx.moveTo(e.points[0].pos[0] * width, e.points[0].pos[1] * height);
     ctx.lineTo(e.points[1].pos[0] * width, e.points[1].pos[1] * height);
+    if (i % 100000 === 99999) {
+      ctx.stroke();
+      await waitForAnimationFrame();
+      ctx.beginPath();
+    }
   }
   ctx.stroke();
 }
-
-document.body.appendChild(canvas);
-canvas.width = 3000;
-canvas.height = 3000;
 
 type ForceEmitter = {
   pos: Vec2;
@@ -148,7 +141,6 @@ const forceEmitters: SpatialHashTable<ForceEmitter> = spatialHashTable(
 
 function runIters(n: number) {
   for (const i in range(n)) {
-    console.log("Iter", i);
     physicsIter(points, edges, (pt) => {
       let force: Vec2 = [0, 0];
       for (const f of forceEmitters.queryPoint(pt.pos)) {
@@ -179,22 +171,15 @@ function runIters(n: number) {
   }
 }
 
-function addForceEmitters(
-  n: number,
-  sizeMin: number,
-  sizeMax: number,
-  gamma: number,
+function randomlyPlaceForceEmitters(
+  parameters: { pos: Vec2; size: number }[],
   forceGamma: number
 ) {
   for (const f of forceEmitters.all()) {
     f.forceMax = 0;
   }
 
-  for (const i in range(n)) {
-    const pos: Vec2 = [Math.random(), Math.random()];
-
-    const size = rand(sizeMin, sizeMax);
-
+  for (const { pos, size } of parameters) {
     const radMin = size * 0.5;
     const radMax = size;
 
@@ -212,7 +197,6 @@ function addForceEmitters(
         length2(sub2(emitter.pos, pos)) <
         nearbyThreshold + emitter.radMin * 1.4
       ) {
-        console.log("too clsoe");
         tooClose = true;
         break;
       }
@@ -247,31 +231,37 @@ function addEyeball(
       fixed: false,
       resistance: 10000,
     };
-    const dirPupil: Vec2 = [Math.cos(angle * 20), Math.sin(angle * 20)];
-    const pupilPoint = {
-      pos: add2(position, scale2(dir, pupilRadius * i.remap(1, 1))),
-      fixed: false,
-      resistance: 10000,
-    };
     points.push(irisPoint);
-    points.push(pupilPoint);
     if (!i.start()) {
-      edges.push({ points: [points.at(-3)!, points.at(-1)!], force: 0 });
-      edges.push({ points: [points.at(-4)!, points.at(-2)!], force: 0 });
+      edges.push({ points: [points.at(-2)!, points.at(-1)!], force: 0 });
     }
     if (i.end()) {
       edges.push({
-        points: [points.at(-1)!, points.at(-COUNT * 2 + 1)!],
-        force: 0,
-      });
-      edges.push({
-        points: [points.at(-2)!, points.at(-COUNT * 2 - 0)!],
+        points: [points.at(-1)!, points.at(-COUNT + 0)!],
         force: 0,
       });
     }
   }
 
-  const irisCount = Math.floor(clamp(irisRadius * 7000, 10, Infinity));
+  const pupilCount = Math.floor(clamp(pupilRadius * 200000, 10, Infinity));
+
+  for (const i of smartRange(pupilCount)) {
+    const factor = i.remap(0, 1) ** 0.5;
+
+    const angle = factor * pupilRadius * 10000;
+    const dir: Vec2 = [Math.cos(angle), Math.sin(angle)];
+    const pupilPoint = {
+      pos: add2(position, scale2(dir, pupilRadius * factor)),
+      fixed: false,
+      resistance: 10000,
+    };
+    points.push(pupilPoint);
+    if (!i.start()) {
+      edges.push({ points: [points.at(-2)!, points.at(-1)!], force: 0 });
+    }
+  }
+
+  const irisCount = Math.floor(clamp(irisRadius * 20000, 10, Infinity));
 
   for (const i of smartRange(irisCount)) {
     const angle = i.remap(0, Math.PI * 2);
@@ -283,55 +273,189 @@ function addEyeball(
       resistance: 10000,
     };
     points.push(point);
-    edges.push({ points: [points.at(-2)!, points.at(-1)!], force: 0 });
+    if (!i.start()) {
+      edges.push({ points: [points.at(-2)!, points.at(-1)!], force: 0 });
+    }
   }
 }
-
-forceEmitters.insert({
-  pos: [0.5, 0.5],
-  forceMin: 0,
-  forceMax: 1100,
-  radMin: 0.1,
-  radMax: 0.8,
-  forceGamma: 4,
-});
 
 const HUGE = 0.1;
 const BIG = 0.025;
 const MEDIUM = 0.01;
 const SMALL = 0.005;
 
-runIters(100);
-addForceEmitters(200, BIG, HUGE, 1, 2);
-runIters(100);
-addForceEmitters(800, MEDIUM, BIG, 1, 2);
-runIters(100);
-addForceEmitters(2500, SMALL, MEDIUM, 1, 2);
-runIters(100);
-for (const e of forceEmitters.all()) {
-  const radius = e.radMin;
-  addEyeball(points, edges, e.pos, radius, radius / 2);
-}
-// runIters(25);
+const threadpool = createCombinedRoundRobinThreadpool(
+  () => ({
+    addForceEmitters(emitters: ForceEmitter[]) {
+      for (const e of emitters) {
+        forceEmitters.insert(e);
+      }
+    },
 
-for (const i of range(100)) {
-  physicsIter(points, edges, () => [0, 0]);
-}
+    randomlyPlaceForceEmitters: randomlyPlaceForceEmitters,
 
-ctx.fillStyle = "white";
-ctx.fillRect(0, 0, canvas.width, canvas.height);
+    doFullPhysicsIter() {
+      physicsIter(points, edges, (pt) => {
+        let force: Vec2 = [0, 0];
+        for (const f of forceEmitters.queryPoint(pt.pos)) {
+          const center: Vec2 = f.pos;
+          const offsetFromCenter = sub2(pt.pos, center);
+          const distFromCenter = length2(offsetFromCenter);
+          const directionFromCenter = scale2(
+            offsetFromCenter,
+            1 / distFromCenter
+          );
 
-drawEdges(edges, ctx, canvas.width, canvas.height);
+          const normedDist = unlerp(distFromCenter, f.radMin, f.radMax);
+          const strength = lerp(
+            clamp(normedDist, 0, 1) ** f.forceGamma,
+            f.forceMax,
+            f.forceMin
+          );
 
-ctx.fillStyle = "black";
-for (const e of forceEmitters.all()) {
-  ctx.beginPath();
-  ctx.arc(
-    e.pos[0] * canvas.width,
-    e.pos[1] * canvas.height,
-    (e.radMin / 2) * canvas.width,
-    0,
-    Math.PI * 2
-  );
-  ctx.fill();
-}
+          const forceFromCenter = scale2(
+            directionFromCenter,
+            Math.min(0.005, (1 / 1_000_000) * strength)
+          );
+          force = add2(force, forceFromCenter);
+        }
+        return force;
+      });
+      edges = splitLongEdges(
+        points,
+        edges,
+        (0.5 * 1) / POINTS_PER_LINE,
+        2000000
+      );
+    },
+
+    doDryPhysicsIter() {
+      physicsIter(points, edges, () => [0, 0]);
+    },
+
+    addPoints(pts: Point[]) {
+      points.push(...pts);
+    },
+
+    addEdges(edg: Edge[]) {
+      edges.push(...edg);
+    },
+
+    getPoints() {
+      return points;
+    },
+
+    getEdges() {
+      return edges;
+    },
+
+    getForceEmitters() {
+      return Array.from(forceEmitters.all());
+    },
+
+    createLine(y: number, res: number) {
+      smartRange(res).map((iPoint) => {
+        const pos: Vec2 = [iPoint.remap(-0.1, 1.1, true), y];
+        const point: Point = {
+          pos,
+          fixed: iPoint.start() || iPoint.end(),
+          resistance: 1,
+        };
+        points.push(point);
+
+        if (!iPoint.start()) {
+          edges.push({
+            points: [points.at(-1)!, points.at(-2)!],
+            force: 0.025,
+          });
+        }
+      });
+    },
+  }),
+  undefined,
+  20
+);
+
+inMainThread(async () => {
+  const canvas = document.createElement("canvas");
+
+  const ctx = canvas.getContext("2d")!;
+  canvas.width = 4096;
+  canvas.height = 4096;
+
+  const nPhysicsIters = (n: number) =>
+    range(n).map((e) => () => threadpool.broadcast.doFullPhysicsIter());
+
+  const nDryPhysicsIters = (n: number) =>
+    range(n).map((e) => () => threadpool.broadcast.doDryPhysicsIter());
+
+  function addEyeballForceEmitters(
+    count: number,
+    sizeMin: number,
+    sizeMax: number,
+    forceGamma: number
+  ) {
+    return () =>
+      threadpool.broadcast.randomlyPlaceForceEmitters(
+        range(count).map((e) => ({
+          pos: [Math.random(), Math.random()],
+          size: rand(sizeMin, sizeMax),
+        })),
+        forceGamma
+      );
+  }
+
+  await simpleProgressBar([
+    "Init",
+    async () => {
+      await Promise.all(
+        smartRange(LINE_COUNT).map(async (iLine) => {
+          let linePoints: Points = [];
+          let lineEdges: Edges = [];
+          const y = iLine.remap(0, 1, true);
+          await threadpool.send.createLine(y, POINTS_PER_LINE);
+        })
+      );
+    },
+    "Center Eyeball",
+    async () => {
+      await threadpool.broadcast.addForceEmitters([
+        {
+          pos: [0.5, 0.5],
+          forceMin: 0,
+          forceMax: 1100,
+          radMin: 0.1,
+          radMax: 0.8,
+          forceGamma: 4,
+        },
+      ]);
+    },
+    ...nPhysicsIters(100),
+    "BIG-HUGE eyeballs",
+    addEyeballForceEmitters(200, BIG, HUGE, 2),
+    ...nPhysicsIters(100),
+    "MEDIUM-BIG eyeballs",
+    addEyeballForceEmitters(800, MEDIUM, BIG, 2),
+    ...nPhysicsIters(100),
+    "SMALL-MEDIUM eyeballs",
+    addEyeballForceEmitters(2500, SMALL, MEDIUM, 2),
+    ...nPhysicsIters(100),
+    "Settle",
+    ...nDryPhysicsIters(100),
+  ]);
+
+  document.body.appendChild(canvas);
+
+  const points = (await threadpool.broadcast.getPoints()).flat(1);
+  const edges = (await threadpool.broadcast.getEdges()).flat(1);
+  const forceEmitters = await threadpool.send.getForceEmitters();
+  for (const e of forceEmitters) {
+    const radius = e.radMin;
+    addEyeball(points, edges, e.pos, radius, radius / 2);
+  }
+
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  await drawEdges(edges, ctx, canvas.width, canvas.height);
+});

@@ -26,7 +26,7 @@ export function ProgressBar(props: { tasks: Task[] }) {
 
   return (
     <div>
-      <div>{caption}</div>
+      <div style={{ fontSize: "48px" }}>{caption}</div>
       <div
         style={{
           width: "50vw",
@@ -47,9 +47,13 @@ export function ProgressBar(props: { tasks: Task[] }) {
 }
 
 export function simpleProgressBar(tasks: Task[]) {
-  const progressBarContainer = document.createElement("div");
-  document.body.appendChild(progressBarContainer);
-  createRoot(progressBarContainer).render(
-    <ProgressBar tasks={tasks}></ProgressBar>
-  );
+  return new Promise<void>((resolve, reject) => {
+    const progressBarContainer = document.createElement("div");
+    document.body.appendChild(progressBarContainer);
+    createRoot(progressBarContainer).render(
+      <ProgressBar
+        tasks={[...tasks, "Finished!", async () => resolve()]}
+      ></ProgressBar>
+    );
+  });
 }

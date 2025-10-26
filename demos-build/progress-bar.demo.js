@@ -19331,7 +19331,7 @@
         }
       }
     }, [currTaskIndex]);
-    return /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("div", null, caption), /* @__PURE__ */ import_react.default.createElement(
+    return /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("div", { style: { fontSize: "48px" } }, caption), /* @__PURE__ */ import_react.default.createElement(
       "div",
       {
         style: {
@@ -19353,11 +19353,18 @@
     ));
   }
   function simpleProgressBar(tasks) {
-    const progressBarContainer = document.createElement("div");
-    document.body.appendChild(progressBarContainer);
-    (0, import_client.createRoot)(progressBarContainer).render(
-      /* @__PURE__ */ import_react.default.createElement(ProgressBar, { tasks })
-    );
+    return new Promise((resolve, reject) => {
+      const progressBarContainer = document.createElement("div");
+      document.body.appendChild(progressBarContainer);
+      (0, import_client.createRoot)(progressBarContainer).render(
+        /* @__PURE__ */ import_react.default.createElement(
+          ProgressBar,
+          {
+            tasks: [...tasks, "Finished!", async () => resolve()]
+          }
+        )
+      );
+    });
   }
 
   // demos-src/progress-bar.demo.ts

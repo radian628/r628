@@ -3,8 +3,8 @@
   var __esm = (fn, res) => function __init() {
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
-  var __commonJS = (cb, mod) => function __require() {
-    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  var __commonJS = (cb2, mod) => function __require() {
+    return mod || (0, cb2[__getOwnPropNames(cb2)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
   };
 
   // src/range.ts
@@ -21,8 +21,8 @@
   });
 
   // src/threadpool.ts
-  function createRoundRobinThreadpool(src2) {
-    const count = navigator.hardwareConcurrency;
+  function createRoundRobinThreadpool(src2, workerCount2) {
+    const count = workerCount2 ?? navigator.hardwareConcurrency;
     const workers = [];
     let nextWorker = 0;
     for (let i = 0; i < count; i++) {
@@ -80,15 +80,22 @@
       });
     });
   }
-  function createCombinedRoundRobinThreadpool(getInterface, src) {
+  function createCombinedRoundRobinThreadpool(getInterface, src, workerCount) {
     if (eval("self.WorkerGlobalScope")) {
       createRoundRobinThread(getInterface());
       return;
     } else {
       return createRoundRobinThreadpool(
-        src ?? document.currentScript.src
+        src ?? document.currentScript.src,
+        workerCount
       );
     }
+  }
+  async function inMainThread(cb) {
+    if (eval("self.WorkerGlobalScope")) {
+      return;
+    }
+    return await cb();
   }
   var init_threadpool = __esm({
     "src/threadpool.ts"() {

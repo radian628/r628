@@ -4,8 +4,8 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+var __commonJS = (cb2, mod) => function __require() {
+  return mod || (0, cb2[__getOwnPropNames(cb2)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -19758,8 +19758,8 @@ function workerifyServerIframe(discriminator, i, target) {
   return workerifyServer(
     i,
     discriminator,
-    (cb) => {
-      const listener = (e) => cb(e.data);
+    (cb2) => {
+      const listener = (e) => cb2(e.data);
       window.addEventListener("message", listener);
       return () => {
         window.removeEventListener("message", listener);
@@ -19773,8 +19773,8 @@ function workerifyServerIframe(discriminator, i, target) {
 function workerifyClientIframe(discriminator, target) {
   return workerifyClient(
     discriminator,
-    (cb) => {
-      const listener = (e) => cb(e.data);
+    (cb2) => {
+      const listener = (e) => cb2(e.data);
       window.addEventListener("message", listener);
       return () => {
         window.removeEventListener("message", listener);
@@ -19789,8 +19789,8 @@ function createWorkerWithInterface(discriminator, src2) {
   const worker = new Worker(src2);
   return workerifyClient(
     discriminator,
-    (cb) => {
-      const listener = (e) => cb(e.data);
+    (cb2) => {
+      const listener = (e) => cb2(e.data);
       worker.addEventListener("message", listener);
       return () => {
         worker.removeEventListener("message", listener);
@@ -19805,8 +19805,8 @@ function createWorkerReceiver(discriminator, t) {
   return workerifyServer(
     t,
     discriminator,
-    (cb) => {
-      const listener = (e) => cb(e.data);
+    (cb2) => {
+      const listener = (e) => cb2(e.data);
       globalThis.addEventListener("message", listener);
       return () => {
         globalThis.removeEventListener("message", listener);
@@ -19902,8 +19902,8 @@ function throttle(callback, options) {
 }
 
 // src/threadpool.ts
-function createRoundRobinThreadpool(src2) {
-  const count = navigator.hardwareConcurrency;
+function createRoundRobinThreadpool(src2, workerCount2) {
+  const count = workerCount2 ?? navigator.hardwareConcurrency;
   const workers = [];
   let nextWorker = 0;
   for (let i = 0; i < count; i++) {
@@ -19961,15 +19961,22 @@ function createRoundRobinThread(t) {
     });
   });
 }
-function createCombinedRoundRobinThreadpool(getInterface, src) {
+function createCombinedRoundRobinThreadpool(getInterface, src, workerCount) {
   if (eval("self.WorkerGlobalScope")) {
     createRoundRobinThread(getInterface());
     return;
   } else {
     return createRoundRobinThreadpool(
-      src ?? document.currentScript.src
+      src ?? document.currentScript.src,
+      workerCount
     );
   }
+}
+async function inMainThread(cb) {
+  if (eval("self.WorkerGlobalScope")) {
+    return;
+  }
+  return await cb();
 }
 
 // src/stringutils.ts
@@ -20125,7 +20132,7 @@ function stringRangeMapJoin(hi, f, s = "\\n") {
 function stringMapJoin(a, f, s = "\\n") {
   return a.map(f).join(s);
 }
-function smartRangeMap(n, cb) {
+function smartRangeMap(n, cb2) {
   const a = range(n);
   const res1 = a.map((i, index, arr) => {
     return {
@@ -20154,7 +20161,7 @@ function smartRangeMap(n, cb) {
       start: () => i === 0
     };
   });
-  const res = res1.map(cb);
+  const res = res1.map(cb2);
   return res;
 }
 function smartRange(n) {
@@ -20163,8 +20170,8 @@ function smartRange(n) {
 function id(x2) {
   return x2;
 }
-function smartRangeStringMapJoin(n, cb, s = "\\n") {
-  return stringMapJoin(smartRangeMap(n, id), cb, s);
+function smartRangeStringMapJoin(n, cb2, s = "\\n") {
+  return stringMapJoin(smartRangeMap(n, id), cb2, s);
 }
 function rand(lo, hi, random) {
   if (!random) random = () => Math.random();
@@ -20420,7 +20427,7 @@ var ArrayMap = class _ArrayMap {
     map.delete(path.at(-1));
     return item;
   }
-  change(path, cb) {
+  change(path, cb2) {
     let map = this.nthMap(path.length);
     for (const p of path.slice(0, -1)) {
       let oldMap = map;
@@ -20430,7 +20437,7 @@ var ArrayMap = class _ArrayMap {
         oldMap.set(p, map);
       }
     }
-    map.set(path.at(-1), cb(map.get(path.at(-1))));
+    map.set(path.at(-1), cb2(map.get(path.at(-1))));
   }
   set(path, value) {
     this.change(path, () => value);
@@ -20602,10 +20609,10 @@ function registerStorageItem(name, defaultValue) {
         s(content);
       }
     },
-    subscribe(cb) {
-      subscriptions.add(cb);
+    subscribe(cb2) {
+      subscriptions.add(cb2);
       return () => {
-        subscriptions.delete(cb);
+        subscriptions.delete(cb2);
       };
     }
   };
@@ -20672,7 +20679,7 @@ function alterElements(selector, callback) {
   });
   return () => {
     observer.disconnect();
-    for (const cb of unmountCallbacks) cb();
+    for (const cb2 of unmountCallbacks) cb2();
   };
 }
 var injectedCallbackId = 0;
@@ -20927,10 +20934,10 @@ function debounce(callback) {
 }
 
 // src/array-utils.ts
-function interleave(arr, cb) {
+function interleave(arr, cb2) {
   let out = [];
   for (let i = 0; i < arr.length - 1; i++) {
-    out.push(arr[i], cb(arr[i], arr[i + 1]));
+    out.push(arr[i], cb2(arr[i], arr[i + 1]));
   }
   if (arr.length > 0) {
     out.push(arr.at(-1));
@@ -20948,2151 +20955,6 @@ function splitBy(arr, amount) {
 function bifurcate(arr, fn) {
   const bools = arr.map(fn);
   return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
-}
-
-// src/webgl/shader.ts
-function source2shader(gl, type, source) {
-  const shader = gl.createShader(
-    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
-  );
-  if (!shader) return err(void 0);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader));
-    return err(void 0);
-  }
-  return ok(shader);
-}
-function shaders2program(gl, v, f) {
-  const program = gl.createProgram();
-  gl.attachShader(program, v);
-  gl.attachShader(program, f);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(program));
-    return err(void 0);
-  }
-  return ok(program);
-}
-function sources2program(gl, vs, fs) {
-  const v = source2shader(gl, "v", vs);
-  const f = source2shader(gl, "f", fs);
-  if (!v.ok || !f.ok) return err(void 0);
-  return shaders2program(gl, v.data, f.data);
-}
-function fullscreenQuadBuffer(gl) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      -1,
-      -1,
-      1,
-      -1,
-      -1,
-      1,
-      1,
-      1,
-      -1,
-      1,
-      1,
-      -1
-    ]),
-    gl.STATIC_DRAW
-  );
-  return ok(buffer);
-}
-function glRenderToQuad(options) {
-  const canvas = document.createElement("canvas");
-  canvas.width = options.width;
-  canvas.height = options.height;
-  const gl = canvas.getContext(options.version ?? "webgl2");
-  gl.viewport(0, 0, options.width, options.height);
-  if (!gl) return err(void 0);
-  const buf = fullscreenQuadBuffer(gl);
-  const prog = sources2program(
-    gl,
-    `#version 300 es
-precision highp float;
-
-in vec2 in_vpos;
-out vec2 pos;
-
-void main() {
-  pos = in_vpos * 0.5 + 0.5;
-  gl_Position = vec4(in_vpos, 0.5, 1.0);
-}`,
-    (options.noheader ? "" : `#version 300 es
-precision highp float;
-in vec2 pos;
-out vec4 col;
-`) + (options.noAutoUniforms ? "" : [
-      [options.uniforms, "", "float"],
-      [options.intUniforms, "i", "int"],
-      [options.uintUniforms, "u", "uint"]
-    ].map(
-      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
-        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
-      }).join("\n")
-    ).join("\n")) + options.fragsource
-  );
-  if (!prog.data) return err(void 0);
-  gl.useProgram(prog.data);
-  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
-  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(attrloc);
-  for (const [uniforms, type] of [
-    [options.uniforms, "i"],
-    [options.intUniforms, "i"],
-    [options.uintUniforms, "ui"]
-  ]) {
-    for (const [k, v] of Object.entries(uniforms ?? {})) {
-      const v2 = Array.isArray(v) ? v : [v];
-      gl[`uniform${v2.length}${type}v`](
-        gl.getUniformLocation(prog.data, k),
-        v2
-      );
-    }
-  }
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-  return ok(canvas);
-}
-
-// src/webgl/scene.ts
-function applyUniform(gl, prog, name, spec) {
-  const [t, d] = spec;
-  const l = gl.getUniformLocation(prog, name);
-  if (l === null) {
-    throw new Error(
-      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
-    );
-  }
-  if (t === "float") gl.uniform1f(l, d);
-  if (t === "vec2") gl.uniform2f(l, ...d);
-  if (t === "vec3") gl.uniform3f(l, ...d);
-  if (t === "vec4") gl.uniform4f(l, ...d);
-  if (t === "int") gl.uniform1i(l, d);
-  if (t === "ivec2") gl.uniform2i(l, ...d);
-  if (t === "ivec3") gl.uniform3i(l, ...d);
-  if (t === "ivec4") gl.uniform4i(l, ...d);
-  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
-  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
-  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
-  if (t === "float[]") gl.uniform1fv(l, d);
-  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
-  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
-  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
-  if (t === "int[]") gl.uniform1iv(l, d);
-  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
-  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
-  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
-  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
-  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
-  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
-}
-function applyUniforms(gl, prog, uniforms) {
-  for (const [k, v] of Object.entries(uniforms)) {
-    applyUniform(gl, prog, k, v);
-  }
-}
-function createScene(sceneSpec) {
-  const gl = sceneSpec.gl;
-  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
-  let sceneUniforms = sceneSpec.uniforms ?? {};
-  return {
-    uniforms() {
-      return sceneUniforms;
-    },
-    resetUniforms(u) {
-      sceneUniforms = u;
-    },
-    updateUniforms(u) {
-      sceneUniforms = { ...sceneUniforms, ...u };
-    },
-    addObject3D(spec) {
-      let objectUniforms = spec.uniforms ?? {};
-      return {
-        gl() {
-          return gl;
-        },
-        draw() {
-          gl.useProgram(spec.program);
-          spec.buffer.setLayout(spec.program);
-          applyUniforms(
-            gl,
-            spec.program,
-            combineUniforms(sceneUniforms, objectUniforms)
-          );
-          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
-        },
-        uniforms() {
-          return objectUniforms;
-        },
-        resetUniforms(u) {
-          objectUniforms = u;
-        },
-        updateUniforms(u) {
-          objectUniforms = { ...objectUniforms, ...u };
-        }
-      };
-    }
-  };
-}
-
-// src/math/vector.ts
-function xxxx(a) {
-  return [a[0], a[0], a[0], a[0]];
-}
-function yxxx(a) {
-  return [a[1], a[0], a[0], a[0]];
-}
-function zxxx(a) {
-  return [a[2], a[0], a[0], a[0]];
-}
-function wxxx(a) {
-  return [a[3], a[0], a[0], a[0]];
-}
-function xyxx(a) {
-  return [a[0], a[1], a[0], a[0]];
-}
-function yyxx(a) {
-  return [a[1], a[1], a[0], a[0]];
-}
-function zyxx(a) {
-  return [a[2], a[1], a[0], a[0]];
-}
-function wyxx(a) {
-  return [a[3], a[1], a[0], a[0]];
-}
-function xzxx(a) {
-  return [a[0], a[2], a[0], a[0]];
-}
-function yzxx(a) {
-  return [a[1], a[2], a[0], a[0]];
-}
-function zzxx(a) {
-  return [a[2], a[2], a[0], a[0]];
-}
-function wzxx(a) {
-  return [a[3], a[2], a[0], a[0]];
-}
-function xwxx(a) {
-  return [a[0], a[3], a[0], a[0]];
-}
-function ywxx(a) {
-  return [a[1], a[3], a[0], a[0]];
-}
-function zwxx(a) {
-  return [a[2], a[3], a[0], a[0]];
-}
-function wwxx(a) {
-  return [a[3], a[3], a[0], a[0]];
-}
-function xxyx(a) {
-  return [a[0], a[0], a[1], a[0]];
-}
-function yxyx(a) {
-  return [a[1], a[0], a[1], a[0]];
-}
-function zxyx(a) {
-  return [a[2], a[0], a[1], a[0]];
-}
-function wxyx(a) {
-  return [a[3], a[0], a[1], a[0]];
-}
-function xyyx(a) {
-  return [a[0], a[1], a[1], a[0]];
-}
-function yyyx(a) {
-  return [a[1], a[1], a[1], a[0]];
-}
-function zyyx(a) {
-  return [a[2], a[1], a[1], a[0]];
-}
-function wyyx(a) {
-  return [a[3], a[1], a[1], a[0]];
-}
-function xzyx(a) {
-  return [a[0], a[2], a[1], a[0]];
-}
-function yzyx(a) {
-  return [a[1], a[2], a[1], a[0]];
-}
-function zzyx(a) {
-  return [a[2], a[2], a[1], a[0]];
-}
-function wzyx(a) {
-  return [a[3], a[2], a[1], a[0]];
-}
-function xwyx(a) {
-  return [a[0], a[3], a[1], a[0]];
-}
-function ywyx(a) {
-  return [a[1], a[3], a[1], a[0]];
-}
-function zwyx(a) {
-  return [a[2], a[3], a[1], a[0]];
-}
-function wwyx(a) {
-  return [a[3], a[3], a[1], a[0]];
-}
-function xxzx(a) {
-  return [a[0], a[0], a[2], a[0]];
-}
-function yxzx(a) {
-  return [a[1], a[0], a[2], a[0]];
-}
-function zxzx(a) {
-  return [a[2], a[0], a[2], a[0]];
-}
-function wxzx(a) {
-  return [a[3], a[0], a[2], a[0]];
-}
-function xyzx(a) {
-  return [a[0], a[1], a[2], a[0]];
-}
-function yyzx(a) {
-  return [a[1], a[1], a[2], a[0]];
-}
-function zyzx(a) {
-  return [a[2], a[1], a[2], a[0]];
-}
-function wyzx(a) {
-  return [a[3], a[1], a[2], a[0]];
-}
-function xzzx(a) {
-  return [a[0], a[2], a[2], a[0]];
-}
-function yzzx(a) {
-  return [a[1], a[2], a[2], a[0]];
-}
-function zzzx(a) {
-  return [a[2], a[2], a[2], a[0]];
-}
-function wzzx(a) {
-  return [a[3], a[2], a[2], a[0]];
-}
-function xwzx(a) {
-  return [a[0], a[3], a[2], a[0]];
-}
-function ywzx(a) {
-  return [a[1], a[3], a[2], a[0]];
-}
-function zwzx(a) {
-  return [a[2], a[3], a[2], a[0]];
-}
-function wwzx(a) {
-  return [a[3], a[3], a[2], a[0]];
-}
-function xxwx(a) {
-  return [a[0], a[0], a[3], a[0]];
-}
-function yxwx(a) {
-  return [a[1], a[0], a[3], a[0]];
-}
-function zxwx(a) {
-  return [a[2], a[0], a[3], a[0]];
-}
-function wxwx(a) {
-  return [a[3], a[0], a[3], a[0]];
-}
-function xywx(a) {
-  return [a[0], a[1], a[3], a[0]];
-}
-function yywx(a) {
-  return [a[1], a[1], a[3], a[0]];
-}
-function zywx(a) {
-  return [a[2], a[1], a[3], a[0]];
-}
-function wywx(a) {
-  return [a[3], a[1], a[3], a[0]];
-}
-function xzwx(a) {
-  return [a[0], a[2], a[3], a[0]];
-}
-function yzwx(a) {
-  return [a[1], a[2], a[3], a[0]];
-}
-function zzwx(a) {
-  return [a[2], a[2], a[3], a[0]];
-}
-function wzwx(a) {
-  return [a[3], a[2], a[3], a[0]];
-}
-function xwwx(a) {
-  return [a[0], a[3], a[3], a[0]];
-}
-function ywwx(a) {
-  return [a[1], a[3], a[3], a[0]];
-}
-function zwwx(a) {
-  return [a[2], a[3], a[3], a[0]];
-}
-function wwwx(a) {
-  return [a[3], a[3], a[3], a[0]];
-}
-function xxxy(a) {
-  return [a[0], a[0], a[0], a[1]];
-}
-function yxxy(a) {
-  return [a[1], a[0], a[0], a[1]];
-}
-function zxxy(a) {
-  return [a[2], a[0], a[0], a[1]];
-}
-function wxxy(a) {
-  return [a[3], a[0], a[0], a[1]];
-}
-function xyxy(a) {
-  return [a[0], a[1], a[0], a[1]];
-}
-function yyxy(a) {
-  return [a[1], a[1], a[0], a[1]];
-}
-function zyxy(a) {
-  return [a[2], a[1], a[0], a[1]];
-}
-function wyxy(a) {
-  return [a[3], a[1], a[0], a[1]];
-}
-function xzxy(a) {
-  return [a[0], a[2], a[0], a[1]];
-}
-function yzxy(a) {
-  return [a[1], a[2], a[0], a[1]];
-}
-function zzxy(a) {
-  return [a[2], a[2], a[0], a[1]];
-}
-function wzxy(a) {
-  return [a[3], a[2], a[0], a[1]];
-}
-function xwxy(a) {
-  return [a[0], a[3], a[0], a[1]];
-}
-function ywxy(a) {
-  return [a[1], a[3], a[0], a[1]];
-}
-function zwxy(a) {
-  return [a[2], a[3], a[0], a[1]];
-}
-function wwxy(a) {
-  return [a[3], a[3], a[0], a[1]];
-}
-function xxyy(a) {
-  return [a[0], a[0], a[1], a[1]];
-}
-function yxyy(a) {
-  return [a[1], a[0], a[1], a[1]];
-}
-function zxyy(a) {
-  return [a[2], a[0], a[1], a[1]];
-}
-function wxyy(a) {
-  return [a[3], a[0], a[1], a[1]];
-}
-function xyyy(a) {
-  return [a[0], a[1], a[1], a[1]];
-}
-function yyyy(a) {
-  return [a[1], a[1], a[1], a[1]];
-}
-function zyyy(a) {
-  return [a[2], a[1], a[1], a[1]];
-}
-function wyyy(a) {
-  return [a[3], a[1], a[1], a[1]];
-}
-function xzyy(a) {
-  return [a[0], a[2], a[1], a[1]];
-}
-function yzyy(a) {
-  return [a[1], a[2], a[1], a[1]];
-}
-function zzyy(a) {
-  return [a[2], a[2], a[1], a[1]];
-}
-function wzyy(a) {
-  return [a[3], a[2], a[1], a[1]];
-}
-function xwyy(a) {
-  return [a[0], a[3], a[1], a[1]];
-}
-function ywyy(a) {
-  return [a[1], a[3], a[1], a[1]];
-}
-function zwyy(a) {
-  return [a[2], a[3], a[1], a[1]];
-}
-function wwyy(a) {
-  return [a[3], a[3], a[1], a[1]];
-}
-function xxzy(a) {
-  return [a[0], a[0], a[2], a[1]];
-}
-function yxzy(a) {
-  return [a[1], a[0], a[2], a[1]];
-}
-function zxzy(a) {
-  return [a[2], a[0], a[2], a[1]];
-}
-function wxzy(a) {
-  return [a[3], a[0], a[2], a[1]];
-}
-function xyzy(a) {
-  return [a[0], a[1], a[2], a[1]];
-}
-function yyzy(a) {
-  return [a[1], a[1], a[2], a[1]];
-}
-function zyzy(a) {
-  return [a[2], a[1], a[2], a[1]];
-}
-function wyzy(a) {
-  return [a[3], a[1], a[2], a[1]];
-}
-function xzzy(a) {
-  return [a[0], a[2], a[2], a[1]];
-}
-function yzzy(a) {
-  return [a[1], a[2], a[2], a[1]];
-}
-function zzzy(a) {
-  return [a[2], a[2], a[2], a[1]];
-}
-function wzzy(a) {
-  return [a[3], a[2], a[2], a[1]];
-}
-function xwzy(a) {
-  return [a[0], a[3], a[2], a[1]];
-}
-function ywzy(a) {
-  return [a[1], a[3], a[2], a[1]];
-}
-function zwzy(a) {
-  return [a[2], a[3], a[2], a[1]];
-}
-function wwzy(a) {
-  return [a[3], a[3], a[2], a[1]];
-}
-function xxwy(a) {
-  return [a[0], a[0], a[3], a[1]];
-}
-function yxwy(a) {
-  return [a[1], a[0], a[3], a[1]];
-}
-function zxwy(a) {
-  return [a[2], a[0], a[3], a[1]];
-}
-function wxwy(a) {
-  return [a[3], a[0], a[3], a[1]];
-}
-function xywy(a) {
-  return [a[0], a[1], a[3], a[1]];
-}
-function yywy(a) {
-  return [a[1], a[1], a[3], a[1]];
-}
-function zywy(a) {
-  return [a[2], a[1], a[3], a[1]];
-}
-function wywy(a) {
-  return [a[3], a[1], a[3], a[1]];
-}
-function xzwy(a) {
-  return [a[0], a[2], a[3], a[1]];
-}
-function yzwy(a) {
-  return [a[1], a[2], a[3], a[1]];
-}
-function zzwy(a) {
-  return [a[2], a[2], a[3], a[1]];
-}
-function wzwy(a) {
-  return [a[3], a[2], a[3], a[1]];
-}
-function xwwy(a) {
-  return [a[0], a[3], a[3], a[1]];
-}
-function ywwy(a) {
-  return [a[1], a[3], a[3], a[1]];
-}
-function zwwy(a) {
-  return [a[2], a[3], a[3], a[1]];
-}
-function wwwy(a) {
-  return [a[3], a[3], a[3], a[1]];
-}
-function xxxz(a) {
-  return [a[0], a[0], a[0], a[2]];
-}
-function yxxz(a) {
-  return [a[1], a[0], a[0], a[2]];
-}
-function zxxz(a) {
-  return [a[2], a[0], a[0], a[2]];
-}
-function wxxz(a) {
-  return [a[3], a[0], a[0], a[2]];
-}
-function xyxz(a) {
-  return [a[0], a[1], a[0], a[2]];
-}
-function yyxz(a) {
-  return [a[1], a[1], a[0], a[2]];
-}
-function zyxz(a) {
-  return [a[2], a[1], a[0], a[2]];
-}
-function wyxz(a) {
-  return [a[3], a[1], a[0], a[2]];
-}
-function xzxz(a) {
-  return [a[0], a[2], a[0], a[2]];
-}
-function yzxz(a) {
-  return [a[1], a[2], a[0], a[2]];
-}
-function zzxz(a) {
-  return [a[2], a[2], a[0], a[2]];
-}
-function wzxz(a) {
-  return [a[3], a[2], a[0], a[2]];
-}
-function xwxz(a) {
-  return [a[0], a[3], a[0], a[2]];
-}
-function ywxz(a) {
-  return [a[1], a[3], a[0], a[2]];
-}
-function zwxz(a) {
-  return [a[2], a[3], a[0], a[2]];
-}
-function wwxz(a) {
-  return [a[3], a[3], a[0], a[2]];
-}
-function xxyz(a) {
-  return [a[0], a[0], a[1], a[2]];
-}
-function yxyz(a) {
-  return [a[1], a[0], a[1], a[2]];
-}
-function zxyz(a) {
-  return [a[2], a[0], a[1], a[2]];
-}
-function wxyz(a) {
-  return [a[3], a[0], a[1], a[2]];
-}
-function xyyz(a) {
-  return [a[0], a[1], a[1], a[2]];
-}
-function yyyz(a) {
-  return [a[1], a[1], a[1], a[2]];
-}
-function zyyz(a) {
-  return [a[2], a[1], a[1], a[2]];
-}
-function wyyz(a) {
-  return [a[3], a[1], a[1], a[2]];
-}
-function xzyz(a) {
-  return [a[0], a[2], a[1], a[2]];
-}
-function yzyz(a) {
-  return [a[1], a[2], a[1], a[2]];
-}
-function zzyz(a) {
-  return [a[2], a[2], a[1], a[2]];
-}
-function wzyz(a) {
-  return [a[3], a[2], a[1], a[2]];
-}
-function xwyz(a) {
-  return [a[0], a[3], a[1], a[2]];
-}
-function ywyz(a) {
-  return [a[1], a[3], a[1], a[2]];
-}
-function zwyz(a) {
-  return [a[2], a[3], a[1], a[2]];
-}
-function wwyz(a) {
-  return [a[3], a[3], a[1], a[2]];
-}
-function xxzz(a) {
-  return [a[0], a[0], a[2], a[2]];
-}
-function yxzz(a) {
-  return [a[1], a[0], a[2], a[2]];
-}
-function zxzz(a) {
-  return [a[2], a[0], a[2], a[2]];
-}
-function wxzz(a) {
-  return [a[3], a[0], a[2], a[2]];
-}
-function xyzz(a) {
-  return [a[0], a[1], a[2], a[2]];
-}
-function yyzz(a) {
-  return [a[1], a[1], a[2], a[2]];
-}
-function zyzz(a) {
-  return [a[2], a[1], a[2], a[2]];
-}
-function wyzz(a) {
-  return [a[3], a[1], a[2], a[2]];
-}
-function xzzz(a) {
-  return [a[0], a[2], a[2], a[2]];
-}
-function yzzz(a) {
-  return [a[1], a[2], a[2], a[2]];
-}
-function zzzz(a) {
-  return [a[2], a[2], a[2], a[2]];
-}
-function wzzz(a) {
-  return [a[3], a[2], a[2], a[2]];
-}
-function xwzz(a) {
-  return [a[0], a[3], a[2], a[2]];
-}
-function ywzz(a) {
-  return [a[1], a[3], a[2], a[2]];
-}
-function zwzz(a) {
-  return [a[2], a[3], a[2], a[2]];
-}
-function wwzz(a) {
-  return [a[3], a[3], a[2], a[2]];
-}
-function xxwz(a) {
-  return [a[0], a[0], a[3], a[2]];
-}
-function yxwz(a) {
-  return [a[1], a[0], a[3], a[2]];
-}
-function zxwz(a) {
-  return [a[2], a[0], a[3], a[2]];
-}
-function wxwz(a) {
-  return [a[3], a[0], a[3], a[2]];
-}
-function xywz(a) {
-  return [a[0], a[1], a[3], a[2]];
-}
-function yywz(a) {
-  return [a[1], a[1], a[3], a[2]];
-}
-function zywz(a) {
-  return [a[2], a[1], a[3], a[2]];
-}
-function wywz(a) {
-  return [a[3], a[1], a[3], a[2]];
-}
-function xzwz(a) {
-  return [a[0], a[2], a[3], a[2]];
-}
-function yzwz(a) {
-  return [a[1], a[2], a[3], a[2]];
-}
-function zzwz(a) {
-  return [a[2], a[2], a[3], a[2]];
-}
-function wzwz(a) {
-  return [a[3], a[2], a[3], a[2]];
-}
-function xwwz(a) {
-  return [a[0], a[3], a[3], a[2]];
-}
-function ywwz(a) {
-  return [a[1], a[3], a[3], a[2]];
-}
-function zwwz(a) {
-  return [a[2], a[3], a[3], a[2]];
-}
-function wwwz(a) {
-  return [a[3], a[3], a[3], a[2]];
-}
-function xxxw(a) {
-  return [a[0], a[0], a[0], a[3]];
-}
-function yxxw(a) {
-  return [a[1], a[0], a[0], a[3]];
-}
-function zxxw(a) {
-  return [a[2], a[0], a[0], a[3]];
-}
-function wxxw(a) {
-  return [a[3], a[0], a[0], a[3]];
-}
-function xyxw(a) {
-  return [a[0], a[1], a[0], a[3]];
-}
-function yyxw(a) {
-  return [a[1], a[1], a[0], a[3]];
-}
-function zyxw(a) {
-  return [a[2], a[1], a[0], a[3]];
-}
-function wyxw(a) {
-  return [a[3], a[1], a[0], a[3]];
-}
-function xzxw(a) {
-  return [a[0], a[2], a[0], a[3]];
-}
-function yzxw(a) {
-  return [a[1], a[2], a[0], a[3]];
-}
-function zzxw(a) {
-  return [a[2], a[2], a[0], a[3]];
-}
-function wzxw(a) {
-  return [a[3], a[2], a[0], a[3]];
-}
-function xwxw(a) {
-  return [a[0], a[3], a[0], a[3]];
-}
-function ywxw(a) {
-  return [a[1], a[3], a[0], a[3]];
-}
-function zwxw(a) {
-  return [a[2], a[3], a[0], a[3]];
-}
-function wwxw(a) {
-  return [a[3], a[3], a[0], a[3]];
-}
-function xxyw(a) {
-  return [a[0], a[0], a[1], a[3]];
-}
-function yxyw(a) {
-  return [a[1], a[0], a[1], a[3]];
-}
-function zxyw(a) {
-  return [a[2], a[0], a[1], a[3]];
-}
-function wxyw(a) {
-  return [a[3], a[0], a[1], a[3]];
-}
-function xyyw(a) {
-  return [a[0], a[1], a[1], a[3]];
-}
-function yyyw(a) {
-  return [a[1], a[1], a[1], a[3]];
-}
-function zyyw(a) {
-  return [a[2], a[1], a[1], a[3]];
-}
-function wyyw(a) {
-  return [a[3], a[1], a[1], a[3]];
-}
-function xzyw(a) {
-  return [a[0], a[2], a[1], a[3]];
-}
-function yzyw(a) {
-  return [a[1], a[2], a[1], a[3]];
-}
-function zzyw(a) {
-  return [a[2], a[2], a[1], a[3]];
-}
-function wzyw(a) {
-  return [a[3], a[2], a[1], a[3]];
-}
-function xwyw(a) {
-  return [a[0], a[3], a[1], a[3]];
-}
-function ywyw(a) {
-  return [a[1], a[3], a[1], a[3]];
-}
-function zwyw(a) {
-  return [a[2], a[3], a[1], a[3]];
-}
-function wwyw(a) {
-  return [a[3], a[3], a[1], a[3]];
-}
-function xxzw(a) {
-  return [a[0], a[0], a[2], a[3]];
-}
-function yxzw(a) {
-  return [a[1], a[0], a[2], a[3]];
-}
-function zxzw(a) {
-  return [a[2], a[0], a[2], a[3]];
-}
-function wxzw(a) {
-  return [a[3], a[0], a[2], a[3]];
-}
-function xyzw(a) {
-  return [a[0], a[1], a[2], a[3]];
-}
-function yyzw(a) {
-  return [a[1], a[1], a[2], a[3]];
-}
-function zyzw(a) {
-  return [a[2], a[1], a[2], a[3]];
-}
-function wyzw(a) {
-  return [a[3], a[1], a[2], a[3]];
-}
-function xzzw(a) {
-  return [a[0], a[2], a[2], a[3]];
-}
-function yzzw(a) {
-  return [a[1], a[2], a[2], a[3]];
-}
-function zzzw(a) {
-  return [a[2], a[2], a[2], a[3]];
-}
-function wzzw(a) {
-  return [a[3], a[2], a[2], a[3]];
-}
-function xwzw(a) {
-  return [a[0], a[3], a[2], a[3]];
-}
-function ywzw(a) {
-  return [a[1], a[3], a[2], a[3]];
-}
-function zwzw(a) {
-  return [a[2], a[3], a[2], a[3]];
-}
-function wwzw(a) {
-  return [a[3], a[3], a[2], a[3]];
-}
-function xxww(a) {
-  return [a[0], a[0], a[3], a[3]];
-}
-function yxww(a) {
-  return [a[1], a[0], a[3], a[3]];
-}
-function zxww(a) {
-  return [a[2], a[0], a[3], a[3]];
-}
-function wxww(a) {
-  return [a[3], a[0], a[3], a[3]];
-}
-function xyww(a) {
-  return [a[0], a[1], a[3], a[3]];
-}
-function yyww(a) {
-  return [a[1], a[1], a[3], a[3]];
-}
-function zyww(a) {
-  return [a[2], a[1], a[3], a[3]];
-}
-function wyww(a) {
-  return [a[3], a[1], a[3], a[3]];
-}
-function xzww(a) {
-  return [a[0], a[2], a[3], a[3]];
-}
-function yzww(a) {
-  return [a[1], a[2], a[3], a[3]];
-}
-function zzww(a) {
-  return [a[2], a[2], a[3], a[3]];
-}
-function wzww(a) {
-  return [a[3], a[2], a[3], a[3]];
-}
-function xwww(a) {
-  return [a[0], a[3], a[3], a[3]];
-}
-function ywww(a) {
-  return [a[1], a[3], a[3], a[3]];
-}
-function zwww(a) {
-  return [a[2], a[3], a[3], a[3]];
-}
-function wwww(a) {
-  return [a[3], a[3], a[3], a[3]];
-}
-function xxx(a) {
-  return [a[0], a[0], a[0]];
-}
-function yxx(a) {
-  return [a[1], a[0], a[0]];
-}
-function zxx(a) {
-  return [a[2], a[0], a[0]];
-}
-function wxx(a) {
-  return [a[3], a[0], a[0]];
-}
-function xyx(a) {
-  return [a[0], a[1], a[0]];
-}
-function yyx(a) {
-  return [a[1], a[1], a[0]];
-}
-function zyx(a) {
-  return [a[2], a[1], a[0]];
-}
-function wyx(a) {
-  return [a[3], a[1], a[0]];
-}
-function xzx(a) {
-  return [a[0], a[2], a[0]];
-}
-function yzx(a) {
-  return [a[1], a[2], a[0]];
-}
-function zzx(a) {
-  return [a[2], a[2], a[0]];
-}
-function wzx(a) {
-  return [a[3], a[2], a[0]];
-}
-function xwx(a) {
-  return [a[0], a[3], a[0]];
-}
-function ywx(a) {
-  return [a[1], a[3], a[0]];
-}
-function zwx(a) {
-  return [a[2], a[3], a[0]];
-}
-function wwx(a) {
-  return [a[3], a[3], a[0]];
-}
-function xxy(a) {
-  return [a[0], a[0], a[1]];
-}
-function yxy(a) {
-  return [a[1], a[0], a[1]];
-}
-function zxy(a) {
-  return [a[2], a[0], a[1]];
-}
-function wxy(a) {
-  return [a[3], a[0], a[1]];
-}
-function xyy(a) {
-  return [a[0], a[1], a[1]];
-}
-function yyy(a) {
-  return [a[1], a[1], a[1]];
-}
-function zyy(a) {
-  return [a[2], a[1], a[1]];
-}
-function wyy(a) {
-  return [a[3], a[1], a[1]];
-}
-function xzy(a) {
-  return [a[0], a[2], a[1]];
-}
-function yzy(a) {
-  return [a[1], a[2], a[1]];
-}
-function zzy(a) {
-  return [a[2], a[2], a[1]];
-}
-function wzy(a) {
-  return [a[3], a[2], a[1]];
-}
-function xwy(a) {
-  return [a[0], a[3], a[1]];
-}
-function ywy(a) {
-  return [a[1], a[3], a[1]];
-}
-function zwy(a) {
-  return [a[2], a[3], a[1]];
-}
-function wwy(a) {
-  return [a[3], a[3], a[1]];
-}
-function xxz(a) {
-  return [a[0], a[0], a[2]];
-}
-function yxz(a) {
-  return [a[1], a[0], a[2]];
-}
-function zxz(a) {
-  return [a[2], a[0], a[2]];
-}
-function wxz(a) {
-  return [a[3], a[0], a[2]];
-}
-function xyz(a) {
-  return [a[0], a[1], a[2]];
-}
-function yyz(a) {
-  return [a[1], a[1], a[2]];
-}
-function zyz(a) {
-  return [a[2], a[1], a[2]];
-}
-function wyz(a) {
-  return [a[3], a[1], a[2]];
-}
-function xzz(a) {
-  return [a[0], a[2], a[2]];
-}
-function yzz(a) {
-  return [a[1], a[2], a[2]];
-}
-function zzz(a) {
-  return [a[2], a[2], a[2]];
-}
-function wzz(a) {
-  return [a[3], a[2], a[2]];
-}
-function xwz(a) {
-  return [a[0], a[3], a[2]];
-}
-function ywz(a) {
-  return [a[1], a[3], a[2]];
-}
-function zwz(a) {
-  return [a[2], a[3], a[2]];
-}
-function wwz(a) {
-  return [a[3], a[3], a[2]];
-}
-function xxw(a) {
-  return [a[0], a[0], a[3]];
-}
-function yxw(a) {
-  return [a[1], a[0], a[3]];
-}
-function zxw(a) {
-  return [a[2], a[0], a[3]];
-}
-function wxw(a) {
-  return [a[3], a[0], a[3]];
-}
-function xyw(a) {
-  return [a[0], a[1], a[3]];
-}
-function yyw(a) {
-  return [a[1], a[1], a[3]];
-}
-function zyw(a) {
-  return [a[2], a[1], a[3]];
-}
-function wyw(a) {
-  return [a[3], a[1], a[3]];
-}
-function xzw(a) {
-  return [a[0], a[2], a[3]];
-}
-function yzw(a) {
-  return [a[1], a[2], a[3]];
-}
-function zzw(a) {
-  return [a[2], a[2], a[3]];
-}
-function wzw(a) {
-  return [a[3], a[2], a[3]];
-}
-function xww(a) {
-  return [a[0], a[3], a[3]];
-}
-function yww(a) {
-  return [a[1], a[3], a[3]];
-}
-function zww(a) {
-  return [a[2], a[3], a[3]];
-}
-function www(a) {
-  return [a[3], a[3], a[3]];
-}
-function xx(a) {
-  return [a[0], a[0]];
-}
-function yx(a) {
-  return [a[1], a[0]];
-}
-function zx(a) {
-  return [a[2], a[0]];
-}
-function wx(a) {
-  return [a[3], a[0]];
-}
-function xy(a) {
-  return [a[0], a[1]];
-}
-function yy(a) {
-  return [a[1], a[1]];
-}
-function zy(a) {
-  return [a[2], a[1]];
-}
-function wy(a) {
-  return [a[3], a[1]];
-}
-function xz(a) {
-  return [a[0], a[2]];
-}
-function yz(a) {
-  return [a[1], a[2]];
-}
-function zz(a) {
-  return [a[2], a[2]];
-}
-function wz(a) {
-  return [a[3], a[2]];
-}
-function xw(a) {
-  return [a[0], a[3]];
-}
-function yw(a) {
-  return [a[1], a[3]];
-}
-function zw(a) {
-  return [a[2], a[3]];
-}
-function ww(a) {
-  return [a[3], a[3]];
-}
-function x(a) {
-  return a[0];
-}
-function y(a) {
-  return a[1];
-}
-function z(a) {
-  return a[2];
-}
-function w(a) {
-  return a[3];
-}
-function polar2Cart(r, theta) {
-  return [r * Math.cos(theta), r * Math.sin(theta)];
-}
-function polarVec2Cart(rCommaTheta) {
-  return polar2Cart(...rCommaTheta);
-}
-function cart2Polar(a) {
-  return [length2(a), Math.atan2(a[1], a[0])];
-}
-function mulScalarByVec2(a, b) {
-  return [a * b[0], a * b[1]];
-}
-function mulScalarByVec3(a, b) {
-  return [a * b[0], a * b[1], a * b[2]];
-}
-function mulScalarByVec4(a, b) {
-  return [a * b[0], a * b[1], a * b[2], a * b[3]];
-}
-function mulVec2ByMat2(a, b) {
-  return [a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3]];
-}
-function mulVec2ByMat3x2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[3],
-    a[0] * b[1] + a[1] * b[4],
-    a[0] * b[2] + a[1] * b[5]
-  ];
-}
-function mulVec2ByMat4x2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[4],
-    a[0] * b[1] + a[1] * b[5],
-    a[0] * b[2] + a[1] * b[6],
-    a[0] * b[3] + a[1] * b[7]
-  ];
-}
-function mulVec3ByMat2x3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5]
-  ];
-}
-function mulVec3ByMat3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8]
-  ];
-}
-function mulVec3ByMat4x3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11]
-  ];
-}
-function mulVec4ByMat2x4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7]
-  ];
-}
-function mulVec4ByMat3x4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11]
-  ];
-}
-function mulVec4ByMat4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15]
-  ];
-}
-function mulVec2ByScalar(a, b) {
-  return [a[0] * b, a[1] * b];
-}
-function mulVec2ByVec2(a, b) {
-  return [a[0] * b[0], a[0] * b[1], a[1] * b[0], a[1] * b[1]];
-}
-function mulVec2ByVec3(a, b) {
-  return [
-    a[0] * b[0],
-    a[0] * b[1],
-    a[0] * b[2],
-    a[1] * b[0],
-    a[1] * b[1],
-    a[1] * b[2]
-  ];
-}
-function mulVec2ByVec4(a, b) {
-  return [
-    a[0] * b[0],
-    a[0] * b[1],
-    a[0] * b[2],
-    a[0] * b[3],
-    a[1] * b[0],
-    a[1] * b[1],
-    a[1] * b[2],
-    a[1] * b[3]
-  ];
-}
-function mulMat2ByVec2(a, b) {
-  return [a[0] * b[0] + a[1] * b[1], a[2] * b[0] + a[3] * b[1]];
-}
-function mulMat2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[2],
-    a[0] * b[1] + a[1] * b[3],
-    a[2] * b[0] + a[3] * b[2],
-    a[2] * b[1] + a[3] * b[3]
-  ];
-}
-function mulMat2ByMat3x2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[3],
-    a[0] * b[1] + a[1] * b[4],
-    a[0] * b[2] + a[1] * b[5],
-    a[2] * b[0] + a[3] * b[3],
-    a[2] * b[1] + a[3] * b[4],
-    a[2] * b[2] + a[3] * b[5]
-  ];
-}
-function mulMat2ByMat4x2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[4],
-    a[0] * b[1] + a[1] * b[5],
-    a[0] * b[2] + a[1] * b[6],
-    a[0] * b[3] + a[1] * b[7],
-    a[2] * b[0] + a[3] * b[4],
-    a[2] * b[1] + a[3] * b[5],
-    a[2] * b[2] + a[3] * b[6],
-    a[2] * b[3] + a[3] * b[7]
-  ];
-}
-function mulMat3x2ByVec3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
-    a[3] * b[0] + a[4] * b[1] + a[5] * b[2]
-  ];
-}
-function mulMat3x2ByMat2x3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5],
-    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
-    a[3] * b[1] + a[4] * b[3] + a[5] * b[5]
-  ];
-}
-function mulMat3x2ByMat3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
-    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
-    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
-    a[3] * b[2] + a[4] * b[5] + a[5] * b[8]
-  ];
-}
-function mulMat3x2ByMat4x3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11],
-    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
-    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
-    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
-    a[3] * b[3] + a[4] * b[7] + a[5] * b[11]
-  ];
-}
-function mulMat4x2ByVec4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
-    a[4] * b[0] + a[5] * b[1] + a[6] * b[2] + a[7] * b[3]
-  ];
-}
-function mulMat4x2ByMat2x4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7],
-    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
-    a[4] * b[1] + a[5] * b[3] + a[6] * b[5] + a[7] * b[7]
-  ];
-}
-function mulMat4x2ByMat3x4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11],
-    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
-    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
-    a[4] * b[2] + a[5] * b[5] + a[6] * b[8] + a[7] * b[11]
-  ];
-}
-function mulMat4x2ByMat4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
-    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
-    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
-    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
-    a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15]
-  ];
-}
-function mulVec3ByScalar(a, b) {
-  return [a[0] * b, a[1] * b, a[2] * b];
-}
-function mulVec3ByVec2(a, b) {
-  return [
-    a[0] * b[0],
-    a[0] * b[1],
-    a[1] * b[0],
-    a[1] * b[1],
-    a[2] * b[0],
-    a[2] * b[1]
-  ];
-}
-function mulVec3ByVec3(a, b) {
-  return [
-    a[0] * b[0],
-    a[0] * b[1],
-    a[0] * b[2],
-    a[1] * b[0],
-    a[1] * b[1],
-    a[1] * b[2],
-    a[2] * b[0],
-    a[2] * b[1],
-    a[2] * b[2]
-  ];
-}
-function mulVec3ByVec4(a, b) {
-  return [
-    a[0] * b[0],
-    a[0] * b[1],
-    a[0] * b[2],
-    a[0] * b[3],
-    a[1] * b[0],
-    a[1] * b[1],
-    a[1] * b[2],
-    a[1] * b[3],
-    a[2] * b[0],
-    a[2] * b[1],
-    a[2] * b[2],
-    a[2] * b[3]
-  ];
-}
-function mulMat2x3ByVec2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1],
-    a[2] * b[0] + a[3] * b[1],
-    a[4] * b[0] + a[5] * b[1]
-  ];
-}
-function mulMat2x3ByMat2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[2],
-    a[0] * b[1] + a[1] * b[3],
-    a[2] * b[0] + a[3] * b[2],
-    a[2] * b[1] + a[3] * b[3],
-    a[4] * b[0] + a[5] * b[2],
-    a[4] * b[1] + a[5] * b[3]
-  ];
-}
-function mulMat2x3ByMat3x2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[3],
-    a[0] * b[1] + a[1] * b[4],
-    a[0] * b[2] + a[1] * b[5],
-    a[2] * b[0] + a[3] * b[3],
-    a[2] * b[1] + a[3] * b[4],
-    a[2] * b[2] + a[3] * b[5],
-    a[4] * b[0] + a[5] * b[3],
-    a[4] * b[1] + a[5] * b[4],
-    a[4] * b[2] + a[5] * b[5]
-  ];
-}
-function mulMat2x3ByMat4x2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[4],
-    a[0] * b[1] + a[1] * b[5],
-    a[0] * b[2] + a[1] * b[6],
-    a[0] * b[3] + a[1] * b[7],
-    a[2] * b[0] + a[3] * b[4],
-    a[2] * b[1] + a[3] * b[5],
-    a[2] * b[2] + a[3] * b[6],
-    a[2] * b[3] + a[3] * b[7],
-    a[4] * b[0] + a[5] * b[4],
-    a[4] * b[1] + a[5] * b[5],
-    a[4] * b[2] + a[5] * b[6],
-    a[4] * b[3] + a[5] * b[7]
-  ];
-}
-function mulMat3ByVec3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
-    a[3] * b[0] + a[4] * b[1] + a[5] * b[2],
-    a[6] * b[0] + a[7] * b[1] + a[8] * b[2]
-  ];
-}
-function mulMat3ByMat2x3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5],
-    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
-    a[3] * b[1] + a[4] * b[3] + a[5] * b[5],
-    a[6] * b[0] + a[7] * b[2] + a[8] * b[4],
-    a[6] * b[1] + a[7] * b[3] + a[8] * b[5]
-  ];
-}
-function mulMat3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
-    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
-    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
-    a[3] * b[2] + a[4] * b[5] + a[5] * b[8],
-    a[6] * b[0] + a[7] * b[3] + a[8] * b[6],
-    a[6] * b[1] + a[7] * b[4] + a[8] * b[7],
-    a[6] * b[2] + a[7] * b[5] + a[8] * b[8]
-  ];
-}
-function mulMat3ByMat4x3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11],
-    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
-    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
-    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
-    a[3] * b[3] + a[4] * b[7] + a[5] * b[11],
-    a[6] * b[0] + a[7] * b[4] + a[8] * b[8],
-    a[6] * b[1] + a[7] * b[5] + a[8] * b[9],
-    a[6] * b[2] + a[7] * b[6] + a[8] * b[10],
-    a[6] * b[3] + a[7] * b[7] + a[8] * b[11]
-  ];
-}
-function mulMat4x3ByVec4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
-    a[4] * b[0] + a[5] * b[1] + a[6] * b[2] + a[7] * b[3],
-    a[8] * b[0] + a[9] * b[1] + a[10] * b[2] + a[11] * b[3]
-  ];
-}
-function mulMat4x3ByMat2x4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7],
-    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
-    a[4] * b[1] + a[5] * b[3] + a[6] * b[5] + a[7] * b[7],
-    a[8] * b[0] + a[9] * b[2] + a[10] * b[4] + a[11] * b[6],
-    a[8] * b[1] + a[9] * b[3] + a[10] * b[5] + a[11] * b[7]
-  ];
-}
-function mulMat4x3ByMat3x4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11],
-    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
-    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
-    a[4] * b[2] + a[5] * b[5] + a[6] * b[8] + a[7] * b[11],
-    a[8] * b[0] + a[9] * b[3] + a[10] * b[6] + a[11] * b[9],
-    a[8] * b[1] + a[9] * b[4] + a[10] * b[7] + a[11] * b[10],
-    a[8] * b[2] + a[9] * b[5] + a[10] * b[8] + a[11] * b[11]
-  ];
-}
-function mulMat4x3ByMat4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
-    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
-    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
-    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
-    a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15],
-    a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12],
-    a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13],
-    a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14],
-    a[8] * b[3] + a[9] * b[7] + a[10] * b[11] + a[11] * b[15]
-  ];
-}
-function mulVec4ByScalar(a, b) {
-  return [a[0] * b, a[1] * b, a[2] * b, a[3] * b];
-}
-function mulVec4ByVec2(a, b) {
-  return [
-    a[0] * b[0],
-    a[0] * b[1],
-    a[1] * b[0],
-    a[1] * b[1],
-    a[2] * b[0],
-    a[2] * b[1],
-    a[3] * b[0],
-    a[3] * b[1]
-  ];
-}
-function mulVec4ByVec3(a, b) {
-  return [
-    a[0] * b[0],
-    a[0] * b[1],
-    a[0] * b[2],
-    a[1] * b[0],
-    a[1] * b[1],
-    a[1] * b[2],
-    a[2] * b[0],
-    a[2] * b[1],
-    a[2] * b[2],
-    a[3] * b[0],
-    a[3] * b[1],
-    a[3] * b[2]
-  ];
-}
-function mulVec4ByVec4(a, b) {
-  return [
-    a[0] * b[0],
-    a[0] * b[1],
-    a[0] * b[2],
-    a[0] * b[3],
-    a[1] * b[0],
-    a[1] * b[1],
-    a[1] * b[2],
-    a[1] * b[3],
-    a[2] * b[0],
-    a[2] * b[1],
-    a[2] * b[2],
-    a[2] * b[3],
-    a[3] * b[0],
-    a[3] * b[1],
-    a[3] * b[2],
-    a[3] * b[3]
-  ];
-}
-function mulMat2x4ByVec2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1],
-    a[2] * b[0] + a[3] * b[1],
-    a[4] * b[0] + a[5] * b[1],
-    a[6] * b[0] + a[7] * b[1]
-  ];
-}
-function mulMat2x4ByMat2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[2],
-    a[0] * b[1] + a[1] * b[3],
-    a[2] * b[0] + a[3] * b[2],
-    a[2] * b[1] + a[3] * b[3],
-    a[4] * b[0] + a[5] * b[2],
-    a[4] * b[1] + a[5] * b[3],
-    a[6] * b[0] + a[7] * b[2],
-    a[6] * b[1] + a[7] * b[3]
-  ];
-}
-function mulMat2x4ByMat3x2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[3],
-    a[0] * b[1] + a[1] * b[4],
-    a[0] * b[2] + a[1] * b[5],
-    a[2] * b[0] + a[3] * b[3],
-    a[2] * b[1] + a[3] * b[4],
-    a[2] * b[2] + a[3] * b[5],
-    a[4] * b[0] + a[5] * b[3],
-    a[4] * b[1] + a[5] * b[4],
-    a[4] * b[2] + a[5] * b[5],
-    a[6] * b[0] + a[7] * b[3],
-    a[6] * b[1] + a[7] * b[4],
-    a[6] * b[2] + a[7] * b[5]
-  ];
-}
-function mulMat2x4ByMat4x2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[4],
-    a[0] * b[1] + a[1] * b[5],
-    a[0] * b[2] + a[1] * b[6],
-    a[0] * b[3] + a[1] * b[7],
-    a[2] * b[0] + a[3] * b[4],
-    a[2] * b[1] + a[3] * b[5],
-    a[2] * b[2] + a[3] * b[6],
-    a[2] * b[3] + a[3] * b[7],
-    a[4] * b[0] + a[5] * b[4],
-    a[4] * b[1] + a[5] * b[5],
-    a[4] * b[2] + a[5] * b[6],
-    a[4] * b[3] + a[5] * b[7],
-    a[6] * b[0] + a[7] * b[4],
-    a[6] * b[1] + a[7] * b[5],
-    a[6] * b[2] + a[7] * b[6],
-    a[6] * b[3] + a[7] * b[7]
-  ];
-}
-function mulMat3x4ByVec3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
-    a[3] * b[0] + a[4] * b[1] + a[5] * b[2],
-    a[6] * b[0] + a[7] * b[1] + a[8] * b[2],
-    a[9] * b[0] + a[10] * b[1] + a[11] * b[2]
-  ];
-}
-function mulMat3x4ByMat2x3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5],
-    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
-    a[3] * b[1] + a[4] * b[3] + a[5] * b[5],
-    a[6] * b[0] + a[7] * b[2] + a[8] * b[4],
-    a[6] * b[1] + a[7] * b[3] + a[8] * b[5],
-    a[9] * b[0] + a[10] * b[2] + a[11] * b[4],
-    a[9] * b[1] + a[10] * b[3] + a[11] * b[5]
-  ];
-}
-function mulMat3x4ByMat3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
-    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
-    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
-    a[3] * b[2] + a[4] * b[5] + a[5] * b[8],
-    a[6] * b[0] + a[7] * b[3] + a[8] * b[6],
-    a[6] * b[1] + a[7] * b[4] + a[8] * b[7],
-    a[6] * b[2] + a[7] * b[5] + a[8] * b[8],
-    a[9] * b[0] + a[10] * b[3] + a[11] * b[6],
-    a[9] * b[1] + a[10] * b[4] + a[11] * b[7],
-    a[9] * b[2] + a[10] * b[5] + a[11] * b[8]
-  ];
-}
-function mulMat3x4ByMat4x3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11],
-    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
-    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
-    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
-    a[3] * b[3] + a[4] * b[7] + a[5] * b[11],
-    a[6] * b[0] + a[7] * b[4] + a[8] * b[8],
-    a[6] * b[1] + a[7] * b[5] + a[8] * b[9],
-    a[6] * b[2] + a[7] * b[6] + a[8] * b[10],
-    a[6] * b[3] + a[7] * b[7] + a[8] * b[11],
-    a[9] * b[0] + a[10] * b[4] + a[11] * b[8],
-    a[9] * b[1] + a[10] * b[5] + a[11] * b[9],
-    a[9] * b[2] + a[10] * b[6] + a[11] * b[10],
-    a[9] * b[3] + a[10] * b[7] + a[11] * b[11]
-  ];
-}
-function mulMat4ByVec4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
-    a[4] * b[0] + a[5] * b[1] + a[6] * b[2] + a[7] * b[3],
-    a[8] * b[0] + a[9] * b[1] + a[10] * b[2] + a[11] * b[3],
-    a[12] * b[0] + a[13] * b[1] + a[14] * b[2] + a[15] * b[3]
-  ];
-}
-function mulMat4ByMat2x4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7],
-    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
-    a[4] * b[1] + a[5] * b[3] + a[6] * b[5] + a[7] * b[7],
-    a[8] * b[0] + a[9] * b[2] + a[10] * b[4] + a[11] * b[6],
-    a[8] * b[1] + a[9] * b[3] + a[10] * b[5] + a[11] * b[7],
-    a[12] * b[0] + a[13] * b[2] + a[14] * b[4] + a[15] * b[6],
-    a[12] * b[1] + a[13] * b[3] + a[14] * b[5] + a[15] * b[7]
-  ];
-}
-function mulMat4ByMat3x4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11],
-    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
-    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
-    a[4] * b[2] + a[5] * b[5] + a[6] * b[8] + a[7] * b[11],
-    a[8] * b[0] + a[9] * b[3] + a[10] * b[6] + a[11] * b[9],
-    a[8] * b[1] + a[9] * b[4] + a[10] * b[7] + a[11] * b[10],
-    a[8] * b[2] + a[9] * b[5] + a[10] * b[8] + a[11] * b[11],
-    a[12] * b[0] + a[13] * b[3] + a[14] * b[6] + a[15] * b[9],
-    a[12] * b[1] + a[13] * b[4] + a[14] * b[7] + a[15] * b[10],
-    a[12] * b[2] + a[13] * b[5] + a[14] * b[8] + a[15] * b[11]
-  ];
-}
-function mulMat4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
-    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
-    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
-    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
-    a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15],
-    a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12],
-    a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13],
-    a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14],
-    a[8] * b[3] + a[9] * b[7] + a[10] * b[11] + a[11] * b[15],
-    a[12] * b[0] + a[13] * b[4] + a[14] * b[8] + a[15] * b[12],
-    a[12] * b[1] + a[13] * b[5] + a[14] * b[9] + a[15] * b[13],
-    a[12] * b[2] + a[13] * b[6] + a[14] * b[10] + a[15] * b[14],
-    a[12] * b[3] + a[13] * b[7] + a[14] * b[11] + a[15] * b[15]
-  ];
-}
-function add2(a, b) {
-  return [a[0] + b[0], a[1] + b[1]];
-}
-function add3(a, b) {
-  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-}
-function add4(a, b) {
-  return [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]];
-}
-function mul2(a, b) {
-  return [a[0] * b[0], a[1] * b[1]];
-}
-function mul3(a, b) {
-  return [a[0] * b[0], a[1] * b[1], a[2] * b[2]];
-}
-function mul4(a, b) {
-  return [a[0] * b[0], a[1] * b[1], a[2] * b[2], a[3] * b[3]];
-}
-function div2(a, b) {
-  return [a[0] / b[0], a[1] / b[1]];
-}
-function div3(a, b) {
-  return [a[0] / b[0], a[1] / b[1], a[2] / b[2]];
-}
-function div4(a, b) {
-  return [a[0] / b[0], a[1] / b[1], a[2] / b[2], a[3] / b[3]];
-}
-function sub2(a, b) {
-  return [a[0] - b[0], a[1] - b[1]];
-}
-function sub3(a, b) {
-  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-}
-function sub4(a, b) {
-  return [a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]];
-}
-function neg2(a) {
-  return [-a[0], -a[1]];
-}
-function neg3(a) {
-  return [-a[0], -a[1], -a[2]];
-}
-function neg4(a) {
-  return [-a[0], -a[1], -a[2], -a[3]];
-}
-function normalize2(a) {
-  return scale2(a, 1 / Math.sqrt(dot2(a, a)));
-}
-function normalize3(a) {
-  return scale3(a, 1 / Math.sqrt(dot3(a, a)));
-}
-function normalize4(a) {
-  return scale4(a, 1 / Math.sqrt(dot4(a, a)));
-}
-function length2(a) {
-  return Math.sqrt(dot2(a, a));
-}
-function length3(a) {
-  return Math.sqrt(dot3(a, a));
-}
-function length4(a) {
-  return Math.sqrt(dot4(a, a));
-}
-function rescale22(a, b) {
-  return scale2(normalize2(a), b);
-}
-function rescale3(a, b) {
-  return scale3(normalize3(a), b);
-}
-function rescale4(a, b) {
-  return scale4(normalize4(a), b);
-}
-function sum2(a) {
-  return a[0] + a[1];
-}
-function sum3(a) {
-  return a[0] + a[1] + a[2];
-}
-function sum4(a) {
-  return a[0] + a[1] + a[2] + a[3];
-}
-function dot2(a, b) {
-  return sum2(mul2(a, b));
-}
-function dot3(a, b) {
-  return sum3(mul3(a, b));
-}
-function dot4(a, b) {
-  return sum4(mul4(a, b));
-}
-function scale2(a, b) {
-  return [a[0] * b, a[1] * b];
-}
-function scale3(a, b) {
-  return [a[0] * b, a[1] * b, a[2] * b];
-}
-function scale4(a, b) {
-  return [a[0] * b, a[1] * b, a[2] * b, a[3] * b];
-}
-
-// src/webgl/mesh.ts
-function parametric2D(x2, y2, attr, getPoint) {
-  const data = [];
-  for (let j = 0; j < y2; j++) {
-    for (let i = 0; i < x2; i++) {
-      const a = getPoint(i, j);
-      const b = getPoint(i + 1, j);
-      const c = getPoint(i, j + 1);
-      const d = getPoint(i + 1, j + 1);
-      data.push({ [attr]: a });
-      data.push({ [attr]: c });
-      data.push({ [attr]: b });
-      data.push({ [attr]: c });
-      data.push({ [attr]: d });
-      data.push({ [attr]: b });
-    }
-  }
-  return data;
-}
-function uvSphere(x2, y2, rad, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
-    let px = Math.cos(a) * Math.cos(b) * rad;
-    let pz = Math.sin(a) * Math.cos(b) * rad;
-    let py = Math.sin(b) * rad;
-    return [px, py, pz];
-  });
-}
-function ring(x2, rad, height, attr) {
-  return parametric2D(x2, 1, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const px = Math.cos(a) * rad;
-    const pz = Math.sin(a) * rad;
-    const py = j === 1 ? height / 2 : -height / 2;
-    return [px, py, pz];
-  });
-}
-function torus(x2, y2, R, r, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI * 2;
-    let px = Math.cos(a);
-    let pz = Math.sin(a);
-    let py = Math.sin(b) * r;
-    px *= R + Math.cos(b) * r;
-    pz *= R + Math.cos(b) * r;
-    return [px, py, pz];
-  });
-}
-function move(mesh, attr, offset) {
-  return mesh.map((m) => ({
-    ...m,
-    [attr]: m[attr].map((e, i) => e + offset[i])
-  }));
-}
-function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
-  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
-  const rangeInv = 1 / (near - far);
-  return [
-    f / aspectRatio,
-    0,
-    0,
-    0,
-    0,
-    f,
-    0,
-    0,
-    0,
-    0,
-    (near + far) * rangeInv,
-    -1,
-    0,
-    0,
-    near * far * rangeInv * 2,
-    0
-  ];
-}
-function ortho(left, right, top, bottom, near, far) {
-  return [
-    2 / (right - left),
-    0,
-    0,
-    -(right + left) / (right - left),
-    0,
-    2 / (top - bottom),
-    0,
-    -(top + bottom) / (top - bottom),
-    0,
-    0,
-    -2 / (far - near),
-    -(far + near) / (far - near),
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function cross(a, b) {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0]
-  ];
-}
-function normalize(v) {
-  const len = Math.hypot(...v);
-  return scale3(v, 1 / len);
-}
-function rodrigues(v, k, theta) {
-  k = normalize(k);
-  return add3(
-    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-  );
-}
-function rotate(axis, angle) {
-  return [
-    ...rodrigues([1, 0, 0], axis, angle),
-    0,
-    ...rodrigues([0, 1, 0], axis, angle),
-    0,
-    ...rodrigues([0, 0, 1], axis, angle),
-    0,
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function scale(axes) {
-  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
-}
-function translate(v) {
-  return [1, 0, 0, v[0], 0, 1, 0, v[1], 0, 0, 1, v[2], 0, 0, 0, 1];
-}
-
-// src/webgl/buffer.ts
-function getDatatypeSize(gl, datatype) {
-  return {
-    [gl.BYTE]: 1,
-    [gl.SHORT]: 2,
-    [gl.UNSIGNED_BYTE]: 1,
-    [gl.UNSIGNED_SHORT]: 2,
-    [gl.FLOAT]: 4,
-    [gl.HALF_FLOAT]: 2,
-    [gl.INT]: 4,
-    [gl.UNSIGNED_INT]: 4,
-    [gl.INT_2_10_10_10_REV]: 4,
-    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
-  }[datatype];
-}
-function createBufferWithLayout(gl, layout, data) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  const layoutEntries = Object.entries(layout);
-  let stride = 0;
-  const offsets = /* @__PURE__ */ new Map();
-  for (const [name, attrs] of layoutEntries) {
-    offsets.set(name, stride);
-    stride += attrs.size * getDatatypeSize(gl, attrs.type);
-  }
-  const arraybuf = new ArrayBuffer(stride * data.length);
-  const rawdata = new DataView(arraybuf);
-  let i = 0;
-  for (const d of data) {
-    for (const [name, attrs] of layoutEntries) {
-      for (let j = 0; j < attrs.size; j++) {
-        const val = d[name][j];
-        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
-        if (attrs.type === gl.BYTE) {
-          rawdata.setInt8(pos, val);
-        } else if (attrs.type === gl.UNSIGNED_BYTE) {
-          rawdata.setUint8(pos, val);
-        } else if (attrs.type === gl.FLOAT) {
-          rawdata.setFloat32(pos, val, true);
-        } else if (attrs.type === gl.SHORT) {
-          rawdata.setInt16(pos, val, true);
-        } else if (attrs.type === gl.UNSIGNED_SHORT) {
-          rawdata.setUint16(pos, val, true);
-        }
-      }
-    }
-    i++;
-  }
-  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
-  return {
-    vertexCount: data.length,
-    buffer,
-    setLayout(prog) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      for (const [name, attrs] of layoutEntries) {
-        const loc = gl.getAttribLocation(prog, name);
-        if (attrs.isInt) {
-          gl.vertexAttribIPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            stride,
-            offsets.get(name)
-          );
-        } else {
-          gl.vertexAttribPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            attrs.normalized ?? false,
-            stride,
-            offsets.get(name)
-          );
-        }
-        gl.enableVertexAttribArray(loc);
-      }
-    },
-    bindArray(gl2) {
-      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
-    },
-    bindIndex(gl2) {
-      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
-    }
-  };
 }
 
 // node_modules/ml-convolution/src/utils.js
@@ -26291,6 +24153,2151 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
+// src/math/vector.ts
+function xxxx(a) {
+  return [a[0], a[0], a[0], a[0]];
+}
+function yxxx(a) {
+  return [a[1], a[0], a[0], a[0]];
+}
+function zxxx(a) {
+  return [a[2], a[0], a[0], a[0]];
+}
+function wxxx(a) {
+  return [a[3], a[0], a[0], a[0]];
+}
+function xyxx(a) {
+  return [a[0], a[1], a[0], a[0]];
+}
+function yyxx(a) {
+  return [a[1], a[1], a[0], a[0]];
+}
+function zyxx(a) {
+  return [a[2], a[1], a[0], a[0]];
+}
+function wyxx(a) {
+  return [a[3], a[1], a[0], a[0]];
+}
+function xzxx(a) {
+  return [a[0], a[2], a[0], a[0]];
+}
+function yzxx(a) {
+  return [a[1], a[2], a[0], a[0]];
+}
+function zzxx(a) {
+  return [a[2], a[2], a[0], a[0]];
+}
+function wzxx(a) {
+  return [a[3], a[2], a[0], a[0]];
+}
+function xwxx(a) {
+  return [a[0], a[3], a[0], a[0]];
+}
+function ywxx(a) {
+  return [a[1], a[3], a[0], a[0]];
+}
+function zwxx(a) {
+  return [a[2], a[3], a[0], a[0]];
+}
+function wwxx(a) {
+  return [a[3], a[3], a[0], a[0]];
+}
+function xxyx(a) {
+  return [a[0], a[0], a[1], a[0]];
+}
+function yxyx(a) {
+  return [a[1], a[0], a[1], a[0]];
+}
+function zxyx(a) {
+  return [a[2], a[0], a[1], a[0]];
+}
+function wxyx(a) {
+  return [a[3], a[0], a[1], a[0]];
+}
+function xyyx(a) {
+  return [a[0], a[1], a[1], a[0]];
+}
+function yyyx(a) {
+  return [a[1], a[1], a[1], a[0]];
+}
+function zyyx(a) {
+  return [a[2], a[1], a[1], a[0]];
+}
+function wyyx(a) {
+  return [a[3], a[1], a[1], a[0]];
+}
+function xzyx(a) {
+  return [a[0], a[2], a[1], a[0]];
+}
+function yzyx(a) {
+  return [a[1], a[2], a[1], a[0]];
+}
+function zzyx(a) {
+  return [a[2], a[2], a[1], a[0]];
+}
+function wzyx(a) {
+  return [a[3], a[2], a[1], a[0]];
+}
+function xwyx(a) {
+  return [a[0], a[3], a[1], a[0]];
+}
+function ywyx(a) {
+  return [a[1], a[3], a[1], a[0]];
+}
+function zwyx(a) {
+  return [a[2], a[3], a[1], a[0]];
+}
+function wwyx(a) {
+  return [a[3], a[3], a[1], a[0]];
+}
+function xxzx(a) {
+  return [a[0], a[0], a[2], a[0]];
+}
+function yxzx(a) {
+  return [a[1], a[0], a[2], a[0]];
+}
+function zxzx(a) {
+  return [a[2], a[0], a[2], a[0]];
+}
+function wxzx(a) {
+  return [a[3], a[0], a[2], a[0]];
+}
+function xyzx(a) {
+  return [a[0], a[1], a[2], a[0]];
+}
+function yyzx(a) {
+  return [a[1], a[1], a[2], a[0]];
+}
+function zyzx(a) {
+  return [a[2], a[1], a[2], a[0]];
+}
+function wyzx(a) {
+  return [a[3], a[1], a[2], a[0]];
+}
+function xzzx(a) {
+  return [a[0], a[2], a[2], a[0]];
+}
+function yzzx(a) {
+  return [a[1], a[2], a[2], a[0]];
+}
+function zzzx(a) {
+  return [a[2], a[2], a[2], a[0]];
+}
+function wzzx(a) {
+  return [a[3], a[2], a[2], a[0]];
+}
+function xwzx(a) {
+  return [a[0], a[3], a[2], a[0]];
+}
+function ywzx(a) {
+  return [a[1], a[3], a[2], a[0]];
+}
+function zwzx(a) {
+  return [a[2], a[3], a[2], a[0]];
+}
+function wwzx(a) {
+  return [a[3], a[3], a[2], a[0]];
+}
+function xxwx(a) {
+  return [a[0], a[0], a[3], a[0]];
+}
+function yxwx(a) {
+  return [a[1], a[0], a[3], a[0]];
+}
+function zxwx(a) {
+  return [a[2], a[0], a[3], a[0]];
+}
+function wxwx(a) {
+  return [a[3], a[0], a[3], a[0]];
+}
+function xywx(a) {
+  return [a[0], a[1], a[3], a[0]];
+}
+function yywx(a) {
+  return [a[1], a[1], a[3], a[0]];
+}
+function zywx(a) {
+  return [a[2], a[1], a[3], a[0]];
+}
+function wywx(a) {
+  return [a[3], a[1], a[3], a[0]];
+}
+function xzwx(a) {
+  return [a[0], a[2], a[3], a[0]];
+}
+function yzwx(a) {
+  return [a[1], a[2], a[3], a[0]];
+}
+function zzwx(a) {
+  return [a[2], a[2], a[3], a[0]];
+}
+function wzwx(a) {
+  return [a[3], a[2], a[3], a[0]];
+}
+function xwwx(a) {
+  return [a[0], a[3], a[3], a[0]];
+}
+function ywwx(a) {
+  return [a[1], a[3], a[3], a[0]];
+}
+function zwwx(a) {
+  return [a[2], a[3], a[3], a[0]];
+}
+function wwwx(a) {
+  return [a[3], a[3], a[3], a[0]];
+}
+function xxxy(a) {
+  return [a[0], a[0], a[0], a[1]];
+}
+function yxxy(a) {
+  return [a[1], a[0], a[0], a[1]];
+}
+function zxxy(a) {
+  return [a[2], a[0], a[0], a[1]];
+}
+function wxxy(a) {
+  return [a[3], a[0], a[0], a[1]];
+}
+function xyxy(a) {
+  return [a[0], a[1], a[0], a[1]];
+}
+function yyxy(a) {
+  return [a[1], a[1], a[0], a[1]];
+}
+function zyxy(a) {
+  return [a[2], a[1], a[0], a[1]];
+}
+function wyxy(a) {
+  return [a[3], a[1], a[0], a[1]];
+}
+function xzxy(a) {
+  return [a[0], a[2], a[0], a[1]];
+}
+function yzxy(a) {
+  return [a[1], a[2], a[0], a[1]];
+}
+function zzxy(a) {
+  return [a[2], a[2], a[0], a[1]];
+}
+function wzxy(a) {
+  return [a[3], a[2], a[0], a[1]];
+}
+function xwxy(a) {
+  return [a[0], a[3], a[0], a[1]];
+}
+function ywxy(a) {
+  return [a[1], a[3], a[0], a[1]];
+}
+function zwxy(a) {
+  return [a[2], a[3], a[0], a[1]];
+}
+function wwxy(a) {
+  return [a[3], a[3], a[0], a[1]];
+}
+function xxyy(a) {
+  return [a[0], a[0], a[1], a[1]];
+}
+function yxyy(a) {
+  return [a[1], a[0], a[1], a[1]];
+}
+function zxyy(a) {
+  return [a[2], a[0], a[1], a[1]];
+}
+function wxyy(a) {
+  return [a[3], a[0], a[1], a[1]];
+}
+function xyyy(a) {
+  return [a[0], a[1], a[1], a[1]];
+}
+function yyyy(a) {
+  return [a[1], a[1], a[1], a[1]];
+}
+function zyyy(a) {
+  return [a[2], a[1], a[1], a[1]];
+}
+function wyyy(a) {
+  return [a[3], a[1], a[1], a[1]];
+}
+function xzyy(a) {
+  return [a[0], a[2], a[1], a[1]];
+}
+function yzyy(a) {
+  return [a[1], a[2], a[1], a[1]];
+}
+function zzyy(a) {
+  return [a[2], a[2], a[1], a[1]];
+}
+function wzyy(a) {
+  return [a[3], a[2], a[1], a[1]];
+}
+function xwyy(a) {
+  return [a[0], a[3], a[1], a[1]];
+}
+function ywyy(a) {
+  return [a[1], a[3], a[1], a[1]];
+}
+function zwyy(a) {
+  return [a[2], a[3], a[1], a[1]];
+}
+function wwyy(a) {
+  return [a[3], a[3], a[1], a[1]];
+}
+function xxzy(a) {
+  return [a[0], a[0], a[2], a[1]];
+}
+function yxzy(a) {
+  return [a[1], a[0], a[2], a[1]];
+}
+function zxzy(a) {
+  return [a[2], a[0], a[2], a[1]];
+}
+function wxzy(a) {
+  return [a[3], a[0], a[2], a[1]];
+}
+function xyzy(a) {
+  return [a[0], a[1], a[2], a[1]];
+}
+function yyzy(a) {
+  return [a[1], a[1], a[2], a[1]];
+}
+function zyzy(a) {
+  return [a[2], a[1], a[2], a[1]];
+}
+function wyzy(a) {
+  return [a[3], a[1], a[2], a[1]];
+}
+function xzzy(a) {
+  return [a[0], a[2], a[2], a[1]];
+}
+function yzzy(a) {
+  return [a[1], a[2], a[2], a[1]];
+}
+function zzzy(a) {
+  return [a[2], a[2], a[2], a[1]];
+}
+function wzzy(a) {
+  return [a[3], a[2], a[2], a[1]];
+}
+function xwzy(a) {
+  return [a[0], a[3], a[2], a[1]];
+}
+function ywzy(a) {
+  return [a[1], a[3], a[2], a[1]];
+}
+function zwzy(a) {
+  return [a[2], a[3], a[2], a[1]];
+}
+function wwzy(a) {
+  return [a[3], a[3], a[2], a[1]];
+}
+function xxwy(a) {
+  return [a[0], a[0], a[3], a[1]];
+}
+function yxwy(a) {
+  return [a[1], a[0], a[3], a[1]];
+}
+function zxwy(a) {
+  return [a[2], a[0], a[3], a[1]];
+}
+function wxwy(a) {
+  return [a[3], a[0], a[3], a[1]];
+}
+function xywy(a) {
+  return [a[0], a[1], a[3], a[1]];
+}
+function yywy(a) {
+  return [a[1], a[1], a[3], a[1]];
+}
+function zywy(a) {
+  return [a[2], a[1], a[3], a[1]];
+}
+function wywy(a) {
+  return [a[3], a[1], a[3], a[1]];
+}
+function xzwy(a) {
+  return [a[0], a[2], a[3], a[1]];
+}
+function yzwy(a) {
+  return [a[1], a[2], a[3], a[1]];
+}
+function zzwy(a) {
+  return [a[2], a[2], a[3], a[1]];
+}
+function wzwy(a) {
+  return [a[3], a[2], a[3], a[1]];
+}
+function xwwy(a) {
+  return [a[0], a[3], a[3], a[1]];
+}
+function ywwy(a) {
+  return [a[1], a[3], a[3], a[1]];
+}
+function zwwy(a) {
+  return [a[2], a[3], a[3], a[1]];
+}
+function wwwy(a) {
+  return [a[3], a[3], a[3], a[1]];
+}
+function xxxz(a) {
+  return [a[0], a[0], a[0], a[2]];
+}
+function yxxz(a) {
+  return [a[1], a[0], a[0], a[2]];
+}
+function zxxz(a) {
+  return [a[2], a[0], a[0], a[2]];
+}
+function wxxz(a) {
+  return [a[3], a[0], a[0], a[2]];
+}
+function xyxz(a) {
+  return [a[0], a[1], a[0], a[2]];
+}
+function yyxz(a) {
+  return [a[1], a[1], a[0], a[2]];
+}
+function zyxz(a) {
+  return [a[2], a[1], a[0], a[2]];
+}
+function wyxz(a) {
+  return [a[3], a[1], a[0], a[2]];
+}
+function xzxz(a) {
+  return [a[0], a[2], a[0], a[2]];
+}
+function yzxz(a) {
+  return [a[1], a[2], a[0], a[2]];
+}
+function zzxz(a) {
+  return [a[2], a[2], a[0], a[2]];
+}
+function wzxz(a) {
+  return [a[3], a[2], a[0], a[2]];
+}
+function xwxz(a) {
+  return [a[0], a[3], a[0], a[2]];
+}
+function ywxz(a) {
+  return [a[1], a[3], a[0], a[2]];
+}
+function zwxz(a) {
+  return [a[2], a[3], a[0], a[2]];
+}
+function wwxz(a) {
+  return [a[3], a[3], a[0], a[2]];
+}
+function xxyz(a) {
+  return [a[0], a[0], a[1], a[2]];
+}
+function yxyz(a) {
+  return [a[1], a[0], a[1], a[2]];
+}
+function zxyz(a) {
+  return [a[2], a[0], a[1], a[2]];
+}
+function wxyz(a) {
+  return [a[3], a[0], a[1], a[2]];
+}
+function xyyz(a) {
+  return [a[0], a[1], a[1], a[2]];
+}
+function yyyz(a) {
+  return [a[1], a[1], a[1], a[2]];
+}
+function zyyz(a) {
+  return [a[2], a[1], a[1], a[2]];
+}
+function wyyz(a) {
+  return [a[3], a[1], a[1], a[2]];
+}
+function xzyz(a) {
+  return [a[0], a[2], a[1], a[2]];
+}
+function yzyz(a) {
+  return [a[1], a[2], a[1], a[2]];
+}
+function zzyz(a) {
+  return [a[2], a[2], a[1], a[2]];
+}
+function wzyz(a) {
+  return [a[3], a[2], a[1], a[2]];
+}
+function xwyz(a) {
+  return [a[0], a[3], a[1], a[2]];
+}
+function ywyz(a) {
+  return [a[1], a[3], a[1], a[2]];
+}
+function zwyz(a) {
+  return [a[2], a[3], a[1], a[2]];
+}
+function wwyz(a) {
+  return [a[3], a[3], a[1], a[2]];
+}
+function xxzz(a) {
+  return [a[0], a[0], a[2], a[2]];
+}
+function yxzz(a) {
+  return [a[1], a[0], a[2], a[2]];
+}
+function zxzz(a) {
+  return [a[2], a[0], a[2], a[2]];
+}
+function wxzz(a) {
+  return [a[3], a[0], a[2], a[2]];
+}
+function xyzz(a) {
+  return [a[0], a[1], a[2], a[2]];
+}
+function yyzz(a) {
+  return [a[1], a[1], a[2], a[2]];
+}
+function zyzz(a) {
+  return [a[2], a[1], a[2], a[2]];
+}
+function wyzz(a) {
+  return [a[3], a[1], a[2], a[2]];
+}
+function xzzz(a) {
+  return [a[0], a[2], a[2], a[2]];
+}
+function yzzz(a) {
+  return [a[1], a[2], a[2], a[2]];
+}
+function zzzz(a) {
+  return [a[2], a[2], a[2], a[2]];
+}
+function wzzz(a) {
+  return [a[3], a[2], a[2], a[2]];
+}
+function xwzz(a) {
+  return [a[0], a[3], a[2], a[2]];
+}
+function ywzz(a) {
+  return [a[1], a[3], a[2], a[2]];
+}
+function zwzz(a) {
+  return [a[2], a[3], a[2], a[2]];
+}
+function wwzz(a) {
+  return [a[3], a[3], a[2], a[2]];
+}
+function xxwz(a) {
+  return [a[0], a[0], a[3], a[2]];
+}
+function yxwz(a) {
+  return [a[1], a[0], a[3], a[2]];
+}
+function zxwz(a) {
+  return [a[2], a[0], a[3], a[2]];
+}
+function wxwz(a) {
+  return [a[3], a[0], a[3], a[2]];
+}
+function xywz(a) {
+  return [a[0], a[1], a[3], a[2]];
+}
+function yywz(a) {
+  return [a[1], a[1], a[3], a[2]];
+}
+function zywz(a) {
+  return [a[2], a[1], a[3], a[2]];
+}
+function wywz(a) {
+  return [a[3], a[1], a[3], a[2]];
+}
+function xzwz(a) {
+  return [a[0], a[2], a[3], a[2]];
+}
+function yzwz(a) {
+  return [a[1], a[2], a[3], a[2]];
+}
+function zzwz(a) {
+  return [a[2], a[2], a[3], a[2]];
+}
+function wzwz(a) {
+  return [a[3], a[2], a[3], a[2]];
+}
+function xwwz(a) {
+  return [a[0], a[3], a[3], a[2]];
+}
+function ywwz(a) {
+  return [a[1], a[3], a[3], a[2]];
+}
+function zwwz(a) {
+  return [a[2], a[3], a[3], a[2]];
+}
+function wwwz(a) {
+  return [a[3], a[3], a[3], a[2]];
+}
+function xxxw(a) {
+  return [a[0], a[0], a[0], a[3]];
+}
+function yxxw(a) {
+  return [a[1], a[0], a[0], a[3]];
+}
+function zxxw(a) {
+  return [a[2], a[0], a[0], a[3]];
+}
+function wxxw(a) {
+  return [a[3], a[0], a[0], a[3]];
+}
+function xyxw(a) {
+  return [a[0], a[1], a[0], a[3]];
+}
+function yyxw(a) {
+  return [a[1], a[1], a[0], a[3]];
+}
+function zyxw(a) {
+  return [a[2], a[1], a[0], a[3]];
+}
+function wyxw(a) {
+  return [a[3], a[1], a[0], a[3]];
+}
+function xzxw(a) {
+  return [a[0], a[2], a[0], a[3]];
+}
+function yzxw(a) {
+  return [a[1], a[2], a[0], a[3]];
+}
+function zzxw(a) {
+  return [a[2], a[2], a[0], a[3]];
+}
+function wzxw(a) {
+  return [a[3], a[2], a[0], a[3]];
+}
+function xwxw(a) {
+  return [a[0], a[3], a[0], a[3]];
+}
+function ywxw(a) {
+  return [a[1], a[3], a[0], a[3]];
+}
+function zwxw(a) {
+  return [a[2], a[3], a[0], a[3]];
+}
+function wwxw(a) {
+  return [a[3], a[3], a[0], a[3]];
+}
+function xxyw(a) {
+  return [a[0], a[0], a[1], a[3]];
+}
+function yxyw(a) {
+  return [a[1], a[0], a[1], a[3]];
+}
+function zxyw(a) {
+  return [a[2], a[0], a[1], a[3]];
+}
+function wxyw(a) {
+  return [a[3], a[0], a[1], a[3]];
+}
+function xyyw(a) {
+  return [a[0], a[1], a[1], a[3]];
+}
+function yyyw(a) {
+  return [a[1], a[1], a[1], a[3]];
+}
+function zyyw(a) {
+  return [a[2], a[1], a[1], a[3]];
+}
+function wyyw(a) {
+  return [a[3], a[1], a[1], a[3]];
+}
+function xzyw(a) {
+  return [a[0], a[2], a[1], a[3]];
+}
+function yzyw(a) {
+  return [a[1], a[2], a[1], a[3]];
+}
+function zzyw(a) {
+  return [a[2], a[2], a[1], a[3]];
+}
+function wzyw(a) {
+  return [a[3], a[2], a[1], a[3]];
+}
+function xwyw(a) {
+  return [a[0], a[3], a[1], a[3]];
+}
+function ywyw(a) {
+  return [a[1], a[3], a[1], a[3]];
+}
+function zwyw(a) {
+  return [a[2], a[3], a[1], a[3]];
+}
+function wwyw(a) {
+  return [a[3], a[3], a[1], a[3]];
+}
+function xxzw(a) {
+  return [a[0], a[0], a[2], a[3]];
+}
+function yxzw(a) {
+  return [a[1], a[0], a[2], a[3]];
+}
+function zxzw(a) {
+  return [a[2], a[0], a[2], a[3]];
+}
+function wxzw(a) {
+  return [a[3], a[0], a[2], a[3]];
+}
+function xyzw(a) {
+  return [a[0], a[1], a[2], a[3]];
+}
+function yyzw(a) {
+  return [a[1], a[1], a[2], a[3]];
+}
+function zyzw(a) {
+  return [a[2], a[1], a[2], a[3]];
+}
+function wyzw(a) {
+  return [a[3], a[1], a[2], a[3]];
+}
+function xzzw(a) {
+  return [a[0], a[2], a[2], a[3]];
+}
+function yzzw(a) {
+  return [a[1], a[2], a[2], a[3]];
+}
+function zzzw(a) {
+  return [a[2], a[2], a[2], a[3]];
+}
+function wzzw(a) {
+  return [a[3], a[2], a[2], a[3]];
+}
+function xwzw(a) {
+  return [a[0], a[3], a[2], a[3]];
+}
+function ywzw(a) {
+  return [a[1], a[3], a[2], a[3]];
+}
+function zwzw(a) {
+  return [a[2], a[3], a[2], a[3]];
+}
+function wwzw(a) {
+  return [a[3], a[3], a[2], a[3]];
+}
+function xxww(a) {
+  return [a[0], a[0], a[3], a[3]];
+}
+function yxww(a) {
+  return [a[1], a[0], a[3], a[3]];
+}
+function zxww(a) {
+  return [a[2], a[0], a[3], a[3]];
+}
+function wxww(a) {
+  return [a[3], a[0], a[3], a[3]];
+}
+function xyww(a) {
+  return [a[0], a[1], a[3], a[3]];
+}
+function yyww(a) {
+  return [a[1], a[1], a[3], a[3]];
+}
+function zyww(a) {
+  return [a[2], a[1], a[3], a[3]];
+}
+function wyww(a) {
+  return [a[3], a[1], a[3], a[3]];
+}
+function xzww(a) {
+  return [a[0], a[2], a[3], a[3]];
+}
+function yzww(a) {
+  return [a[1], a[2], a[3], a[3]];
+}
+function zzww(a) {
+  return [a[2], a[2], a[3], a[3]];
+}
+function wzww(a) {
+  return [a[3], a[2], a[3], a[3]];
+}
+function xwww(a) {
+  return [a[0], a[3], a[3], a[3]];
+}
+function ywww(a) {
+  return [a[1], a[3], a[3], a[3]];
+}
+function zwww(a) {
+  return [a[2], a[3], a[3], a[3]];
+}
+function wwww(a) {
+  return [a[3], a[3], a[3], a[3]];
+}
+function xxx(a) {
+  return [a[0], a[0], a[0]];
+}
+function yxx(a) {
+  return [a[1], a[0], a[0]];
+}
+function zxx(a) {
+  return [a[2], a[0], a[0]];
+}
+function wxx(a) {
+  return [a[3], a[0], a[0]];
+}
+function xyx(a) {
+  return [a[0], a[1], a[0]];
+}
+function yyx(a) {
+  return [a[1], a[1], a[0]];
+}
+function zyx(a) {
+  return [a[2], a[1], a[0]];
+}
+function wyx(a) {
+  return [a[3], a[1], a[0]];
+}
+function xzx(a) {
+  return [a[0], a[2], a[0]];
+}
+function yzx(a) {
+  return [a[1], a[2], a[0]];
+}
+function zzx(a) {
+  return [a[2], a[2], a[0]];
+}
+function wzx(a) {
+  return [a[3], a[2], a[0]];
+}
+function xwx(a) {
+  return [a[0], a[3], a[0]];
+}
+function ywx(a) {
+  return [a[1], a[3], a[0]];
+}
+function zwx(a) {
+  return [a[2], a[3], a[0]];
+}
+function wwx(a) {
+  return [a[3], a[3], a[0]];
+}
+function xxy(a) {
+  return [a[0], a[0], a[1]];
+}
+function yxy(a) {
+  return [a[1], a[0], a[1]];
+}
+function zxy(a) {
+  return [a[2], a[0], a[1]];
+}
+function wxy(a) {
+  return [a[3], a[0], a[1]];
+}
+function xyy(a) {
+  return [a[0], a[1], a[1]];
+}
+function yyy(a) {
+  return [a[1], a[1], a[1]];
+}
+function zyy(a) {
+  return [a[2], a[1], a[1]];
+}
+function wyy(a) {
+  return [a[3], a[1], a[1]];
+}
+function xzy(a) {
+  return [a[0], a[2], a[1]];
+}
+function yzy(a) {
+  return [a[1], a[2], a[1]];
+}
+function zzy(a) {
+  return [a[2], a[2], a[1]];
+}
+function wzy(a) {
+  return [a[3], a[2], a[1]];
+}
+function xwy(a) {
+  return [a[0], a[3], a[1]];
+}
+function ywy(a) {
+  return [a[1], a[3], a[1]];
+}
+function zwy(a) {
+  return [a[2], a[3], a[1]];
+}
+function wwy(a) {
+  return [a[3], a[3], a[1]];
+}
+function xxz(a) {
+  return [a[0], a[0], a[2]];
+}
+function yxz(a) {
+  return [a[1], a[0], a[2]];
+}
+function zxz(a) {
+  return [a[2], a[0], a[2]];
+}
+function wxz(a) {
+  return [a[3], a[0], a[2]];
+}
+function xyz(a) {
+  return [a[0], a[1], a[2]];
+}
+function yyz(a) {
+  return [a[1], a[1], a[2]];
+}
+function zyz(a) {
+  return [a[2], a[1], a[2]];
+}
+function wyz(a) {
+  return [a[3], a[1], a[2]];
+}
+function xzz(a) {
+  return [a[0], a[2], a[2]];
+}
+function yzz(a) {
+  return [a[1], a[2], a[2]];
+}
+function zzz(a) {
+  return [a[2], a[2], a[2]];
+}
+function wzz(a) {
+  return [a[3], a[2], a[2]];
+}
+function xwz(a) {
+  return [a[0], a[3], a[2]];
+}
+function ywz(a) {
+  return [a[1], a[3], a[2]];
+}
+function zwz(a) {
+  return [a[2], a[3], a[2]];
+}
+function wwz(a) {
+  return [a[3], a[3], a[2]];
+}
+function xxw(a) {
+  return [a[0], a[0], a[3]];
+}
+function yxw(a) {
+  return [a[1], a[0], a[3]];
+}
+function zxw(a) {
+  return [a[2], a[0], a[3]];
+}
+function wxw(a) {
+  return [a[3], a[0], a[3]];
+}
+function xyw(a) {
+  return [a[0], a[1], a[3]];
+}
+function yyw(a) {
+  return [a[1], a[1], a[3]];
+}
+function zyw(a) {
+  return [a[2], a[1], a[3]];
+}
+function wyw(a) {
+  return [a[3], a[1], a[3]];
+}
+function xzw(a) {
+  return [a[0], a[2], a[3]];
+}
+function yzw(a) {
+  return [a[1], a[2], a[3]];
+}
+function zzw(a) {
+  return [a[2], a[2], a[3]];
+}
+function wzw(a) {
+  return [a[3], a[2], a[3]];
+}
+function xww(a) {
+  return [a[0], a[3], a[3]];
+}
+function yww(a) {
+  return [a[1], a[3], a[3]];
+}
+function zww(a) {
+  return [a[2], a[3], a[3]];
+}
+function www(a) {
+  return [a[3], a[3], a[3]];
+}
+function xx(a) {
+  return [a[0], a[0]];
+}
+function yx(a) {
+  return [a[1], a[0]];
+}
+function zx(a) {
+  return [a[2], a[0]];
+}
+function wx(a) {
+  return [a[3], a[0]];
+}
+function xy(a) {
+  return [a[0], a[1]];
+}
+function yy(a) {
+  return [a[1], a[1]];
+}
+function zy(a) {
+  return [a[2], a[1]];
+}
+function wy(a) {
+  return [a[3], a[1]];
+}
+function xz(a) {
+  return [a[0], a[2]];
+}
+function yz(a) {
+  return [a[1], a[2]];
+}
+function zz(a) {
+  return [a[2], a[2]];
+}
+function wz(a) {
+  return [a[3], a[2]];
+}
+function xw(a) {
+  return [a[0], a[3]];
+}
+function yw(a) {
+  return [a[1], a[3]];
+}
+function zw(a) {
+  return [a[2], a[3]];
+}
+function ww(a) {
+  return [a[3], a[3]];
+}
+function x(a) {
+  return a[0];
+}
+function y(a) {
+  return a[1];
+}
+function z(a) {
+  return a[2];
+}
+function w(a) {
+  return a[3];
+}
+function polar2Cart(r, theta) {
+  return [r * Math.cos(theta), r * Math.sin(theta)];
+}
+function polarVec2Cart(rCommaTheta) {
+  return polar2Cart(...rCommaTheta);
+}
+function cart2Polar(a) {
+  return [length2(a), Math.atan2(a[1], a[0])];
+}
+function mulScalarByVec2(a, b) {
+  return [a * b[0], a * b[1]];
+}
+function mulScalarByVec3(a, b) {
+  return [a * b[0], a * b[1], a * b[2]];
+}
+function mulScalarByVec4(a, b) {
+  return [a * b[0], a * b[1], a * b[2], a * b[3]];
+}
+function mulVec2ByMat2(a, b) {
+  return [a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3]];
+}
+function mulVec2ByMat3x2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[3],
+    a[0] * b[1] + a[1] * b[4],
+    a[0] * b[2] + a[1] * b[5]
+  ];
+}
+function mulVec2ByMat4x2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[4],
+    a[0] * b[1] + a[1] * b[5],
+    a[0] * b[2] + a[1] * b[6],
+    a[0] * b[3] + a[1] * b[7]
+  ];
+}
+function mulVec3ByMat2x3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
+    a[0] * b[1] + a[1] * b[3] + a[2] * b[5]
+  ];
+}
+function mulVec3ByMat3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
+    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
+    a[0] * b[2] + a[1] * b[5] + a[2] * b[8]
+  ];
+}
+function mulVec3ByMat4x3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
+    a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
+    a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
+    a[0] * b[3] + a[1] * b[7] + a[2] * b[11]
+  ];
+}
+function mulVec4ByMat2x4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
+    a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7]
+  ];
+}
+function mulVec4ByMat3x4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
+    a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
+    a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11]
+  ];
+}
+function mulVec4ByMat4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
+    a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
+    a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
+    a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15]
+  ];
+}
+function mulVec2ByScalar(a, b) {
+  return [a[0] * b, a[1] * b];
+}
+function mulVec2ByVec2(a, b) {
+  return [a[0] * b[0], a[0] * b[1], a[1] * b[0], a[1] * b[1]];
+}
+function mulVec2ByVec3(a, b) {
+  return [
+    a[0] * b[0],
+    a[0] * b[1],
+    a[0] * b[2],
+    a[1] * b[0],
+    a[1] * b[1],
+    a[1] * b[2]
+  ];
+}
+function mulVec2ByVec4(a, b) {
+  return [
+    a[0] * b[0],
+    a[0] * b[1],
+    a[0] * b[2],
+    a[0] * b[3],
+    a[1] * b[0],
+    a[1] * b[1],
+    a[1] * b[2],
+    a[1] * b[3]
+  ];
+}
+function mulMat2ByVec2(a, b) {
+  return [a[0] * b[0] + a[1] * b[1], a[2] * b[0] + a[3] * b[1]];
+}
+function mulMat2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[2],
+    a[0] * b[1] + a[1] * b[3],
+    a[2] * b[0] + a[3] * b[2],
+    a[2] * b[1] + a[3] * b[3]
+  ];
+}
+function mulMat2ByMat3x2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[3],
+    a[0] * b[1] + a[1] * b[4],
+    a[0] * b[2] + a[1] * b[5],
+    a[2] * b[0] + a[3] * b[3],
+    a[2] * b[1] + a[3] * b[4],
+    a[2] * b[2] + a[3] * b[5]
+  ];
+}
+function mulMat2ByMat4x2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[4],
+    a[0] * b[1] + a[1] * b[5],
+    a[0] * b[2] + a[1] * b[6],
+    a[0] * b[3] + a[1] * b[7],
+    a[2] * b[0] + a[3] * b[4],
+    a[2] * b[1] + a[3] * b[5],
+    a[2] * b[2] + a[3] * b[6],
+    a[2] * b[3] + a[3] * b[7]
+  ];
+}
+function mulMat3x2ByVec3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+    a[3] * b[0] + a[4] * b[1] + a[5] * b[2]
+  ];
+}
+function mulMat3x2ByMat2x3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
+    a[0] * b[1] + a[1] * b[3] + a[2] * b[5],
+    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
+    a[3] * b[1] + a[4] * b[3] + a[5] * b[5]
+  ];
+}
+function mulMat3x2ByMat3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
+    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
+    a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
+    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
+    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
+    a[3] * b[2] + a[4] * b[5] + a[5] * b[8]
+  ];
+}
+function mulMat3x2ByMat4x3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
+    a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
+    a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
+    a[0] * b[3] + a[1] * b[7] + a[2] * b[11],
+    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
+    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
+    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
+    a[3] * b[3] + a[4] * b[7] + a[5] * b[11]
+  ];
+}
+function mulMat4x2ByVec4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
+    a[4] * b[0] + a[5] * b[1] + a[6] * b[2] + a[7] * b[3]
+  ];
+}
+function mulMat4x2ByMat2x4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
+    a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7],
+    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
+    a[4] * b[1] + a[5] * b[3] + a[6] * b[5] + a[7] * b[7]
+  ];
+}
+function mulMat4x2ByMat3x4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
+    a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
+    a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11],
+    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
+    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
+    a[4] * b[2] + a[5] * b[5] + a[6] * b[8] + a[7] * b[11]
+  ];
+}
+function mulMat4x2ByMat4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
+    a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
+    a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
+    a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
+    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
+    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
+    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
+    a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15]
+  ];
+}
+function mulVec3ByScalar(a, b) {
+  return [a[0] * b, a[1] * b, a[2] * b];
+}
+function mulVec3ByVec2(a, b) {
+  return [
+    a[0] * b[0],
+    a[0] * b[1],
+    a[1] * b[0],
+    a[1] * b[1],
+    a[2] * b[0],
+    a[2] * b[1]
+  ];
+}
+function mulVec3ByVec3(a, b) {
+  return [
+    a[0] * b[0],
+    a[0] * b[1],
+    a[0] * b[2],
+    a[1] * b[0],
+    a[1] * b[1],
+    a[1] * b[2],
+    a[2] * b[0],
+    a[2] * b[1],
+    a[2] * b[2]
+  ];
+}
+function mulVec3ByVec4(a, b) {
+  return [
+    a[0] * b[0],
+    a[0] * b[1],
+    a[0] * b[2],
+    a[0] * b[3],
+    a[1] * b[0],
+    a[1] * b[1],
+    a[1] * b[2],
+    a[1] * b[3],
+    a[2] * b[0],
+    a[2] * b[1],
+    a[2] * b[2],
+    a[2] * b[3]
+  ];
+}
+function mulMat2x3ByVec2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[1],
+    a[2] * b[0] + a[3] * b[1],
+    a[4] * b[0] + a[5] * b[1]
+  ];
+}
+function mulMat2x3ByMat2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[2],
+    a[0] * b[1] + a[1] * b[3],
+    a[2] * b[0] + a[3] * b[2],
+    a[2] * b[1] + a[3] * b[3],
+    a[4] * b[0] + a[5] * b[2],
+    a[4] * b[1] + a[5] * b[3]
+  ];
+}
+function mulMat2x3ByMat3x2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[3],
+    a[0] * b[1] + a[1] * b[4],
+    a[0] * b[2] + a[1] * b[5],
+    a[2] * b[0] + a[3] * b[3],
+    a[2] * b[1] + a[3] * b[4],
+    a[2] * b[2] + a[3] * b[5],
+    a[4] * b[0] + a[5] * b[3],
+    a[4] * b[1] + a[5] * b[4],
+    a[4] * b[2] + a[5] * b[5]
+  ];
+}
+function mulMat2x3ByMat4x2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[4],
+    a[0] * b[1] + a[1] * b[5],
+    a[0] * b[2] + a[1] * b[6],
+    a[0] * b[3] + a[1] * b[7],
+    a[2] * b[0] + a[3] * b[4],
+    a[2] * b[1] + a[3] * b[5],
+    a[2] * b[2] + a[3] * b[6],
+    a[2] * b[3] + a[3] * b[7],
+    a[4] * b[0] + a[5] * b[4],
+    a[4] * b[1] + a[5] * b[5],
+    a[4] * b[2] + a[5] * b[6],
+    a[4] * b[3] + a[5] * b[7]
+  ];
+}
+function mulMat3ByVec3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+    a[3] * b[0] + a[4] * b[1] + a[5] * b[2],
+    a[6] * b[0] + a[7] * b[1] + a[8] * b[2]
+  ];
+}
+function mulMat3ByMat2x3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
+    a[0] * b[1] + a[1] * b[3] + a[2] * b[5],
+    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
+    a[3] * b[1] + a[4] * b[3] + a[5] * b[5],
+    a[6] * b[0] + a[7] * b[2] + a[8] * b[4],
+    a[6] * b[1] + a[7] * b[3] + a[8] * b[5]
+  ];
+}
+function mulMat3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
+    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
+    a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
+    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
+    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
+    a[3] * b[2] + a[4] * b[5] + a[5] * b[8],
+    a[6] * b[0] + a[7] * b[3] + a[8] * b[6],
+    a[6] * b[1] + a[7] * b[4] + a[8] * b[7],
+    a[6] * b[2] + a[7] * b[5] + a[8] * b[8]
+  ];
+}
+function mulMat3ByMat4x3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
+    a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
+    a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
+    a[0] * b[3] + a[1] * b[7] + a[2] * b[11],
+    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
+    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
+    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
+    a[3] * b[3] + a[4] * b[7] + a[5] * b[11],
+    a[6] * b[0] + a[7] * b[4] + a[8] * b[8],
+    a[6] * b[1] + a[7] * b[5] + a[8] * b[9],
+    a[6] * b[2] + a[7] * b[6] + a[8] * b[10],
+    a[6] * b[3] + a[7] * b[7] + a[8] * b[11]
+  ];
+}
+function mulMat4x3ByVec4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
+    a[4] * b[0] + a[5] * b[1] + a[6] * b[2] + a[7] * b[3],
+    a[8] * b[0] + a[9] * b[1] + a[10] * b[2] + a[11] * b[3]
+  ];
+}
+function mulMat4x3ByMat2x4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
+    a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7],
+    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
+    a[4] * b[1] + a[5] * b[3] + a[6] * b[5] + a[7] * b[7],
+    a[8] * b[0] + a[9] * b[2] + a[10] * b[4] + a[11] * b[6],
+    a[8] * b[1] + a[9] * b[3] + a[10] * b[5] + a[11] * b[7]
+  ];
+}
+function mulMat4x3ByMat3x4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
+    a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
+    a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11],
+    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
+    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
+    a[4] * b[2] + a[5] * b[5] + a[6] * b[8] + a[7] * b[11],
+    a[8] * b[0] + a[9] * b[3] + a[10] * b[6] + a[11] * b[9],
+    a[8] * b[1] + a[9] * b[4] + a[10] * b[7] + a[11] * b[10],
+    a[8] * b[2] + a[9] * b[5] + a[10] * b[8] + a[11] * b[11]
+  ];
+}
+function mulMat4x3ByMat4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
+    a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
+    a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
+    a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
+    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
+    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
+    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
+    a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15],
+    a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12],
+    a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13],
+    a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14],
+    a[8] * b[3] + a[9] * b[7] + a[10] * b[11] + a[11] * b[15]
+  ];
+}
+function mulVec4ByScalar(a, b) {
+  return [a[0] * b, a[1] * b, a[2] * b, a[3] * b];
+}
+function mulVec4ByVec2(a, b) {
+  return [
+    a[0] * b[0],
+    a[0] * b[1],
+    a[1] * b[0],
+    a[1] * b[1],
+    a[2] * b[0],
+    a[2] * b[1],
+    a[3] * b[0],
+    a[3] * b[1]
+  ];
+}
+function mulVec4ByVec3(a, b) {
+  return [
+    a[0] * b[0],
+    a[0] * b[1],
+    a[0] * b[2],
+    a[1] * b[0],
+    a[1] * b[1],
+    a[1] * b[2],
+    a[2] * b[0],
+    a[2] * b[1],
+    a[2] * b[2],
+    a[3] * b[0],
+    a[3] * b[1],
+    a[3] * b[2]
+  ];
+}
+function mulVec4ByVec4(a, b) {
+  return [
+    a[0] * b[0],
+    a[0] * b[1],
+    a[0] * b[2],
+    a[0] * b[3],
+    a[1] * b[0],
+    a[1] * b[1],
+    a[1] * b[2],
+    a[1] * b[3],
+    a[2] * b[0],
+    a[2] * b[1],
+    a[2] * b[2],
+    a[2] * b[3],
+    a[3] * b[0],
+    a[3] * b[1],
+    a[3] * b[2],
+    a[3] * b[3]
+  ];
+}
+function mulMat2x4ByVec2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[1],
+    a[2] * b[0] + a[3] * b[1],
+    a[4] * b[0] + a[5] * b[1],
+    a[6] * b[0] + a[7] * b[1]
+  ];
+}
+function mulMat2x4ByMat2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[2],
+    a[0] * b[1] + a[1] * b[3],
+    a[2] * b[0] + a[3] * b[2],
+    a[2] * b[1] + a[3] * b[3],
+    a[4] * b[0] + a[5] * b[2],
+    a[4] * b[1] + a[5] * b[3],
+    a[6] * b[0] + a[7] * b[2],
+    a[6] * b[1] + a[7] * b[3]
+  ];
+}
+function mulMat2x4ByMat3x2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[3],
+    a[0] * b[1] + a[1] * b[4],
+    a[0] * b[2] + a[1] * b[5],
+    a[2] * b[0] + a[3] * b[3],
+    a[2] * b[1] + a[3] * b[4],
+    a[2] * b[2] + a[3] * b[5],
+    a[4] * b[0] + a[5] * b[3],
+    a[4] * b[1] + a[5] * b[4],
+    a[4] * b[2] + a[5] * b[5],
+    a[6] * b[0] + a[7] * b[3],
+    a[6] * b[1] + a[7] * b[4],
+    a[6] * b[2] + a[7] * b[5]
+  ];
+}
+function mulMat2x4ByMat4x2(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[4],
+    a[0] * b[1] + a[1] * b[5],
+    a[0] * b[2] + a[1] * b[6],
+    a[0] * b[3] + a[1] * b[7],
+    a[2] * b[0] + a[3] * b[4],
+    a[2] * b[1] + a[3] * b[5],
+    a[2] * b[2] + a[3] * b[6],
+    a[2] * b[3] + a[3] * b[7],
+    a[4] * b[0] + a[5] * b[4],
+    a[4] * b[1] + a[5] * b[5],
+    a[4] * b[2] + a[5] * b[6],
+    a[4] * b[3] + a[5] * b[7],
+    a[6] * b[0] + a[7] * b[4],
+    a[6] * b[1] + a[7] * b[5],
+    a[6] * b[2] + a[7] * b[6],
+    a[6] * b[3] + a[7] * b[7]
+  ];
+}
+function mulMat3x4ByVec3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+    a[3] * b[0] + a[4] * b[1] + a[5] * b[2],
+    a[6] * b[0] + a[7] * b[1] + a[8] * b[2],
+    a[9] * b[0] + a[10] * b[1] + a[11] * b[2]
+  ];
+}
+function mulMat3x4ByMat2x3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
+    a[0] * b[1] + a[1] * b[3] + a[2] * b[5],
+    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
+    a[3] * b[1] + a[4] * b[3] + a[5] * b[5],
+    a[6] * b[0] + a[7] * b[2] + a[8] * b[4],
+    a[6] * b[1] + a[7] * b[3] + a[8] * b[5],
+    a[9] * b[0] + a[10] * b[2] + a[11] * b[4],
+    a[9] * b[1] + a[10] * b[3] + a[11] * b[5]
+  ];
+}
+function mulMat3x4ByMat3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
+    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
+    a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
+    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
+    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
+    a[3] * b[2] + a[4] * b[5] + a[5] * b[8],
+    a[6] * b[0] + a[7] * b[3] + a[8] * b[6],
+    a[6] * b[1] + a[7] * b[4] + a[8] * b[7],
+    a[6] * b[2] + a[7] * b[5] + a[8] * b[8],
+    a[9] * b[0] + a[10] * b[3] + a[11] * b[6],
+    a[9] * b[1] + a[10] * b[4] + a[11] * b[7],
+    a[9] * b[2] + a[10] * b[5] + a[11] * b[8]
+  ];
+}
+function mulMat3x4ByMat4x3(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
+    a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
+    a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
+    a[0] * b[3] + a[1] * b[7] + a[2] * b[11],
+    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
+    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
+    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
+    a[3] * b[3] + a[4] * b[7] + a[5] * b[11],
+    a[6] * b[0] + a[7] * b[4] + a[8] * b[8],
+    a[6] * b[1] + a[7] * b[5] + a[8] * b[9],
+    a[6] * b[2] + a[7] * b[6] + a[8] * b[10],
+    a[6] * b[3] + a[7] * b[7] + a[8] * b[11],
+    a[9] * b[0] + a[10] * b[4] + a[11] * b[8],
+    a[9] * b[1] + a[10] * b[5] + a[11] * b[9],
+    a[9] * b[2] + a[10] * b[6] + a[11] * b[10],
+    a[9] * b[3] + a[10] * b[7] + a[11] * b[11]
+  ];
+}
+function mulMat4ByVec4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
+    a[4] * b[0] + a[5] * b[1] + a[6] * b[2] + a[7] * b[3],
+    a[8] * b[0] + a[9] * b[1] + a[10] * b[2] + a[11] * b[3],
+    a[12] * b[0] + a[13] * b[1] + a[14] * b[2] + a[15] * b[3]
+  ];
+}
+function mulMat4ByMat2x4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
+    a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7],
+    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
+    a[4] * b[1] + a[5] * b[3] + a[6] * b[5] + a[7] * b[7],
+    a[8] * b[0] + a[9] * b[2] + a[10] * b[4] + a[11] * b[6],
+    a[8] * b[1] + a[9] * b[3] + a[10] * b[5] + a[11] * b[7],
+    a[12] * b[0] + a[13] * b[2] + a[14] * b[4] + a[15] * b[6],
+    a[12] * b[1] + a[13] * b[3] + a[14] * b[5] + a[15] * b[7]
+  ];
+}
+function mulMat4ByMat3x4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
+    a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
+    a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11],
+    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
+    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
+    a[4] * b[2] + a[5] * b[5] + a[6] * b[8] + a[7] * b[11],
+    a[8] * b[0] + a[9] * b[3] + a[10] * b[6] + a[11] * b[9],
+    a[8] * b[1] + a[9] * b[4] + a[10] * b[7] + a[11] * b[10],
+    a[8] * b[2] + a[9] * b[5] + a[10] * b[8] + a[11] * b[11],
+    a[12] * b[0] + a[13] * b[3] + a[14] * b[6] + a[15] * b[9],
+    a[12] * b[1] + a[13] * b[4] + a[14] * b[7] + a[15] * b[10],
+    a[12] * b[2] + a[13] * b[5] + a[14] * b[8] + a[15] * b[11]
+  ];
+}
+function mulMat4(a, b) {
+  return [
+    a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
+    a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
+    a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
+    a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
+    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
+    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
+    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
+    a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15],
+    a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12],
+    a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13],
+    a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14],
+    a[8] * b[3] + a[9] * b[7] + a[10] * b[11] + a[11] * b[15],
+    a[12] * b[0] + a[13] * b[4] + a[14] * b[8] + a[15] * b[12],
+    a[12] * b[1] + a[13] * b[5] + a[14] * b[9] + a[15] * b[13],
+    a[12] * b[2] + a[13] * b[6] + a[14] * b[10] + a[15] * b[14],
+    a[12] * b[3] + a[13] * b[7] + a[14] * b[11] + a[15] * b[15]
+  ];
+}
+function add2(a, b) {
+  return [a[0] + b[0], a[1] + b[1]];
+}
+function add3(a, b) {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+function add4(a, b) {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]];
+}
+function mul2(a, b) {
+  return [a[0] * b[0], a[1] * b[1]];
+}
+function mul3(a, b) {
+  return [a[0] * b[0], a[1] * b[1], a[2] * b[2]];
+}
+function mul4(a, b) {
+  return [a[0] * b[0], a[1] * b[1], a[2] * b[2], a[3] * b[3]];
+}
+function div2(a, b) {
+  return [a[0] / b[0], a[1] / b[1]];
+}
+function div3(a, b) {
+  return [a[0] / b[0], a[1] / b[1], a[2] / b[2]];
+}
+function div4(a, b) {
+  return [a[0] / b[0], a[1] / b[1], a[2] / b[2], a[3] / b[3]];
+}
+function sub2(a, b) {
+  return [a[0] - b[0], a[1] - b[1]];
+}
+function sub3(a, b) {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+}
+function sub4(a, b) {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]];
+}
+function neg2(a) {
+  return [-a[0], -a[1]];
+}
+function neg3(a) {
+  return [-a[0], -a[1], -a[2]];
+}
+function neg4(a) {
+  return [-a[0], -a[1], -a[2], -a[3]];
+}
+function normalize2(a) {
+  return scale2(a, 1 / Math.sqrt(dot2(a, a)));
+}
+function normalize3(a) {
+  return scale3(a, 1 / Math.sqrt(dot3(a, a)));
+}
+function normalize4(a) {
+  return scale4(a, 1 / Math.sqrt(dot4(a, a)));
+}
+function length2(a) {
+  return Math.sqrt(dot2(a, a));
+}
+function length3(a) {
+  return Math.sqrt(dot3(a, a));
+}
+function length4(a) {
+  return Math.sqrt(dot4(a, a));
+}
+function rescale22(a, b) {
+  return scale2(normalize2(a), b);
+}
+function rescale3(a, b) {
+  return scale3(normalize3(a), b);
+}
+function rescale4(a, b) {
+  return scale4(normalize4(a), b);
+}
+function sum2(a) {
+  return a[0] + a[1];
+}
+function sum3(a) {
+  return a[0] + a[1] + a[2];
+}
+function sum4(a) {
+  return a[0] + a[1] + a[2] + a[3];
+}
+function dot2(a, b) {
+  return sum2(mul2(a, b));
+}
+function dot3(a, b) {
+  return sum3(mul3(a, b));
+}
+function dot4(a, b) {
+  return sum4(mul4(a, b));
+}
+function scale2(a, b) {
+  return [a[0] * b, a[1] * b];
+}
+function scale3(a, b) {
+  return [a[0] * b, a[1] * b, a[2] * b];
+}
+function scale4(a, b) {
+  return [a[0] * b, a[1] * b, a[2] * b, a[3] * b];
+}
+
+// src/webgl/shader.ts
+function source2shader(gl, type, source) {
+  const shader = gl.createShader(
+    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
+  );
+  if (!shader) return err(void 0);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
+    return err(void 0);
+  }
+  return ok(shader);
+}
+function shaders2program(gl, v, f) {
+  const program = gl.createProgram();
+  gl.attachShader(program, v);
+  gl.attachShader(program, f);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+    return err(void 0);
+  }
+  return ok(program);
+}
+function sources2program(gl, vs, fs) {
+  const v = source2shader(gl, "v", vs);
+  const f = source2shader(gl, "f", fs);
+  if (!v.ok || !f.ok) return err(void 0);
+  return shaders2program(gl, v.data, f.data);
+}
+function fullscreenQuadBuffer(gl) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      -1,
+      -1,
+      1,
+      -1,
+      -1,
+      1,
+      1,
+      1,
+      -1,
+      1,
+      1,
+      -1
+    ]),
+    gl.STATIC_DRAW
+  );
+  return ok(buffer);
+}
+function glRenderToQuad(options) {
+  const canvas = document.createElement("canvas");
+  canvas.width = options.width;
+  canvas.height = options.height;
+  const gl = canvas.getContext(options.version ?? "webgl2");
+  gl.viewport(0, 0, options.width, options.height);
+  if (!gl) return err(void 0);
+  const buf = fullscreenQuadBuffer(gl);
+  const prog = sources2program(
+    gl,
+    `#version 300 es
+precision highp float;
+
+in vec2 in_vpos;
+out vec2 pos;
+
+void main() {
+  pos = in_vpos * 0.5 + 0.5;
+  gl_Position = vec4(in_vpos, 0.5, 1.0);
+}`,
+    (options.noheader ? "" : `#version 300 es
+precision highp float;
+in vec2 pos;
+out vec4 col;
+`) + (options.noAutoUniforms ? "" : [
+      [options.uniforms, "", "float"],
+      [options.intUniforms, "i", "int"],
+      [options.uintUniforms, "u", "uint"]
+    ].map(
+      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
+        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
+      }).join("\n")
+    ).join("\n")) + options.fragsource
+  );
+  if (!prog.data) return err(void 0);
+  gl.useProgram(prog.data);
+  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
+  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(attrloc);
+  for (const [uniforms, type] of [
+    [options.uniforms, "i"],
+    [options.intUniforms, "i"],
+    [options.uintUniforms, "ui"]
+  ]) {
+    for (const [k, v] of Object.entries(uniforms ?? {})) {
+      const v2 = Array.isArray(v) ? v : [v];
+      gl[`uniform${v2.length}${type}v`](
+        gl.getUniformLocation(prog.data, k),
+        v2
+      );
+    }
+  }
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  return ok(canvas);
+}
+
+// src/webgl/scene.ts
+function applyUniform(gl, prog, name, spec) {
+  const [t, d] = spec;
+  const l = gl.getUniformLocation(prog, name);
+  if (l === null) {
+    throw new Error(
+      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
+    );
+  }
+  if (t === "float") gl.uniform1f(l, d);
+  if (t === "vec2") gl.uniform2f(l, ...d);
+  if (t === "vec3") gl.uniform3f(l, ...d);
+  if (t === "vec4") gl.uniform4f(l, ...d);
+  if (t === "int") gl.uniform1i(l, d);
+  if (t === "ivec2") gl.uniform2i(l, ...d);
+  if (t === "ivec3") gl.uniform3i(l, ...d);
+  if (t === "ivec4") gl.uniform4i(l, ...d);
+  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
+  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
+  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
+  if (t === "float[]") gl.uniform1fv(l, d);
+  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
+  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
+  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
+  if (t === "int[]") gl.uniform1iv(l, d);
+  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
+  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
+  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
+  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
+  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
+  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
+}
+function applyUniforms(gl, prog, uniforms) {
+  for (const [k, v] of Object.entries(uniforms)) {
+    applyUniform(gl, prog, k, v);
+  }
+}
+function createScene(sceneSpec) {
+  const gl = sceneSpec.gl;
+  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
+  let sceneUniforms = sceneSpec.uniforms ?? {};
+  return {
+    uniforms() {
+      return sceneUniforms;
+    },
+    resetUniforms(u) {
+      sceneUniforms = u;
+    },
+    updateUniforms(u) {
+      sceneUniforms = { ...sceneUniforms, ...u };
+    },
+    addObject3D(spec) {
+      let objectUniforms = spec.uniforms ?? {};
+      return {
+        gl() {
+          return gl;
+        },
+        draw() {
+          gl.useProgram(spec.program);
+          spec.buffer.setLayout(spec.program);
+          applyUniforms(
+            gl,
+            spec.program,
+            combineUniforms(sceneUniforms, objectUniforms)
+          );
+          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
+        },
+        uniforms() {
+          return objectUniforms;
+        },
+        resetUniforms(u) {
+          objectUniforms = u;
+        },
+        updateUniforms(u) {
+          objectUniforms = { ...objectUniforms, ...u };
+        }
+      };
+    }
+  };
+}
+
+// src/webgl/mesh.ts
+function parametric2D(x2, y2, attr, getPoint) {
+  const data = [];
+  for (let j = 0; j < y2; j++) {
+    for (let i = 0; i < x2; i++) {
+      const a = getPoint(i, j);
+      const b = getPoint(i + 1, j);
+      const c = getPoint(i, j + 1);
+      const d = getPoint(i + 1, j + 1);
+      data.push({ [attr]: a });
+      data.push({ [attr]: c });
+      data.push({ [attr]: b });
+      data.push({ [attr]: c });
+      data.push({ [attr]: d });
+      data.push({ [attr]: b });
+    }
+  }
+  return data;
+}
+function uvSphere(x2, y2, rad, attr) {
+  return parametric2D(x2, y2, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
+    let px = Math.cos(a) * Math.cos(b) * rad;
+    let pz = Math.sin(a) * Math.cos(b) * rad;
+    let py = Math.sin(b) * rad;
+    return [px, py, pz];
+  });
+}
+function ring(x2, rad, height, attr) {
+  return parametric2D(x2, 1, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const px = Math.cos(a) * rad;
+    const pz = Math.sin(a) * rad;
+    const py = j === 1 ? height / 2 : -height / 2;
+    return [px, py, pz];
+  });
+}
+function torus(x2, y2, R, r, attr) {
+  return parametric2D(x2, y2, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const b = (j + y2) % y2 / y2 * Math.PI * 2;
+    let px = Math.cos(a);
+    let pz = Math.sin(a);
+    let py = Math.sin(b) * r;
+    px *= R + Math.cos(b) * r;
+    pz *= R + Math.cos(b) * r;
+    return [px, py, pz];
+  });
+}
+function move(mesh, attr, offset) {
+  return mesh.map((m) => ({
+    ...m,
+    [attr]: m[attr].map((e, i) => e + offset[i])
+  }));
+}
+function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
+  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
+  const rangeInv = 1 / (near - far);
+  return [
+    f / aspectRatio,
+    0,
+    0,
+    0,
+    0,
+    f,
+    0,
+    0,
+    0,
+    0,
+    (near + far) * rangeInv,
+    -1,
+    0,
+    0,
+    near * far * rangeInv * 2,
+    0
+  ];
+}
+function ortho(left, right, top, bottom, near, far) {
+  return [
+    2 / (right - left),
+    0,
+    0,
+    -(right + left) / (right - left),
+    0,
+    2 / (top - bottom),
+    0,
+    -(top + bottom) / (top - bottom),
+    0,
+    0,
+    -2 / (far - near),
+    -(far + near) / (far - near),
+    0,
+    0,
+    0,
+    1
+  ];
+}
+function cross(a, b) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0]
+  ];
+}
+function normalize(v) {
+  const len = Math.hypot(...v);
+  return scale3(v, 1 / len);
+}
+function rodrigues(v, k, theta) {
+  k = normalize(k);
+  return add3(
+    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+  );
+}
+function rotate(axis, angle) {
+  return [
+    ...rodrigues([1, 0, 0], axis, angle),
+    0,
+    ...rodrigues([0, 1, 0], axis, angle),
+    0,
+    ...rodrigues([0, 0, 1], axis, angle),
+    0,
+    0,
+    0,
+    0,
+    1
+  ];
+}
+function scale(axes) {
+  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
+}
+function translate(v) {
+  return [1, 0, 0, v[0], 0, 1, 0, v[1], 0, 0, 1, v[2], 0, 0, 0, 1];
+}
+
+// src/webgl/buffer.ts
+function getDatatypeSize(gl, datatype) {
+  return {
+    [gl.BYTE]: 1,
+    [gl.SHORT]: 2,
+    [gl.UNSIGNED_BYTE]: 1,
+    [gl.UNSIGNED_SHORT]: 2,
+    [gl.FLOAT]: 4,
+    [gl.HALF_FLOAT]: 2,
+    [gl.INT]: 4,
+    [gl.UNSIGNED_INT]: 4,
+    [gl.INT_2_10_10_10_REV]: 4,
+    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
+  }[datatype];
+}
+function createBufferWithLayout(gl, layout, data) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  const layoutEntries = Object.entries(layout);
+  let stride = 0;
+  const offsets = /* @__PURE__ */ new Map();
+  for (const [name, attrs] of layoutEntries) {
+    offsets.set(name, stride);
+    stride += attrs.size * getDatatypeSize(gl, attrs.type);
+  }
+  const arraybuf = new ArrayBuffer(stride * data.length);
+  const rawdata = new DataView(arraybuf);
+  let i = 0;
+  for (const d of data) {
+    for (const [name, attrs] of layoutEntries) {
+      for (let j = 0; j < attrs.size; j++) {
+        const val = d[name][j];
+        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
+        if (attrs.type === gl.BYTE) {
+          rawdata.setInt8(pos, val);
+        } else if (attrs.type === gl.UNSIGNED_BYTE) {
+          rawdata.setUint8(pos, val);
+        } else if (attrs.type === gl.FLOAT) {
+          rawdata.setFloat32(pos, val, true);
+        } else if (attrs.type === gl.SHORT) {
+          rawdata.setInt16(pos, val, true);
+        } else if (attrs.type === gl.UNSIGNED_SHORT) {
+          rawdata.setUint16(pos, val, true);
+        }
+      }
+    }
+    i++;
+  }
+  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
+  return {
+    vertexCount: data.length,
+    buffer,
+    setLayout(prog) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      for (const [name, attrs] of layoutEntries) {
+        const loc = gl.getAttribLocation(prog, name);
+        if (attrs.isInt) {
+          gl.vertexAttribIPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            stride,
+            offsets.get(name)
+          );
+        } else {
+          gl.vertexAttribPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            attrs.normalized ?? false,
+            stride,
+            offsets.get(name)
+          );
+        }
+        gl.enableVertexAttribArray(loc);
+      }
+    },
+    bindArray(gl2) {
+      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
+    },
+    bindIndex(gl2) {
+      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
+    }
+  };
+}
+
 // src/ui/react-string-field.tsx
 var import_react = __toESM(require_react());
 function StringField(props) {
@@ -26459,7 +26466,7 @@ function ProgressBar(props) {
       }
     }
   }, [currTaskIndex]);
-  return /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("div", null, caption), /* @__PURE__ */ import_react4.default.createElement(
+  return /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("div", { style: { fontSize: "48px" } }, caption), /* @__PURE__ */ import_react4.default.createElement(
     "div",
     {
       style: {
@@ -26481,11 +26488,18 @@ function ProgressBar(props) {
   ));
 }
 function simpleProgressBar(tasks) {
-  const progressBarContainer = document.createElement("div");
-  document.body.appendChild(progressBarContainer);
-  (0, import_client.createRoot)(progressBarContainer).render(
-    /* @__PURE__ */ import_react4.default.createElement(ProgressBar, { tasks })
-  );
+  return new Promise((resolve, reject) => {
+    const progressBarContainer = document.createElement("div");
+    document.body.appendChild(progressBarContainer);
+    (0, import_client.createRoot)(progressBarContainer).render(
+      /* @__PURE__ */ import_react4.default.createElement(
+        ProgressBar,
+        {
+          tasks: [...tasks, "Finished!", async () => resolve()]
+        }
+      )
+    );
+  });
 }
 
 // src/ui/pan-and-zoom.tsx
@@ -26510,7 +26524,7 @@ function PanAndZoom(props) {
   (0, import_react5.useEffect)(() => {
     let stopped = false;
     let lastTime = performance.now();
-    const cb = (time) => {
+    const cb2 = (time) => {
       if (stopped) return;
       const deltaTime = time - lastTime;
       lastTime = time;
@@ -26529,9 +26543,9 @@ function PanAndZoom(props) {
         });
         props.onUpdate?.();
       }
-      requestAnimationFrame(cb);
+      requestAnimationFrame(cb2);
     };
-    requestAnimationFrame(cb);
+    requestAnimationFrame(cb2);
     return () => {
       stopped = true;
     };
@@ -26629,6 +26643,7 @@ export {
   glRenderToQuad,
   graphAudio,
   id,
+  inMainThread,
   injectElementsAt,
   injectFunction,
   interleave,

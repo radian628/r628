@@ -9,12 +9,13 @@ type ArrayifyMethods<T extends InterfaceWithMethods> = {
 };
 
 export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
-  src: string
+  src: string,
+  workerCount?: number
 ): {
   send: WorkerifyInterface<T>;
   broadcast: WorkerifyInterface<ArrayifyMethods<T>>;
 } {
-  const count = navigator.hardwareConcurrency;
+  const count = workerCount ?? navigator.hardwareConcurrency;
 
   const workers: Worker[] = [];
   let nextWorker = 0;
@@ -88,7 +89,8 @@ export function createCombinedRoundRobinThreadpool<
   T extends InterfaceWithMethods,
 >(
   getInterface: () => T,
-  src?: string
+  src?: string,
+  workerCount?: number
 ): ReturnType<typeof createRoundRobinThreadpool<T>> {
   if (eval("self.WorkerGlobalScope")) {
     createRoundRobinThread(getInterface());
@@ -96,7 +98,18 @@ export function createCombinedRoundRobinThreadpool<
     return;
   } else {
     return createRoundRobinThreadpool(
-      src ?? (document.currentScript as HTMLScriptElement).src
+      src ?? (document.currentScript as HTMLScriptElement).src,
+      workerCount
     );
   }
+}
+
+export async function inMainThread<T>(
+  cb: () => T | Promise<T>
+): Promise<T | undefined> {
+  if (eval("self.WorkerGlobalScope")) {
+    return;
+  }
+
+  return await cb();
 }
