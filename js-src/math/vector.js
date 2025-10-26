@@ -1019,6 +1019,22 @@ function z(a) {
 function w(a) {
   return a[3];
 }
+function cross(a, b) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0]
+  ];
+}
+function polar2Cart(r, theta) {
+  return [r * Math.cos(theta), r * Math.sin(theta)];
+}
+function polarVec2Cart(rCommaTheta) {
+  return polar2Cart(...rCommaTheta);
+}
+function cart2Polar(a) {
+  return [length2(a), Math.atan2(a[1], a[0])];
+}
 function mulScalarByVec2(a, b) {
   return [a * b[0], a * b[1]];
 }
@@ -1683,6 +1699,15 @@ function length3(a) {
 function length4(a) {
   return Math.sqrt(dot4(a, a));
 }
+function rescale2(a, b) {
+  return scale2(normalize2(a), b);
+}
+function rescale3(a, b) {
+  return scale3(normalize3(a), b);
+}
+function rescale4(a, b) {
+  return scale4(normalize4(a), b);
+}
 function sum2(a) {
   return a[0] + a[1];
 }
@@ -1714,6 +1739,8 @@ export {
   add2,
   add3,
   add4,
+  cart2Polar,
+  cross,
   div2,
   div3,
   div4,
@@ -1792,6 +1819,11 @@ export {
   normalize2,
   normalize3,
   normalize4,
+  polar2Cart,
+  polarVec2Cart,
+  rescale2,
+  rescale3,
+  rescale4,
   scale2,
   scale3,
   scale4,

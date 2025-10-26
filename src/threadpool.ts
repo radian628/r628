@@ -4,9 +4,16 @@ import {
   WorkerifyResponse,
 } from "./workerify";
 
+type ArrayifyMethods<T extends InterfaceWithMethods> = {
+  [K in keyof T]: (...args: Parameters<T[K]>) => ReturnType<T[K]>[];
+};
+
 export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
   src: string
-): WorkerifyInterface<T> {
+): {
+  send: WorkerifyInterface<T>;
+  broadcast: WorkerifyInterface<ArrayifyMethods<T>>;
+} {
   const count = navigator.hardwareConcurrency;
 
   const workers: Worker[] = [];
@@ -23,28 +30,48 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
 
   let id = 0;
 
-  return new Proxy({} as T, {
-    get(i, prop) {
-      return (...args: any[]) => {
-        return new Promise<WorkerifyResponse<T>>((resolve, reject) => {
-          const myid = id;
-          id++;
-          const nextWorker = getNextWorker();
-          const onResponse = (e: MessageEvent) => {
-            if (e.data.id !== myid) return;
-            nextWorker.removeEventListener("message", onResponse);
-            resolve(e.data.returnValue);
-          };
-          nextWorker.addEventListener("message", onResponse);
-          nextWorker.postMessage({
-            type: prop,
-            args: args,
-            id: myid,
-          });
-        });
+  function sendMessageToWorkerWithResponse(
+    prop: string | symbol,
+    args: any[],
+    worker: Worker
+  ) {
+    return new Promise((resolve, reject) => {
+      const myid = id;
+      id++;
+      const onResponse = (e: MessageEvent) => {
+        if (e.data.id !== myid) return;
+        worker.removeEventListener("message", onResponse);
+        resolve(e.data.returnValue);
       };
-    },
-  });
+      worker.addEventListener("message", onResponse);
+      worker.postMessage({
+        type: prop,
+        args: args,
+        id: myid,
+      });
+    });
+  }
+
+  return {
+    send: new Proxy({} as T, {
+      get(i, prop) {
+        return async (...args: any[]) => {
+          const nextWorker = getNextWorker();
+          return sendMessageToWorkerWithResponse(prop, args, nextWorker);
+        };
+      },
+    }),
+
+    broadcast: new Proxy({} as T, {
+      get(i, prop) {
+        return async (...args: any[]) => {
+          return await Promise.all(
+            workers.map((w) => sendMessageToWorkerWithResponse(prop, args, w))
+          );
+        };
+      },
+    }),
+  };
 }
 
 export function createRoundRobinThread<T extends InterfaceWithMethods>(t: T) {
@@ -55,4 +82,21 @@ export function createRoundRobinThread<T extends InterfaceWithMethods>(t: T) {
       id: e.data.id,
     });
   });
+}
+
+export function createCombinedRoundRobinThreadpool<
+  T extends InterfaceWithMethods,
+>(
+  getInterface: () => T,
+  src?: string
+): ReturnType<typeof createRoundRobinThreadpool<T>> {
+  if (eval("self.WorkerGlobalScope")) {
+    createRoundRobinThread(getInterface());
+    // @ts-expect-error
+    return;
+  } else {
+    return createRoundRobinThreadpool(
+      src ?? (document.currentScript as HTMLScriptElement).src
+    );
+  }
 }

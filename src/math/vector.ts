@@ -1109,12 +1109,24 @@ export type Mat3x4 = [
   number,
 ]
 
-function cross(a: Vec3, b: Vec3) {
+export function cross(a: Vec3, b: Vec3) {
   return [
     a[1] * b[2] - a[2] * b[1],
     a[2] * b[0] - a[0] * b[2],
     a[0] * b[1] - a[1] * b[0],
   ]
+}
+
+export function polar2Cart(r: number, theta: number): Vec2 {
+  return [r * Math.cos(theta), r * Math.sin(theta)]
+}
+
+export function polarVec2Cart(rCommaTheta: Vec2) {
+  return polar2Cart(...rCommaTheta)
+}
+
+export function cart2Polar(a: Vec2): Vec2 {
+  return [length2(a), Math.atan2(a[1], a[0])]
 }
 
 export function mulScalarByVec2(a: number, b: Vec2): Vec2 {
@@ -1784,6 +1796,15 @@ export function length3(a: Vec3): number {
 }
 export function length4(a: Vec4): number {
   return Math.sqrt(dot4(a, a))
+}
+export function rescale2(a: Vec2, b: number): Vec2 {
+  return scale2(normalize2(a), b)
+}
+export function rescale3(a: Vec3, b: number): Vec3 {
+  return scale3(normalize3(a), b)
+}
+export function rescale4(a: Vec4, b: number): Vec4 {
+  return scale4(normalize4(a), b)
 }
 export function sum2(a: Vec2): number {
   return a[0] + a[1]

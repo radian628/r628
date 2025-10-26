@@ -1,10 +1,10 @@
 // src/threadpool.ts
-function createRoundRobinThreadpool(src) {
+function createRoundRobinThreadpool(src2) {
   const count = navigator.hardwareConcurrency;
   const workers = [];
   let nextWorker = 0;
   for (let i = 0; i < count; i++) {
-    workers.push(new Worker(src));
+    workers.push(new Worker(src2));
   }
   function getNextWorker() {
     const w = workers[nextWorker];
@@ -12,28 +12,42 @@ function createRoundRobinThreadpool(src) {
     return w;
   }
   let id = 0;
-  return new Proxy({}, {
-    get(i, prop) {
-      return (...args) => {
-        return new Promise((resolve, reject) => {
-          const myid = id;
-          id++;
-          const nextWorker2 = getNextWorker();
-          const onResponse = (e) => {
-            if (e.data.id !== myid) return;
-            nextWorker2.removeEventListener("message", onResponse);
-            resolve(e.data.returnValue);
-          };
-          nextWorker2.addEventListener("message", onResponse);
-          nextWorker2.postMessage({
-            type: prop,
-            args,
-            id: myid
-          });
-        });
+  function sendMessageToWorkerWithResponse(prop, args, worker) {
+    return new Promise((resolve, reject) => {
+      const myid = id;
+      id++;
+      const onResponse = (e) => {
+        if (e.data.id !== myid) return;
+        worker.removeEventListener("message", onResponse);
+        resolve(e.data.returnValue);
       };
-    }
-  });
+      worker.addEventListener("message", onResponse);
+      worker.postMessage({
+        type: prop,
+        args,
+        id: myid
+      });
+    });
+  }
+  return {
+    send: new Proxy({}, {
+      get(i, prop) {
+        return async (...args) => {
+          const nextWorker2 = getNextWorker();
+          return sendMessageToWorkerWithResponse(prop, args, nextWorker2);
+        };
+      }
+    }),
+    broadcast: new Proxy({}, {
+      get(i, prop) {
+        return async (...args) => {
+          return await Promise.all(
+            workers.map((w) => sendMessageToWorkerWithResponse(prop, args, w))
+          );
+        };
+      }
+    })
+  };
 }
 function createRoundRobinThread(t) {
   self.addEventListener("message", async (e) => {
@@ -44,7 +58,18 @@ function createRoundRobinThread(t) {
     });
   });
 }
+function createCombinedRoundRobinThreadpool(getInterface, src) {
+  if (eval("self.WorkerGlobalScope")) {
+    createRoundRobinThread(getInterface());
+    return;
+  } else {
+    return createRoundRobinThreadpool(
+      src ?? document.currentScript.src
+    );
+  }
+}
 export {
+  createCombinedRoundRobinThreadpool,
   createRoundRobinThread,
   createRoundRobinThreadpool
 };

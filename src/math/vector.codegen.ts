@@ -192,13 +192,25 @@ export type Mat3x4 = [
   ${stringRangeMapJoin(12, () => "number", ",")}
 ];
 
-function cross(a: Vec3, b: Vec3) {
+export function cross(a: Vec3, b: Vec3) {
   return [
     a[1] * b[2] - a[2] * b[1],
     a[2] * b[0] - a[0] * b[2],
     a[0] * b[1] - a[1] * b[0],
   ];
 }
+
+export function polar2Cart(r: number, theta: number): Vec2 {
+  return [r * Math.cos(theta), r * Math.sin(theta)];
+}
+
+export function polarVec2Cart(rCommaTheta: Vec2) {
+  return polar2Cart(...rCommaTheta);
+}
+
+export function cart2Polar(a: Vec2): Vec2 {
+  return [length2(a), Math.atan2(a[1], a[0])];
+} 
 
 ${cartesianProduct(
   rangeFrom(1, 5) as (2 | 3 | 4)[],
@@ -225,6 +237,12 @@ ${cartesianProduct(
     [vec],
     num,
     (i) => `Math.sqrt(dot${i}(a, a))`
+  ) +
+  createFunctionVariantsFullBody(
+    "rescale",
+    [vec, num],
+    vec,
+    (i) => `scale${i}(normalize${i}(a), b)`
   ) +
   createFunctionVariantsFullBody("sum", [vec], num, (i) =>
     i == 4
