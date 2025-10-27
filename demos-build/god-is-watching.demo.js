@@ -19632,10 +19632,129 @@
     });
   }
 
+  // src/graph.ts
+  function createGraph() {
+    return {
+      vertices: /* @__PURE__ */ new Set(),
+      edges: /* @__PURE__ */ new Set()
+    };
+  }
+  function createGraphFromData(vertices, edges2) {
+    const graph = createGraph();
+    const vertexMap = /* @__PURE__ */ new Map();
+    for (const v of vertices) {
+      vertexMap.set(v, addVertex(graph, v));
+    }
+    for (const e of edges2) {
+      addEdge(
+        graph,
+        [vertexMap.get(e.endpoints[0]), vertexMap.get(e.endpoints[1])],
+        e.data
+      );
+    }
+    return graph;
+  }
+  function addVertex(graph, data) {
+    const vertex = {
+      data,
+      incoming: /* @__PURE__ */ new Set(),
+      outgoing: /* @__PURE__ */ new Set()
+    };
+    graph.vertices.add(vertex);
+    return vertex;
+  }
+  function addEdge(graph, endpoints, data) {
+    const edge = {
+      data,
+      endpoints
+    };
+    endpoints[0].outgoing.add(edge);
+    endpoints[1].incoming.add(edge);
+    graph.edges.add(edge);
+    return edge;
+  }
+  function getConnectedComponents(graph) {
+    const components = [];
+    const vertsRemaining = new Set(graph.vertices);
+    while (vertsRemaining.size > 0) {
+      const foundVertices = /* @__PURE__ */ new Set();
+      const foundEdges = /* @__PURE__ */ new Set();
+      let queue = [vertsRemaining.values().next().value];
+      while (queue.length > 0) {
+        const vert = queue.shift();
+        vertsRemaining.delete(vert);
+        foundVertices.add(vert);
+        for (const edge of vert.outgoing) {
+          foundEdges.add(edge);
+          if (!foundVertices.has(edge.endpoints[1])) {
+            queue.push(edge.endpoints[1]);
+          }
+          foundVertices.add(edge.endpoints[1]);
+        }
+        for (const edge of vert.incoming) {
+          foundEdges.add(edge);
+          if (!foundVertices.has(edge.endpoints[0])) {
+            queue.push(edge.endpoints[0]);
+          }
+          foundVertices.add(edge.endpoints[0]);
+        }
+      }
+      components.push({
+        vertices: foundVertices,
+        edges: foundEdges
+      });
+    }
+    return components;
+  }
+  function findEndpoint(graph) {
+    for (const v of graph.vertices) {
+      if (v.incoming.size + v.outgoing.size === 1) return v;
+    }
+    return void 0;
+  }
+  function getDepthFirstTraversalOrder(graph, startPoint) {
+    const order = [];
+    const foundVertices = /* @__PURE__ */ new Set();
+    let stack = [
+      startPoint ?? graph.vertices.values().next().value
+    ];
+    if (!stack[0]) return [];
+    foundVertices.add(stack[0]);
+    while (stack.length > 0) {
+      const vertex = stack.pop();
+      order.push(vertex);
+      for (const edge of vertex.outgoing) {
+        if (foundVertices.has(edge.endpoints[1])) {
+          continue;
+        }
+        stack.push(edge.endpoints[1]);
+        foundVertices.add(edge.endpoints[1]);
+      }
+      for (const edge of vertex.incoming) {
+        if (foundVertices.has(edge.endpoints[0])) {
+          continue;
+        }
+        stack.push(edge.endpoints[0]);
+        foundVertices.add(edge.endpoints[0]);
+      }
+    }
+    return order;
+  }
+
+  // src/download.ts
+  function download(file, name) {
+    const a = document.createElement("a");
+    a.download = name;
+    const url = URL.createObjectURL(file);
+    a.href = url;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   // demos-src/god-is-watching.demo.ts
   var points = [];
   var edges = [];
-  var LINE_COUNT = 1e3;
+  var LINE_COUNT = 1009;
   var POINTS_PER_LINE = 100;
   function physicsIter(points2, edges2, push) {
     for (const p of points2) {
@@ -19710,7 +19829,7 @@
   }
   var forceEmitters = spatialHashTable(
     { a: [-0.5, -0.5], b: [1.5, 1.5] },
-    [15, 15],
+    [100, 100],
     (f) => ({
       a: [f.pos[0] - f.radMax, f.pos[1] - f.radMax],
       b: [f.pos[0] + f.radMax, f.pos[1] + f.radMax]
@@ -19881,6 +20000,10 @@
     void 0,
     20
   );
+  function createSvgPath(path) {
+    if (path.length === 0) return "";
+    return `M ${path[0]} ${path[1]} ${path.slice(1).map((v) => `L ${v[0]} ${v[1]}`)}`;
+  }
   inMainThread(async () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -19924,14 +20047,17 @@
       },
       ...nPhysicsIters(100),
       "BIG-HUGE eyeballs",
-      addEyeballForceEmitters(200, BIG, HUGE, 2),
+      addEyeballForceEmitters(400, BIG, HUGE, 2),
       ...nPhysicsIters(100),
       "MEDIUM-BIG eyeballs",
-      addEyeballForceEmitters(800, MEDIUM, BIG, 2),
+      addEyeballForceEmitters(1e3, MEDIUM, BIG, 2),
       ...nPhysicsIters(100),
       "SMALL-MEDIUM eyeballs",
-      addEyeballForceEmitters(2500, SMALL, MEDIUM, 2),
+      addEyeballForceEmitters(3e3, SMALL, MEDIUM, 2),
       ...nPhysicsIters(100),
+      // "TINY-SMALL eyeballs",
+      // addEyeballForceEmitters(10000, TINY, SMALL, 2),
+      // ...nPhysicsIters(100),
       "Settle",
       ...nDryPhysicsIters(100)
     ]);
@@ -19946,6 +20072,38 @@
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     await drawEdges(edges2, ctx, canvas.width, canvas.height);
+    const graph = createGraphFromData(
+      [...new Set(edges2.map((e) => e.points).flat())],
+      edges2.map((e) => ({ endpoints: e.points, data: void 0 }))
+    );
+    const components = getConnectedComponents(graph);
+    for (const comp of components) {
+      console.log(getDepthFirstTraversalOrder(comp));
+    }
+    function createSvgElem(name) {
+      return document.createElementNS("http://www.w3.org/2000/svg", name);
+    }
+    var svg = createSvgElem("svg");
+    svg.setAttributeNS(null, "width", "4096");
+    svg.setAttributeNS(null, "height", "4096");
+    for (const comp of components) {
+      const path = createSvgElem("path");
+      path.setAttributeNS(null, "fill", "transparent");
+      path.setAttributeNS(null, "stroke", "black");
+      path.setAttributeNS(
+        null,
+        "d",
+        createSvgPath(
+          getDepthFirstTraversalOrder(comp, findEndpoint(comp)).map(
+            (p) => scale2(p.data.pos, canvas.width)
+          )
+        )
+      );
+      svg.appendChild(path);
+    }
+    download(new Blob([svg.outerHTML]), "ISEEYOU.svg");
+    document.body.appendChild(svg);
+    console.log(components);
   });
 })();
 /*! Bundled license information:

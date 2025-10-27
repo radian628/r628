@@ -15,6 +15,15 @@ import {
   inMainThread,
 } from "../src/threadpool";
 import { simpleProgressBar } from "../src/ui/progress-bar";
+import {
+  addVertex,
+  createGraph,
+  createGraphFromData,
+  findEndpoint,
+  getConnectedComponents,
+  getDepthFirstTraversalOrder,
+} from "../src/graph";
+import { download } from "../src/download";
 
 type Point = { pos: Vec2; fixed: boolean; resistance: number };
 
@@ -25,7 +34,7 @@ type Edges = Edge[];
 let points: Points = [];
 let edges: Edges = [];
 
-const LINE_COUNT = 1000;
+const LINE_COUNT = 1009;
 const POINTS_PER_LINE = 100;
 
 function physicsIter(points: Points, edges: Edges, push: (pt: Point) => Vec2) {
@@ -121,6 +130,8 @@ async function drawEdges(
   ctx.stroke();
 }
 
+async function getSvgPath(edges: Edges) {}
+
 type ForceEmitter = {
   pos: Vec2;
   radMin: number;
@@ -132,7 +143,7 @@ type ForceEmitter = {
 
 const forceEmitters: SpatialHashTable<ForceEmitter> = spatialHashTable(
   { a: [-0.5, -0.5], b: [1.5, 1.5] },
-  [15, 15],
+  [100, 100],
   (f) => ({
     a: [f.pos[0] - f.radMax, f.pos[1] - f.radMax],
     b: [f.pos[0] + f.radMax, f.pos[1] + f.radMax],
@@ -283,6 +294,7 @@ const HUGE = 0.1;
 const BIG = 0.025;
 const MEDIUM = 0.01;
 const SMALL = 0.005;
+const TINY = 0.002;
 
 const threadpool = createCombinedRoundRobinThreadpool(
   () => ({
@@ -376,6 +388,12 @@ const threadpool = createCombinedRoundRobinThreadpool(
   20
 );
 
+function createSvgPath(path: Vec2[]) {
+  if (path.length === 0) return "";
+
+  return `M ${path[0]} ${path[1]} ${path.slice(1).map((v) => `L ${v[0]} ${v[1]}`)}`;
+}
+
 inMainThread(async () => {
   const canvas = document.createElement("canvas");
 
@@ -432,14 +450,17 @@ inMainThread(async () => {
     },
     ...nPhysicsIters(100),
     "BIG-HUGE eyeballs",
-    addEyeballForceEmitters(200, BIG, HUGE, 2),
+    addEyeballForceEmitters(400, BIG, HUGE, 2),
     ...nPhysicsIters(100),
     "MEDIUM-BIG eyeballs",
-    addEyeballForceEmitters(800, MEDIUM, BIG, 2),
+    addEyeballForceEmitters(1000, MEDIUM, BIG, 2),
     ...nPhysicsIters(100),
     "SMALL-MEDIUM eyeballs",
-    addEyeballForceEmitters(2500, SMALL, MEDIUM, 2),
+    addEyeballForceEmitters(3000, SMALL, MEDIUM, 2),
     ...nPhysicsIters(100),
+    // "TINY-SMALL eyeballs",
+    // addEyeballForceEmitters(10000, TINY, SMALL, 2),
+    // ...nPhysicsIters(100),
     "Settle",
     ...nDryPhysicsIters(100),
   ]);
@@ -452,10 +473,51 @@ inMainThread(async () => {
   for (const e of forceEmitters) {
     const radius = e.radMin;
     addEyeball(points, edges, e.pos, radius, radius / 2);
-  }
+  } //
 
   ctx.fillStyle = "white";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   await drawEdges(edges, ctx, canvas.width, canvas.height);
+
+  const graph = createGraphFromData<{ pos: Vec2 }, undefined>(
+    [...new Set(edges.map((e) => e.points).flat())],
+    edges.map((e) => ({ endpoints: e.points, data: undefined }))
+  );
+
+  const components = getConnectedComponents(graph);
+
+  for (const comp of components) {
+    console.log(getDepthFirstTraversalOrder(comp));
+  }
+
+  function createSvgElem(name: string) {
+    return document.createElementNS("http://www.w3.org/2000/svg", name);
+  }
+
+  var svg = createSvgElem("svg");
+  svg.setAttributeNS(null, "width", "4096");
+  svg.setAttributeNS(null, "height", "4096");
+
+  for (const comp of components) {
+    const path = createSvgElem("path");
+    path.setAttributeNS(null, "fill", "transparent");
+    path.setAttributeNS(null, "stroke", "black");
+    path.setAttributeNS(
+      null,
+      "d",
+      createSvgPath(
+        getDepthFirstTraversalOrder(comp, findEndpoint(comp)).map((p) =>
+          scale2(p.data.pos, canvas.width)
+        )
+      )
+    );
+    svg.appendChild(path);
+  }
+
+  download(new Blob([svg.outerHTML]), "ISEEYOU.svg");
+
+  document.body.appendChild(svg);
+
+  console.log(components);
 });
