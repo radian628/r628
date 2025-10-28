@@ -1129,6 +1129,10 @@ export function cart2Polar(a: Vec2): Vec2 {
   return [length2(a), Math.atan2(a[1], a[0])]
 }
 
+export function pointTo(a: Vec2, b: Vec2): number {
+  return Math.atan2(b[1] - a[1], b[0] - a[0])
+}
+
 export function mulScalarByVec2(a: number, b: Vec2): Vec2 {
   return [a * b[0], a * b[1]]
 }
@@ -1796,6 +1800,24 @@ export function length3(a: Vec3): number {
 }
 export function length4(a: Vec4): number {
   return Math.sqrt(dot4(a, a))
+}
+export function distance2(a: Vec2, b: Vec2): number {
+  return length2(sub2(a, b))
+}
+export function distance3(a: Vec3, b: Vec3): number {
+  return length3(sub3(a, b))
+}
+export function distance4(a: Vec4, b: Vec4): number {
+  return length4(sub4(a, b))
+}
+export function mix2(a: number, b: Vec2, c: Vec2): Vec2 {
+  return add2(b, scale2(sub2(c, b), a))
+}
+export function mix3(a: number, b: Vec3, c: Vec3): Vec3 {
+  return add3(b, scale3(sub3(c, b), a))
+}
+export function mix4(a: number, b: Vec4, c: Vec4): Vec4 {
+  return add4(b, scale4(sub4(c, b), a))
 }
 export function rescale2(a: Vec2, b: number): Vec2 {
   return scale2(normalize2(a), b)

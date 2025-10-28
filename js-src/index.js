@@ -19901,8 +19901,90 @@ function throttle(callback, options) {
   return fn;
 }
 
+// src/range.ts
+function range(hi) {
+  let arr = [];
+  for (let i = 0; i < hi && i < 1e7; i++) {
+    arr.push(i);
+  }
+  return arr;
+}
+function rangeFrom(lo, hi) {
+  let arr = [];
+  for (let i = lo; i < hi && i < 1e7; i++) {
+    arr.push(i);
+  }
+  return arr;
+}
+function stringRangeMapJoin(hi, f, s = "\\n") {
+  const r = range(hi);
+  return r.map(f).join(s);
+}
+function stringMapJoin(a, f, s = "\\n") {
+  return a.map(f).join(s);
+}
+function smartRangeMap(n, cb2) {
+  const a = range(n);
+  const res1 = a.map((i, index, arr) => {
+    return {
+      remap(lo, hi, inclEnd) {
+        return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
+      },
+      remapCenter(lo, hi) {
+        return (i + 1) / (n + 1) * (hi - lo) + lo;
+      },
+      segment(lo, hi) {
+        return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
+      },
+      slidingWindow(arr2) {
+        return [arr2[i], arr2[i + 1]];
+      },
+      randkf() {
+        if (i === 0) return 0;
+        if (i === n - 1) return 100;
+        const lo = i / (n - 2) * 100;
+        const hi = (i + 1) / (n - 2) * 100;
+        return rand(lo, hi);
+      },
+      get(arr2) {
+        return arr2[i];
+      },
+      i,
+      next: i + 1,
+      end: () => i === n - 1,
+      start: () => i === 0
+    };
+  });
+  const res = res1.map(cb2);
+  return res;
+}
+function smartRange(n) {
+  return smartRangeMap(n, id);
+}
+function id(x2) {
+  return x2;
+}
+function smartRangeStringMapJoin(n, cb2, s = "\\n") {
+  return stringMapJoin(smartRangeMap(n, id), cb2, s);
+}
+function rand(lo, hi, random) {
+  if (!random) random = () => Math.random();
+  return random() * (hi - lo) + lo;
+}
+function pickrand(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+function cartesianProductInner(ts, arr) {
+  if (ts.length === 0) return [arr];
+  return ts[0].map((e) => cartesianProductInner(ts.slice(1), [...arr, e])).flat(1);
+}
+function cartesianProduct(...ts) {
+  const res = cartesianProductInner(ts, []);
+  return res;
+}
+
 // src/threadpool.ts
-function createRoundRobinThreadpool(src2, workerCount2) {
+function createRoundRobinThreadpool(src2, workerCount2, serialization2) {
   const count = workerCount2 ?? navigator.hardwareConcurrency;
   const workers = [];
   let nextWorker = 0;
@@ -19916,28 +19998,42 @@ function createRoundRobinThreadpool(src2, workerCount2) {
   }
   let id2 = 0;
   function sendMessageToWorkerWithResponse(prop, args, worker) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const myid = id2;
       id2++;
-      const onResponse = (e) => {
+      const onResponse = async (e) => {
         if (e.data.id !== myid) return;
         worker.removeEventListener("message", onResponse);
-        resolve(e.data.returnValue);
+        const parseRetVal = serialization2?.[prop]?.parseRetVal ?? ((x2) => x2);
+        resolve(await parseRetVal(e.data.returnValue));
       };
       worker.addEventListener("message", onResponse);
+      const serializeArgs = serialization2?.[prop]?.serializeArgs ?? ((x2) => x2);
       worker.postMessage({
         type: prop,
-        args,
+        args: await serializeArgs(args),
         id: myid
       });
     });
   }
   return {
+    threadCount: count,
     send: new Proxy({}, {
       get(i, prop) {
         return async (...args) => {
           const nextWorker2 = getNextWorker();
           return sendMessageToWorkerWithResponse(prop, args, nextWorker2);
+        };
+      }
+    }),
+    sendToThread: (threadIndex) => new Proxy({}, {
+      get(i, prop) {
+        return async (...args) => {
+          return sendMessageToWorkerWithResponse(
+            prop,
+            args,
+            workers[threadIndex]
+          );
         };
       }
     }),
@@ -19952,23 +20048,27 @@ function createRoundRobinThreadpool(src2, workerCount2) {
     })
   };
 }
-function createRoundRobinThread(t) {
+function createRoundRobinThread(t, serialization2) {
   self.addEventListener("message", async (e) => {
-    const resp = await t[e.data.type](...e.data.args);
+    const parseArgs = serialization2?.[e.data.type]?.parseArgs ?? id;
+    const args = await parseArgs(e.data.args);
+    const resp = await t[e.data.type](...args);
+    const serializeReturnValue = serialization2?.[e.data.type]?.serializeRetVal ?? id;
     postMessage({
-      returnValue: resp,
+      returnValue: await serializeReturnValue(resp),
       id: e.data.id
     });
   });
 }
-function createCombinedRoundRobinThreadpool(getInterface, src, workerCount) {
+function createCombinedRoundRobinThreadpool(getInterface, src, workerCount, serialization) {
   if (eval("self.WorkerGlobalScope")) {
-    createRoundRobinThread(getInterface());
+    createRoundRobinThread(getInterface(), serialization);
     return;
   } else {
     return createRoundRobinThreadpool(
       src ?? document.currentScript.src,
-      workerCount
+      workerCount,
+      serialization
     );
   }
 }
@@ -20108,1153 +20208,6 @@ function unclampedSmoothstep(x2) {
 }
 function smoothstep(x2) {
   return unclampedSmoothstep(clamp(x2, 0, 1));
-}
-
-// src/range.ts
-function range(hi) {
-  let arr = [];
-  for (let i = 0; i < hi && i < 1e7; i++) {
-    arr.push(i);
-  }
-  return arr;
-}
-function rangeFrom(lo, hi) {
-  let arr = [];
-  for (let i = lo; i < hi && i < 1e7; i++) {
-    arr.push(i);
-  }
-  return arr;
-}
-function stringRangeMapJoin(hi, f, s = "\\n") {
-  const r = range(hi);
-  return r.map(f).join(s);
-}
-function stringMapJoin(a, f, s = "\\n") {
-  return a.map(f).join(s);
-}
-function smartRangeMap(n, cb2) {
-  const a = range(n);
-  const res1 = a.map((i, index, arr) => {
-    return {
-      remap(lo, hi, inclEnd) {
-        return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
-      },
-      segment(lo, hi) {
-        return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
-      },
-      slidingWindow(arr2) {
-        return [arr2[i], arr2[i + 1]];
-      },
-      randkf() {
-        if (i === 0) return 0;
-        if (i === n - 1) return 100;
-        const lo = i / (n - 2) * 100;
-        const hi = (i + 1) / (n - 2) * 100;
-        return rand(lo, hi);
-      },
-      get(arr2) {
-        return arr2[i];
-      },
-      i,
-      next: i + 1,
-      end: () => i === n - 1,
-      start: () => i === 0
-    };
-  });
-  const res = res1.map(cb2);
-  return res;
-}
-function smartRange(n) {
-  return smartRangeMap(n, id);
-}
-function id(x2) {
-  return x2;
-}
-function smartRangeStringMapJoin(n, cb2, s = "\\n") {
-  return stringMapJoin(smartRangeMap(n, id), cb2, s);
-}
-function rand(lo, hi, random) {
-  if (!random) random = () => Math.random();
-  return random() * (hi - lo) + lo;
-}
-function pickrand(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-function cartesianProductInner(ts, arr) {
-  if (ts.length === 0) return [arr];
-  return ts[0].map((e) => cartesianProductInner(ts.slice(1), [...arr, e])).flat(1);
-}
-function cartesianProduct(...ts) {
-  const res = cartesianProductInner(ts, []);
-  return res;
-}
-
-// src/spatial-hash-table.ts
-function spatialHashTable(htBounds, resolution, getBounds) {
-  const objects = /* @__PURE__ */ new Map();
-  const buckets = range(resolution[0] * resolution[1]).map((e) => /* @__PURE__ */ new Set());
-  function getBucketIndexes(bounds) {
-    const bucketXStart = Math.floor(
-      rescaleClamped(
-        bounds.a[0],
-        htBounds.a[0],
-        htBounds.b[0],
-        0,
-        resolution[0]
-      )
-    );
-    const bucketXEnd = Math.ceil(
-      rescaleClamped(
-        bounds.b[0],
-        htBounds.a[0],
-        htBounds.b[0],
-        0,
-        resolution[0]
-      )
-    );
-    const bucketYStart = Math.floor(
-      rescaleClamped(
-        bounds.a[1],
-        htBounds.a[1],
-        htBounds.b[1],
-        0,
-        resolution[1]
-      )
-    );
-    const bucketYEnd = Math.ceil(
-      rescaleClamped(
-        bounds.b[1],
-        htBounds.a[1],
-        htBounds.b[1],
-        0,
-        resolution[1]
-      )
-    );
-    const indexes = [];
-    for (let x2 = bucketXStart; x2 < bucketXEnd; x2++) {
-      for (let y2 = bucketYStart; y2 < bucketYEnd; y2++) {
-        indexes.push(x2 + y2 * resolution[0]);
-      }
-    }
-    return indexes;
-  }
-  return {
-    objects,
-    buckets,
-    resolution,
-    getBounds,
-    bounds: htBounds,
-    insert(t) {
-      const indexes = getBucketIndexes(getBounds(t));
-      for (const i of indexes) {
-        buckets[i].add(t);
-      }
-      objects.set(t, { buckets: indexes });
-    },
-    delete(t) {
-      const obj = objects.get(t);
-      if (!obj) return false;
-      for (const b of obj.buckets) {
-        buckets[b].delete(t);
-      }
-      objects.delete(t);
-      return true;
-    },
-    queryRect(r) {
-      const queryBuckets = getBucketIndexes(r);
-      const output = /* @__PURE__ */ new Set();
-      for (const b of queryBuckets) {
-        for (const t of buckets[b]) {
-          output.add(t);
-        }
-      }
-      return output;
-    },
-    queryPoint(r) {
-      return this.queryRect({
-        a: r,
-        b: r
-      });
-    },
-    all() {
-      return new Set(objects.keys());
-    }
-  };
-}
-
-// src/result.ts
-function ok(t) {
-  return {
-    ok: true,
-    data: t
-  };
-}
-function err(e) {
-  return {
-    ok: false,
-    error: e
-  };
-}
-
-// src/quadtree.ts
-function makeQuadtree(data, x1, y1, x2, y2, maxPoints, maxDepth) {
-  let midX = (x1 + x2) / 2;
-  let midY = (y1 + y2) / 2;
-  if (maxDepth === 0 || data.length <= maxPoints) {
-    return {
-      data: { type: "points", points: data },
-      x1,
-      y1,
-      x2,
-      y2,
-      midX,
-      midY
-    };
-  }
-  const childQuadtreeDatas = [
-    [],
-    [],
-    [],
-    []
-  ];
-  for (let i = 0; i < data.length; i++) {
-    const pt = data[i];
-    let idx = (pt.x > midX ? 1 : 0) + (pt.y > midY ? 2 : 0);
-    childQuadtreeDatas[idx].push(pt);
-  }
-  return {
-    x1,
-    y1,
-    x2,
-    y2,
-    midX,
-    midY,
-    data: {
-      type: "children",
-      children: [
-        makeQuadtree(
-          childQuadtreeDatas[0],
-          x1,
-          y1,
-          midX,
-          midY,
-          maxPoints,
-          maxDepth - 1
-        ),
-        makeQuadtree(
-          childQuadtreeDatas[1],
-          midX,
-          y1,
-          x2,
-          midY,
-          maxPoints,
-          maxDepth - 1
-        ),
-        makeQuadtree(
-          childQuadtreeDatas[2],
-          x1,
-          midY,
-          midX,
-          y2,
-          maxPoints,
-          maxDepth - 1
-        ),
-        makeQuadtree(
-          childQuadtreeDatas[3],
-          midX,
-          midY,
-          x2,
-          y2,
-          maxPoints,
-          maxDepth - 1
-        )
-      ]
-    }
-  };
-}
-function doRangesIntersect(aLo, aHi, bLo, bHi) {
-  return !(aHi < bLo || bHi < aLo);
-}
-function lookupQuadtree(qt, x1, y1, x2, y2) {
-  if (!(doRangesIntersect(x1, x2, qt.x1, qt.x2) && doRangesIntersect(y1, y2, qt.y1, qt.y2)))
-    return [];
-  if (qt.data.type === "points") return qt.data.points;
-  return [
-    ...lookupQuadtree(qt.data.children[0], x1, y1, x2, y2),
-    ...lookupQuadtree(qt.data.children[1], x1, y1, x2, y2),
-    ...lookupQuadtree(qt.data.children[2], x1, y1, x2, y2),
-    ...lookupQuadtree(qt.data.children[3], x1, y1, x2, y2)
-  ];
-}
-
-// src/array-map.ts
-var ArrayMap = class _ArrayMap {
-  maps;
-  constructor() {
-    this.maps = /* @__PURE__ */ new Map();
-  }
-  nthMap(n) {
-    let map = this.maps.get(n);
-    if (!map) {
-      map = /* @__PURE__ */ new Map();
-      this.maps.set(n, map);
-    }
-    return map;
-  }
-  get(path) {
-    let map = this.nthMap(path.length);
-    for (const p of path) {
-      map = map.get(p);
-      if (!map) return void 0;
-    }
-    return map;
-  }
-  has(path) {
-    let map = this.nthMap(path.length);
-    for (const p of path) {
-      map = map.get(p);
-      if (!map) return false;
-    }
-    return true;
-  }
-  delete(path) {
-    let map = this.nthMap(path.length);
-    for (const p of path.slice(0, -1)) {
-      map = map.get(p);
-      if (!map) return void 0;
-    }
-    const item = map.get(path.at(-1));
-    map.delete(path.at(-1));
-    return item;
-  }
-  change(path, cb2) {
-    let map = this.nthMap(path.length);
-    for (const p of path.slice(0, -1)) {
-      let oldMap = map;
-      map = map.get(p);
-      if (!map) {
-        map = /* @__PURE__ */ new Map();
-        oldMap.set(p, map);
-      }
-    }
-    map.set(path.at(-1), cb2(map.get(path.at(-1))));
-  }
-  set(path, value) {
-    this.change(path, () => value);
-  }
-  forEach(map) {
-    const r = (n, m, path) => {
-      if (n === 0) {
-        map(path, m);
-      } else {
-        for (const [k, v] of m) r(n - 1, m, path.concat(k));
-      }
-    };
-    for (const [n, map2] of this.maps) {
-      r(n, map2, []);
-    }
-  }
-  serialize() {
-    const out = [];
-    this.forEach((arr, v) => out.push([arr, v]));
-    return out;
-  }
-  static fromSerialized(s) {
-    const am = new _ArrayMap();
-    for (const [k, v] of s) {
-      am.set(k, v);
-    }
-    return am;
-  }
-};
-function table(data, indexPaths, indexes, propFilterKeys, propFilterValues) {
-  if (!data) data = /* @__PURE__ */ new Set();
-  if (!indexes) indexes = new ArrayMap();
-  if (!indexPaths) indexPaths = new ArrayMap();
-  if (!propFilterKeys) propFilterKeys = [];
-  if (!propFilterValues) propFilterValues = [];
-  return {
-    // @ts-expect-error
-    filter: new Proxy(
-      {},
-      {
-        get(target, prop, receiver) {
-          return (v) => table(
-            data,
-            indexPaths,
-            indexes,
-            propFilterKeys.concat(prop),
-            propFilterValues.concat(v)
-          );
-        }
-      }
-    ),
-    get() {
-      if (propFilterKeys.length === 0) {
-        return [...data];
-      }
-      propFilterKeys = [...new Set(propFilterKeys)].sort();
-      const indexPathExists = indexPaths.get(propFilterKeys);
-      if (!indexPathExists) {
-        for (const d of data) {
-          const filter = propFilterKeys.flatMap((e) => [e, d[e]]);
-          const set2 = indexes.change(
-            filter,
-            (s) => (s ?? /* @__PURE__ */ new Set()).add(d)
-          );
-        }
-        indexPaths.set(propFilterKeys, true);
-      }
-      const fullFilter = propFilterKeys.flatMap((e, i) => [
-        e,
-        propFilterValues[i]
-      ]);
-      const set = indexes.get(fullFilter);
-      return set ? [...set] : [];
-    },
-    getOne() {
-      const data2 = this.get();
-      if (data2.length !== 1)
-        throw new Error(
-          `Expected a single result. path=${propFilterKeys.join(
-            ","
-          )}, values=${propFilterValues.join(",")}`
-        );
-      return data2[0];
-    },
-    delete() {
-      propFilterKeys = [...new Set(propFilterKeys)].sort();
-      const toDelete = this.get();
-      indexPaths.forEach((path, set) => {
-        for (const d of toDelete) {
-          const filter = path.flatMap((e) => [e, d[e]]);
-          indexes.change(filter, (s) => (s?.delete(d), s ?? /* @__PURE__ */ new Set()));
-        }
-      });
-      for (const d of toDelete) {
-        data.delete(d);
-      }
-      return toDelete;
-    },
-    add(t) {
-      propFilterKeys = [...new Set(propFilterKeys)].sort();
-      indexPaths.forEach((path, set) => {
-        const filter = path.flatMap((e) => [e, t[e]]);
-        indexes.change(filter, (s) => (s ?? /* @__PURE__ */ new Set()).add(t));
-      });
-      data.add(t);
-    },
-    [Symbol.iterator]() {
-      return this.get()[Symbol.iterator]();
-    }
-  };
-}
-function tableWithData(data) {
-  const tbl = table();
-  for (const d of data) {
-    tbl.add(d);
-  }
-  return tbl;
-}
-
-// src/memo.ts
-function memo(callback, serializeParams) {
-  if (!serializeParams) serializeParams = (x2) => x2;
-  const map = new ArrayMap();
-  const fn = (...params) => {
-    const serialized = serializeParams(params);
-    let hasCached = map.has(serialized);
-    if (hasCached) {
-      return map.get(serialized);
-    }
-    const result = callback(...params);
-    map.set(serialized, result);
-    return result;
-  };
-  fn.invalidate = (...params) => {
-    map.delete(serializeParams(params));
-  };
-  fn.getCache = () => map;
-  return fn;
-}
-function lazy(callback) {
-  let executed = false;
-  let cached;
-  return () => {
-    if (!executed) {
-      cached = callback();
-      executed = true;
-    }
-    return cached;
-  };
-}
-
-// src/localstorage-io.ts
-function registerStorageItem(name, defaultValue) {
-  name = "radian628-wikidot-usertools-" + name;
-  let subscriptions = /* @__PURE__ */ new Set();
-  const obj = {
-    get() {
-      const it = localStorage.getItem(name);
-      if (!it) return defaultValue;
-      try {
-        return JSON.parse(it);
-      } catch {
-        return defaultValue;
-      }
-    },
-    set(content) {
-      localStorage.setItem(name, JSON.stringify(content));
-      for (const s of subscriptions) {
-        s(content);
-      }
-    },
-    subscribe(cb2) {
-      subscriptions.add(cb2);
-      return () => {
-        subscriptions.delete(cb2);
-      };
-    }
-  };
-  if (!obj.get() && defaultValue) obj.set(defaultValue);
-  return obj;
-}
-
-// src/listen-for-element.ts
-function listenForSelector(selector) {
-  const elem = document.querySelector(selector);
-  if (elem) return Promise.resolve(elem);
-  return new Promise((resolve, reject) => {
-    const observer = new MutationObserver(() => {
-      const elem2 = document.querySelector(selector);
-      if (elem2) {
-        observer.disconnect();
-        resolve(elem2);
-      }
-    });
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-  });
-}
-function listenForNoSelector(selector) {
-  const elem = document.querySelector(selector);
-  if (!elem) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const observer = new MutationObserver(() => {
-      const elem2 = document.querySelector(selector);
-      if (!elem2) {
-        observer.disconnect();
-        resolve();
-      }
-    });
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-  });
-}
-var alterElementsCallbackId = 0;
-function alterElements(selector, callback) {
-  const id2 = alterElementsCallbackId++;
-  const alteredByKey = "alteredby" + id2;
-  let unmountCallbacks = [];
-  function alter() {
-    const elems = document.querySelectorAll(selector);
-    for (const e of Array.from(elems)) {
-      if (e.dataset[alteredByKey]) continue;
-      const unmount = callback(e);
-      unmountCallbacks.push(unmount);
-      e.dataset[alteredByKey] = "true";
-    }
-  }
-  alter();
-  const observer = new MutationObserver(() => {
-    alter();
-  });
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-  return () => {
-    observer.disconnect();
-    for (const cb2 of unmountCallbacks) cb2();
-  };
-}
-var injectedCallbackId = 0;
-function injectElementsAt(selector, position, element) {
-  const myid = injectedCallbackId++;
-  const key = "injectedBy" + injectedCallbackId;
-  let shouldStop = false;
-  let currentElements = [];
-  function observerCallback() {
-    currentElements = currentElements.filter((e) => {
-      if (document.body.contains(e.anchor)) {
-        return true;
-      } else {
-        e.unmount();
-        e.element.parentElement?.removeChild(e.element);
-        return false;
-      }
-    });
-    const elems = document.querySelectorAll(selector);
-    for (const e of Array.from(elems)) {
-      if (!(e instanceof HTMLElement) || e.dataset[key]) continue;
-      e.dataset[key] = "true";
-      const r = element(e);
-      e.insertAdjacentElement(position, r.element);
-      currentElements.push({
-        element: r.element,
-        unmount: r.unmount,
-        anchor: e
-      });
-    }
-  }
-  const observer = new MutationObserver(() => {
-    observerCallback();
-  });
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-  observerCallback();
-  return () => {
-    observer.disconnect();
-    shouldStop = true;
-  };
-}
-
-// src/lens.ts
-function setDeep(obj, path, value) {
-  if (path.length === 0) return value;
-  return {
-    ...obj,
-    [path[0]]: setDeep(obj[path[0]], path.slice(1), value)
-  };
-}
-function getDeep(obj, path) {
-  if (path.length === 0) return obj;
-  return getDeep(obj[path[0]], path.slice(1));
-}
-function lensInner(s, path = []) {
-  return new Proxy(
-    {},
-    {
-      get(target, prop, receiver) {
-        if (prop === "$") {
-          return (v) => setDeep(s.at(-1), path, v);
-        } else if (prop === "$push") {
-          return lensInner([...s, getDeep(s.at(-1), path)], []);
-        } else if (prop === "$pop") {
-          return lensInner(s.slice(0, -1), []);
-        } else {
-          return lensInner(s.at(-1), [...path, prop]);
-        }
-      }
-    }
-  );
-}
-function lens(t) {
-  return lensInner([t], []);
-}
-
-// src/intersect.ts
-function rangeIntersects(a1, a2, b1, b2) {
-  return !(a1 > b2 || b1 > a2);
-}
-function rectIntersects(a, b) {
-  return rangeIntersects(a.left, a.right, b.left, b.right) && rangeIntersects(a.top, a.bottom, b.top, b.bottom);
-}
-
-// src/inject.ts
-async function injectFunction(get, set, injector) {
-  return new Promise((resolve, reject) => {
-    const interval = setInterval(() => {
-      const fn = get();
-      if (!fn) return;
-      set(injector(fn));
-      clearInterval(interval);
-      resolve();
-    });
-  });
-}
-
-// src/graph.ts
-function createGraph() {
-  return {
-    vertices: /* @__PURE__ */ new Set(),
-    edges: /* @__PURE__ */ new Set()
-  };
-}
-function createGraphFromData(vertices, edges) {
-  const graph = createGraph();
-  const vertexMap = /* @__PURE__ */ new Map();
-  for (const v of vertices) {
-    vertexMap.set(v, addVertex(graph, v));
-  }
-  for (const e of edges) {
-    addEdge(
-      graph,
-      [vertexMap.get(e.endpoints[0]), vertexMap.get(e.endpoints[1])],
-      e.data
-    );
-  }
-  return graph;
-}
-function addVertex(graph, data) {
-  const vertex = {
-    data,
-    incoming: /* @__PURE__ */ new Set(),
-    outgoing: /* @__PURE__ */ new Set()
-  };
-  graph.vertices.add(vertex);
-  return vertex;
-}
-function addEdge(graph, endpoints, data) {
-  const edge = {
-    data,
-    endpoints
-  };
-  endpoints[0].outgoing.add(edge);
-  endpoints[1].incoming.add(edge);
-  graph.edges.add(edge);
-  return edge;
-}
-function getConnectedComponents(graph) {
-  const components = [];
-  const vertsRemaining = new Set(graph.vertices);
-  while (vertsRemaining.size > 0) {
-    const foundVertices = /* @__PURE__ */ new Set();
-    const foundEdges = /* @__PURE__ */ new Set();
-    let queue = [vertsRemaining.values().next().value];
-    while (queue.length > 0) {
-      const vert = queue.shift();
-      vertsRemaining.delete(vert);
-      foundVertices.add(vert);
-      for (const edge of vert.outgoing) {
-        foundEdges.add(edge);
-        if (!foundVertices.has(edge.endpoints[1])) {
-          queue.push(edge.endpoints[1]);
-        }
-        foundVertices.add(edge.endpoints[1]);
-      }
-      for (const edge of vert.incoming) {
-        foundEdges.add(edge);
-        if (!foundVertices.has(edge.endpoints[0])) {
-          queue.push(edge.endpoints[0]);
-        }
-        foundVertices.add(edge.endpoints[0]);
-      }
-    }
-    components.push({
-      vertices: foundVertices,
-      edges: foundEdges
-    });
-  }
-  return components;
-}
-function findEndpoint(graph) {
-  for (const v of graph.vertices) {
-    if (v.incoming.size + v.outgoing.size === 1) return v;
-  }
-  return void 0;
-}
-function getDepthFirstTraversalOrder(graph, startPoint) {
-  const order = [];
-  const foundVertices = /* @__PURE__ */ new Set();
-  let stack = [
-    startPoint ?? graph.vertices.values().next().value
-  ];
-  if (!stack[0]) return [];
-  foundVertices.add(stack[0]);
-  while (stack.length > 0) {
-    const vertex = stack.pop();
-    order.push(vertex);
-    for (const edge of vertex.outgoing) {
-      if (foundVertices.has(edge.endpoints[1])) {
-        continue;
-      }
-      stack.push(edge.endpoints[1]);
-      foundVertices.add(edge.endpoints[1]);
-    }
-    for (const edge of vertex.incoming) {
-      if (foundVertices.has(edge.endpoints[0])) {
-        continue;
-      }
-      stack.push(edge.endpoints[0]);
-      foundVertices.add(edge.endpoints[0]);
-    }
-  }
-  return order;
-}
-
-// src/evalbox.ts
-function createEvalbox() {
-  const evalbox = document.createElement("iframe");
-  evalbox.sandbox = "allow-scripts";
-  let index = 0;
-  return new Promise((resolve, reject) => {
-    const initLoadListener = () => {
-      evalbox.removeEventListener("load", initLoadListener);
-      resolve({
-        iframe: evalbox,
-        eval(str) {
-          return new Promise((resolve2, reject2) => {
-            let myindex = index++;
-            const listener = (e) => {
-              if (e.data && e.data.id === myindex) {
-                resolve2(
-                  e.data.type === "eval-success" ? {
-                    data: e.data.payload,
-                    success: true
-                  } : {
-                    success: false,
-                    error: typeof e.data.payload === "string" ? e.data.payload : "No Error Provided"
-                  }
-                );
-                window.removeEventListener("message", listener);
-              }
-            };
-            window.addEventListener("message", listener);
-            evalbox.contentWindow?.postMessage(
-              {
-                id: myindex,
-                payload: str,
-                type: "eval"
-              },
-              "*"
-            );
-          });
-        },
-        kill() {
-          document.body.removeChild(evalbox);
-        },
-        reload() {
-          return new Promise((resolve2, reject2) => {
-            const refreshListener = () => {
-              evalbox.removeEventListener("load", refreshListener);
-              resolve2();
-            };
-            evalbox.addEventListener("load", refreshListener);
-            evalbox.contentWindow?.location.reload();
-          });
-        }
-      });
-    };
-    evalbox.addEventListener("load", initLoadListener);
-    evalbox.style.display = "none";
-    document.body.appendChild(evalbox);
-    evalbox.srcdoc = `
-<!DOCTYPE html>
-<html>
-  <head></head>
-  <body>
-    <script>
-      window.addEventListener("message", async (e) => {
-        if (e.data && e.data.type === "eval") {
-          try {
-            const res = await eval(e.data.payload);
-            e.source.postMessage({
-              type: "eval-success",
-              payload: res,
-              id: e.data.id
-            }, "*");
-          } catch (err) {
-            e.source.postMessage({
-              type: "eval-fail",
-              payload: err.toString(),
-              id: e.data.id
-            }, "*"); 
-          }
-        }
-      });
-    <\/script> 
-  </body>
-</html>
-`;
-  });
-}
-
-// src/download.ts
-function download(file, name) {
-  const a = document.createElement("a");
-  a.download = name;
-  const url = URL.createObjectURL(file);
-  a.href = url;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-function downloadText(text, name) {
-  const blob = new Blob([text], { type: "text/plain" });
-  download(blob, name);
-}
-function canvasToBlob(c, type, quality) {
-  return new Promise((resolve, reject) => {
-    c.toBlob(
-      (blob) => {
-        resolve(blob);
-      },
-      type,
-      quality
-    );
-  });
-}
-function blobToDataURL(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.addEventListener("load", () => {
-      resolve(reader.result);
-    });
-    reader.readAsDataURL(blob);
-  });
-}
-function loadImg(url) {
-  const img = new Image();
-  return new Promise((resolve, reject) => {
-    img.onload = () => {
-      resolve(img);
-    };
-    img.src = url;
-  });
-}
-
-// src/debounce.ts
-function debounce(callback) {
-  let nextRequestIndex = 0;
-  let currentRequest = void 0;
-  const fn = async (...params) => {
-    nextRequestIndex += 1;
-    const myindex = nextRequestIndex;
-    if (currentRequest) {
-      await currentRequest;
-    }
-    if (nextRequestIndex === myindex) {
-      const myreq = callback(...params);
-      currentRequest = myreq;
-      const res = await myreq;
-      currentRequest = void 0;
-      return res;
-    }
-    return void 0;
-  };
-  fn._debounced = true;
-  return fn;
-}
-
-// src/array-utils.ts
-function interleave(arr, cb2) {
-  let out = [];
-  for (let i = 0; i < arr.length - 1; i++) {
-    out.push(arr[i], cb2(arr[i], arr[i + 1]));
-  }
-  if (arr.length > 0) {
-    out.push(arr.at(-1));
-  }
-  return out;
-}
-function splitBy(arr, amount) {
-  let outarr = [[]];
-  for (let i = 0; i < arr.length; i++) {
-    if (i % amount === amount - 1) outarr.push([]);
-    outarr.at(-1).push(arr[i]);
-  }
-  return outarr;
-}
-function bifurcate(arr, fn) {
-  const bools = arr.map(fn);
-  return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
-}
-
-// src/webgl/shader.ts
-function source2shader(gl, type, source) {
-  const shader = gl.createShader(
-    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
-  );
-  if (!shader) return err(void 0);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader));
-    return err(void 0);
-  }
-  return ok(shader);
-}
-function shaders2program(gl, v, f) {
-  const program = gl.createProgram();
-  gl.attachShader(program, v);
-  gl.attachShader(program, f);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(program));
-    return err(void 0);
-  }
-  return ok(program);
-}
-function sources2program(gl, vs, fs) {
-  const v = source2shader(gl, "v", vs);
-  const f = source2shader(gl, "f", fs);
-  if (!v.ok || !f.ok) return err(void 0);
-  return shaders2program(gl, v.data, f.data);
-}
-function fullscreenQuadBuffer(gl) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      -1,
-      -1,
-      1,
-      -1,
-      -1,
-      1,
-      1,
-      1,
-      -1,
-      1,
-      1,
-      -1
-    ]),
-    gl.STATIC_DRAW
-  );
-  return ok(buffer);
-}
-function glRenderToQuad(options) {
-  const canvas = document.createElement("canvas");
-  canvas.width = options.width;
-  canvas.height = options.height;
-  const gl = canvas.getContext(options.version ?? "webgl2");
-  gl.viewport(0, 0, options.width, options.height);
-  if (!gl) return err(void 0);
-  const buf = fullscreenQuadBuffer(gl);
-  const prog = sources2program(
-    gl,
-    `#version 300 es
-precision highp float;
-
-in vec2 in_vpos;
-out vec2 pos;
-
-void main() {
-  pos = in_vpos * 0.5 + 0.5;
-  gl_Position = vec4(in_vpos, 0.5, 1.0);
-}`,
-    (options.noheader ? "" : `#version 300 es
-precision highp float;
-in vec2 pos;
-out vec4 col;
-`) + (options.noAutoUniforms ? "" : [
-      [options.uniforms, "", "float"],
-      [options.intUniforms, "i", "int"],
-      [options.uintUniforms, "u", "uint"]
-    ].map(
-      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
-        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
-      }).join("\n")
-    ).join("\n")) + options.fragsource
-  );
-  if (!prog.data) return err(void 0);
-  gl.useProgram(prog.data);
-  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
-  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(attrloc);
-  for (const [uniforms, type] of [
-    [options.uniforms, "i"],
-    [options.intUniforms, "i"],
-    [options.uintUniforms, "ui"]
-  ]) {
-    for (const [k, v] of Object.entries(uniforms ?? {})) {
-      const v2 = Array.isArray(v) ? v : [v];
-      gl[`uniform${v2.length}${type}v`](
-        gl.getUniformLocation(prog.data, k),
-        v2
-      );
-    }
-  }
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-  return ok(canvas);
-}
-
-// src/webgl/scene.ts
-function applyUniform(gl, prog, name, spec) {
-  const [t, d] = spec;
-  const l = gl.getUniformLocation(prog, name);
-  if (l === null) {
-    throw new Error(
-      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
-    );
-  }
-  if (t === "float") gl.uniform1f(l, d);
-  if (t === "vec2") gl.uniform2f(l, ...d);
-  if (t === "vec3") gl.uniform3f(l, ...d);
-  if (t === "vec4") gl.uniform4f(l, ...d);
-  if (t === "int") gl.uniform1i(l, d);
-  if (t === "ivec2") gl.uniform2i(l, ...d);
-  if (t === "ivec3") gl.uniform3i(l, ...d);
-  if (t === "ivec4") gl.uniform4i(l, ...d);
-  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
-  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
-  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
-  if (t === "float[]") gl.uniform1fv(l, d);
-  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
-  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
-  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
-  if (t === "int[]") gl.uniform1iv(l, d);
-  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
-  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
-  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
-  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
-  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
-  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
-}
-function applyUniforms(gl, prog, uniforms) {
-  for (const [k, v] of Object.entries(uniforms)) {
-    applyUniform(gl, prog, k, v);
-  }
-}
-function createScene(sceneSpec) {
-  const gl = sceneSpec.gl;
-  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
-  let sceneUniforms = sceneSpec.uniforms ?? {};
-  return {
-    uniforms() {
-      return sceneUniforms;
-    },
-    resetUniforms(u) {
-      sceneUniforms = u;
-    },
-    updateUniforms(u) {
-      sceneUniforms = { ...sceneUniforms, ...u };
-    },
-    addObject3D(spec) {
-      let objectUniforms = spec.uniforms ?? {};
-      return {
-        gl() {
-          return gl;
-        },
-        draw() {
-          gl.useProgram(spec.program);
-          spec.buffer.setLayout(spec.program);
-          applyUniforms(
-            gl,
-            spec.program,
-            combineUniforms(sceneUniforms, objectUniforms)
-          );
-          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
-        },
-        uniforms() {
-          return objectUniforms;
-        },
-        resetUniforms(u) {
-          objectUniforms = u;
-        },
-        updateUniforms(u) {
-          objectUniforms = { ...objectUniforms, ...u };
-        }
-      };
-    }
-  };
 }
 
 // src/math/vector.ts
@@ -22287,6 +21240,9 @@ function polarVec2Cart(rCommaTheta) {
 function cart2Polar(a) {
   return [length2(a), Math.atan2(a[1], a[0])];
 }
+function pointTo(a, b) {
+  return Math.atan2(b[1] - a[1], b[0] - a[0]);
+}
 function mulScalarByVec2(a, b) {
   return [a * b[0], a * b[1]];
 }
@@ -22951,7 +21907,25 @@ function length3(a) {
 function length4(a) {
   return Math.sqrt(dot4(a, a));
 }
-function rescale22(a, b) {
+function distance2(a, b) {
+  return length2(sub2(a, b));
+}
+function distance3(a, b) {
+  return length3(sub3(a, b));
+}
+function distance4(a, b) {
+  return length4(sub4(a, b));
+}
+function mix2(a, b, c) {
+  return add2(b, scale2(sub2(c, b), a));
+}
+function mix3(a, b, c) {
+  return add3(b, scale3(sub3(c, b), a));
+}
+function mix4(a, b, c) {
+  return add4(b, scale4(sub4(c, b), a));
+}
+function rescale2(a, b) {
   return scale2(normalize2(a), b);
 }
 function rescale3(a, b) {
@@ -22988,227 +21962,1300 @@ function scale4(a, b) {
   return [a[0] * b, a[1] * b, a[2] * b, a[3] * b];
 }
 
-// src/webgl/mesh.ts
-function parametric2D(x2, y2, attr, getPoint) {
-  const data = [];
-  for (let j = 0; j < y2; j++) {
-    for (let i = 0; i < x2; i++) {
-      const a = getPoint(i, j);
-      const b = getPoint(i + 1, j);
-      const c = getPoint(i, j + 1);
-      const d = getPoint(i + 1, j + 1);
-      data.push({ [attr]: a });
-      data.push({ [attr]: c });
-      data.push({ [attr]: b });
-      data.push({ [attr]: c });
-      data.push({ [attr]: d });
-      data.push({ [attr]: b });
-    }
-  }
-  return data;
-}
-function uvSphere(x2, y2, rad, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
-    let px = Math.cos(a) * Math.cos(b) * rad;
-    let pz = Math.sin(a) * Math.cos(b) * rad;
-    let py = Math.sin(b) * rad;
-    return [px, py, pz];
-  });
-}
-function ring(x2, rad, height, attr) {
-  return parametric2D(x2, 1, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const px = Math.cos(a) * rad;
-    const pz = Math.sin(a) * rad;
-    const py = j === 1 ? height / 2 : -height / 2;
-    return [px, py, pz];
-  });
-}
-function torus(x2, y2, R, r, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI * 2;
-    let px = Math.cos(a);
-    let pz = Math.sin(a);
-    let py = Math.sin(b) * r;
-    px *= R + Math.cos(b) * r;
-    pz *= R + Math.cos(b) * r;
-    return [px, py, pz];
-  });
-}
-function move(mesh, attr, offset) {
-  return mesh.map((m) => ({
-    ...m,
-    [attr]: m[attr].map((e, i) => e + offset[i])
-  }));
-}
-function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
-  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
-  const rangeInv = 1 / (near - far);
-  return [
-    f / aspectRatio,
-    0,
-    0,
-    0,
-    0,
-    f,
-    0,
-    0,
-    0,
-    0,
-    (near + far) * rangeInv,
-    -1,
-    0,
-    0,
-    near * far * rangeInv * 2,
-    0
-  ];
-}
-function ortho(left, right, top, bottom, near, far) {
-  return [
-    2 / (right - left),
-    0,
-    0,
-    -(right + left) / (right - left),
-    0,
-    2 / (top - bottom),
-    0,
-    -(top + bottom) / (top - bottom),
-    0,
-    0,
-    -2 / (far - near),
-    -(far + near) / (far - near),
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function cross(a, b) {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0]
-  ];
-}
-function normalize(v) {
-  const len = Math.hypot(...v);
-  return scale3(v, 1 / len);
-}
-function rodrigues(v, k, theta) {
-  k = normalize(k);
-  return add3(
-    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-  );
-}
-function rotate(axis, angle) {
-  return [
-    ...rodrigues([1, 0, 0], axis, angle),
-    0,
-    ...rodrigues([0, 1, 0], axis, angle),
-    0,
-    ...rodrigues([0, 0, 1], axis, angle),
-    0,
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function scale(axes) {
-  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
-}
-function translate(v) {
-  return [1, 0, 0, v[0], 0, 1, 0, v[1], 0, 0, 1, v[2], 0, 0, 0, 1];
-}
-
-// src/webgl/buffer.ts
-function getDatatypeSize(gl, datatype) {
-  return {
-    [gl.BYTE]: 1,
-    [gl.SHORT]: 2,
-    [gl.UNSIGNED_BYTE]: 1,
-    [gl.UNSIGNED_SHORT]: 2,
-    [gl.FLOAT]: 4,
-    [gl.HALF_FLOAT]: 2,
-    [gl.INT]: 4,
-    [gl.UNSIGNED_INT]: 4,
-    [gl.INT_2_10_10_10_REV]: 4,
-    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
-  }[datatype];
-}
-function createBufferWithLayout(gl, layout, data) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  const layoutEntries = Object.entries(layout);
-  let stride = 0;
-  const offsets = /* @__PURE__ */ new Map();
-  for (const [name, attrs] of layoutEntries) {
-    offsets.set(name, stride);
-    stride += attrs.size * getDatatypeSize(gl, attrs.type);
-  }
-  const arraybuf = new ArrayBuffer(stride * data.length);
-  const rawdata = new DataView(arraybuf);
-  let i = 0;
-  for (const d of data) {
-    for (const [name, attrs] of layoutEntries) {
-      for (let j = 0; j < attrs.size; j++) {
-        const val = d[name][j];
-        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
-        if (attrs.type === gl.BYTE) {
-          rawdata.setInt8(pos, val);
-        } else if (attrs.type === gl.UNSIGNED_BYTE) {
-          rawdata.setUint8(pos, val);
-        } else if (attrs.type === gl.FLOAT) {
-          rawdata.setFloat32(pos, val, true);
-        } else if (attrs.type === gl.SHORT) {
-          rawdata.setInt16(pos, val, true);
-        } else if (attrs.type === gl.UNSIGNED_SHORT) {
-          rawdata.setUint16(pos, val, true);
-        }
+// src/spatial-hash-table.ts
+function spatialHashTable(htBounds, resolution, getBounds) {
+  let objects = /* @__PURE__ */ new Map();
+  let buckets = range(resolution[0] * resolution[1]).map((e) => /* @__PURE__ */ new Set());
+  function getBucketIndexes(bounds) {
+    const bucketXStart = Math.floor(
+      rescaleClamped(
+        bounds.a[0],
+        htBounds.a[0],
+        htBounds.b[0],
+        0,
+        resolution[0]
+      )
+    );
+    const bucketXEnd = Math.ceil(
+      rescaleClamped(
+        bounds.b[0],
+        htBounds.a[0],
+        htBounds.b[0],
+        0,
+        resolution[0]
+      )
+    );
+    const bucketYStart = Math.floor(
+      rescaleClamped(
+        bounds.a[1],
+        htBounds.a[1],
+        htBounds.b[1],
+        0,
+        resolution[1]
+      )
+    );
+    const bucketYEnd = Math.ceil(
+      rescaleClamped(
+        bounds.b[1],
+        htBounds.a[1],
+        htBounds.b[1],
+        0,
+        resolution[1]
+      )
+    );
+    const indexes = [];
+    for (let x2 = bucketXStart; x2 < Math.max(bucketXEnd, bucketXStart + 1); x2++) {
+      for (let y2 = bucketYStart; y2 < Math.max(bucketYEnd, bucketYStart + 1); y2++) {
+        indexes.push(x2 + y2 * resolution[0]);
       }
     }
-    i++;
+    return indexes;
   }
-  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
   return {
-    vertexCount: data.length,
-    buffer,
-    setLayout(prog) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      for (const [name, attrs] of layoutEntries) {
-        const loc = gl.getAttribLocation(prog, name);
-        if (attrs.isInt) {
-          gl.vertexAttribIPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            stride,
-            offsets.get(name)
-          );
-        } else {
-          gl.vertexAttribPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            attrs.normalized ?? false,
-            stride,
-            offsets.get(name)
-          );
-        }
-        gl.enableVertexAttribArray(loc);
+    objects,
+    buckets,
+    resolution,
+    getBounds,
+    bounds: htBounds,
+    insert(t) {
+      const indexes = getBucketIndexes(getBounds(t));
+      for (const i of indexes) {
+        buckets[i].add(t);
       }
+      objects.set(t, { buckets: indexes });
     },
-    bindArray(gl2) {
-      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
+    delete(t) {
+      const obj = objects.get(t);
+      if (!obj) return false;
+      for (const b of obj.buckets) {
+        buckets[b].delete(t);
+      }
+      objects.delete(t);
+      return true;
     },
-    bindIndex(gl2) {
-      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
+    queryRect(r) {
+      const queryBuckets = getBucketIndexes(r);
+      const output = /* @__PURE__ */ new Set();
+      for (const b of queryBuckets) {
+        for (const t of buckets[b]) {
+          output.add(t);
+        }
+      }
+      return output;
+    },
+    queryPoint(r) {
+      return this.queryRect({
+        a: r,
+        b: r
+      });
+    },
+    all() {
+      return new Set(objects.keys());
+    },
+    setObjects(o) {
+      this.objects = o;
+      objects = o;
+    },
+    setBuckets(b) {
+      this.buckets = buckets;
+      buckets = b;
     }
   };
+}
+function inCircle(sht, c, getObjectCircle) {
+  const rectResult = sht.queryRect({
+    a: [c.center[0] - c.radius, c.center[1] - c.radius],
+    b: [c.center[0] + c.radius, c.center[1] + c.radius]
+  });
+  return new Set(
+    Array.from(rectResult.values()).filter((e) => {
+      const objectCircle = getObjectCircle(e);
+      return distance2(objectCircle.center, c.center) < objectCircle.radius + c.radius;
+    })
+  );
+}
+function serializeSpatialHashTable(sht, serializeItem) {
+  if (!serializeItem) {
+    return {
+      // @ts-expect-error
+      buckets: sht.buckets,
+      resolution: sht.resolution,
+      bounds: sht.bounds,
+      // @ts-expect-error
+      objects: sht.objects
+    };
+  }
+  const serializedObjects = new Map(
+    [...sht.objects].map(([k, v]) => [k, { serialized: serializeItem(k), v }])
+  );
+  const ssht = {
+    buckets: sht.buckets.map(
+      (b) => new Set([...b].map((i) => serializedObjects.get(i)?.serialized))
+    ),
+    resolution: sht.resolution,
+    bounds: sht.bounds,
+    objects: new Map(
+      [...sht.objects].map(([k, v]) => [
+        serializedObjects.get(k).serialized,
+        v
+      ])
+    )
+  };
+  return ssht;
+}
+function parseSpatialHashTable(ssht, getBounds, parseItem) {
+  if (!parseItem) {
+    const sht = spatialHashTable(ssht.bounds, ssht.resolution, getBounds);
+    sht.setBuckets(ssht.buckets);
+    sht.setObjects(ssht.objects);
+    return sht;
+  }
+  const parsedObjects = new Map(
+    [...ssht.objects].map(([k, v]) => [k, { parsed: parseItem(k), v }])
+  );
+  {
+    const sht = spatialHashTable(ssht.bounds, ssht.resolution, getBounds);
+    sht.setBuckets(
+      ssht.buckets.map(
+        (b) => new Set([...b].map((i) => parsedObjects.get(i)?.parsed))
+      )
+    );
+    sht.setObjects(
+      new Map(
+        [...ssht.objects].map(([k, v]) => [parsedObjects.get(k).parsed, v])
+      )
+    );
+    return sht;
+  }
+}
+
+// src/result.ts
+function ok(t) {
+  return {
+    ok: true,
+    data: t
+  };
+}
+function err(e) {
+  return {
+    ok: false,
+    error: e
+  };
+}
+
+// src/quadtree.ts
+function makeQuadtree(data, x1, y1, x2, y2, maxPoints, maxDepth) {
+  let midX = (x1 + x2) / 2;
+  let midY = (y1 + y2) / 2;
+  if (maxDepth === 0 || data.length <= maxPoints) {
+    return {
+      data: { type: "points", points: data },
+      x1,
+      y1,
+      x2,
+      y2,
+      midX,
+      midY
+    };
+  }
+  const childQuadtreeDatas = [
+    [],
+    [],
+    [],
+    []
+  ];
+  for (let i = 0; i < data.length; i++) {
+    const pt = data[i];
+    let idx = (pt.x > midX ? 1 : 0) + (pt.y > midY ? 2 : 0);
+    childQuadtreeDatas[idx].push(pt);
+  }
+  return {
+    x1,
+    y1,
+    x2,
+    y2,
+    midX,
+    midY,
+    data: {
+      type: "children",
+      children: [
+        makeQuadtree(
+          childQuadtreeDatas[0],
+          x1,
+          y1,
+          midX,
+          midY,
+          maxPoints,
+          maxDepth - 1
+        ),
+        makeQuadtree(
+          childQuadtreeDatas[1],
+          midX,
+          y1,
+          x2,
+          midY,
+          maxPoints,
+          maxDepth - 1
+        ),
+        makeQuadtree(
+          childQuadtreeDatas[2],
+          x1,
+          midY,
+          midX,
+          y2,
+          maxPoints,
+          maxDepth - 1
+        ),
+        makeQuadtree(
+          childQuadtreeDatas[3],
+          midX,
+          midY,
+          x2,
+          y2,
+          maxPoints,
+          maxDepth - 1
+        )
+      ]
+    }
+  };
+}
+function doRangesIntersect(aLo, aHi, bLo, bHi) {
+  return !(aHi < bLo || bHi < aLo);
+}
+function lookupQuadtree(qt, x1, y1, x2, y2) {
+  if (!(doRangesIntersect(x1, x2, qt.x1, qt.x2) && doRangesIntersect(y1, y2, qt.y1, qt.y2)))
+    return [];
+  if (qt.data.type === "points") return qt.data.points;
+  return [
+    ...lookupQuadtree(qt.data.children[0], x1, y1, x2, y2),
+    ...lookupQuadtree(qt.data.children[1], x1, y1, x2, y2),
+    ...lookupQuadtree(qt.data.children[2], x1, y1, x2, y2),
+    ...lookupQuadtree(qt.data.children[3], x1, y1, x2, y2)
+  ];
+}
+
+// src/array-map.ts
+var ArrayMap = class _ArrayMap {
+  maps;
+  constructor() {
+    this.maps = /* @__PURE__ */ new Map();
+  }
+  nthMap(n) {
+    let map = this.maps.get(n);
+    if (!map) {
+      map = /* @__PURE__ */ new Map();
+      this.maps.set(n, map);
+    }
+    return map;
+  }
+  get(path) {
+    let map = this.nthMap(path.length);
+    for (const p of path) {
+      map = map.get(p);
+      if (!map) return void 0;
+    }
+    return map;
+  }
+  has(path) {
+    let map = this.nthMap(path.length);
+    for (const p of path) {
+      map = map.get(p);
+      if (!map) return false;
+    }
+    return true;
+  }
+  delete(path) {
+    let map = this.nthMap(path.length);
+    for (const p of path.slice(0, -1)) {
+      map = map.get(p);
+      if (!map) return void 0;
+    }
+    const item = map.get(path.at(-1));
+    map.delete(path.at(-1));
+    return item;
+  }
+  change(path, cb2) {
+    let map = this.nthMap(path.length);
+    for (const p of path.slice(0, -1)) {
+      let oldMap = map;
+      map = map.get(p);
+      if (!map) {
+        map = /* @__PURE__ */ new Map();
+        oldMap.set(p, map);
+      }
+    }
+    map.set(path.at(-1), cb2(map.get(path.at(-1))));
+  }
+  set(path, value) {
+    this.change(path, () => value);
+  }
+  forEach(map) {
+    const r = (n, m, path) => {
+      if (n === 0) {
+        map(path, m);
+      } else {
+        for (const [k, v] of m) r(n - 1, m, path.concat(k));
+      }
+    };
+    for (const [n, map2] of this.maps) {
+      r(n, map2, []);
+    }
+  }
+  serialize() {
+    const out = [];
+    this.forEach((arr, v) => out.push([arr, v]));
+    return out;
+  }
+  static fromSerialized(s) {
+    const am = new _ArrayMap();
+    for (const [k, v] of s) {
+      am.set(k, v);
+    }
+    return am;
+  }
+};
+function table(data, indexPaths, indexes, propFilterKeys, propFilterValues) {
+  if (!data) data = /* @__PURE__ */ new Set();
+  if (!indexes) indexes = new ArrayMap();
+  if (!indexPaths) indexPaths = new ArrayMap();
+  if (!propFilterKeys) propFilterKeys = [];
+  if (!propFilterValues) propFilterValues = [];
+  return {
+    // @ts-expect-error
+    filter: new Proxy(
+      {},
+      {
+        get(target, prop, receiver) {
+          return (v) => table(
+            data,
+            indexPaths,
+            indexes,
+            propFilterKeys.concat(prop),
+            propFilterValues.concat(v)
+          );
+        }
+      }
+    ),
+    get() {
+      if (propFilterKeys.length === 0) {
+        return [...data];
+      }
+      propFilterKeys = [...new Set(propFilterKeys)].sort();
+      const indexPathExists = indexPaths.get(propFilterKeys);
+      if (!indexPathExists) {
+        for (const d of data) {
+          const filter = propFilterKeys.flatMap((e) => [e, d[e]]);
+          const set2 = indexes.change(
+            filter,
+            (s) => (s ?? /* @__PURE__ */ new Set()).add(d)
+          );
+        }
+        indexPaths.set(propFilterKeys, true);
+      }
+      const fullFilter = propFilterKeys.flatMap((e, i) => [
+        e,
+        propFilterValues[i]
+      ]);
+      const set = indexes.get(fullFilter);
+      return set ? [...set] : [];
+    },
+    getOne() {
+      const data2 = this.get();
+      if (data2.length !== 1)
+        throw new Error(
+          `Expected a single result. path=${propFilterKeys.join(
+            ","
+          )}, values=${propFilterValues.join(",")}`
+        );
+      return data2[0];
+    },
+    delete() {
+      propFilterKeys = [...new Set(propFilterKeys)].sort();
+      const toDelete = this.get();
+      indexPaths.forEach((path, set) => {
+        for (const d of toDelete) {
+          const filter = path.flatMap((e) => [e, d[e]]);
+          indexes.change(filter, (s) => (s?.delete(d), s ?? /* @__PURE__ */ new Set()));
+        }
+      });
+      for (const d of toDelete) {
+        data.delete(d);
+      }
+      return toDelete;
+    },
+    add(t) {
+      propFilterKeys = [...new Set(propFilterKeys)].sort();
+      indexPaths.forEach((path, set) => {
+        const filter = path.flatMap((e) => [e, t[e]]);
+        indexes.change(filter, (s) => (s ?? /* @__PURE__ */ new Set()).add(t));
+      });
+      data.add(t);
+    },
+    [Symbol.iterator]() {
+      return this.get()[Symbol.iterator]();
+    }
+  };
+}
+function tableWithData(data) {
+  const tbl = table();
+  for (const d of data) {
+    tbl.add(d);
+  }
+  return tbl;
+}
+
+// src/memo.ts
+function memo(callback, serializeParams) {
+  if (!serializeParams) serializeParams = (x2) => x2;
+  const map = new ArrayMap();
+  const fn = (...params) => {
+    const serialized = serializeParams(params);
+    let hasCached = map.has(serialized);
+    if (hasCached) {
+      return map.get(serialized);
+    }
+    const result = callback(...params);
+    map.set(serialized, result);
+    return result;
+  };
+  fn.invalidate = (...params) => {
+    map.delete(serializeParams(params));
+  };
+  fn.getCache = () => map;
+  return fn;
+}
+function lazy(callback) {
+  let executed = false;
+  let cached;
+  return () => {
+    if (!executed) {
+      cached = callback();
+      executed = true;
+    }
+    return cached;
+  };
+}
+
+// src/localstorage-io.ts
+function registerStorageItem(name, defaultValue) {
+  name = "radian628-wikidot-usertools-" + name;
+  let subscriptions = /* @__PURE__ */ new Set();
+  const obj = {
+    get() {
+      const it = localStorage.getItem(name);
+      if (!it) return defaultValue;
+      try {
+        return JSON.parse(it);
+      } catch {
+        return defaultValue;
+      }
+    },
+    set(content) {
+      localStorage.setItem(name, JSON.stringify(content));
+      for (const s of subscriptions) {
+        s(content);
+      }
+    },
+    subscribe(cb2) {
+      subscriptions.add(cb2);
+      return () => {
+        subscriptions.delete(cb2);
+      };
+    }
+  };
+  if (!obj.get() && defaultValue) obj.set(defaultValue);
+  return obj;
+}
+
+// src/listen-for-element.ts
+function listenForSelector(selector) {
+  const elem = document.querySelector(selector);
+  if (elem) return Promise.resolve(elem);
+  return new Promise((resolve, reject) => {
+    const observer = new MutationObserver(() => {
+      const elem2 = document.querySelector(selector);
+      if (elem2) {
+        observer.disconnect();
+        resolve(elem2);
+      }
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  });
+}
+function listenForNoSelector(selector) {
+  const elem = document.querySelector(selector);
+  if (!elem) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const observer = new MutationObserver(() => {
+      const elem2 = document.querySelector(selector);
+      if (!elem2) {
+        observer.disconnect();
+        resolve();
+      }
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  });
+}
+var alterElementsCallbackId = 0;
+function alterElements(selector, callback) {
+  const id2 = alterElementsCallbackId++;
+  const alteredByKey = "alteredby" + id2;
+  let unmountCallbacks = [];
+  function alter() {
+    const elems = document.querySelectorAll(selector);
+    for (const e of Array.from(elems)) {
+      if (e.dataset[alteredByKey]) continue;
+      const unmount = callback(e);
+      unmountCallbacks.push(unmount);
+      e.dataset[alteredByKey] = "true";
+    }
+  }
+  alter();
+  const observer = new MutationObserver(() => {
+    alter();
+  });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+  return () => {
+    observer.disconnect();
+    for (const cb2 of unmountCallbacks) cb2();
+  };
+}
+var injectedCallbackId = 0;
+function injectElementsAt(selector, position, element) {
+  const myid = injectedCallbackId++;
+  const key = "injectedBy" + injectedCallbackId;
+  let shouldStop = false;
+  let currentElements = [];
+  function observerCallback() {
+    currentElements = currentElements.filter((e) => {
+      if (document.body.contains(e.anchor)) {
+        return true;
+      } else {
+        e.unmount();
+        e.element.parentElement?.removeChild(e.element);
+        return false;
+      }
+    });
+    const elems = document.querySelectorAll(selector);
+    for (const e of Array.from(elems)) {
+      if (!(e instanceof HTMLElement) || e.dataset[key]) continue;
+      e.dataset[key] = "true";
+      const r = element(e);
+      e.insertAdjacentElement(position, r.element);
+      currentElements.push({
+        element: r.element,
+        unmount: r.unmount,
+        anchor: e
+      });
+    }
+  }
+  const observer = new MutationObserver(() => {
+    observerCallback();
+  });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+  observerCallback();
+  return () => {
+    observer.disconnect();
+    shouldStop = true;
+  };
+}
+
+// src/lens.ts
+function setDeep(obj, path, value) {
+  if (path.length === 0) return value;
+  return {
+    ...obj,
+    [path[0]]: setDeep(obj[path[0]], path.slice(1), value)
+  };
+}
+function getDeep(obj, path) {
+  if (path.length === 0) return obj;
+  return getDeep(obj[path[0]], path.slice(1));
+}
+function lensInner(s, path = []) {
+  return new Proxy(
+    {},
+    {
+      get(target, prop, receiver) {
+        if (prop === "$") {
+          return (v) => setDeep(s.at(-1), path, v);
+        } else if (prop === "$push") {
+          return lensInner([...s, getDeep(s.at(-1), path)], []);
+        } else if (prop === "$pop") {
+          return lensInner(s.slice(0, -1), []);
+        } else {
+          return lensInner(s.at(-1), [...path, prop]);
+        }
+      }
+    }
+  );
+}
+function lens(t) {
+  return lensInner([t], []);
+}
+
+// src/intersect.ts
+function rangeIntersects(a1, a2, b1, b2) {
+  return !(a1 > b2 || b1 > a2);
+}
+function rectIntersects(a, b) {
+  return rangeIntersects(a.left, a.right, b.left, b.right) && rangeIntersects(a.top, a.bottom, b.top, b.bottom);
+}
+
+// src/inject.ts
+async function injectFunction(get, set, injector) {
+  return new Promise((resolve, reject) => {
+    const interval = setInterval(() => {
+      const fn = get();
+      if (!fn) return;
+      set(injector(fn));
+      clearInterval(interval);
+      resolve();
+    });
+  });
+}
+
+// src/graph.ts
+function createGraph() {
+  return {
+    vertices: /* @__PURE__ */ new Set(),
+    edges: /* @__PURE__ */ new Set()
+  };
+}
+function createGraphFromData(vertices, edges) {
+  const graph = createGraph();
+  const vertexMap = /* @__PURE__ */ new Map();
+  for (const v of vertices) {
+    vertexMap.set(v, addVertex(graph, v));
+  }
+  for (const e of edges) {
+    addEdge(
+      graph,
+      [vertexMap.get(e.endpoints[0]), vertexMap.get(e.endpoints[1])],
+      e.data
+    );
+  }
+  return graph;
+}
+function addVertex(graph, data) {
+  const vertex = {
+    data,
+    incoming: /* @__PURE__ */ new Set(),
+    outgoing: /* @__PURE__ */ new Set()
+  };
+  graph.vertices.add(vertex);
+  return vertex;
+}
+function addEdge(graph, endpoints, data) {
+  const edge = {
+    data,
+    endpoints
+  };
+  endpoints[0].outgoing.add(edge);
+  endpoints[1].incoming.add(edge);
+  graph.edges.add(edge);
+  return edge;
+}
+function deleteEdge(graph, edge) {
+  edge.endpoints[0].outgoing.delete(edge);
+  edge.endpoints[1].incoming.delete(edge);
+  graph.edges.delete(edge);
+}
+function getConnectedComponents(graph) {
+  const components = [];
+  const vertsRemaining = new Set(graph.vertices);
+  while (vertsRemaining.size > 0) {
+    const foundVertices = /* @__PURE__ */ new Set();
+    const foundEdges = /* @__PURE__ */ new Set();
+    let queue = [vertsRemaining.values().next().value];
+    while (queue.length > 0) {
+      const vert = queue.shift();
+      vertsRemaining.delete(vert);
+      foundVertices.add(vert);
+      for (const edge of vert.outgoing) {
+        foundEdges.add(edge);
+        if (!foundVertices.has(edge.endpoints[1])) {
+          queue.push(edge.endpoints[1]);
+        }
+        foundVertices.add(edge.endpoints[1]);
+      }
+      for (const edge of vert.incoming) {
+        foundEdges.add(edge);
+        if (!foundVertices.has(edge.endpoints[0])) {
+          queue.push(edge.endpoints[0]);
+        }
+        foundVertices.add(edge.endpoints[0]);
+      }
+    }
+    components.push({
+      vertices: foundVertices,
+      edges: foundEdges
+    });
+  }
+  return components;
+}
+function findEndpoint(graph) {
+  for (const v of graph.vertices) {
+    if (v.incoming.size + v.outgoing.size === 1) return v;
+  }
+  return void 0;
+}
+function getDepthFirstTraversalOrder(graph, startPoint) {
+  const order = [];
+  const foundVertices = /* @__PURE__ */ new Set();
+  let stack = [
+    startPoint ?? graph.vertices.values().next().value
+  ];
+  if (!stack[0]) return [];
+  foundVertices.add(stack[0]);
+  while (stack.length > 0) {
+    const vertex = stack.pop();
+    order.push(vertex);
+    for (const edge of vertex.outgoing) {
+      if (foundVertices.has(edge.endpoints[1])) {
+        continue;
+      }
+      stack.push(edge.endpoints[1]);
+      foundVertices.add(edge.endpoints[1]);
+    }
+    for (const edge of vertex.incoming) {
+      if (foundVertices.has(edge.endpoints[0])) {
+        continue;
+      }
+      stack.push(edge.endpoints[0]);
+      foundVertices.add(edge.endpoints[0]);
+    }
+  }
+  return order;
+}
+function subdivideEdges(graph, getAdjoiningVertices) {
+  for (const edge of [...graph.edges]) {
+    const adjoiningElements = getAdjoiningVertices(edge);
+    if (!adjoiningElements) continue;
+    const adjoiningVertices = adjoiningElements[0].map(
+      (v) => addVertex(graph, v[1])
+    );
+    const adjoiningEdgeData = adjoiningElements[0].map((v) => v[0]).concat(adjoiningElements[1]);
+    const starts = [edge.endpoints[0], ...adjoiningVertices];
+    const ends = [...adjoiningVertices, edge.endpoints[1]];
+    for (let i = 0; i < starts.length; i++) {
+      const endpoints = [starts[i], ends[i]];
+      addEdge(graph, endpoints, adjoiningEdgeData[i]);
+    }
+    graph.edges.delete(edge);
+  }
+}
+function subdivideEdgesAtCuts(graph, getEdgeCuts, getVertexAlongCut) {
+  subdivideEdges(graph, (edge) => {
+    const cuts = getEdgeCuts(edge);
+    if (!cuts) return void 0;
+    return [
+      cuts[0].map((c) => [
+        c[0],
+        getVertexAlongCut(edge.endpoints[0], edge.endpoints[1], c[1])
+      ]),
+      cuts[1]
+    ];
+  });
+}
+function subdivideEdgesAtCutsSimple(graph, getEdgeCuts, getVertexAlongCut, defaultEdge) {
+  subdivideEdgesAtCuts(
+    graph,
+    (e) => {
+      return [
+        getEdgeCuts(e).filter((e2) => e2 < 1 && e2 > 0).sort((a, b) => a - b).map((e2) => [defaultEdge, e2]),
+        defaultEdge
+      ];
+    },
+    getVertexAlongCut
+  );
+}
+function incidentEdges(v) {
+  return /* @__PURE__ */ new Set([...v.incoming, ...v.outgoing]);
+}
+function compareAngle(a, b) {
+  return Math.min(
+    Math.abs(a - b),
+    Math.abs(a - b + Math.PI * 2),
+    Math.abs(a - b - Math.PI * 2)
+  );
+}
+function subdivideEdgesByMaximumAngleDifference(graph, getAngle, subdivideBy, getVertexAlongCut) {
+  subdivideEdgesAtCuts(
+    graph,
+    (edge) => {
+      const myAngle = getAngle(edge);
+      const edges = [
+        ...incidentEdges(edge.endpoints[0]),
+        ...incidentEdges(edge.endpoints[1])
+      ];
+      const maxAngle = Math.max(
+        ...edges.map((e) => compareAngle(myAngle, getAngle(e)))
+      );
+      return subdivideBy(edge, maxAngle);
+    },
+    getVertexAlongCut
+  );
+}
+function subdivideEdgesByDistance(graph, maxDistance, distanceMetric, createNewSubdividedVertex, createNewSubdividedEdge) {
+  subdivideEdges(graph, (edge) => {
+    const dist = distanceMetric(edge);
+    if (dist <= maxDistance) {
+      return void 0;
+    }
+    const numPointsToAdd = Math.floor(dist / maxDistance);
+    const verts = [];
+    for (let i = 0; i < numPointsToAdd; i++) {
+      const vert = createNewSubdividedVertex(
+        edge,
+        (i + 1) / (numPointsToAdd + 1),
+        i,
+        numPointsToAdd
+      );
+      const newEdge = createNewSubdividedEdge(
+        edge,
+        i / (numPointsToAdd + 1),
+        (i + 1) / (numPointsToAdd + 1),
+        i,
+        numPointsToAdd + 1
+      );
+      verts.push([newEdge, vert]);
+    }
+    return [
+      verts,
+      createNewSubdividedEdge(
+        edge,
+        numPointsToAdd / (numPointsToAdd + 1),
+        1,
+        numPointsToAdd,
+        numPointsToAdd + 1
+      )
+    ];
+  });
+}
+function graph2json(graph, serializeVertex, serializeEdge) {
+  let index = 0;
+  if (!serializeVertex) serializeVertex = id;
+  if (!serializeEdge) serializeEdge = id;
+  const vertexIndexMap = /* @__PURE__ */ new Map();
+  let json = {
+    vertices: [],
+    edges: []
+  };
+  for (const v of graph.vertices) {
+    vertexIndexMap.set(v, index);
+    json.vertices.push(serializeVertex(v.data));
+    index++;
+  }
+  for (const e of graph.edges) {
+    json.edges.push({
+      endpoints: [
+        vertexIndexMap.get(e.endpoints[0]),
+        vertexIndexMap.get(e.endpoints[1])
+      ],
+      data: serializeEdge(e.data)
+    });
+  }
+  return json;
+}
+function json2graph(json, parseVertex, parseEdge) {
+  if (!parseVertex) parseVertex = id;
+  if (!parseEdge) parseEdge = id;
+  const graph = createGraph();
+  let vertexList = [];
+  for (const v of json.vertices)
+    vertexList.push(addVertex(graph, parseVertex(v)));
+  for (const e of json.edges) {
+    addEdge(
+      graph,
+      [vertexList[e.endpoints[0]], vertexList[e.endpoints[1]]],
+      parseEdge(e.data)
+    );
+  }
+  return graph;
+}
+
+// src/evalbox.ts
+function createEvalbox() {
+  const evalbox = document.createElement("iframe");
+  evalbox.sandbox = "allow-scripts";
+  let index = 0;
+  return new Promise((resolve, reject) => {
+    const initLoadListener = () => {
+      evalbox.removeEventListener("load", initLoadListener);
+      resolve({
+        iframe: evalbox,
+        eval(str) {
+          return new Promise((resolve2, reject2) => {
+            let myindex = index++;
+            const listener = (e) => {
+              if (e.data && e.data.id === myindex) {
+                resolve2(
+                  e.data.type === "eval-success" ? {
+                    data: e.data.payload,
+                    success: true
+                  } : {
+                    success: false,
+                    error: typeof e.data.payload === "string" ? e.data.payload : "No Error Provided"
+                  }
+                );
+                window.removeEventListener("message", listener);
+              }
+            };
+            window.addEventListener("message", listener);
+            evalbox.contentWindow?.postMessage(
+              {
+                id: myindex,
+                payload: str,
+                type: "eval"
+              },
+              "*"
+            );
+          });
+        },
+        kill() {
+          document.body.removeChild(evalbox);
+        },
+        reload() {
+          return new Promise((resolve2, reject2) => {
+            const refreshListener = () => {
+              evalbox.removeEventListener("load", refreshListener);
+              resolve2();
+            };
+            evalbox.addEventListener("load", refreshListener);
+            evalbox.contentWindow?.location.reload();
+          });
+        }
+      });
+    };
+    evalbox.addEventListener("load", initLoadListener);
+    evalbox.style.display = "none";
+    document.body.appendChild(evalbox);
+    evalbox.srcdoc = `
+<!DOCTYPE html>
+<html>
+  <head></head>
+  <body>
+    <script>
+      window.addEventListener("message", async (e) => {
+        if (e.data && e.data.type === "eval") {
+          try {
+            const res = await eval(e.data.payload);
+            e.source.postMessage({
+              type: "eval-success",
+              payload: res,
+              id: e.data.id
+            }, "*");
+          } catch (err) {
+            e.source.postMessage({
+              type: "eval-fail",
+              payload: err.toString(),
+              id: e.data.id
+            }, "*"); 
+          }
+        }
+      });
+    <\/script> 
+  </body>
+</html>
+`;
+  });
+}
+
+// src/download.ts
+function download(file, name) {
+  const a = document.createElement("a");
+  a.download = name;
+  const url = URL.createObjectURL(file);
+  a.href = url;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function downloadText(text, name) {
+  const blob = new Blob([text], { type: "text/plain" });
+  download(blob, name);
+}
+function canvasToBlob(c, type, quality) {
+  return new Promise((resolve, reject) => {
+    c.toBlob(
+      (blob) => {
+        resolve(blob);
+      },
+      type,
+      quality
+    );
+  });
+}
+function blobToDataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      resolve(reader.result);
+    });
+    reader.readAsDataURL(blob);
+  });
+}
+function loadImg(url) {
+  const img = new Image();
+  return new Promise((resolve, reject) => {
+    img.onload = () => {
+      resolve(img);
+    };
+    img.src = url;
+  });
+}
+
+// src/debounce.ts
+function debounce(callback) {
+  let nextRequestIndex = 0;
+  let currentRequest = void 0;
+  const fn = async (...params) => {
+    nextRequestIndex += 1;
+    const myindex = nextRequestIndex;
+    if (currentRequest) {
+      await currentRequest;
+    }
+    if (nextRequestIndex === myindex) {
+      const myreq = callback(...params);
+      currentRequest = myreq;
+      const res = await myreq;
+      currentRequest = void 0;
+      return res;
+    }
+    return void 0;
+  };
+  fn._debounced = true;
+  return fn;
+}
+
+// src/array-utils.ts
+function interleave(arr, cb2) {
+  let out = [];
+  for (let i = 0; i < arr.length - 1; i++) {
+    out.push(arr[i], cb2(arr[i], arr[i + 1]));
+  }
+  if (arr.length > 0) {
+    out.push(arr.at(-1));
+  }
+  return out;
+}
+function splitBy(arr, amount) {
+  let outarr = [[]];
+  for (let i = 0; i < arr.length; i++) {
+    if (i % amount === amount - 1) outarr.push([]);
+    outarr.at(-1).push(arr[i]);
+  }
+  return outarr;
+}
+function bifurcate(arr, fn) {
+  const bools = arr.map(fn);
+  return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
+}
+
+// src/curve/quadratic-curve-to-svg.ts
+function quadraticCurveToPath(curve, sigfigs, offset) {
+  let startPoint = curve[0].a;
+  const str = (n) => n.toPrecision(sigfigs);
+  let output = `M ${str(startPoint[0] + offset[0])} ${str(
+    startPoint[1] + offset[1]
+  )}`;
+  let prevpoint = startPoint;
+  for (const b of curve) {
+    output += `q ${str(b.b[0] - prevpoint[0])} ${str(
+      b.b[1] - prevpoint[1]
+    )},${str(b.c[0] - prevpoint[0])} ${str(b.c[1] - prevpoint[1])}`;
+    prevpoint = b.c;
+  }
+  return output;
+}
+function quadraticCurveToSvgPath(curve, offset, color, sigfigs) {
+  const pathd = quadraticCurveToPath(curve, sigfigs, offset);
+  return `<path d="${pathd}" stroke="${color}" />`;
+}
+function islandsToSvg(width, height, islands, sigfigs) {
+  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${islands.map(
+    (i) => quadraticCurveToSvgPath(i.curve, i.topLeftInImage, i.color, sigfigs)
+  ).join("")}</svg>`;
+}
+
+// src/curve/bezierify.ts
+function dotself2(x2) {
+  return dot2(x2, x2);
+}
+function clamp3(v, lo, hi) {
+  return [clamp(v[0], lo, hi), clamp(v[1], lo, hi), clamp(v[2], lo, hi)];
+}
+function sign2(a) {
+  return [Math.sign(a[0]), Math.sign(a[1])];
+}
+function abs2(a) {
+  return [Math.abs(a[0]), Math.abs(a[1])];
+}
+function pow2(a, b) {
+  return [Math.pow(a[0], b[0]), Math.pow(a[1], b[1])];
+}
+function sdBezier(pos, A, B, C) {
+  const a = sub2(B, A);
+  const b = add2(sub2(A, scale2(B, 2)), C);
+  const c = scale2(a, 2);
+  const d = sub2(A, pos);
+  const kk = 1 / dot2(b, b);
+  const kx = kk * dot2(a, b);
+  const ky = kk * (2 * dot2(a, a) + dot2(d, b)) / 3;
+  const kz = kk * dot2(d, a);
+  let res = 0;
+  const p = ky - kx * kx;
+  const p3 = p * p * p;
+  const q = kx * (2 * kx * kx - 3 * ky) + kz;
+  let h = q * q + 4 * p3;
+  if (h >= 0) {
+    h = Math.sqrt(h);
+    const x2 = scale2(sub2([h, -h], [q, q]), 1 / 2);
+    const uv = mul2(sign2(x2), pow2(abs2(x2), [1 / 3, 1 / 3]));
+    const t = clamp(uv[0] + uv[1] - kx, 0, 1);
+    res = dotself2(add2(d, scale2(add2(c, scale2(b, t)), t)));
+  } else {
+    const z2 = Math.sqrt(-p);
+    const v = Math.acos(q / (p * z2 * 2)) / 3;
+    const m = Math.cos(v);
+    const n = Math.sin(v) * 1.732050808;
+    const t = clamp3(
+      sub3(scale3([m + m, -n - m, n - m], z2), [kx, kx, kx]),
+      0,
+      1
+    );
+    res = Math.min(
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[0])), t[0]))),
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[1])), t[1])))
+    );
+    res = Math.min(
+      res,
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[2])), t[2])))
+    );
+  }
+  return Math.sqrt(res);
+}
+function gradient2(fn, pos, diff) {
+  const a = fn(pos);
+  const b = fn(add2(pos, [diff, 0]));
+  const c = fn(add2(pos, [0, diff]));
+  return [(a - b) / diff, (a - c) / diff];
+}
+function bezierifyFixedCount(path, count, learningRate, gradientDescentIters) {
+  const beziers = [];
+  for (let i = 0; i < count; i++) {
+    const startIndex = Math.floor(i / count * (path.length - 1));
+    const endIndex = Math.floor((i + 1) / count * (path.length - 1));
+    beziers.push(
+      generateBezierApproximation(
+        path,
+        startIndex,
+        endIndex,
+        learningRate,
+        gradientDescentIters
+      ).bezier
+    );
+  }
+  return beziers;
+}
+function bezierAdaptive(path, maxError, learningRate, gradientDescentIters) {
+  return bezierAdaptiveInner(
+    path,
+    maxError,
+    0,
+    path.length - 1,
+    learningRate,
+    gradientDescentIters
+  );
+}
+function bezierAdaptiveInner(path, maxError, startIndex, endIndex, learningRate, gradientDescentIters) {
+  const approx = generateBezierApproximation(
+    path,
+    startIndex,
+    endIndex,
+    learningRate,
+    gradientDescentIters
+  );
+  if (approx.error <= maxError || endIndex - startIndex < 3)
+    return [approx.bezier];
+  const mid = Math.floor((startIndex + endIndex) / 2);
+  return [
+    ...bezierAdaptiveInner(
+      path,
+      maxError,
+      startIndex,
+      mid,
+      learningRate,
+      gradientDescentIters
+    ),
+    ...bezierAdaptiveInner(
+      path,
+      maxError,
+      mid,
+      endIndex,
+      learningRate,
+      gradientDescentIters
+    )
+  ];
+}
+function generateBezierApproximation(path, startIndex, endIndex, learningRate, gradientDescentIters) {
+  const start = path[startIndex];
+  const end = path[endIndex];
+  let controlPoint = add2(
+    scale2(add2(path[startIndex], path[endIndex]), 0.5),
+    [1e-4, 1e-4]
+  );
+  const getError = (v) => {
+    let error = 0;
+    let count = 0;
+    for (let i = startIndex + 1; i < endIndex; i++) {
+      error += sdBezier(path[i], start, v, end) ** 2;
+      count++;
+    }
+    return error / count;
+  };
+  for (let i = 0; i < gradientDescentIters; i++) {
+    const gradient = gradient2(getError, controlPoint, 1e-3);
+    if (isNaN(gradient[0]) || isNaN(gradient[1])) {
+      continue;
+    }
+    controlPoint = add2(controlPoint, scale2(gradient, learningRate));
+  }
+  return {
+    bezier: { a: start, b: controlPoint, c: end },
+    error: getError(controlPoint)
+  };
+}
+function bezierPreview(beziers, size) {
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d");
+  const points = beziers.flatMap((e) => [e.a, e.b, e.c]);
+  c.width = Math.max(...points.map((b) => b[0])) * size + size;
+  c.height = Math.max(...points.map((b) => b[1])) * size + size;
+  ctx?.beginPath();
+  for (const p of beziers) {
+    ctx.moveTo(p.a[0] * size, p.a[1] * size);
+    ctx.quadraticCurveTo(
+      p.b[0] * size,
+      p.b[1] * size,
+      p.c[0] * size,
+      p.c[1] * size
+    );
+  }
+  ctx.stroke();
+  return c;
 }
 
 // node_modules/ml-convolution/src/utils.js
@@ -26407,6 +26454,502 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
+// src/math/intersections.ts
+function quadraticFormula(a, b, c) {
+  const bSquaredMinusFourAC = b ** 2 - 4 * a * c;
+  if (bSquaredMinusFourAC < 0) return [];
+  if (bSquaredMinusFourAC === 0) return [-b / (2 * a)];
+  return [
+    (-b - Math.sqrt(bSquaredMinusFourAC)) / (2 * a),
+    (-b + Math.sqrt(bSquaredMinusFourAC)) / (2 * a)
+  ];
+}
+function circleIntersectLine(circle, seg) {
+  const bxMinusAx = seg.b[0] - seg.a[0];
+  const byMinusAy = seg.b[1] - seg.a[1];
+  const axMinusCx = seg.a[0] - circle.center[0];
+  const ayMinusCy = seg.a[1] - circle.center[1];
+  const a = bxMinusAx ** 2 + byMinusAy ** 2;
+  const b = 2 * (bxMinusAx * axMinusCx + byMinusAy * ayMinusCy);
+  const c = axMinusCx ** 2 + ayMinusCy ** 2 - circle.radius ** 2;
+  return quadraticFormula(a, b, c);
+}
+function lineIntersectLine(a, b) {
+  const ax = a.a[0];
+  const ay = a.a[1];
+  const bx = a.b[0];
+  const by = a.b[1];
+  const cx = b.a[0];
+  const cy = b.a[1];
+  const dx = b.b[0];
+  const dy = b.b[1];
+  return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
+}
+function rayIntersectLine(ray, b) {
+  return lineIntersectLine(
+    {
+      a: ray.center,
+      b: add2(ray.center, [Math.cos(ray.dir), Math.sin(ray.dir)])
+    },
+    b
+  );
+}
+function getSmallestAngleDifference(a, b) {
+  const minDiff = Math.min(
+    Math.abs(a - b),
+    Math.abs(a - b + Math.PI * 2),
+    Math.abs(a - b - Math.PI * 2)
+  );
+  const lowest = Math.min(a, b);
+  return [lowest, lowest + minDiff];
+}
+function getEqualAngularDivisionsOfLineSegment(center, b, interval) {
+  const [angle1, angle2] = getSmallestAngleDifference(
+    pointTo(center, b.a),
+    pointTo(center, b.b)
+  );
+  const truncatedAngle1 = Math.ceil(angle1 / interval) * interval;
+  let tValues = [];
+  for (let i = truncatedAngle1; i < angle2; i += interval) {
+    tValues.push(
+      rayIntersectLine(
+        {
+          center,
+          dir: i
+        },
+        b
+      )
+    );
+  }
+  return tValues;
+}
+function closestApproachOfLineSegmentToPoint(l, pt) {
+  const ax = l.a[0];
+  const ay = l.a[1];
+  const bx = l.b[0];
+  const by = l.b[1];
+  const cx = pt[0];
+  const cy = pt[1];
+  return (-(bx - ax) * (ax - cx) - (by - ay) * (ay - cy)) / ((bx - ax) ** 2 + (by - ay) ** 2);
+}
+function sampleLineSegment(l, t) {
+  return mix2(t, l.a, l.b);
+}
+
+// src/webgl/shader.ts
+function source2shader(gl, type, source) {
+  const shader = gl.createShader(
+    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
+  );
+  if (!shader) return err(void 0);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
+    return err(void 0);
+  }
+  return ok(shader);
+}
+function shaders2program(gl, v, f) {
+  const program = gl.createProgram();
+  gl.attachShader(program, v);
+  gl.attachShader(program, f);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+    return err(void 0);
+  }
+  return ok(program);
+}
+function sources2program(gl, vs, fs) {
+  const v = source2shader(gl, "v", vs);
+  const f = source2shader(gl, "f", fs);
+  if (!v.ok || !f.ok) return err(void 0);
+  return shaders2program(gl, v.data, f.data);
+}
+function fullscreenQuadBuffer(gl) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      -1,
+      -1,
+      1,
+      -1,
+      -1,
+      1,
+      1,
+      1,
+      -1,
+      1,
+      1,
+      -1
+    ]),
+    gl.STATIC_DRAW
+  );
+  return ok(buffer);
+}
+function glRenderToQuad(options) {
+  const canvas = document.createElement("canvas");
+  canvas.width = options.width;
+  canvas.height = options.height;
+  const gl = canvas.getContext(options.version ?? "webgl2");
+  gl.viewport(0, 0, options.width, options.height);
+  if (!gl) return err(void 0);
+  const buf = fullscreenQuadBuffer(gl);
+  const prog = sources2program(
+    gl,
+    `#version 300 es
+precision highp float;
+
+in vec2 in_vpos;
+out vec2 pos;
+
+void main() {
+  pos = in_vpos * 0.5 + 0.5;
+  gl_Position = vec4(in_vpos, 0.5, 1.0);
+}`,
+    (options.noheader ? "" : `#version 300 es
+precision highp float;
+in vec2 pos;
+out vec4 col;
+`) + (options.noAutoUniforms ? "" : [
+      [options.uniforms, "", "float"],
+      [options.intUniforms, "i", "int"],
+      [options.uintUniforms, "u", "uint"]
+    ].map(
+      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
+        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
+      }).join("\n")
+    ).join("\n")) + options.fragsource
+  );
+  if (!prog.data) return err(void 0);
+  gl.useProgram(prog.data);
+  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
+  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(attrloc);
+  for (const [uniforms, type] of [
+    [options.uniforms, "i"],
+    [options.intUniforms, "i"],
+    [options.uintUniforms, "ui"]
+  ]) {
+    for (const [k, v] of Object.entries(uniforms ?? {})) {
+      const v2 = Array.isArray(v) ? v : [v];
+      gl[`uniform${v2.length}${type}v`](
+        gl.getUniformLocation(prog.data, k),
+        v2
+      );
+    }
+  }
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  return ok(canvas);
+}
+
+// src/webgl/scene.ts
+function applyUniform(gl, prog, name, spec) {
+  const [t, d] = spec;
+  const l = gl.getUniformLocation(prog, name);
+  if (l === null) {
+    throw new Error(
+      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
+    );
+  }
+  if (t === "float") gl.uniform1f(l, d);
+  if (t === "vec2") gl.uniform2f(l, ...d);
+  if (t === "vec3") gl.uniform3f(l, ...d);
+  if (t === "vec4") gl.uniform4f(l, ...d);
+  if (t === "int") gl.uniform1i(l, d);
+  if (t === "ivec2") gl.uniform2i(l, ...d);
+  if (t === "ivec3") gl.uniform3i(l, ...d);
+  if (t === "ivec4") gl.uniform4i(l, ...d);
+  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
+  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
+  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
+  if (t === "float[]") gl.uniform1fv(l, d);
+  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
+  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
+  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
+  if (t === "int[]") gl.uniform1iv(l, d);
+  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
+  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
+  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
+  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
+  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
+  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
+}
+function applyUniforms(gl, prog, uniforms) {
+  for (const [k, v] of Object.entries(uniforms)) {
+    applyUniform(gl, prog, k, v);
+  }
+}
+function createScene(sceneSpec) {
+  const gl = sceneSpec.gl;
+  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
+  let sceneUniforms = sceneSpec.uniforms ?? {};
+  return {
+    uniforms() {
+      return sceneUniforms;
+    },
+    resetUniforms(u) {
+      sceneUniforms = u;
+    },
+    updateUniforms(u) {
+      sceneUniforms = { ...sceneUniforms, ...u };
+    },
+    addObject3D(spec) {
+      let objectUniforms = spec.uniforms ?? {};
+      return {
+        gl() {
+          return gl;
+        },
+        draw() {
+          gl.useProgram(spec.program);
+          spec.buffer.setLayout(spec.program);
+          applyUniforms(
+            gl,
+            spec.program,
+            combineUniforms(sceneUniforms, objectUniforms)
+          );
+          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
+        },
+        uniforms() {
+          return objectUniforms;
+        },
+        resetUniforms(u) {
+          objectUniforms = u;
+        },
+        updateUniforms(u) {
+          objectUniforms = { ...objectUniforms, ...u };
+        }
+      };
+    }
+  };
+}
+
+// src/webgl/mesh.ts
+function parametric2D(x2, y2, attr, getPoint) {
+  const data = [];
+  for (let j = 0; j < y2; j++) {
+    for (let i = 0; i < x2; i++) {
+      const a = getPoint(i, j);
+      const b = getPoint(i + 1, j);
+      const c = getPoint(i, j + 1);
+      const d = getPoint(i + 1, j + 1);
+      data.push({ [attr]: a });
+      data.push({ [attr]: c });
+      data.push({ [attr]: b });
+      data.push({ [attr]: c });
+      data.push({ [attr]: d });
+      data.push({ [attr]: b });
+    }
+  }
+  return data;
+}
+function uvSphere(x2, y2, rad, attr) {
+  return parametric2D(x2, y2, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
+    let px = Math.cos(a) * Math.cos(b) * rad;
+    let pz = Math.sin(a) * Math.cos(b) * rad;
+    let py = Math.sin(b) * rad;
+    return [px, py, pz];
+  });
+}
+function ring(x2, rad, height, attr) {
+  return parametric2D(x2, 1, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const px = Math.cos(a) * rad;
+    const pz = Math.sin(a) * rad;
+    const py = j === 1 ? height / 2 : -height / 2;
+    return [px, py, pz];
+  });
+}
+function torus(x2, y2, R, r, attr) {
+  return parametric2D(x2, y2, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const b = (j + y2) % y2 / y2 * Math.PI * 2;
+    let px = Math.cos(a);
+    let pz = Math.sin(a);
+    let py = Math.sin(b) * r;
+    px *= R + Math.cos(b) * r;
+    pz *= R + Math.cos(b) * r;
+    return [px, py, pz];
+  });
+}
+function move(mesh, attr, offset) {
+  return mesh.map((m) => ({
+    ...m,
+    [attr]: m[attr].map((e, i) => e + offset[i])
+  }));
+}
+function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
+  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
+  const rangeInv = 1 / (near - far);
+  return [
+    f / aspectRatio,
+    0,
+    0,
+    0,
+    0,
+    f,
+    0,
+    0,
+    0,
+    0,
+    (near + far) * rangeInv,
+    -1,
+    0,
+    0,
+    near * far * rangeInv * 2,
+    0
+  ];
+}
+function ortho(left, right, top, bottom, near, far) {
+  return [
+    2 / (right - left),
+    0,
+    0,
+    -(right + left) / (right - left),
+    0,
+    2 / (top - bottom),
+    0,
+    -(top + bottom) / (top - bottom),
+    0,
+    0,
+    -2 / (far - near),
+    -(far + near) / (far - near),
+    0,
+    0,
+    0,
+    1
+  ];
+}
+function cross(a, b) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0]
+  ];
+}
+function normalize(v) {
+  const len = Math.hypot(...v);
+  return scale3(v, 1 / len);
+}
+function rodrigues(v, k, theta) {
+  k = normalize(k);
+  return add3(
+    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+  );
+}
+function rotate(axis, angle) {
+  return [
+    ...rodrigues([1, 0, 0], axis, angle),
+    0,
+    ...rodrigues([0, 1, 0], axis, angle),
+    0,
+    ...rodrigues([0, 0, 1], axis, angle),
+    0,
+    0,
+    0,
+    0,
+    1
+  ];
+}
+function scale(axes) {
+  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
+}
+function translate(v) {
+  return [1, 0, 0, v[0], 0, 1, 0, v[1], 0, 0, 1, v[2], 0, 0, 0, 1];
+}
+
+// src/webgl/buffer.ts
+function getDatatypeSize(gl, datatype) {
+  return {
+    [gl.BYTE]: 1,
+    [gl.SHORT]: 2,
+    [gl.UNSIGNED_BYTE]: 1,
+    [gl.UNSIGNED_SHORT]: 2,
+    [gl.FLOAT]: 4,
+    [gl.HALF_FLOAT]: 2,
+    [gl.INT]: 4,
+    [gl.UNSIGNED_INT]: 4,
+    [gl.INT_2_10_10_10_REV]: 4,
+    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
+  }[datatype];
+}
+function createBufferWithLayout(gl, layout, data) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  const layoutEntries = Object.entries(layout);
+  let stride = 0;
+  const offsets = /* @__PURE__ */ new Map();
+  for (const [name, attrs] of layoutEntries) {
+    offsets.set(name, stride);
+    stride += attrs.size * getDatatypeSize(gl, attrs.type);
+  }
+  const arraybuf = new ArrayBuffer(stride * data.length);
+  const rawdata = new DataView(arraybuf);
+  let i = 0;
+  for (const d of data) {
+    for (const [name, attrs] of layoutEntries) {
+      for (let j = 0; j < attrs.size; j++) {
+        const val = d[name][j];
+        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
+        if (attrs.type === gl.BYTE) {
+          rawdata.setInt8(pos, val);
+        } else if (attrs.type === gl.UNSIGNED_BYTE) {
+          rawdata.setUint8(pos, val);
+        } else if (attrs.type === gl.FLOAT) {
+          rawdata.setFloat32(pos, val, true);
+        } else if (attrs.type === gl.SHORT) {
+          rawdata.setInt16(pos, val, true);
+        } else if (attrs.type === gl.UNSIGNED_SHORT) {
+          rawdata.setUint16(pos, val, true);
+        }
+      }
+    }
+    i++;
+  }
+  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
+  return {
+    vertexCount: data.length,
+    buffer,
+    setLayout(prog) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      for (const [name, attrs] of layoutEntries) {
+        const loc = gl.getAttribLocation(prog, name);
+        if (attrs.isInt) {
+          gl.vertexAttribIPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            stride,
+            offsets.get(name)
+          );
+        } else {
+          gl.vertexAttribPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            attrs.normalized ?? false,
+            stride,
+            offsets.get(name)
+          );
+        }
+        gl.enableVertexAttribArray(loc);
+      }
+    },
+    bindArray(gl2) {
+      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
+    },
+    bindIndex(gl2) {
+      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
+    }
+  };
+}
+
 // src/ui/react-string-field.tsx
 var import_react = __toESM(require_react());
 function StringField(props) {
@@ -26719,13 +27262,19 @@ export {
   alterElements,
   applyUniform,
   applyUniforms,
+  bezierAdaptive,
+  bezierAdaptiveInner,
+  bezierPreview,
+  bezierifyFixedCount,
   bifurcate,
   blobToDataURL,
   canvasToBlob,
   cart2Polar,
   cartesianProduct,
+  circleIntersectLine,
   clamp,
   clampToArray,
+  closestApproachOfLineSegmentToPoint,
   constant,
   convolve,
   createBufferWithLayout,
@@ -26739,6 +27288,10 @@ export {
   createWorkerReceiver,
   createWorkerWithInterface,
   debounce,
+  deleteEdge,
+  distance2,
+  distance3,
+  distance4,
   div2,
   div3,
   div4,
@@ -26754,15 +27307,23 @@ export {
   getClamped,
   getConnectedComponents,
   getDepthFirstTraversalOrder,
+  getEqualAngularDivisionsOfLineSegment,
   getLinesAndCols,
   getOgg,
+  getSmallestAngleDifference,
   glRenderToQuad,
+  gradient2,
+  graph2json,
   graphAudio,
   id,
+  inCircle,
   inMainThread,
+  incidentEdges,
   injectElementsAt,
   injectFunction,
   interleave,
+  islandsToSvg,
+  json2graph,
   lazy,
   length2,
   length3,
@@ -26770,12 +27331,16 @@ export {
   lens,
   lensInner,
   lerp,
+  lineIntersectLine,
   listenForNoSelector,
   listenForSelector,
   loadImg,
   lookupQuadtree,
   makeQuadtree,
   memo,
+  mix2,
+  mix3,
+  mix4,
   modulateGain,
   modulateSampleTime,
   monoToStereo,
@@ -26856,33 +27421,41 @@ export {
   panAndZoomCanvas2d,
   panAndZoomMatrix,
   parametric2D,
+  parseSpatialHashTable,
   perspective,
   pickrand,
   play,
+  pointTo,
   polar2Cart,
   polarVec2Cart,
+  quadraticCurveToPath,
+  quadraticCurveToSvgPath,
   rand,
   randUnicode,
   range,
   rangeFrom,
   rangeIntersects,
+  rayIntersectLine,
   rectIntersects,
   registerStorageItem,
   resample,
   rescale,
-  rescale22 as rescale2,
+  rescale2,
   rescale3,
   rescale4,
   rescaleClamped,
   ring,
   rodrigues,
   rotate,
+  sampleLineSegment,
   saw,
   scale,
   scale2,
   scale3,
   scale4,
   scaleDuration,
+  sdBezier,
+  serializeSpatialHashTable,
   shaders2program,
   signal,
   silence,
@@ -26905,6 +27478,11 @@ export {
   sub2,
   sub3,
   sub4,
+  subdivideEdges,
+  subdivideEdgesAtCuts,
+  subdivideEdgesAtCutsSimple,
+  subdivideEdgesByDistance,
+  subdivideEdgesByMaximumAngleDifference,
   sum2,
   sum3,
   sum4,

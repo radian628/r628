@@ -31,6 +31,7 @@ export function stringMapJoin<T>(a: T[], f: MapCallback<T, string>, s = "\\n") {
 
 type SmartRangeElement = {
   remap(lo: number, hi: number, inclEnd?: boolean): number;
+  remapCenter(lo: number, hi: number): number;
   segment(lo: number, hi: number): [number, number];
   slidingWindow<T>(arr: T[]): [T, T];
   randkf(): number;
@@ -50,6 +51,9 @@ export function smartRangeMap<T>(
     return {
       remap(lo: number, hi: number, inclEnd?: boolean) {
         return (i / (inclEnd ? n - 1 : n)) * (hi - lo) + lo;
+      },
+      remapCenter(lo: number, hi: number) {
+        return ((i + 1) / (n + 1)) * (hi - lo) + lo;
       },
       segment(lo: number, hi: number): [number, number] {
         return [(i / n) * (hi - lo) + lo, ((i + 1) / n) * (hi - lo) + lo];

@@ -19326,6 +19326,9 @@
         remap(lo, hi, inclEnd) {
           return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
         },
+        remapCenter(lo, hi) {
+          return (i + 1) / (n + 1) * (hi - lo) + lo;
+        },
         segment(lo, hi) {
           return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
         },
@@ -19372,6 +19375,9 @@
   function sub2(a, b) {
     return [a[0] - b[0], a[1] - b[1]];
   }
+  function sub3(a, b) {
+    return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  }
   function length2(a) {
     return Math.sqrt(dot2(a, a));
   }
@@ -19383,6 +19389,9 @@
   }
   function scale2(a, b) {
     return [a[0] * b, a[1] * b];
+  }
+  function scale3(a, b) {
+    return [a[0] * b, a[1] * b, a[2] * b];
   }
 
   // src/array-utils.ts
@@ -19407,8 +19416,8 @@
 
   // src/spatial-hash-table.ts
   function spatialHashTable(htBounds, resolution, getBounds) {
-    const objects = /* @__PURE__ */ new Map();
-    const buckets = range(resolution[0] * resolution[1]).map((e) => /* @__PURE__ */ new Set());
+    let objects = /* @__PURE__ */ new Map();
+    let buckets = range(resolution[0] * resolution[1]).map((e) => /* @__PURE__ */ new Set());
     function getBucketIndexes(bounds) {
       const bucketXStart = Math.floor(
         rescaleClamped(
@@ -19447,8 +19456,8 @@
         )
       );
       const indexes = [];
-      for (let x = bucketXStart; x < bucketXEnd; x++) {
-        for (let y = bucketYStart; y < bucketYEnd; y++) {
+      for (let x = bucketXStart; x < Math.max(bucketXEnd, bucketXStart + 1); x++) {
+        for (let y = bucketYStart; y < Math.max(bucketYEnd, bucketYStart + 1); y++) {
           indexes.push(x + y * resolution[0]);
         }
       }
@@ -19494,12 +19503,20 @@
       },
       all() {
         return new Set(objects.keys());
+      },
+      setObjects(o) {
+        this.objects = o;
+        objects = o;
+      },
+      setBuckets(b) {
+        this.buckets = buckets;
+        buckets = b;
       }
     };
   }
 
   // src/threadpool.ts
-  function createRoundRobinThreadpool(src2, workerCount2) {
+  function createRoundRobinThreadpool(src2, workerCount2, serialization2) {
     const count = workerCount2 ?? navigator.hardwareConcurrency;
     const workers = [];
     let nextWorker = 0;
@@ -19513,28 +19530,42 @@
     }
     let id2 = 0;
     function sendMessageToWorkerWithResponse(prop, args, worker) {
-      return new Promise((resolve, reject) => {
+      return new Promise(async (resolve, reject) => {
         const myid = id2;
         id2++;
-        const onResponse = (e) => {
+        const onResponse = async (e) => {
           if (e.data.id !== myid) return;
           worker.removeEventListener("message", onResponse);
-          resolve(e.data.returnValue);
+          const parseRetVal = serialization2?.[prop]?.parseRetVal ?? ((x) => x);
+          resolve(await parseRetVal(e.data.returnValue));
         };
         worker.addEventListener("message", onResponse);
+        const serializeArgs = serialization2?.[prop]?.serializeArgs ?? ((x) => x);
         worker.postMessage({
           type: prop,
-          args,
+          args: await serializeArgs(args),
           id: myid
         });
       });
     }
     return {
+      threadCount: count,
       send: new Proxy({}, {
         get(i, prop) {
           return async (...args) => {
             const nextWorker2 = getNextWorker();
             return sendMessageToWorkerWithResponse(prop, args, nextWorker2);
+          };
+        }
+      }),
+      sendToThread: (threadIndex) => new Proxy({}, {
+        get(i, prop) {
+          return async (...args) => {
+            return sendMessageToWorkerWithResponse(
+              prop,
+              args,
+              workers[threadIndex]
+            );
           };
         }
       }),
@@ -19549,23 +19580,27 @@
       })
     };
   }
-  function createRoundRobinThread(t) {
+  function createRoundRobinThread(t, serialization2) {
     self.addEventListener("message", async (e) => {
-      const resp = await t[e.data.type](...e.data.args);
+      const parseArgs = serialization2?.[e.data.type]?.parseArgs ?? id;
+      const args = await parseArgs(e.data.args);
+      const resp = await t[e.data.type](...args);
+      const serializeReturnValue = serialization2?.[e.data.type]?.serializeRetVal ?? id;
       postMessage({
-        returnValue: resp,
+        returnValue: await serializeReturnValue(resp),
         id: e.data.id
       });
     });
   }
-  function createCombinedRoundRobinThreadpool(getInterface, src, workerCount) {
+  function createCombinedRoundRobinThreadpool(getInterface, src, workerCount, serialization) {
     if (eval("self.WorkerGlobalScope")) {
-      createRoundRobinThread(getInterface());
+      createRoundRobinThread(getInterface(), serialization);
       return;
     } else {
       return createRoundRobinThreadpool(
         src ?? document.currentScript.src,
-        workerCount
+        workerCount,
+        serialization
       );
     }
   }
@@ -19751,10 +19786,159 @@
     URL.revokeObjectURL(url);
   }
 
+  // src/curve/bezierify.ts
+  function dotself2(x) {
+    return dot2(x, x);
+  }
+  function clamp3(v, lo, hi) {
+    return [clamp(v[0], lo, hi), clamp(v[1], lo, hi), clamp(v[2], lo, hi)];
+  }
+  function sign2(a) {
+    return [Math.sign(a[0]), Math.sign(a[1])];
+  }
+  function abs2(a) {
+    return [Math.abs(a[0]), Math.abs(a[1])];
+  }
+  function pow2(a, b) {
+    return [Math.pow(a[0], b[0]), Math.pow(a[1], b[1])];
+  }
+  function sdBezier(pos, A, B, C) {
+    const a = sub2(B, A);
+    const b = add2(sub2(A, scale2(B, 2)), C);
+    const c = scale2(a, 2);
+    const d = sub2(A, pos);
+    const kk = 1 / dot2(b, b);
+    const kx = kk * dot2(a, b);
+    const ky = kk * (2 * dot2(a, a) + dot2(d, b)) / 3;
+    const kz = kk * dot2(d, a);
+    let res = 0;
+    const p = ky - kx * kx;
+    const p3 = p * p * p;
+    const q = kx * (2 * kx * kx - 3 * ky) + kz;
+    let h = q * q + 4 * p3;
+    if (h >= 0) {
+      h = Math.sqrt(h);
+      const x = scale2(sub2([h, -h], [q, q]), 1 / 2);
+      const uv = mul2(sign2(x), pow2(abs2(x), [1 / 3, 1 / 3]));
+      const t = clamp(uv[0] + uv[1] - kx, 0, 1);
+      res = dotself2(add2(d, scale2(add2(c, scale2(b, t)), t)));
+    } else {
+      const z = Math.sqrt(-p);
+      const v = Math.acos(q / (p * z * 2)) / 3;
+      const m = Math.cos(v);
+      const n = Math.sin(v) * 1.732050808;
+      const t = clamp3(
+        sub3(scale3([m + m, -n - m, n - m], z), [kx, kx, kx]),
+        0,
+        1
+      );
+      res = Math.min(
+        dotself2(add2(d, scale2(add2(c, scale2(b, t[0])), t[0]))),
+        dotself2(add2(d, scale2(add2(c, scale2(b, t[1])), t[1])))
+      );
+      res = Math.min(
+        res,
+        dotself2(add2(d, scale2(add2(c, scale2(b, t[2])), t[2])))
+      );
+    }
+    return Math.sqrt(res);
+  }
+  function gradient2(fn, pos, diff) {
+    const a = fn(pos);
+    const b = fn(add2(pos, [diff, 0]));
+    const c = fn(add2(pos, [0, diff]));
+    return [(a - b) / diff, (a - c) / diff];
+  }
+  function bezierAdaptive(path, maxError, learningRate, gradientDescentIters) {
+    return bezierAdaptiveInner(
+      path,
+      maxError,
+      0,
+      path.length - 1,
+      learningRate,
+      gradientDescentIters
+    );
+  }
+  function bezierAdaptiveInner(path, maxError, startIndex, endIndex, learningRate, gradientDescentIters) {
+    const approx = generateBezierApproximation(
+      path,
+      startIndex,
+      endIndex,
+      learningRate,
+      gradientDescentIters
+    );
+    if (approx.error <= maxError || endIndex - startIndex < 3)
+      return [approx.bezier];
+    const mid = Math.floor((startIndex + endIndex) / 2);
+    return [
+      ...bezierAdaptiveInner(
+        path,
+        maxError,
+        startIndex,
+        mid,
+        learningRate,
+        gradientDescentIters
+      ),
+      ...bezierAdaptiveInner(
+        path,
+        maxError,
+        mid,
+        endIndex,
+        learningRate,
+        gradientDescentIters
+      )
+    ];
+  }
+  function generateBezierApproximation(path, startIndex, endIndex, learningRate, gradientDescentIters) {
+    const start = path[startIndex];
+    const end = path[endIndex];
+    let controlPoint = add2(
+      scale2(add2(path[startIndex], path[endIndex]), 0.5),
+      [1e-4, 1e-4]
+    );
+    const getError = (v) => {
+      let error = 0;
+      let count = 0;
+      for (let i = startIndex + 1; i < endIndex; i++) {
+        error += sdBezier(path[i], start, v, end) ** 2;
+        count++;
+      }
+      return error / count;
+    };
+    for (let i = 0; i < gradientDescentIters; i++) {
+      const gradient = gradient2(getError, controlPoint, 1e-3);
+      if (isNaN(gradient[0]) || isNaN(gradient[1])) {
+        continue;
+      }
+      controlPoint = add2(controlPoint, scale2(gradient, learningRate));
+    }
+    return {
+      bezier: { a: start, b: controlPoint, c: end },
+      error: getError(controlPoint)
+    };
+  }
+
+  // src/curve/quadratic-curve-to-svg.ts
+  function quadraticCurveToPath(curve, sigfigs, offset) {
+    let startPoint = curve[0].a;
+    const str = (n) => n.toPrecision(sigfigs);
+    let output = `M ${str(startPoint[0] + offset[0])} ${str(
+      startPoint[1] + offset[1]
+    )}`;
+    let prevpoint = startPoint;
+    for (const b of curve) {
+      output += `q ${str(b.b[0] - prevpoint[0])} ${str(
+        b.b[1] - prevpoint[1]
+      )},${str(b.c[0] - prevpoint[0])} ${str(b.c[1] - prevpoint[1])}`;
+      prevpoint = b.c;
+    }
+    return output;
+  }
+
   // demos-src/god-is-watching.demo.ts
   var points = [];
   var edges = [];
-  var LINE_COUNT = 1009;
+  var LINE_COUNT = 1e3;
   var POINTS_PER_LINE = 100;
   function physicsIter(points2, edges2, push) {
     for (const p of points2) {
@@ -19866,42 +20050,7 @@
     }
   }
   function addEyeball(points2, edges2, position, irisRadius, pupilRadius) {
-    const COUNT = 250;
-    for (const i of smartRange(COUNT)) {
-      const angle = i.remap(0, Math.PI * 2);
-      const dir = [Math.cos(angle), Math.sin(angle)];
-      const irisPoint = {
-        pos: add2(position, scale2(dir, irisRadius)),
-        fixed: false,
-        resistance: 1e4
-      };
-      points2.push(irisPoint);
-      if (!i.start()) {
-        edges2.push({ points: [points2.at(-2), points2.at(-1)], force: 0 });
-      }
-      if (i.end()) {
-        edges2.push({
-          points: [points2.at(-1), points2.at(-COUNT + 0)],
-          force: 0
-        });
-      }
-    }
-    const pupilCount = Math.floor(clamp(pupilRadius * 2e5, 10, Infinity));
-    for (const i of smartRange(pupilCount)) {
-      const factor = i.remap(0, 1) ** 0.5;
-      const angle = factor * pupilRadius * 1e4;
-      const dir = [Math.cos(angle), Math.sin(angle)];
-      const pupilPoint = {
-        pos: add2(position, scale2(dir, pupilRadius * factor)),
-        fixed: false,
-        resistance: 1e4
-      };
-      points2.push(pupilPoint);
-      if (!i.start()) {
-        edges2.push({ points: [points2.at(-2), points2.at(-1)], force: 0 });
-      }
-    }
-    const irisCount = Math.floor(clamp(irisRadius * 2e4, 10, Infinity));
+    const irisCount = Math.floor(clamp(irisRadius * 1e4, 10, Infinity));
     for (const i of smartRange(irisCount)) {
       const angle = i.remap(0, Math.PI * 2);
       const dir = [Math.cos(angle), Math.sin(angle)];
@@ -19995,14 +20144,25 @@
             });
           }
         });
-      }
+      },
+      bezierAdaptive
     }),
     void 0,
     20
   );
-  function createSvgPath(path) {
+  function createSvgPath(path, sigfigs) {
     if (path.length === 0) return "";
-    return `M ${path[0]} ${path[1]} ${path.slice(1).map((v) => `L ${v[0]} ${v[1]}`)}`;
+    const str = (n) => n.toPrecision(sigfigs);
+    let out = `M ${path[0][0]} ${path[0][1]} `;
+    let prevPos = path[0];
+    for (const pt of path.slice(1)) {
+      const offset = sub2(pt, prevPos);
+      const xstr = str(offset[0]);
+      const ystr = str(offset[1]);
+      out += `l ${xstr} ${ystr}`;
+      prevPos = [prevPos[0] + Number(xstr), prevPos[1] + Number(ystr)];
+    }
+    return out;
   }
   inMainThread(async () => {
     const canvas = document.createElement("canvas");
@@ -20059,49 +20219,96 @@
       // addEyeballForceEmitters(10000, TINY, SMALL, 2),
       // ...nPhysicsIters(100),
       "Settle",
-      ...nDryPhysicsIters(100)
+      ...nDryPhysicsIters(100),
+      "Draw On Canvas"
     ]);
     document.body.appendChild(canvas);
     const points2 = (await threadpool.broadcast.getPoints()).flat(1);
     const edges2 = (await threadpool.broadcast.getEdges()).flat(1);
-    const forceEmitters2 = await threadpool.send.getForceEmitters();
-    for (const e of forceEmitters2) {
-      const radius = e.radMin;
-      addEyeball(points2, edges2, e.pos, radius, radius / 2);
-    }
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     await drawEdges(edges2, ctx, canvas.width, canvas.height);
+    const forceEmitters2 = await threadpool.send.getForceEmitters();
     const graph = createGraphFromData(
       [...new Set(edges2.map((e) => e.points).flat())],
       edges2.map((e) => ({ endpoints: e.points, data: void 0 }))
     );
     const components = getConnectedComponents(graph);
-    for (const comp of components) {
-      console.log(getDepthFirstTraversalOrder(comp));
-    }
     function createSvgElem(name) {
       return document.createElementNS("http://www.w3.org/2000/svg", name);
     }
     var svg = createSvgElem("svg");
+    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     svg.setAttributeNS(null, "width", "4096");
     svg.setAttributeNS(null, "height", "4096");
-    for (const comp of components) {
+    let componentsLoaded = 0;
+    await Promise.all(
+      components.map(async (comp) => {
+        const path = createSvgElem("path");
+        path.setAttributeNS(null, "fill", "transparent");
+        path.setAttributeNS(null, "stroke", "black");
+        const sequence = getDepthFirstTraversalOrder(
+          comp,
+          findEndpoint(comp)
+        ).map((p) => scale2(p.data.pos, canvas.width));
+        const bezierifiedCurve = await threadpool.send.bezierAdaptive(
+          sequence,
+          1,
+          0.5,
+          50
+        );
+        path.setAttributeNS(
+          null,
+          "d",
+          quadraticCurveToPath(bezierifiedCurve, 5, [0, 0])
+        );
+        svg.appendChild(path);
+        componentsLoaded++;
+        console.log(componentsLoaded);
+      })
+    );
+    const eyeballpoints = [];
+    const eyeballedges = [];
+    for (const e of forceEmitters2) {
+      const radius = e.radMin;
+      addEyeball(eyeballpoints, eyeballedges, e.pos, radius, radius / 2);
+      const path = createSvgElem("circle");
+      path.setAttributeNS(null, "fill", "black");
+      path.setAttributeNS(null, "r", (radius * canvas.width / 2).toString());
+      path.setAttributeNS(null, "cx", (e.pos[0] * canvas.width).toString());
+      path.setAttributeNS(null, "cy", (e.pos[1] * canvas.width).toString());
+      svg.appendChild(path);
+      const path2 = createSvgElem("circle");
+      path2.setAttributeNS(null, "stroke", "black");
+      path2.setAttributeNS(null, "fill", "transparent");
+      path2.setAttributeNS(null, "r", (radius * canvas.width / 1).toString());
+      path2.setAttributeNS(null, "cx", (e.pos[0] * canvas.width).toString());
+      path2.setAttributeNS(null, "cy", (e.pos[1] * canvas.width).toString());
+      svg.appendChild(path2);
+    }
+    const eyeballgraph = createGraphFromData(
+      [...new Set(eyeballedges.map((e) => e.points).flat())],
+      eyeballedges.map((e) => ({ endpoints: e.points, data: void 0 }))
+    );
+    for (const comp of getConnectedComponents(eyeballgraph)) {
       const path = createSvgElem("path");
       path.setAttributeNS(null, "fill", "transparent");
       path.setAttributeNS(null, "stroke", "black");
-      path.setAttributeNS(
-        null,
-        "d",
-        createSvgPath(
-          getDepthFirstTraversalOrder(comp, findEndpoint(comp)).map(
-            (p) => scale2(p.data.pos, canvas.width)
-          )
-        )
+      const sequence = getDepthFirstTraversalOrder(comp, findEndpoint(comp)).map(
+        (p) => scale2(p.data.pos, canvas.width)
       );
+      path.setAttributeNS(null, "d", createSvgPath(sequence, 3));
       svg.appendChild(path);
     }
-    download(new Blob([svg.outerHTML]), "ISEEYOU.svg");
+    download(
+      new Blob([
+        `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+
+` + svg.outerHTML
+      ]),
+      "ISEEYOU.svg"
+    );
     document.body.appendChild(svg);
     console.log(components);
   });

@@ -27,6 +27,9 @@ function smartRangeMap(n, cb) {
       remap(lo, hi, inclEnd) {
         return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
       },
+      remapCenter(lo, hi) {
+        return (i + 1) / (n + 1) * (hi - lo) + lo;
+      },
       segment(lo, hi) {
         return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
       },

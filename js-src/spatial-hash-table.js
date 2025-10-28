@@ -12,6 +12,26 @@ function clamp(x, lo, hi) {
   return Math.max(Math.min(x, hi), lo);
 }
 
+// src/math/vector.ts
+function mul2(a, b) {
+  return [a[0] * b[0], a[1] * b[1]];
+}
+function sub2(a, b) {
+  return [a[0] - b[0], a[1] - b[1]];
+}
+function length2(a) {
+  return Math.sqrt(dot2(a, a));
+}
+function distance2(a, b) {
+  return length2(sub2(a, b));
+}
+function sum2(a) {
+  return a[0] + a[1];
+}
+function dot2(a, b) {
+  return sum2(mul2(a, b));
+}
+
 // src/range.ts
 function range(hi) {
   let arr = [];
@@ -23,8 +43,8 @@ function range(hi) {
 
 // src/spatial-hash-table.ts
 function spatialHashTable(htBounds, resolution, getBounds) {
-  const objects = /* @__PURE__ */ new Map();
-  const buckets = range(resolution[0] * resolution[1]).map((e) => /* @__PURE__ */ new Set());
+  let objects = /* @__PURE__ */ new Map();
+  let buckets = range(resolution[0] * resolution[1]).map((e) => /* @__PURE__ */ new Set());
   function getBucketIndexes(bounds) {
     const bucketXStart = Math.floor(
       rescaleClamped(
@@ -63,8 +83,8 @@ function spatialHashTable(htBounds, resolution, getBounds) {
       )
     );
     const indexes = [];
-    for (let x = bucketXStart; x < bucketXEnd; x++) {
-      for (let y = bucketYStart; y < bucketYEnd; y++) {
+    for (let x = bucketXStart; x < Math.max(bucketXEnd, bucketXStart + 1); x++) {
+      for (let y = bucketYStart; y < Math.max(bucketYEnd, bucketYStart + 1); y++) {
         indexes.push(x + y * resolution[0]);
       }
     }
@@ -110,9 +130,86 @@ function spatialHashTable(htBounds, resolution, getBounds) {
     },
     all() {
       return new Set(objects.keys());
+    },
+    setObjects(o) {
+      this.objects = o;
+      objects = o;
+    },
+    setBuckets(b) {
+      this.buckets = buckets;
+      buckets = b;
     }
   };
 }
+function inCircle(sht, c, getObjectCircle) {
+  const rectResult = sht.queryRect({
+    a: [c.center[0] - c.radius, c.center[1] - c.radius],
+    b: [c.center[0] + c.radius, c.center[1] + c.radius]
+  });
+  return new Set(
+    Array.from(rectResult.values()).filter((e) => {
+      const objectCircle = getObjectCircle(e);
+      return distance2(objectCircle.center, c.center) < objectCircle.radius + c.radius;
+    })
+  );
+}
+function serializeSpatialHashTable(sht, serializeItem) {
+  if (!serializeItem) {
+    return {
+      // @ts-expect-error
+      buckets: sht.buckets,
+      resolution: sht.resolution,
+      bounds: sht.bounds,
+      // @ts-expect-error
+      objects: sht.objects
+    };
+  }
+  const serializedObjects = new Map(
+    [...sht.objects].map(([k, v]) => [k, { serialized: serializeItem(k), v }])
+  );
+  const ssht = {
+    buckets: sht.buckets.map(
+      (b) => new Set([...b].map((i) => serializedObjects.get(i)?.serialized))
+    ),
+    resolution: sht.resolution,
+    bounds: sht.bounds,
+    objects: new Map(
+      [...sht.objects].map(([k, v]) => [
+        serializedObjects.get(k).serialized,
+        v
+      ])
+    )
+  };
+  return ssht;
+}
+function parseSpatialHashTable(ssht, getBounds, parseItem) {
+  if (!parseItem) {
+    const sht = spatialHashTable(ssht.bounds, ssht.resolution, getBounds);
+    sht.setBuckets(ssht.buckets);
+    sht.setObjects(ssht.objects);
+    return sht;
+  }
+  const parsedObjects = new Map(
+    [...ssht.objects].map(([k, v]) => [k, { parsed: parseItem(k), v }])
+  );
+  {
+    const sht = spatialHashTable(ssht.bounds, ssht.resolution, getBounds);
+    sht.setBuckets(
+      ssht.buckets.map(
+        (b) => new Set([...b].map((i) => parsedObjects.get(i)?.parsed))
+      )
+    );
+    sht.setObjects(
+      new Map(
+        [...ssht.objects].map(([k, v]) => [parsedObjects.get(k).parsed, v])
+      )
+    );
+    return sht;
+  }
+}
 export {
+  inCircle,
+  parseSpatialHashTable,
+  serializeSpatialHashTable,
   spatialHashTable
 };

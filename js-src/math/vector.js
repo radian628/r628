@@ -1035,6 +1035,9 @@ function polarVec2Cart(rCommaTheta) {
 function cart2Polar(a) {
   return [length2(a), Math.atan2(a[1], a[0])];
 }
+function pointTo(a, b) {
+  return Math.atan2(b[1] - a[1], b[0] - a[0]);
+}
 function mulScalarByVec2(a, b) {
   return [a * b[0], a * b[1]];
 }
@@ -1699,6 +1702,24 @@ function length3(a) {
 function length4(a) {
   return Math.sqrt(dot4(a, a));
 }
+function distance2(a, b) {
+  return length2(sub2(a, b));
+}
+function distance3(a, b) {
+  return length3(sub3(a, b));
+}
+function distance4(a, b) {
+  return length4(sub4(a, b));
+}
+function mix2(a, b, c) {
+  return add2(b, scale2(sub2(c, b), a));
+}
+function mix3(a, b, c) {
+  return add3(b, scale3(sub3(c, b), a));
+}
+function mix4(a, b, c) {
+  return add4(b, scale4(sub4(c, b), a));
+}
 function rescale2(a, b) {
   return scale2(normalize2(a), b);
 }
@@ -1741,6 +1762,9 @@ export {
   add4,
   cart2Polar,
   cross,
+  distance2,
+  distance3,
+  distance4,
   div2,
   div3,
   div4,
@@ -1750,6 +1774,9 @@ export {
   length2,
   length3,
   length4,
+  mix2,
+  mix3,
+  mix4,
   mul2,
   mul3,
   mul4,
@@ -1819,6 +1846,7 @@ export {
   normalize2,
   normalize3,
   normalize4,
+  pointTo,
   polar2Cart,
   polarVec2Cart,
   rescale2,

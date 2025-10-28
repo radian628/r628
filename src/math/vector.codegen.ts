@@ -212,6 +212,13 @@ export function cart2Polar(a: Vec2): Vec2 {
   return [length2(a), Math.atan2(a[1], a[0])];
 } 
 
+export function pointTo(a: Vec2, b: Vec2): number {
+  return Math.atan2(
+    b[1] - a[1],
+    b[0] - a[0]
+  );
+} 
+
 ${cartesianProduct(
   rangeFrom(1, 5) as (2 | 3 | 4)[],
   rangeFrom(1, 5) as (2 | 3 | 4)[],
@@ -237,6 +244,18 @@ ${cartesianProduct(
     [vec],
     num,
     (i) => `Math.sqrt(dot${i}(a, a))`
+  ) +
+  createFunctionVariantsFullBody(
+    "distance",
+    [vec, vec],
+    num,
+    (i) => `length${i}(sub${i}(a, b))`
+  ) +
+  createFunctionVariantsFullBody(
+    "mix",
+    [num, vec, vec],
+    vec,
+    (i) => `add${i}(b, scale${i}(sub${i}(c, b), a))`
   ) +
   createFunctionVariantsFullBody(
     "rescale",

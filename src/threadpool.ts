@@ -1,3 +1,4 @@
+import { id } from "./range";
 import {
   InterfaceWithMethods,
   WorkerifyInterface,
@@ -8,12 +9,40 @@ type ArrayifyMethods<T extends InterfaceWithMethods> = {
   [K in keyof T]: (...args: Parameters<T[K]>) => ReturnType<T[K]>[];
 };
 
+type FunctionSerializerInner<
+  Args extends any[],
+  RetVal,
+  SerializedArgs,
+  SerializedRetVal,
+> = {
+  serializeArgs: (args: Args) => SerializedArgs;
+  parseArgs: (args: SerializedArgs) => Args;
+  serializeRetVal: (args: RetVal) => SerializedRetVal;
+  parseRetVal: (args: SerializedRetVal) => SerializedRetVal;
+};
+
+export type FunctionSerializer<
+  Fn extends (...args: any[]) => any | Promise<any>,
+> = Fn extends (...args: infer Args) => Promise<infer RetVal>
+  ? FunctionSerializerInner<Args, RetVal, any, any>
+  : Fn extends (...args: infer Args) => infer RetVal
+    ? FunctionSerializerInner<Args, RetVal, any, any>
+    : never;
+
 export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
   src: string,
-  workerCount?: number
+  workerCount?: number,
+  serialization?: {
+    [K in keyof T]?: Pick<
+      FunctionSerializer<T[K]>,
+      "serializeArgs" | "parseRetVal"
+    >;
+  }
 ): {
   send: WorkerifyInterface<T>;
+  sendToThread: (index: number) => WorkerifyInterface<T>;
   broadcast: WorkerifyInterface<ArrayifyMethods<T>>;
+  threadCount: number;
 } {
   const count = workerCount ?? navigator.hardwareConcurrency;
 
@@ -36,24 +65,30 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
     args: any[],
     worker: Worker
   ) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const myid = id;
       id++;
-      const onResponse = (e: MessageEvent) => {
+      const onResponse = async (e: MessageEvent) => {
         if (e.data.id !== myid) return;
         worker.removeEventListener("message", onResponse);
-        resolve(e.data.returnValue);
+        const parseRetVal =
+          serialization?.[prop as keyof T]?.parseRetVal ?? ((x) => x);
+        resolve(await parseRetVal(e.data.returnValue));
       };
       worker.addEventListener("message", onResponse);
+      const serializeArgs =
+        serialization?.[prop as keyof T]?.serializeArgs ?? ((x) => x);
       worker.postMessage({
         type: prop,
-        args: args,
+        args: await serializeArgs(args),
         id: myid,
       });
     });
   }
 
   return {
+    threadCount: count,
+
     send: new Proxy({} as T, {
       get(i, prop) {
         return async (...args: any[]) => {
@@ -62,6 +97,19 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
         };
       },
     }),
+
+    sendToThread: (threadIndex: number) =>
+      new Proxy({} as T, {
+        get(i, prop) {
+          return async (...args: any[]) => {
+            return sendMessageToWorkerWithResponse(
+              prop,
+              args,
+              workers[threadIndex]
+            );
+          };
+        },
+      }),
 
     broadcast: new Proxy({} as T, {
       get(i, prop) {
@@ -75,11 +123,28 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
   };
 }
 
-export function createRoundRobinThread<T extends InterfaceWithMethods>(t: T) {
+export function createRoundRobinThread<T extends InterfaceWithMethods>(
+  t: T,
+  serialization?: {
+    [K in keyof T]?: Pick<
+      FunctionSerializer<T[K]>,
+      "parseArgs" | "serializeRetVal"
+    >;
+  }
+) {
   self.addEventListener("message", async (e) => {
-    const resp = await t[e.data.type](...e.data.args);
+    const parseArgs = serialization?.[e.data.type]?.parseArgs ?? id;
+
+    const args = await parseArgs(e.data.args);
+
+    // @ts-expect-error
+    const resp = await t[e.data.type](...args);
+
+    const serializeReturnValue =
+      serialization?.[e.data.type]?.serializeRetVal ?? id;
+
     postMessage({
-      returnValue: resp,
+      returnValue: await serializeReturnValue(resp),
       id: e.data.id,
     });
   });
@@ -90,16 +155,20 @@ export function createCombinedRoundRobinThreadpool<
 >(
   getInterface: () => T,
   src?: string,
-  workerCount?: number
+  workerCount?: number,
+  serialization?: {
+    [K in keyof T]?: FunctionSerializer<T[K]>;
+  }
 ): ReturnType<typeof createRoundRobinThreadpool<T>> {
   if (eval("self.WorkerGlobalScope")) {
-    createRoundRobinThread(getInterface());
+    createRoundRobinThread(getInterface(), serialization);
     // @ts-expect-error
     return;
   } else {
     return createRoundRobinThreadpool(
       src ?? (document.currentScript as HTMLScriptElement).src,
-      workerCount
+      workerCount,
+      serialization
     );
   }
 }

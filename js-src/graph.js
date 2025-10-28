@@ -1,3 +1,8 @@
+// src/range.ts
+function id(x) {
+  return x;
+}
+
 // src/graph.ts
 function createGraph() {
   return {
@@ -38,6 +43,11 @@ function addEdge(graph, endpoints, data) {
   endpoints[1].incoming.add(edge);
   graph.edges.add(edge);
   return edge;
+}
+function deleteEdge(graph, edge) {
+  edge.endpoints[0].outgoing.delete(edge);
+  edge.endpoints[1].incoming.delete(edge);
+  graph.edges.delete(edge);
 }
 function getConnectedComponents(graph) {
   const components = [];
@@ -106,12 +116,167 @@ function getDepthFirstTraversalOrder(graph, startPoint) {
   }
   return order;
 }
+function subdivideEdges(graph, getAdjoiningVertices) {
+  for (const edge of [...graph.edges]) {
+    const adjoiningElements = getAdjoiningVertices(edge);
+    if (!adjoiningElements) continue;
+    const adjoiningVertices = adjoiningElements[0].map(
+      (v) => addVertex(graph, v[1])
+    );
+    const adjoiningEdgeData = adjoiningElements[0].map((v) => v[0]).concat(adjoiningElements[1]);
+    const starts = [edge.endpoints[0], ...adjoiningVertices];
+    const ends = [...adjoiningVertices, edge.endpoints[1]];
+    for (let i = 0; i < starts.length; i++) {
+      const endpoints = [starts[i], ends[i]];
+      addEdge(graph, endpoints, adjoiningEdgeData[i]);
+    }
+    graph.edges.delete(edge);
+  }
+}
+function subdivideEdgesAtCuts(graph, getEdgeCuts, getVertexAlongCut) {
+  subdivideEdges(graph, (edge) => {
+    const cuts = getEdgeCuts(edge);
+    if (!cuts) return void 0;
+    return [
+      cuts[0].map((c) => [
+        c[0],
+        getVertexAlongCut(edge.endpoints[0], edge.endpoints[1], c[1])
+      ]),
+      cuts[1]
+    ];
+  });
+}
+function subdivideEdgesAtCutsSimple(graph, getEdgeCuts, getVertexAlongCut, defaultEdge) {
+  subdivideEdgesAtCuts(
+    graph,
+    (e) => {
+      return [
+        getEdgeCuts(e).filter((e2) => e2 < 1 && e2 > 0).sort((a, b) => a - b).map((e2) => [defaultEdge, e2]),
+        defaultEdge
+      ];
+    },
+    getVertexAlongCut
+  );
+}
+function incidentEdges(v) {
+  return /* @__PURE__ */ new Set([...v.incoming, ...v.outgoing]);
+}
+function compareAngle(a, b) {
+  return Math.min(
+    Math.abs(a - b),
+    Math.abs(a - b + Math.PI * 2),
+    Math.abs(a - b - Math.PI * 2)
+  );
+}
+function subdivideEdgesByMaximumAngleDifference(graph, getAngle, subdivideBy, getVertexAlongCut) {
+  subdivideEdgesAtCuts(
+    graph,
+    (edge) => {
+      const myAngle = getAngle(edge);
+      const edges = [
+        ...incidentEdges(edge.endpoints[0]),
+        ...incidentEdges(edge.endpoints[1])
+      ];
+      const maxAngle = Math.max(
+        ...edges.map((e) => compareAngle(myAngle, getAngle(e)))
+      );
+      return subdivideBy(edge, maxAngle);
+    },
+    getVertexAlongCut
+  );
+}
+function subdivideEdgesByDistance(graph, maxDistance, distanceMetric, createNewSubdividedVertex, createNewSubdividedEdge) {
+  subdivideEdges(graph, (edge) => {
+    const dist = distanceMetric(edge);
+    if (dist <= maxDistance) {
+      return void 0;
+    }
+    const numPointsToAdd = Math.floor(dist / maxDistance);
+    const verts = [];
+    for (let i = 0; i < numPointsToAdd; i++) {
+      const vert = createNewSubdividedVertex(
+        edge,
+        (i + 1) / (numPointsToAdd + 1),
+        i,
+        numPointsToAdd
+      );
+      const newEdge = createNewSubdividedEdge(
+        edge,
+        i / (numPointsToAdd + 1),
+        (i + 1) / (numPointsToAdd + 1),
+        i,
+        numPointsToAdd + 1
+      );
+      verts.push([newEdge, vert]);
+    }
+    return [
+      verts,
+      createNewSubdividedEdge(
+        edge,
+        numPointsToAdd / (numPointsToAdd + 1),
+        1,
+        numPointsToAdd,
+        numPointsToAdd + 1
+      )
+    ];
+  });
+}
+function graph2json(graph, serializeVertex, serializeEdge) {
+  let index = 0;
+  if (!serializeVertex) serializeVertex = id;
+  if (!serializeEdge) serializeEdge = id;
+  const vertexIndexMap = /* @__PURE__ */ new Map();
+  let json = {
+    vertices: [],
+    edges: []
+  };
+  for (const v of graph.vertices) {
+    vertexIndexMap.set(v, index);
+    json.vertices.push(serializeVertex(v.data));
+    index++;
+  }
+  for (const e of graph.edges) {
+    json.edges.push({
+      endpoints: [
+        vertexIndexMap.get(e.endpoints[0]),
+        vertexIndexMap.get(e.endpoints[1])
+      ],
+      data: serializeEdge(e.data)
+    });
+  }
+  return json;
+}
+function json2graph(json, parseVertex, parseEdge) {
+  if (!parseVertex) parseVertex = id;
+  if (!parseEdge) parseEdge = id;
+  const graph = createGraph();
+  let vertexList = [];
+  for (const v of json.vertices)
+    vertexList.push(addVertex(graph, parseVertex(v)));
+  for (const e of json.edges) {
+    addEdge(
+      graph,
+      [vertexList[e.endpoints[0]], vertexList[e.endpoints[1]]],
+      parseEdge(e.data)
+    );
+  }
+  return graph;
+}
 export {
   addEdge,
   addVertex,
   createGraph,
   createGraphFromData,
+  deleteEdge,
   findEndpoint,
   getConnectedComponents,
-  getDepthFirstTraversalOrder
+  getDepthFirstTraversalOrder,
+  graph2json,
+  incidentEdges,
+  json2graph,
+  subdivideEdges,
+  subdivideEdgesAtCuts,
+  subdivideEdgesAtCutsSimple,
+  subdivideEdgesByDistance,
+  subdivideEdgesByMaximumAngleDifference
 };

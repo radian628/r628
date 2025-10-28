@@ -1,5 +1,10 @@
+// src/range.ts
+function id(x) {
+  return x;
+}
+
 // src/threadpool.ts
-function createRoundRobinThreadpool(src2, workerCount2) {
+function createRoundRobinThreadpool(src2, workerCount2, serialization2) {
   const count = workerCount2 ?? navigator.hardwareConcurrency;
   const workers = [];
   let nextWorker = 0;
@@ -11,30 +16,44 @@ function createRoundRobinThreadpool(src2, workerCount2) {
     nextWorker = (nextWorker + 1) % count;
     return w;
   }
-  let id = 0;
+  let id2 = 0;
   function sendMessageToWorkerWithResponse(prop, args, worker) {
-    return new Promise((resolve, reject) => {
-      const myid = id;
-      id++;
-      const onResponse = (e) => {
+    return new Promise(async (resolve, reject) => {
+      const myid = id2;
+      id2++;
+      const onResponse = async (e) => {
         if (e.data.id !== myid) return;
         worker.removeEventListener("message", onResponse);
-        resolve(e.data.returnValue);
+        const parseRetVal = serialization2?.[prop]?.parseRetVal ?? ((x) => x);
+        resolve(await parseRetVal(e.data.returnValue));
       };
       worker.addEventListener("message", onResponse);
+      const serializeArgs = serialization2?.[prop]?.serializeArgs ?? ((x) => x);
       worker.postMessage({
         type: prop,
-        args,
+        args: await serializeArgs(args),
         id: myid
       });
     });
   }
   return {
+    threadCount: count,
     send: new Proxy({}, {
       get(i, prop) {
         return async (...args) => {
           const nextWorker2 = getNextWorker();
           return sendMessageToWorkerWithResponse(prop, args, nextWorker2);
+        };
+      }
+    }),
+    sendToThread: (threadIndex) => new Proxy({}, {
+      get(i, prop) {
+        return async (...args) => {
+          return sendMessageToWorkerWithResponse(
+            prop,
+            args,
+            workers[threadIndex]
+          );
         };
       }
     }),
@@ -49,23 +68,27 @@ function createRoundRobinThreadpool(src2, workerCount2) {
     })
   };
 }
-function createRoundRobinThread(t) {
+function createRoundRobinThread(t, serialization2) {
   self.addEventListener("message", async (e) => {
-    const resp = await t[e.data.type](...e.data.args);
+    const parseArgs = serialization2?.[e.data.type]?.parseArgs ?? id;
+    const args = await parseArgs(e.data.args);
+    const resp = await t[e.data.type](...args);
+    const serializeReturnValue = serialization2?.[e.data.type]?.serializeRetVal ?? id;
     postMessage({
-      returnValue: resp,
+      returnValue: await serializeReturnValue(resp),
       id: e.data.id
     });
   });
 }
-function createCombinedRoundRobinThreadpool(getInterface, src, workerCount) {
+function createCombinedRoundRobinThreadpool(getInterface, src, workerCount, serialization) {
   if (eval("self.WorkerGlobalScope")) {
-    createRoundRobinThread(getInterface());
+    createRoundRobinThread(getInterface(), serialization);
     return;
   } else {
     return createRoundRobinThreadpool(
       src ?? document.currentScript.src,
-      workerCount
+      workerCount,
+      serialization
     );
   }
 }
