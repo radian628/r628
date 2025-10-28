@@ -52,14 +52,6 @@
     if (!random) random = () => Math.random();
     return random() * (hi - lo) + lo;
   }
-  function cartesianProductInner(ts, arr) {
-    if (ts.length === 0) return [arr];
-    return ts[0].map((e) => cartesianProductInner(ts.slice(1), [...arr, e])).flat(1);
-  }
-  function cartesianProduct(...ts) {
-    const res = cartesianProductInner(ts, []);
-    return res;
-  }
 
   // src/graph.ts
   function createGraph() {
@@ -661,83 +653,90 @@
       let graph = createGraph();
       let eyeballs;
       function shiftLines() {
-        for (const i of range(1)) {
-          subdivideEdgesAtCutsSimple(
-            graph,
-            (edge) => {
-              if (distance2(
-                edge.endpoints[0].data.initialPos,
-                edge.endpoints[1].data.initialPos
-              ) < 1 / 2048)
-                return [];
-              const ebs = eyeballs.queryRect({
-                a: edge.endpoints[0].data.initialPos,
-                b: edge.endpoints[1].data.initialPos
-              });
-              return [...ebs].filter((e) => e.forceEnabled).map((e) => {
-                const seg = {
+        for (const index of range(
+          Math.max(...[...eyeballs.all()].map((e) => e.index)) + 1
+        )) {
+          for (const i of range(1)) {
+            subdivideEdgesAtCutsSimple(
+              graph,
+              (edge) => {
+                if (distance2(
+                  edge.endpoints[0].data.initialPos,
+                  edge.endpoints[1].data.initialPos
+                ) < 1 / 2048)
+                  return [];
+                const ebs = eyeballs.queryRect({
                   a: edge.endpoints[0].data.initialPos,
                   b: edge.endpoints[1].data.initialPos
+                });
+                return [...ebs].filter((e) => e.index === index).map((e) => {
+                  const seg = {
+                    a: edge.endpoints[0].data.initialPos,
+                    b: edge.endpoints[1].data.initialPos
+                  };
+                  const tValue = closestApproachOfLineSegmentToPoint(
+                    seg,
+                    e.pos
+                  );
+                  const distAway = distance2(
+                    sampleLineSegment(seg, tValue),
+                    e.pos
+                  );
+                  const radiiAway = clamp(distAway / e.forceRadius, 0, 1);
+                  return getEqualAngularDivisionsOfLineSegment(
+                    e.pos,
+                    seg,
+                    Math.max(0.6 * radiiAway, 0.1)
+                  );
+                }).flat(1);
+              },
+              (a, b, f) => {
+                const mixedPos = mix2(f, a.data.pos, b.data.pos);
+                const mixedIPos = mix2(f, a.data.initialPos, b.data.initialPos);
+                return {
+                  pushed: false,
+                  initialPos: mixedIPos,
+                  pos: mixedPos
                 };
-                const tValue = closestApproachOfLineSegmentToPoint(seg, e.pos);
-                const distAway = distance2(
-                  sampleLineSegment(seg, tValue),
-                  e.pos
+              },
+              {}
+            );
+            pushLines(graph, eyeballs, index);
+            subdivideEdgesByMaximumAngleDifference(
+              graph,
+              (e) => Math.atan2(
+                e.endpoints[1].data.pos[1] - e.endpoints[0].data.pos[1],
+                e.endpoints[1].data.pos[0] - e.endpoints[0].data.pos[0]
+              ),
+              (e, angle) => {
+                let cutsToMake = Math.min(
+                  Math.floor(angle / Math.PI * 20),
+                  Math.floor(
+                    distance2(e.endpoints[0].data.pos, e.endpoints[1].data.pos) * 2048
+                  )
                 );
-                const radiiAway = clamp(distAway / e.forceRadius, 0, 1);
-                return getEqualAngularDivisionsOfLineSegment(
-                  e.pos,
-                  seg,
-                  Math.max(0.6 * radiiAway, 0.1)
-                );
-              }).flat(1);
-            },
-            (a, b, f) => {
-              const mixedPos = mix2(f, a.data.pos, b.data.pos);
-              const mixedIPos = mix2(f, a.data.initialPos, b.data.initialPos);
-              return {
-                pushed: false,
-                initialPos: mixedIPos,
-                pos: mixedPos
-              };
-            },
-            {}
-          );
-          pushLines(graph, eyeballs);
-          subdivideEdgesByMaximumAngleDifference(
-            graph,
-            (e) => Math.atan2(
-              e.endpoints[1].data.pos[1] - e.endpoints[0].data.pos[1],
-              e.endpoints[1].data.pos[0] - e.endpoints[0].data.pos[0]
-            ),
-            (e, angle) => {
-              let cutsToMake = Math.min(
-                Math.floor(angle / Math.PI * 20),
-                Math.floor(
-                  distance2(e.endpoints[0].data.pos, e.endpoints[1].data.pos) * 2048
-                )
-              );
-              if (cutsToMake === 0) return void 0;
-              return [
-                smartRange(cutsToMake).map((e2) => [{}, e2.remapCenter(0, 1)]),
-                {}
-              ];
-            },
-            (a, b, f) => {
-              const mixedPos = mix2(f, a.data.pos, b.data.pos);
-              const mixedIPos = mix2(f, a.data.initialPos, b.data.initialPos);
-              return {
-                pushed: false,
-                initialPos: mixedIPos,
-                pos: mixedPos
-              };
-            }
-          );
+                if (cutsToMake === 0) return void 0;
+                return [
+                  smartRange(cutsToMake).map((e2) => [{}, e2.remapCenter(0, 1)]),
+                  {}
+                ];
+              },
+              (a, b, f) => {
+                const mixedPos = mix2(f, a.data.pos, b.data.pos);
+                const mixedIPos = mix2(f, a.data.initialPos, b.data.initialPos);
+                return {
+                  pushed: false,
+                  initialPos: mixedIPos,
+                  pos: mixedPos
+                };
+              }
+            );
+          }
+          pushLines(graph, eyeballs, index);
+          [...graph.vertices.values()].forEach((v) => {
+            v.data.initialPos = v.data.pos;
+          });
         }
-        pushLines(graph, eyeballs);
-        [...graph.vertices.values()].forEach((v) => {
-          v.data.initialPos = v.data.pos;
-        });
       }
       return {
         setGraph(g) {
@@ -751,12 +750,31 @@
         },
         getGraph() {
           return graph;
+        },
+        shiftGraph(g) {
+          graph = g;
+          shiftLines();
+          return graph;
         }
       };
     },
     void 0,
     void 0,
     {
+      shiftGraph: {
+        serializeArgs(args) {
+          return graph2json(args[0]);
+        },
+        parseArgs(args) {
+          return [json2graph(args)];
+        },
+        serializeRetVal(r) {
+          return graph2json(r);
+        },
+        parseRetVal(r) {
+          return json2graph(r);
+        }
+      },
       getGraph: {
         serializeArgs: id,
         parseArgs: id,
@@ -789,7 +807,7 @@
       }
     }
   );
-  function pushLines(graph, eyeballs) {
+  function pushLines(graph, eyeballs, index) {
     for (const vert of graph.vertices) {
       const eyesInRange = inCircle(
         eyeballs,
@@ -801,7 +819,7 @@
       );
       let offset = [0, 0];
       for (const e of eyesInRange) {
-        if (!e.forceEnabled) continue;
+        if (e.index !== index) continue;
         const offsetToEye = sub2(vert.data.initialPos, e.pos);
         const distToEye = length2(offsetToEye);
         const pushFactor = rescale(distToEye, 0, e.forceRadius, 1, 0);
@@ -820,10 +838,7 @@
       b: add2(e.pos, [maxRadius, maxRadius])
     };
   }
-  function addEyeballs(eyeballs, tryCount, logMax, logMin) {
-    for (const eb of eyeballs.all()) {
-      eb.forceEnabled = false;
-    }
+  function addEyeballs(eyeballs, tryCount, logMax, logMin, index) {
     for (const i of smartRange(tryCount)) {
       const radius = Math.pow(10, i.remap(logMax, logMin));
       const center = [Math.random(), Math.random()];
@@ -839,10 +854,23 @@
         irisRadius: radius * 1,
         pupilRadius: radius * 0.5,
         forceRadius: radius * 3,
-        forceEnabled: true
+        index
       });
     }
   }
+  var frames = [];
+  function enqueueAnimationFrame(process) {
+    frames.push(process);
+  }
+  function loop() {
+    let startTime = Date.now();
+    while (Date.now() - startTime < 1e3 / 60 && frames.length > 0) {
+      const frame = frames.shift();
+      if (frame) frame();
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
   inMainThread(async () => {
     const mainThreadEyeballs = spatialHashTable(
       {
@@ -852,78 +880,71 @@
       [100, 100],
       getEyeballBounds
     );
-    await Promise.all(
-      smartRange(tp.threadCount).map(async (t) => {
-        const graph = createGraph();
-        const yBounds = t.segment(0, 1);
-        cartesianProduct(
-          smartRange(Math.ceil(LINE_COUNT / tp.threadCount)),
-          smartRange(POINTS_PER_LINE)
-        ).reduce((prev, [line, point]) => {
-          const pos = [
-            point.remap(-0.1, 1.1, true),
-            line.remap(...yBounds)
-          ];
-          const pt = addVertex(graph, {
-            pos,
-            initialPos: pos,
-            pushed: false
-          });
-          if (!point.start() && prev) {
-            addEdge(graph, [prev, pt], {});
-          }
-          return pt;
-        }, null);
-        await tp.sendToThread(t.i).setGraph(graph);
-      })
-    );
     const canvas = document.createElement("canvas");
     document.body.appendChild(canvas);
     canvas.width = 3e3;
     canvas.height = 3e3;
     const ctx = canvas.getContext("2d");
-    addEyeballs(mainThreadEyeballs, 100, -1.1, -1.4);
+    addEyeballs(mainThreadEyeballs, 100, -1.1, -1.4, 0);
+    addEyeballs(mainThreadEyeballs, 1e3, -1.4, -1.7, 1);
+    addEyeballs(mainThreadEyeballs, 1e4, -1.7, -2, 2);
+    addEyeballs(mainThreadEyeballs, 4e4, -2, -2.7, 3);
     await tp.broadcast.setEyeballs(mainThreadEyeballs);
-    await tp.broadcast.shiftLines();
-    addEyeballs(mainThreadEyeballs, 1e3, -1.4, -1.7);
-    await tp.broadcast.setEyeballs(mainThreadEyeballs);
-    await tp.broadcast.shiftLines();
-    addEyeballs(mainThreadEyeballs, 1e4, -1.7, -2);
-    await tp.broadcast.setEyeballs(mainThreadEyeballs);
-    await tp.broadcast.shiftLines();
-    addEyeballs(mainThreadEyeballs, 4e4, -2, -2.7);
-    await tp.broadcast.setEyeballs(mainThreadEyeballs);
-    await tp.broadcast.shiftLines();
-    const components = (await tp.broadcast.getGraph()).flatMap(
-      (e) => getConnectedComponents(e)
-    );
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "black";
-    for (const comp of components) {
-      const path = getDepthFirstTraversalOrder(comp, findEndpoint(comp));
-      ctx.beginPath();
-      for (const e of path) {
-        ctx.lineTo(...scale2(e.data.pos, canvas.width));
-        ctx.fillRect(...scale2(e.data.pos, canvas.width), 2, 2);
-      }
-      ctx.stroke();
-    }
-    ctx.beginPath();
+    Promise.all(
+      smartRange(Math.ceil(LINE_COUNT)).map(async (line) => {
+        const graph = createGraph();
+        smartRange(POINTS_PER_LINE).reduce(
+          (prev, point) => {
+            const pos = [point.remap(-0.1, 1.1, true), line.remap(0, 1)];
+            const pt = addVertex(graph, {
+              pos,
+              initialPos: pos,
+              pushed: false
+            });
+            if (!point.start() && prev) {
+              addEdge(graph, [prev, pt], {});
+            }
+            return pt;
+          },
+          null
+        );
+        const components = getConnectedComponents(
+          await tp.send.shiftGraph(graph)
+        );
+        enqueueAnimationFrame(() => {
+          ctx.fillStyle = "black";
+          for (const comp of components) {
+            const path = getDepthFirstTraversalOrder(comp, findEndpoint(comp));
+            ctx.beginPath();
+            for (const e of path) {
+              ctx.fillRect(...scale2(e.data.pos, canvas.width), 2, 2);
+            }
+            ctx.stroke();
+          }
+        });
+      })
+    );
     for (const e of mainThreadEyeballs.all()) {
-      const toCenter = cart2Polar(sub2([0.5, 0.5], e.pos));
-      const offset = [0, 0];
-      const eyePos = add2(e.pos, offset);
-      const pointCount = Math.floor(12e6 * e.pupilRadius ** 2);
-      for (const i of range(pointCount)) {
-        const randomPointInCircle = [
-          rand(eyePos[0] - e.pupilRadius, eyePos[0] + e.pupilRadius),
-          rand(eyePos[1] - e.pupilRadius, eyePos[1] + e.pupilRadius)
-        ];
-        if (distance2(randomPointInCircle, eyePos) > e.pupilRadius) continue;
-        ctx.fillRect(...scale2(randomPointInCircle, canvas.width), 2, 2);
-      }
+      enqueueAnimationFrame(() => {
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        const toCenter = cart2Polar(sub2([0.5, 0.5], e.pos));
+        const offset = [0, 0];
+        const eyePos = add2(e.pos, offset);
+        const pointCount = Math.floor(12e6 * e.pupilRadius ** 2);
+        for (const i of range(pointCount)) {
+          const randomPointInCircle = [
+            rand(eyePos[0] - e.pupilRadius, eyePos[0] + e.pupilRadius),
+            rand(eyePos[1] - e.pupilRadius, eyePos[1] + e.pupilRadius)
+          ];
+          if (distance2(randomPointInCircle, eyePos) > e.pupilRadius * rand(0.8, 1))
+            continue;
+          ctx.fillRect(...scale2(randomPointInCircle, canvas.width), 2, 2);
+        }
+        ctx.fill();
+      });
     }
-    ctx.fill();
   });
 })();
