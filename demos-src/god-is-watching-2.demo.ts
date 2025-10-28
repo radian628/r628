@@ -124,105 +124,38 @@ const tp = createCombinedRoundRobinThreadpool(
 
         pushLines(graph, eyeballs);
 
-        // subdivideEdgesAtCutsSimple(
-        //   graph,
-        //   (edge) => {
-        //     const ebs = eyeballs.queryRect({
-        //       a: edge.endpoints[0].data.pos,
-        //       b: edge.endpoints[1].data.pos,
-        //     });
+        subdivideEdgesByMaximumAngleDifference(
+          graph,
+          (e) =>
+            Math.atan2(
+              e.endpoints[1].data.pos[1] - e.endpoints[0].data.pos[1],
+              e.endpoints[1].data.pos[0] - e.endpoints[0].data.pos[0]
+            ),
+          (e, angle) => {
+            let cutsToMake = Math.min(
+              Math.floor((angle / Math.PI) * 20),
+              Math.floor(
+                distance2(e.endpoints[0].data.pos, e.endpoints[1].data.pos) *
+                  2048
+              )
+            );
+            if (cutsToMake === 0) return undefined;
+            return [
+              smartRange(cutsToMake).map((e) => [{}, e.remapCenter(0, 1)]),
+              {},
+            ];
+          },
+          (a, b, f) => {
+            const mixedPos = mix2(f, a.data.pos, b.data.pos);
+            const mixedIPos = mix2(f, a.data.initialPos, b.data.initialPos);
 
-        //     return [...ebs]
-        //       .filter((e) => e.forceEnabled)
-        //       .map((e) => {
-        //         const intersect = circleIntersectLine(
-        //           {
-        //             center: e.pos,
-        //             radius: e.forceRadius,
-        //           },
-        //           {
-        //             a: edge.endpoints[0].data.pos,
-        //             b: edge.endpoints[1].data.pos,
-        //           }
-        //         );
-
-        //         if (intersect.length === 2) {
-        //           return smartRange(10).map((e) =>
-        //             e.remap(intersect[0], intersect[1], true)
-        //           );
-        //         } else {
-        //           return intersect;
-        //         }
-        //       })
-        //       .flat(1);
-        //   },
-        //   (a, b, f) => {
-        //     const mixedPos = mix2(f, a.data.pos, b.data.pos);
-        //     const mixedIPos = mix2(f, a.data.initialPos, b.data.initialPos);
-
-        //     return {
-        //       pushed: false,
-        //       initialPos: mixedIPos,
-        //       pos: mixedPos,
-        //     };
-        //   },
-        //   {}
-        // );
-
-        // pushLines(graph, eyeballs);
-
-        // subdivideEdgesByMaximumAngleDifference(
-        //   graph,
-        //   (e) =>
-        //     Math.atan2(
-        //       e.endpoints[1].data.pos[1] - e.endpoints[0].data.pos[1],
-        //       e.endpoints[1].data.pos[0] - e.endpoints[0].data.pos[0]
-        //     ),
-        //   (e, angle) => {
-        //     let cutsToMake = Math.min(
-        //       Math.floor((angle / Math.PI) * 30),
-        //       Math.floor(
-        //         distance2(e.endpoints[0].data.pos, e.endpoints[1].data.pos) *
-        //           2048
-        //       )
-        //     );
-        //     if (cutsToMake === 0) return undefined;
-        //     return [
-        //       smartRange(cutsToMake).map((e) => [{}, e.remapCenter(0, 1)]),
-        //       {},
-        //     ];
-        //   },
-        //   (a, b, f) => {
-        //     const mixedPos = mix2(f, a.data.pos, b.data.pos);
-        //     const mixedIPos = mix2(f, a.data.initialPos, b.data.initialPos);
-
-        //     return {
-        //       pushed: false,
-        //       initialPos: mixedIPos,
-        //       pos: mixedPos,
-        //     };
-        //   }
-        // );
-
-        // subdivideEdgesByDistance(
-        //   graph,
-        //   0.01,
-        //   (e) => distance2(e.endpoints[0].data.pos, e.endpoints[1].data.pos),
-        //   (edge, fractionAcross) => ({
-        //     pos: mix2(
-        //       fractionAcross,
-        //       edge.endpoints[0].data.pos,
-        //       edge.endpoints[1].data.pos
-        //     ),
-        //     initialPos: mix2(
-        //       fractionAcross,
-        //       edge.endpoints[0].data.initialPos,
-        //       edge.endpoints[1].data.initialPos
-        //     ),
-        //     pushed: false,
-        //   }),
-        //   () => ({})
-        // );
+            return {
+              pushed: false,
+              initialPos: mixedIPos,
+              pos: mixedPos,
+            };
+          }
+        );
       }
       pushLines(graph, eyeballs);
       [...graph.vertices.values()].forEach((v) => {

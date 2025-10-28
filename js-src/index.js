@@ -22792,18 +22792,22 @@ function compareAngle(a, b) {
     Math.abs(a - b - Math.PI * 2)
   );
 }
+function getMaximumAngleDifference(edge, getAngle) {
+  const myAngle = getAngle(edge);
+  const edges = [
+    ...incidentEdges(edge.endpoints[0]),
+    ...incidentEdges(edge.endpoints[1])
+  ];
+  const maxAngle = Math.max(
+    ...edges.map((e) => compareAngle(myAngle, getAngle(e)))
+  );
+  return maxAngle;
+}
 function subdivideEdgesByMaximumAngleDifference(graph, getAngle, subdivideBy, getVertexAlongCut) {
   subdivideEdgesAtCuts(
     graph,
     (edge) => {
-      const myAngle = getAngle(edge);
-      const edges = [
-        ...incidentEdges(edge.endpoints[0]),
-        ...incidentEdges(edge.endpoints[1])
-      ];
-      const maxAngle = Math.max(
-        ...edges.map((e) => compareAngle(myAngle, getAngle(e)))
-      );
+      const maxAngle = getMaximumAngleDifference(edge, getAngle);
       return subdivideBy(edge, maxAngle);
     },
     getVertexAlongCut
@@ -23062,6 +23066,88 @@ function splitBy(arr, amount) {
 function bifurcate(arr, fn) {
   const bools = arr.map(fn);
   return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
+}
+
+// src/math/intersections.ts
+function quadraticFormula(a, b, c) {
+  const bSquaredMinusFourAC = b ** 2 - 4 * a * c;
+  if (bSquaredMinusFourAC < 0) return [];
+  if (bSquaredMinusFourAC === 0) return [-b / (2 * a)];
+  return [
+    (-b - Math.sqrt(bSquaredMinusFourAC)) / (2 * a),
+    (-b + Math.sqrt(bSquaredMinusFourAC)) / (2 * a)
+  ];
+}
+function circleIntersectLine(circle, seg) {
+  const bxMinusAx = seg.b[0] - seg.a[0];
+  const byMinusAy = seg.b[1] - seg.a[1];
+  const axMinusCx = seg.a[0] - circle.center[0];
+  const ayMinusCy = seg.a[1] - circle.center[1];
+  const a = bxMinusAx ** 2 + byMinusAy ** 2;
+  const b = 2 * (bxMinusAx * axMinusCx + byMinusAy * ayMinusCy);
+  const c = axMinusCx ** 2 + ayMinusCy ** 2 - circle.radius ** 2;
+  return quadraticFormula(a, b, c);
+}
+function lineIntersectLine(a, b) {
+  const ax = a.a[0];
+  const ay = a.a[1];
+  const bx = a.b[0];
+  const by = a.b[1];
+  const cx = b.a[0];
+  const cy = b.a[1];
+  const dx = b.b[0];
+  const dy = b.b[1];
+  return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
+}
+function rayIntersectLine(ray, b) {
+  return lineIntersectLine(
+    {
+      a: ray.center,
+      b: add2(ray.center, [Math.cos(ray.dir), Math.sin(ray.dir)])
+    },
+    b
+  );
+}
+function getSmallestAngleDifference(a, b) {
+  const minDiff = Math.min(
+    Math.abs(a - b),
+    Math.abs(a - b + Math.PI * 2),
+    Math.abs(a - b - Math.PI * 2)
+  );
+  const lowest = Math.min(a, b);
+  return [lowest, lowest + minDiff];
+}
+function getEqualAngularDivisionsOfLineSegment(center, b, interval) {
+  const [angle1, angle2] = getSmallestAngleDifference(
+    pointTo(center, b.a),
+    pointTo(center, b.b)
+  );
+  const truncatedAngle1 = Math.ceil(angle1 / interval) * interval;
+  let tValues = [];
+  for (let i = truncatedAngle1; i < angle2; i += interval) {
+    tValues.push(
+      rayIntersectLine(
+        {
+          center,
+          dir: i
+        },
+        b
+      )
+    );
+  }
+  return tValues;
+}
+function closestApproachOfLineSegmentToPoint(l, pt) {
+  const ax = l.a[0];
+  const ay = l.a[1];
+  const bx = l.b[0];
+  const by = l.b[1];
+  const cx = pt[0];
+  const cy = pt[1];
+  return (-(bx - ax) * (ax - cx) - (by - ay) * (ay - cy)) / ((bx - ax) ** 2 + (by - ay) ** 2);
+}
+function sampleLineSegment(l, t) {
+  return mix2(t, l.a, l.b);
 }
 
 // src/curve/quadratic-curve-to-svg.ts
@@ -26454,88 +26540,6 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
-// src/math/intersections.ts
-function quadraticFormula(a, b, c) {
-  const bSquaredMinusFourAC = b ** 2 - 4 * a * c;
-  if (bSquaredMinusFourAC < 0) return [];
-  if (bSquaredMinusFourAC === 0) return [-b / (2 * a)];
-  return [
-    (-b - Math.sqrt(bSquaredMinusFourAC)) / (2 * a),
-    (-b + Math.sqrt(bSquaredMinusFourAC)) / (2 * a)
-  ];
-}
-function circleIntersectLine(circle, seg) {
-  const bxMinusAx = seg.b[0] - seg.a[0];
-  const byMinusAy = seg.b[1] - seg.a[1];
-  const axMinusCx = seg.a[0] - circle.center[0];
-  const ayMinusCy = seg.a[1] - circle.center[1];
-  const a = bxMinusAx ** 2 + byMinusAy ** 2;
-  const b = 2 * (bxMinusAx * axMinusCx + byMinusAy * ayMinusCy);
-  const c = axMinusCx ** 2 + ayMinusCy ** 2 - circle.radius ** 2;
-  return quadraticFormula(a, b, c);
-}
-function lineIntersectLine(a, b) {
-  const ax = a.a[0];
-  const ay = a.a[1];
-  const bx = a.b[0];
-  const by = a.b[1];
-  const cx = b.a[0];
-  const cy = b.a[1];
-  const dx = b.b[0];
-  const dy = b.b[1];
-  return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
-}
-function rayIntersectLine(ray, b) {
-  return lineIntersectLine(
-    {
-      a: ray.center,
-      b: add2(ray.center, [Math.cos(ray.dir), Math.sin(ray.dir)])
-    },
-    b
-  );
-}
-function getSmallestAngleDifference(a, b) {
-  const minDiff = Math.min(
-    Math.abs(a - b),
-    Math.abs(a - b + Math.PI * 2),
-    Math.abs(a - b - Math.PI * 2)
-  );
-  const lowest = Math.min(a, b);
-  return [lowest, lowest + minDiff];
-}
-function getEqualAngularDivisionsOfLineSegment(center, b, interval) {
-  const [angle1, angle2] = getSmallestAngleDifference(
-    pointTo(center, b.a),
-    pointTo(center, b.b)
-  );
-  const truncatedAngle1 = Math.ceil(angle1 / interval) * interval;
-  let tValues = [];
-  for (let i = truncatedAngle1; i < angle2; i += interval) {
-    tValues.push(
-      rayIntersectLine(
-        {
-          center,
-          dir: i
-        },
-        b
-      )
-    );
-  }
-  return tValues;
-}
-function closestApproachOfLineSegmentToPoint(l, pt) {
-  const ax = l.a[0];
-  const ay = l.a[1];
-  const bx = l.b[0];
-  const by = l.b[1];
-  const cx = pt[0];
-  const cy = pt[1];
-  return (-(bx - ax) * (ax - cx) - (by - ay) * (ay - cy)) / ((bx - ax) ** 2 + (by - ay) ** 2);
-}
-function sampleLineSegment(l, t) {
-  return mix2(t, l.a, l.b);
-}
-
 // src/webgl/shader.ts
 function source2shader(gl, type, source) {
   const shader = gl.createShader(
@@ -27309,6 +27313,7 @@ export {
   getDepthFirstTraversalOrder,
   getEqualAngularDivisionsOfLineSegment,
   getLinesAndCols,
+  getMaximumAngleDifference,
   getOgg,
   getSmallestAngleDifference,
   glRenderToQuad,

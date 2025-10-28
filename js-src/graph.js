@@ -168,18 +168,22 @@ function compareAngle(a, b) {
     Math.abs(a - b - Math.PI * 2)
   );
 }
+function getMaximumAngleDifference(edge, getAngle) {
+  const myAngle = getAngle(edge);
+  const edges = [
+    ...incidentEdges(edge.endpoints[0]),
+    ...incidentEdges(edge.endpoints[1])
+  ];
+  const maxAngle = Math.max(
+    ...edges.map((e) => compareAngle(myAngle, getAngle(e)))
+  );
+  return maxAngle;
+}
 function subdivideEdgesByMaximumAngleDifference(graph, getAngle, subdivideBy, getVertexAlongCut) {
   subdivideEdgesAtCuts(
     graph,
     (edge) => {
-      const myAngle = getAngle(edge);
-      const edges = [
-        ...incidentEdges(edge.endpoints[0]),
-        ...incidentEdges(edge.endpoints[1])
-      ];
-      const maxAngle = Math.max(
-        ...edges.map((e) => compareAngle(myAngle, getAngle(e)))
-      );
+      const maxAngle = getMaximumAngleDifference(edge, getAngle);
       return subdivideBy(edge, maxAngle);
     },
     getVertexAlongCut
@@ -271,6 +275,7 @@ export {
   findEndpoint,
   getConnectedComponents,
   getDepthFirstTraversalOrder,
+  getMaximumAngleDifference,
   graph2json,
   incidentEdges,
   json2graph,

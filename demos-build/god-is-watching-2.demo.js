@@ -196,6 +196,37 @@
       getVertexAlongCut
     );
   }
+  function incidentEdges(v) {
+    return /* @__PURE__ */ new Set([...v.incoming, ...v.outgoing]);
+  }
+  function compareAngle(a, b) {
+    return Math.min(
+      Math.abs(a - b),
+      Math.abs(a - b + Math.PI * 2),
+      Math.abs(a - b - Math.PI * 2)
+    );
+  }
+  function getMaximumAngleDifference(edge, getAngle) {
+    const myAngle = getAngle(edge);
+    const edges = [
+      ...incidentEdges(edge.endpoints[0]),
+      ...incidentEdges(edge.endpoints[1])
+    ];
+    const maxAngle = Math.max(
+      ...edges.map((e) => compareAngle(myAngle, getAngle(e)))
+    );
+    return maxAngle;
+  }
+  function subdivideEdgesByMaximumAngleDifference(graph, getAngle, subdivideBy, getVertexAlongCut) {
+    subdivideEdgesAtCuts(
+      graph,
+      (edge) => {
+        const maxAngle = getMaximumAngleDifference(edge, getAngle);
+        return subdivideBy(edge, maxAngle);
+      },
+      getVertexAlongCut
+    );
+  }
   function graph2json(graph, serializeVertex, serializeEdge) {
     let index = 0;
     if (!serializeVertex) serializeVertex = id;
@@ -671,6 +702,36 @@
               };
             },
             {}
+          );
+          pushLines(graph, eyeballs);
+          subdivideEdgesByMaximumAngleDifference(
+            graph,
+            (e) => Math.atan2(
+              e.endpoints[1].data.pos[1] - e.endpoints[0].data.pos[1],
+              e.endpoints[1].data.pos[0] - e.endpoints[0].data.pos[0]
+            ),
+            (e, angle) => {
+              let cutsToMake = Math.min(
+                Math.floor(angle / Math.PI * 20),
+                Math.floor(
+                  distance2(e.endpoints[0].data.pos, e.endpoints[1].data.pos) * 2048
+                )
+              );
+              if (cutsToMake === 0) return void 0;
+              return [
+                smartRange(cutsToMake).map((e2) => [{}, e2.remapCenter(0, 1)]),
+                {}
+              ];
+            },
+            (a, b, f) => {
+              const mixedPos = mix2(f, a.data.pos, b.data.pos);
+              const mixedIPos = mix2(f, a.data.initialPos, b.data.initialPos);
+              return {
+                pushed: false,
+                initialPos: mixedIPos,
+                pos: mixedPos
+              };
+            }
           );
         }
         pushLines(graph, eyeballs);
