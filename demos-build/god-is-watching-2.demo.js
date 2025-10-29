@@ -1,4 +1,100 @@
 (() => {
+  // src/interpolation.ts
+  function lerp(x, a, b) {
+    return a * (1 - x) + b * x;
+  }
+  function unlerp(x, a, b) {
+    return (x - a) / (b - a);
+  }
+  function rescale(x, a1, b1, a2, b2) {
+    return lerp(unlerp(x, a1, b1), a2, b2);
+  }
+  function rescaleClamped(x, a1, b1, a2, b2) {
+    return lerp(clamp(unlerp(x, a1, b1), 0, 1), a2, b2);
+  }
+  function clamp(x, lo, hi) {
+    return Math.max(Math.min(x, hi), lo);
+  }
+  function unclampedSmoothstep(x) {
+    return x * x * (3 - 2 * x);
+  }
+  function smoothstep(x) {
+    return unclampedSmoothstep(clamp(x, 0, 1));
+  }
+
+  // src/math/vector.ts
+  function cart2Polar(a) {
+    return [length2(a), Math.atan2(a[1], a[0])];
+  }
+  function pointTo(a, b) {
+    return Math.atan2(b[1] - a[1], b[0] - a[0]);
+  }
+  function add2(a, b) {
+    return [a[0] + b[0], a[1] + b[1]];
+  }
+  function mul2(a, b) {
+    return [a[0] * b[0], a[1] * b[1]];
+  }
+  function sub2(a, b) {
+    return [a[0] - b[0], a[1] - b[1]];
+  }
+  function normalize2(a) {
+    return scale2(a, 1 / Math.sqrt(dot2(a, a)));
+  }
+  function length2(a) {
+    return Math.sqrt(dot2(a, a));
+  }
+  function distance2(a, b) {
+    return length2(sub2(a, b));
+  }
+  function mix2(a, b, c) {
+    return add2(b, scale2(sub2(c, b), a));
+  }
+  function rescale2(a, b) {
+    return scale2(normalize2(a), b);
+  }
+  function sum2(a) {
+    return a[0] + a[1];
+  }
+  function dot2(a, b) {
+    return sum2(mul2(a, b));
+  }
+  function scale2(a, b) {
+    return [a[0] * b, a[1] * b];
+  }
+
+  // src/curve/bezierify.ts
+  function gradient2(fn, pos, diff) {
+    const a = fn(pos);
+    const b = fn(add2(pos, [diff, 0]));
+    const c = fn(add2(pos, [0, diff]));
+    return [(a - b) / diff, (a - c) / diff];
+  }
+
+  // src/curve/points-on-curve.ts
+  function variableDistancePointsOnCurve(curve, nextDistance) {
+    if (curve.length === 0) return [];
+    const outPoints = [curve[0]];
+    let interval = nextDistance(curve[0]);
+    let accumDist = 0;
+    for (let i = 0; i < curve.length - 1; i++) {
+      const prevPoint = curve[i];
+      const currPoint = curve[i + 1];
+      const currLineDist = distance2(prevPoint, currPoint);
+      const initLength = interval - accumDist % interval;
+      accumDist += currLineDist;
+      const newPointCount = Math.floor(accumDist / interval);
+      let distAcross = initLength;
+      while (accumDist > interval) {
+        outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
+        accumDist -= interval;
+        interval = nextDistance(outPoints.at(-1));
+        distAcross += interval;
+      }
+    }
+    return outPoints;
+  }
+
   // src/range.ts
   function range(hi) {
     let arr = [];
@@ -261,64 +357,6 @@
     return graph;
   }
 
-  // src/interpolation.ts
-  function lerp(x, a, b) {
-    return a * (1 - x) + b * x;
-  }
-  function unlerp(x, a, b) {
-    return (x - a) / (b - a);
-  }
-  function rescale(x, a1, b1, a2, b2) {
-    return lerp(unlerp(x, a1, b1), a2, b2);
-  }
-  function rescaleClamped(x, a1, b1, a2, b2) {
-    return lerp(clamp(unlerp(x, a1, b1), 0, 1), a2, b2);
-  }
-  function clamp(x, lo, hi) {
-    return Math.max(Math.min(x, hi), lo);
-  }
-
-  // src/math/vector.ts
-  function cart2Polar(a) {
-    return [length2(a), Math.atan2(a[1], a[0])];
-  }
-  function pointTo(a, b) {
-    return Math.atan2(b[1] - a[1], b[0] - a[0]);
-  }
-  function add2(a, b) {
-    return [a[0] + b[0], a[1] + b[1]];
-  }
-  function mul2(a, b) {
-    return [a[0] * b[0], a[1] * b[1]];
-  }
-  function sub2(a, b) {
-    return [a[0] - b[0], a[1] - b[1]];
-  }
-  function normalize2(a) {
-    return scale2(a, 1 / Math.sqrt(dot2(a, a)));
-  }
-  function length2(a) {
-    return Math.sqrt(dot2(a, a));
-  }
-  function distance2(a, b) {
-    return length2(sub2(a, b));
-  }
-  function mix2(a, b, c) {
-    return add2(b, scale2(sub2(c, b), a));
-  }
-  function rescale2(a, b) {
-    return scale2(normalize2(a), b);
-  }
-  function sum2(a) {
-    return a[0] + a[1];
-  }
-  function dot2(a, b) {
-    return sum2(mul2(a, b));
-  }
-  function scale2(a, b) {
-    return [a[0] * b, a[1] * b];
-  }
-
   // src/math/intersections.ts
   function lineIntersectLine(a, b) {
     const ax = a.a[0];
@@ -380,6 +418,35 @@
   }
   function sampleLineSegment(l, t) {
     return mix2(t, l.a, l.b);
+  }
+
+  // src/math/noise.ts
+  function fract(x) {
+    return x - Math.floor(x);
+  }
+  function simpleRandVec2ToFloat(co) {
+    return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
+  }
+  function simpleRandVec2ToVec2(co) {
+    return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
+  }
+  function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
+    const fp = [Math.floor(p[0]), Math.floor(p[1])];
+    const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
+    const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
+    const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
+    const v4 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
+    const o1 = sub2(p, fp);
+    const o2 = sub2(o1, [1, 0]);
+    const o3 = sub2(o1, [0, 1]);
+    const o4 = sub2(o1, [1, 1]);
+    const d1 = dot2(v1, o1);
+    const d2 = dot2(v2, o2);
+    const d3 = dot2(v3, o3);
+    const d4 = dot2(v4, o4);
+    const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
+    const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
+    return lerp(smoothstep(p[1] - fp[1]), h1, h2);
   }
 
   // src/spatial-hash-table.ts
@@ -825,7 +892,7 @@
         const pushFactor = rescale(distToEye, 0, e.forceRadius, 1, 0);
         const pushMag = pushFactor ** 2 * e.forceRadius * 0.3;
         const push = rescale2(offsetToEye, pushMag);
-        offset = add2(offset, mul2(push, [1, 1]));
+        offset = add2(offset, mul2(push, [1, 0.75]));
         vert.data.pushed = true;
       }
       vert.data.pos = add2(vert.data.initialPos, offset);
@@ -844,15 +911,15 @@
       const center = [Math.random(), Math.random()];
       const MARGIN = 1 + Math.random() ** 0.5 * 0.2;
       if (inCircle(eyeballs, { radius: radius * MARGIN, center }, (t) => ({
-        radius: t.irisRadius * MARGIN,
+        radius: t.irisRadius * 1.4 * MARGIN,
         center: t.pos
       })).size > 0) {
         continue;
       }
       eyeballs.insert({
         pos: center,
-        irisRadius: radius * 1,
-        pupilRadius: radius * 0.5,
+        irisRadius: radius * 0.6,
+        pupilRadius: radius * 0.3,
         forceRadius: radius * 3,
         index
       });
@@ -869,6 +936,23 @@
       if (frame) frame();
     }
     requestAnimationFrame(loop);
+  }
+  function lookupEyeballForceField(ebs, position, index) {
+    const eyesInRange = inCircle(ebs, { center: position, radius: 0 }, (e) => ({
+      radius: e.forceRadius,
+      center: e.pos
+    }));
+    let offset = [0, 0];
+    for (const e of eyesInRange) {
+      if (index !== void 0 && e.index !== index) continue;
+      const offsetToEye = sub2(position, e.pos);
+      const distToEye = length2(offsetToEye);
+      const pushFactor = rescale(distToEye, 0, e.forceRadius, 1, 0);
+      const pushMag = pushFactor ** 2 * e.forceRadius * 0.3;
+      const push = rescale2(offsetToEye, pushMag);
+      offset = add2(offset, mul2(push, [1, 0.75]));
+    }
+    return offset;
   }
   loop();
   inMainThread(async () => {
@@ -917,9 +1001,39 @@
           ctx.fillStyle = "black";
           for (const comp of components) {
             const path = getDepthFirstTraversalOrder(comp, findEndpoint(comp));
+            const toDraw = variableDistancePointsOnCurve(
+              path.map((e) => e.data.pos),
+              (p) => {
+                let d = dot2(
+                  normalize2(
+                    gradient2(
+                      (v) => length2(
+                        lookupEyeballForceField(
+                          mainThreadEyeballs,
+                          v,
+                          void 0
+                        )
+                      ),
+                      p,
+                      1e-3
+                    )
+                  ),
+                  normalize2([1, -1])
+                );
+                if (isNaN(d)) d = 0;
+                const normd = clamp(d + rand(-0.5, 0.5), 0, 1);
+                return lerp(normd, 1 / 1e3, 1 / 200);
+              }
+            );
+            console.log(toDraw.length);
             ctx.beginPath();
-            for (const e of path) {
-              ctx.fillRect(...scale2(e.data.pos, canvas.width), 2, 2);
+            for (const e of toDraw) {
+              const pos = e;
+              ctx.fillRect(
+                ...add2(scale2(pos, canvas.width), [rand(-1, 1), rand(-1, 1)]),
+                2,
+                2
+              );
             }
             ctx.stroke();
           }
@@ -927,21 +1041,44 @@
       })
     );
     for (const e of mainThreadEyeballs.all()) {
+      const toCenter = cart2Polar(sub2([0.5, 0.5], e.pos));
+      const offset = [0, 0];
+      const eyePos = add2(e.pos, offset);
       enqueueAnimationFrame(() => {
         ctx.fillStyle = "black";
         ctx.beginPath();
-        const toCenter = cart2Polar(sub2([0.5, 0.5], e.pos));
-        const offset = [0, 0];
-        const eyePos = add2(e.pos, offset);
         const pointCount = Math.floor(12e6 * e.pupilRadius ** 2);
         for (const i of range(pointCount)) {
           const randomPointInCircle = [
             rand(eyePos[0] - e.pupilRadius, eyePos[0] + e.pupilRadius),
             rand(eyePos[1] - e.pupilRadius, eyePos[1] + e.pupilRadius)
           ];
-          if (distance2(randomPointInCircle, eyePos) > e.pupilRadius * rand(0.8, 1))
-            continue;
+          if (distance2(randomPointInCircle, eyePos) > e.pupilRadius) continue;
           ctx.fillRect(...scale2(randomPointInCircle, canvas.width), 2, 2);
+        }
+        ctx.fill();
+      });
+      enqueueAnimationFrame(() => {
+        ctx.fillStyle = "black";
+        const pointCount = Math.floor(9e6 * e.irisRadius ** 2);
+        const seed = [Math.random() * 100, Math.random() * 100];
+        const randgen = (v) => simpleRandVec2ToVec2(add2(v, seed));
+        for (const i of range(pointCount)) {
+          const randomPointInCircle = [
+            rand(-e.irisRadius, e.irisRadius),
+            rand(-e.irisRadius, e.irisRadius)
+          ];
+          const [r, theta] = cart2Polar(randomPointInCircle);
+          if (r > e.irisRadius * rand(0.9, 1) || r < e.pupilRadius || perlin2d([r / e.irisRadius * 3.5, theta * 20], randgen) > rand(-0.2, 0.2) || distance2(
+            [rescale(r, e.pupilRadius, e.irisRadius, 0, 1), theta / 2],
+            [0.5, -Math.PI / 4 / 2]
+          ) < rand(0.15, 0.36))
+            continue;
+          ctx.fillRect(
+            ...scale2(add2(randomPointInCircle, eyePos), canvas.width),
+            2,
+            2
+          );
         }
         ctx.fill();
       });

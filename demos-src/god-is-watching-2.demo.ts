@@ -1,3 +1,8 @@
+import { gradient2 } from "../src/curve/bezierify";
+import {
+  equidistantPointsOnCurve,
+  variableDistancePointsOnCurve,
+} from "../src/curve/points-on-curve";
 import {
   addEdge,
   addVertex,
@@ -14,20 +19,23 @@ import {
   subdivideEdgesByMaximumAngleDifference,
   Vertex,
 } from "../src/graph";
-import { clamp, rescale } from "../src/interpolation";
+import { clamp, lerp, rescale, rescaleClamped } from "../src/interpolation";
 import {
   circleIntersectLine,
   closestApproachOfLineSegmentToPoint,
   getEqualAngularDivisionsOfLineSegment,
   sampleLineSegment,
 } from "../src/math/intersections";
+import { perlin2d, simpleRandVec2ToVec2 } from "../src/math/noise";
 import {
   add2,
   cart2Polar,
   distance2,
+  dot2,
   length2,
   mix2,
   mul2,
+  normalize2,
   polar2Cart,
   rescale2,
   scale2,
@@ -269,7 +277,7 @@ function pushLines(
       const pushFactor = rescale(distToEye, 0, e.forceRadius, 1, 0);
       const pushMag = pushFactor ** 2 * e.forceRadius * 0.3;
       const push = rescale2(offsetToEye, pushMag);
-      offset = add2(offset, mul2(push, [1.0, 1.0]));
+      offset = add2(offset, mul2(push, [1.0, 0.75]));
       vert.data.pushed = true;
     }
     vert.data.pos = add2(vert.data.initialPos, offset);
@@ -299,7 +307,7 @@ function addEyeballs(
 
     if (
       inCircle(eyeballs, { radius: radius * MARGIN, center }, (t) => ({
-        radius: t.irisRadius * MARGIN,
+        radius: t.irisRadius * 1.4 * MARGIN,
         center: t.pos,
       })).size > 0
     ) {
@@ -308,8 +316,8 @@ function addEyeballs(
 
     eyeballs.insert({
       pos: center,
-      irisRadius: radius * 1,
-      pupilRadius: radius * 0.5,
+      irisRadius: radius * 0.6,
+      pupilRadius: radius * 0.3,
       forceRadius: radius * 3,
       index,
     });
@@ -334,6 +342,31 @@ function loop() {
     if (frame) frame();
   }
   requestAnimationFrame(loop);
+}
+
+function lookupEyeballForceField(
+  ebs: SpatialHashTable<Eyeball>,
+  position: Vec2,
+  index: number | undefined
+) {
+  const eyesInRange = inCircle(ebs, { center: position, radius: 0 }, (e) => ({
+    radius: e.forceRadius,
+    center: e.pos,
+  }));
+
+  let offset: Vec2 = [0, 0];
+
+  for (const e of eyesInRange) {
+    if (index !== undefined && e.index !== index) continue;
+    const offsetToEye = sub2(position, e.pos);
+    const distToEye = length2(offsetToEye);
+    const pushFactor = rescale(distToEye, 0, e.forceRadius, 1, 0);
+    const pushMag = pushFactor ** 2 * e.forceRadius * 0.3;
+    const push = rescale2(offsetToEye, pushMag);
+    offset = add2(offset, mul2(push, [1.0, 0.75]));
+  }
+
+  return offset;
 }
 
 loop();
@@ -392,10 +425,50 @@ inMainThread(async () => {
         for (const comp of components) {
           const path = getDepthFirstTraversalOrder(comp, findEndpoint(comp));
 
+          // const toDraw = equidistantPointsOnCurve(
+          //   path.map((e) => e.data.pos),
+          //   1 / 800
+          // );
+          const toDraw = variableDistancePointsOnCurve(
+            path.map((e) => e.data.pos),
+            (p) => {
+              let d = dot2(
+                normalize2(
+                  gradient2(
+                    (v) =>
+                      length2(
+                        lookupEyeballForceField(
+                          mainThreadEyeballs,
+                          v,
+                          undefined
+                        )
+                      ),
+                    p,
+                    0.001
+                  )
+                ),
+                normalize2([1, -1])
+              );
+
+              if (isNaN(d)) d = 0;
+
+              const normd = clamp(d + rand(-0.5, 0.5), 0, 1);
+
+              return lerp(normd, 1 / 1000, 1 / 200);
+            }
+          );
+
+          console.log(toDraw.length);
+
           ctx.beginPath();
-          for (const e of path) {
+          for (const e of toDraw) {
+            const pos = e;
             // ctx.lineTo(...scale2(e.data.pos, canvas.width));
-            ctx.fillRect(...scale2(e.data.pos, canvas.width), 2, 2);
+            ctx.fillRect(
+              ...add2(scale2(pos, canvas.width), [rand(-1, 1), rand(-1, 1)]),
+              2,
+              2
+            );
           }
           ctx.stroke();
         }
@@ -404,23 +477,24 @@ inMainThread(async () => {
   );
 
   for (const e of mainThreadEyeballs.all()) {
+    const toCenter = cart2Polar(sub2([0.5, 0.5], e.pos));
+
+    // const offset = polar2Cart(toCenter[0] * e.pupilRadius * 1.2, toCenter[1]);
+
+    // const offset: Vec2 = [-e.pupilRadius * 0.7, 0];
+
+    const offset: Vec2 = [0, 0];
+
+    const eyePos = add2(e.pos, offset);
+
+    // circle(ctx, {
+    //   radius: e.pupilRadius * canvas.width,
+    //   center: scale2(eyePos, canvas.width),
+    // });
+
     enqueueAnimationFrame(() => {
       ctx.fillStyle = "black";
       ctx.beginPath();
-      const toCenter = cart2Polar(sub2([0.5, 0.5], e.pos));
-
-      // const offset = polar2Cart(toCenter[0] * e.pupilRadius * 1.2, toCenter[1]);
-
-      // const offset: Vec2 = [-e.pupilRadius * 0.7, 0];
-
-      const offset: Vec2 = [0, 0];
-
-      const eyePos = add2(e.pos, offset);
-
-      // circle(ctx, {
-      //   radius: e.pupilRadius * canvas.width,
-      //   center: scale2(eyePos, canvas.width),
-      // });
 
       const pointCount = Math.floor(12_000_000 * e.pupilRadius ** 2);
 
@@ -429,13 +503,46 @@ inMainThread(async () => {
           rand(eyePos[0] - e.pupilRadius, eyePos[0] + e.pupilRadius),
           rand(eyePos[1] - e.pupilRadius, eyePos[1] + e.pupilRadius),
         ];
+        if (distance2(randomPointInCircle, eyePos) > e.pupilRadius) continue;
+
+        ctx.fillRect(...scale2(randomPointInCircle, canvas.width), 2, 2);
+      }
+      ctx.fill();
+    });
+    enqueueAnimationFrame(() => {
+      ctx.fillStyle = "black";
+
+      const pointCount = Math.floor(9_000_000 * e.irisRadius ** 2);
+
+      const seed: Vec2 = [Math.random() * 100, Math.random() * 100];
+
+      const randgen = (v: Vec2) => simpleRandVec2ToVec2(add2(v, seed));
+
+      for (const i of range(pointCount)) {
+        const randomPointInCircle: Vec2 = [
+          rand(-e.irisRadius, e.irisRadius),
+          rand(-e.irisRadius, e.irisRadius),
+        ];
+
+        const [r, theta] = cart2Polar(randomPointInCircle);
+
         if (
-          distance2(randomPointInCircle, eyePos) >
-          e.pupilRadius * rand(0.8, 1.0)
+          r > e.irisRadius * rand(0.9, 1) ||
+          r < e.pupilRadius ||
+          perlin2d([(r / e.irisRadius) * 3.5, theta * 20], randgen) >
+            rand(-0.2, 0.2) ||
+          distance2(
+            [rescale(r, e.pupilRadius, e.irisRadius, 0, 1), theta / 2],
+            [0.5, -Math.PI / 4 / 2]
+          ) < rand(0.15, 0.36)
         )
           continue;
 
-        ctx.fillRect(...scale2(randomPointInCircle, canvas.width), 2, 2);
+        ctx.fillRect(
+          ...scale2(add2(randomPointInCircle, eyePos), canvas.width),
+          2,
+          2
+        );
       }
       ctx.fill();
     });
