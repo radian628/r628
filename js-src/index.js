@@ -20009,11 +20009,14 @@ function createRoundRobinThreadpool(src2, workerCount2, serialization2) {
       };
       worker.addEventListener("message", onResponse);
       const serializeArgs = serialization2?.[prop]?.serializeArgs ?? ((x2) => x2);
-      worker.postMessage({
-        type: prop,
-        args: await serializeArgs(args),
-        id: myid
-      });
+      worker.postMessage(
+        {
+          type: prop,
+          args: await serializeArgs(args),
+          id: myid
+        },
+        serialization2?.[prop]?.transferArgs?.(args) ?? []
+      );
     });
   }
   return {
@@ -20054,10 +20057,14 @@ function createRoundRobinThread(t, serialization2) {
     const args = await parseArgs(e.data.args);
     const resp = await t[e.data.type](...args);
     const serializeReturnValue = serialization2?.[e.data.type]?.serializeRetVal ?? id;
-    postMessage({
-      returnValue: await serializeReturnValue(resp),
-      id: e.data.id
-    });
+    postMessage(
+      {
+        returnValue: await serializeReturnValue(resp),
+        id: e.data.id
+      },
+      // @ts-expect-error
+      serialization2?.[e.data.type]?.transferRetVal?.(resp) ?? []
+    );
   });
 }
 function createCombinedRoundRobinThreadpool(getInterface, src, workerCount, serialization) {
@@ -21973,7 +21980,7 @@ function spatialHashTable(htBounds, resolution, getBounds) {
         htBounds.a[0],
         htBounds.b[0],
         0,
-        resolution[0]
+        resolution[0] - 1
       )
     );
     const bucketXEnd = Math.ceil(
@@ -21991,7 +21998,7 @@ function spatialHashTable(htBounds, resolution, getBounds) {
         htBounds.a[1],
         htBounds.b[1],
         0,
-        resolution[1]
+        resolution[1] - 1
       )
     );
     const bucketYEnd = Math.ceil(
@@ -23066,6 +23073,243 @@ function splitBy(arr, amount) {
 function bifurcate(arr, fn) {
   const bools = arr.map(fn);
   return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
+}
+
+// src/curve/quadratic-curve-to-svg.ts
+function quadraticCurveToPath(curve, sigfigs, offset) {
+  let startPoint = curve[0].a;
+  const str = (n) => n.toPrecision(sigfigs);
+  let output = `M ${str(startPoint[0] + offset[0])} ${str(
+    startPoint[1] + offset[1]
+  )}`;
+  let prevpoint = startPoint;
+  for (const b of curve) {
+    output += `q ${str(b.b[0] - prevpoint[0])} ${str(
+      b.b[1] - prevpoint[1]
+    )},${str(b.c[0] - prevpoint[0])} ${str(b.c[1] - prevpoint[1])}`;
+    prevpoint = b.c;
+  }
+  return output;
+}
+function quadraticCurveToSvgPath(curve, offset, color, sigfigs) {
+  const pathd = quadraticCurveToPath(curve, sigfigs, offset);
+  return `<path d="${pathd}" stroke="${color}" />`;
+}
+function islandsToSvg(width, height, islands, sigfigs) {
+  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${islands.map(
+    (i) => quadraticCurveToSvgPath(i.curve, i.topLeftInImage, i.color, sigfigs)
+  ).join("")}</svg>`;
+}
+
+// src/curve/points-on-curve.ts
+function equidistantPointsOnCurve(curve, interval) {
+  if (curve.length === 0) return [];
+  const outPoints = [curve[0]];
+  let accumDist = 0;
+  for (let i = 0; i < curve.length - 1; i++) {
+    const prevPoint = curve[i];
+    const currPoint = curve[i + 1];
+    const currLineDist = distance2(prevPoint, currPoint);
+    const initLength = interval - accumDist % interval;
+    accumDist += currLineDist;
+    const newPointCount = Math.floor(accumDist / interval);
+    for (let j = 0; j < newPointCount; j++) {
+      let distAcross = initLength + j * interval;
+      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
+    }
+    accumDist -= newPointCount * interval;
+  }
+  return outPoints;
+}
+function variableDistancePointsOnCurve(curve, nextDistance) {
+  if (curve.length === 0) return [];
+  const outPoints = [curve[0]];
+  let interval = nextDistance(curve[0]);
+  let accumDist = 0;
+  for (let i = 0; i < curve.length - 1; i++) {
+    const prevPoint = curve[i];
+    const currPoint = curve[i + 1];
+    const currLineDist = distance2(prevPoint, currPoint);
+    const initLength = interval - accumDist % interval;
+    accumDist += currLineDist;
+    const newPointCount = Math.floor(accumDist / interval);
+    let distAcross = initLength;
+    while (accumDist > interval) {
+      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
+      accumDist -= interval;
+      interval = nextDistance(outPoints.at(-1));
+      distAcross += interval;
+    }
+  }
+  return outPoints;
+}
+
+// src/curve/bezierify.ts
+function dotself2(x2) {
+  return dot2(x2, x2);
+}
+function clamp3(v, lo, hi) {
+  return [clamp(v[0], lo, hi), clamp(v[1], lo, hi), clamp(v[2], lo, hi)];
+}
+function sign2(a) {
+  return [Math.sign(a[0]), Math.sign(a[1])];
+}
+function abs2(a) {
+  return [Math.abs(a[0]), Math.abs(a[1])];
+}
+function pow2(a, b) {
+  return [Math.pow(a[0], b[0]), Math.pow(a[1], b[1])];
+}
+function sdBezier(pos, A, B, C) {
+  const a = sub2(B, A);
+  const b = add2(sub2(A, scale2(B, 2)), C);
+  const c = scale2(a, 2);
+  const d = sub2(A, pos);
+  const kk = 1 / dot2(b, b);
+  const kx = kk * dot2(a, b);
+  const ky = kk * (2 * dot2(a, a) + dot2(d, b)) / 3;
+  const kz = kk * dot2(d, a);
+  let res = 0;
+  const p = ky - kx * kx;
+  const p3 = p * p * p;
+  const q = kx * (2 * kx * kx - 3 * ky) + kz;
+  let h = q * q + 4 * p3;
+  if (h >= 0) {
+    h = Math.sqrt(h);
+    const x2 = scale2(sub2([h, -h], [q, q]), 1 / 2);
+    const uv = mul2(sign2(x2), pow2(abs2(x2), [1 / 3, 1 / 3]));
+    const t = clamp(uv[0] + uv[1] - kx, 0, 1);
+    res = dotself2(add2(d, scale2(add2(c, scale2(b, t)), t)));
+  } else {
+    const z2 = Math.sqrt(-p);
+    const v = Math.acos(q / (p * z2 * 2)) / 3;
+    const m = Math.cos(v);
+    const n = Math.sin(v) * 1.732050808;
+    const t = clamp3(
+      sub3(scale3([m + m, -n - m, n - m], z2), [kx, kx, kx]),
+      0,
+      1
+    );
+    res = Math.min(
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[0])), t[0]))),
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[1])), t[1])))
+    );
+    res = Math.min(
+      res,
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[2])), t[2])))
+    );
+  }
+  return Math.sqrt(res);
+}
+function gradient2(fn, pos, diff) {
+  const a = fn(pos);
+  const b = fn(add2(pos, [diff, 0]));
+  const c = fn(add2(pos, [0, diff]));
+  return [(a - b) / diff, (a - c) / diff];
+}
+function bezierifyFixedCount(path, count, learningRate, gradientDescentIters) {
+  const beziers = [];
+  for (let i = 0; i < count; i++) {
+    const startIndex = Math.floor(i / count * (path.length - 1));
+    const endIndex = Math.floor((i + 1) / count * (path.length - 1));
+    beziers.push(
+      generateBezierApproximation(
+        path,
+        startIndex,
+        endIndex,
+        learningRate,
+        gradientDescentIters
+      ).bezier
+    );
+  }
+  return beziers;
+}
+function bezierAdaptive(path, maxError, learningRate, gradientDescentIters) {
+  return bezierAdaptiveInner(
+    path,
+    maxError,
+    0,
+    path.length - 1,
+    learningRate,
+    gradientDescentIters
+  );
+}
+function bezierAdaptiveInner(path, maxError, startIndex, endIndex, learningRate, gradientDescentIters) {
+  const approx = generateBezierApproximation(
+    path,
+    startIndex,
+    endIndex,
+    learningRate,
+    gradientDescentIters
+  );
+  if (approx.error <= maxError || endIndex - startIndex < 3)
+    return [approx.bezier];
+  const mid = Math.floor((startIndex + endIndex) / 2);
+  return [
+    ...bezierAdaptiveInner(
+      path,
+      maxError,
+      startIndex,
+      mid,
+      learningRate,
+      gradientDescentIters
+    ),
+    ...bezierAdaptiveInner(
+      path,
+      maxError,
+      mid,
+      endIndex,
+      learningRate,
+      gradientDescentIters
+    )
+  ];
+}
+function generateBezierApproximation(path, startIndex, endIndex, learningRate, gradientDescentIters) {
+  const start = path[startIndex];
+  const end = path[endIndex];
+  let controlPoint = add2(
+    scale2(add2(path[startIndex], path[endIndex]), 0.5),
+    [1e-4, 1e-4]
+  );
+  const getError = (v) => {
+    let error = 0;
+    let count = 0;
+    for (let i = startIndex + 1; i < endIndex; i++) {
+      error += sdBezier(path[i], start, v, end) ** 2;
+      count++;
+    }
+    return error / count;
+  };
+  for (let i = 0; i < gradientDescentIters; i++) {
+    const gradient = gradient2(getError, controlPoint, 1e-3);
+    if (isNaN(gradient[0]) || isNaN(gradient[1])) {
+      continue;
+    }
+    controlPoint = add2(controlPoint, scale2(gradient, learningRate));
+  }
+  return {
+    bezier: { a: start, b: controlPoint, c: end },
+    error: getError(controlPoint)
+  };
+}
+function bezierPreview(beziers, size) {
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d");
+  const points = beziers.flatMap((e) => [e.a, e.b, e.c]);
+  c.width = Math.max(...points.map((b) => b[0])) * size + size;
+  c.height = Math.max(...points.map((b) => b[1])) * size + size;
+  ctx?.beginPath();
+  for (const p of beziers) {
+    ctx.moveTo(p.a[0] * size, p.a[1] * size);
+    ctx.quadraticCurveTo(
+      p.b[0] * size,
+      p.b[1] * size,
+      p.c[0] * size,
+      p.c[1] * size
+    );
+  }
+  ctx.stroke();
+  return c;
 }
 
 // node_modules/ml-convolution/src/utils.js
@@ -26264,243 +26508,6 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
-// src/curve/quadratic-curve-to-svg.ts
-function quadraticCurveToPath(curve, sigfigs, offset) {
-  let startPoint = curve[0].a;
-  const str = (n) => n.toPrecision(sigfigs);
-  let output = `M ${str(startPoint[0] + offset[0])} ${str(
-    startPoint[1] + offset[1]
-  )}`;
-  let prevpoint = startPoint;
-  for (const b of curve) {
-    output += `q ${str(b.b[0] - prevpoint[0])} ${str(
-      b.b[1] - prevpoint[1]
-    )},${str(b.c[0] - prevpoint[0])} ${str(b.c[1] - prevpoint[1])}`;
-    prevpoint = b.c;
-  }
-  return output;
-}
-function quadraticCurveToSvgPath(curve, offset, color, sigfigs) {
-  const pathd = quadraticCurveToPath(curve, sigfigs, offset);
-  return `<path d="${pathd}" stroke="${color}" />`;
-}
-function islandsToSvg(width, height, islands, sigfigs) {
-  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${islands.map(
-    (i) => quadraticCurveToSvgPath(i.curve, i.topLeftInImage, i.color, sigfigs)
-  ).join("")}</svg>`;
-}
-
-// src/curve/points-on-curve.ts
-function equidistantPointsOnCurve(curve, interval) {
-  if (curve.length === 0) return [];
-  const outPoints = [curve[0]];
-  let accumDist = 0;
-  for (let i = 0; i < curve.length - 1; i++) {
-    const prevPoint = curve[i];
-    const currPoint = curve[i + 1];
-    const currLineDist = distance2(prevPoint, currPoint);
-    const initLength = interval - accumDist % interval;
-    accumDist += currLineDist;
-    const newPointCount = Math.floor(accumDist / interval);
-    for (let j = 0; j < newPointCount; j++) {
-      let distAcross = initLength + j * interval;
-      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
-    }
-    accumDist -= newPointCount * interval;
-  }
-  return outPoints;
-}
-function variableDistancePointsOnCurve(curve, nextDistance) {
-  if (curve.length === 0) return [];
-  const outPoints = [curve[0]];
-  let interval = nextDistance(curve[0]);
-  let accumDist = 0;
-  for (let i = 0; i < curve.length - 1; i++) {
-    const prevPoint = curve[i];
-    const currPoint = curve[i + 1];
-    const currLineDist = distance2(prevPoint, currPoint);
-    const initLength = interval - accumDist % interval;
-    accumDist += currLineDist;
-    const newPointCount = Math.floor(accumDist / interval);
-    let distAcross = initLength;
-    while (accumDist > interval) {
-      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
-      accumDist -= interval;
-      interval = nextDistance(outPoints.at(-1));
-      distAcross += interval;
-    }
-  }
-  return outPoints;
-}
-
-// src/curve/bezierify.ts
-function dotself2(x2) {
-  return dot2(x2, x2);
-}
-function clamp3(v, lo, hi) {
-  return [clamp(v[0], lo, hi), clamp(v[1], lo, hi), clamp(v[2], lo, hi)];
-}
-function sign2(a) {
-  return [Math.sign(a[0]), Math.sign(a[1])];
-}
-function abs2(a) {
-  return [Math.abs(a[0]), Math.abs(a[1])];
-}
-function pow2(a, b) {
-  return [Math.pow(a[0], b[0]), Math.pow(a[1], b[1])];
-}
-function sdBezier(pos, A, B, C) {
-  const a = sub2(B, A);
-  const b = add2(sub2(A, scale2(B, 2)), C);
-  const c = scale2(a, 2);
-  const d = sub2(A, pos);
-  const kk = 1 / dot2(b, b);
-  const kx = kk * dot2(a, b);
-  const ky = kk * (2 * dot2(a, a) + dot2(d, b)) / 3;
-  const kz = kk * dot2(d, a);
-  let res = 0;
-  const p = ky - kx * kx;
-  const p3 = p * p * p;
-  const q = kx * (2 * kx * kx - 3 * ky) + kz;
-  let h = q * q + 4 * p3;
-  if (h >= 0) {
-    h = Math.sqrt(h);
-    const x2 = scale2(sub2([h, -h], [q, q]), 1 / 2);
-    const uv = mul2(sign2(x2), pow2(abs2(x2), [1 / 3, 1 / 3]));
-    const t = clamp(uv[0] + uv[1] - kx, 0, 1);
-    res = dotself2(add2(d, scale2(add2(c, scale2(b, t)), t)));
-  } else {
-    const z2 = Math.sqrt(-p);
-    const v = Math.acos(q / (p * z2 * 2)) / 3;
-    const m = Math.cos(v);
-    const n = Math.sin(v) * 1.732050808;
-    const t = clamp3(
-      sub3(scale3([m + m, -n - m, n - m], z2), [kx, kx, kx]),
-      0,
-      1
-    );
-    res = Math.min(
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[0])), t[0]))),
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[1])), t[1])))
-    );
-    res = Math.min(
-      res,
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[2])), t[2])))
-    );
-  }
-  return Math.sqrt(res);
-}
-function gradient2(fn, pos, diff) {
-  const a = fn(pos);
-  const b = fn(add2(pos, [diff, 0]));
-  const c = fn(add2(pos, [0, diff]));
-  return [(a - b) / diff, (a - c) / diff];
-}
-function bezierifyFixedCount(path, count, learningRate, gradientDescentIters) {
-  const beziers = [];
-  for (let i = 0; i < count; i++) {
-    const startIndex = Math.floor(i / count * (path.length - 1));
-    const endIndex = Math.floor((i + 1) / count * (path.length - 1));
-    beziers.push(
-      generateBezierApproximation(
-        path,
-        startIndex,
-        endIndex,
-        learningRate,
-        gradientDescentIters
-      ).bezier
-    );
-  }
-  return beziers;
-}
-function bezierAdaptive(path, maxError, learningRate, gradientDescentIters) {
-  return bezierAdaptiveInner(
-    path,
-    maxError,
-    0,
-    path.length - 1,
-    learningRate,
-    gradientDescentIters
-  );
-}
-function bezierAdaptiveInner(path, maxError, startIndex, endIndex, learningRate, gradientDescentIters) {
-  const approx = generateBezierApproximation(
-    path,
-    startIndex,
-    endIndex,
-    learningRate,
-    gradientDescentIters
-  );
-  if (approx.error <= maxError || endIndex - startIndex < 3)
-    return [approx.bezier];
-  const mid = Math.floor((startIndex + endIndex) / 2);
-  return [
-    ...bezierAdaptiveInner(
-      path,
-      maxError,
-      startIndex,
-      mid,
-      learningRate,
-      gradientDescentIters
-    ),
-    ...bezierAdaptiveInner(
-      path,
-      maxError,
-      mid,
-      endIndex,
-      learningRate,
-      gradientDescentIters
-    )
-  ];
-}
-function generateBezierApproximation(path, startIndex, endIndex, learningRate, gradientDescentIters) {
-  const start = path[startIndex];
-  const end = path[endIndex];
-  let controlPoint = add2(
-    scale2(add2(path[startIndex], path[endIndex]), 0.5),
-    [1e-4, 1e-4]
-  );
-  const getError = (v) => {
-    let error = 0;
-    let count = 0;
-    for (let i = startIndex + 1; i < endIndex; i++) {
-      error += sdBezier(path[i], start, v, end) ** 2;
-      count++;
-    }
-    return error / count;
-  };
-  for (let i = 0; i < gradientDescentIters; i++) {
-    const gradient = gradient2(getError, controlPoint, 1e-3);
-    if (isNaN(gradient[0]) || isNaN(gradient[1])) {
-      continue;
-    }
-    controlPoint = add2(controlPoint, scale2(gradient, learningRate));
-  }
-  return {
-    bezier: { a: start, b: controlPoint, c: end },
-    error: getError(controlPoint)
-  };
-}
-function bezierPreview(beziers, size) {
-  const c = document.createElement("canvas");
-  const ctx = c.getContext("2d");
-  const points = beziers.flatMap((e) => [e.a, e.b, e.c]);
-  c.width = Math.max(...points.map((b) => b[0])) * size + size;
-  c.height = Math.max(...points.map((b) => b[1])) * size + size;
-  ctx?.beginPath();
-  for (const p of beziers) {
-    ctx.moveTo(p.a[0] * size, p.a[1] * size);
-    ctx.quadraticCurveTo(
-      p.b[0] * size,
-      p.b[1] * size,
-      p.c[0] * size,
-      p.c[1] * size
-    );
-  }
-  ctx.stroke();
-  return c;
-}
-
 // src/webgl/shader.ts
 function source2shader(gl, type, source) {
   const shader = gl.createShader(
@@ -26943,6 +26950,11 @@ function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
   const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
   return lerp(smoothstep(p[1] - fp[1]), h1, h2);
 }
+function boxMullerTransform(u) {
+  const a = Math.sqrt(-2 * Math.log(u[0]));
+  const b = 2 * Math.PI * u[1];
+  return [a * Math.cos(b), a * Math.sin(b)];
+}
 
 // src/math/intersections.ts
 function quadraticFormula(a, b, c) {
@@ -27344,6 +27356,7 @@ export {
   bezierifyFixedCount,
   bifurcate,
   blobToDataURL,
+  boxMullerTransform,
   canvasToBlob,
   cart2Polar,
   cartesianProduct,

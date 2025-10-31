@@ -15,10 +15,12 @@ type FunctionSerializerInner<
   SerializedArgs,
   SerializedRetVal,
 > = {
-  serializeArgs: (args: Args) => SerializedArgs;
-  parseArgs: (args: SerializedArgs) => Args;
-  serializeRetVal: (args: RetVal) => SerializedRetVal;
-  parseRetVal: (args: SerializedRetVal) => SerializedRetVal;
+  serializeArgs?: (args: Args) => SerializedArgs;
+  parseArgs?: (args: SerializedArgs) => Args;
+  serializeRetVal?: (args: RetVal) => SerializedRetVal;
+  parseRetVal?: (args: SerializedRetVal) => SerializedRetVal;
+  transferArgs?: (args: Args) => Transferable[];
+  transferRetVal?: (args: RetVal) => Transferable[];
 };
 
 export type FunctionSerializer<
@@ -35,7 +37,7 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
   serialization?: {
     [K in keyof T]?: Pick<
       FunctionSerializer<T[K]>,
-      "serializeArgs" | "parseRetVal"
+      "serializeArgs" | "parseRetVal" | "transferArgs"
     >;
   }
 ): {
@@ -78,11 +80,14 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
       worker.addEventListener("message", onResponse);
       const serializeArgs =
         serialization?.[prop as keyof T]?.serializeArgs ?? ((x) => x);
-      worker.postMessage({
-        type: prop,
-        args: await serializeArgs(args),
-        id: myid,
-      });
+      worker.postMessage(
+        {
+          type: prop,
+          args: await serializeArgs(args),
+          id: myid,
+        },
+        serialization?.[prop as keyof T]?.transferArgs?.(args) ?? []
+      );
     });
   }
 
@@ -128,7 +133,7 @@ export function createRoundRobinThread<T extends InterfaceWithMethods>(
   serialization?: {
     [K in keyof T]?: Pick<
       FunctionSerializer<T[K]>,
-      "parseArgs" | "serializeRetVal"
+      "parseArgs" | "serializeRetVal" | "transferRetVal"
     >;
   }
 ) {
@@ -143,10 +148,14 @@ export function createRoundRobinThread<T extends InterfaceWithMethods>(
     const serializeReturnValue =
       serialization?.[e.data.type]?.serializeRetVal ?? id;
 
-    postMessage({
-      returnValue: await serializeReturnValue(resp),
-      id: e.data.id,
-    });
+    postMessage(
+      {
+        returnValue: await serializeReturnValue(resp),
+        id: e.data.id,
+      },
+      // @ts-expect-error
+      serialization?.[e.data.type]?.transferRetVal?.(resp) ?? []
+    );
   });
 }
 

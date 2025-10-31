@@ -29,11 +29,14 @@ function createRoundRobinThreadpool(src2, workerCount2, serialization2) {
       };
       worker.addEventListener("message", onResponse);
       const serializeArgs = serialization2?.[prop]?.serializeArgs ?? ((x) => x);
-      worker.postMessage({
-        type: prop,
-        args: await serializeArgs(args),
-        id: myid
-      });
+      worker.postMessage(
+        {
+          type: prop,
+          args: await serializeArgs(args),
+          id: myid
+        },
+        serialization2?.[prop]?.transferArgs?.(args) ?? []
+      );
     });
   }
   return {
@@ -74,10 +77,14 @@ function createRoundRobinThread(t, serialization2) {
     const args = await parseArgs(e.data.args);
     const resp = await t[e.data.type](...args);
     const serializeReturnValue = serialization2?.[e.data.type]?.serializeRetVal ?? id;
-    postMessage({
-      returnValue: await serializeReturnValue(resp),
-      id: e.data.id
-    });
+    postMessage(
+      {
+        returnValue: await serializeReturnValue(resp),
+        id: e.data.id
+      },
+      // @ts-expect-error
+      serialization2?.[e.data.type]?.transferRetVal?.(resp) ?? []
+    );
   });
 }
 function createCombinedRoundRobinThreadpool(getInterface, src, workerCount, serialization) {

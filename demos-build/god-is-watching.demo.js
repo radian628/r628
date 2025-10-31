@@ -19425,7 +19425,7 @@
           htBounds.a[0],
           htBounds.b[0],
           0,
-          resolution[0]
+          resolution[0] - 1
         )
       );
       const bucketXEnd = Math.ceil(
@@ -19443,7 +19443,7 @@
           htBounds.a[1],
           htBounds.b[1],
           0,
-          resolution[1]
+          resolution[1] - 1
         )
       );
       const bucketYEnd = Math.ceil(
@@ -19541,11 +19541,14 @@
         };
         worker.addEventListener("message", onResponse);
         const serializeArgs = serialization2?.[prop]?.serializeArgs ?? ((x) => x);
-        worker.postMessage({
-          type: prop,
-          args: await serializeArgs(args),
-          id: myid
-        });
+        worker.postMessage(
+          {
+            type: prop,
+            args: await serializeArgs(args),
+            id: myid
+          },
+          serialization2?.[prop]?.transferArgs?.(args) ?? []
+        );
       });
     }
     return {
@@ -19586,10 +19589,14 @@
       const args = await parseArgs(e.data.args);
       const resp = await t[e.data.type](...args);
       const serializeReturnValue = serialization2?.[e.data.type]?.serializeRetVal ?? id;
-      postMessage({
-        returnValue: await serializeReturnValue(resp),
-        id: e.data.id
-      });
+      postMessage(
+        {
+          returnValue: await serializeReturnValue(resp),
+          id: e.data.id
+        },
+        // @ts-expect-error
+        serialization2?.[e.data.type]?.transferRetVal?.(resp) ?? []
+      );
     });
   }
   function createCombinedRoundRobinThreadpool(getInterface, src, workerCount, serialization) {

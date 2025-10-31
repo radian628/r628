@@ -52,7 +52,7 @@ function spatialHashTable(htBounds, resolution, getBounds) {
         htBounds.a[0],
         htBounds.b[0],
         0,
-        resolution[0]
+        resolution[0] - 1
       )
     );
     const bucketXEnd = Math.ceil(
@@ -70,7 +70,7 @@ function spatialHashTable(htBounds, resolution, getBounds) {
         htBounds.a[1],
         htBounds.b[1],
         0,
-        resolution[1]
+        resolution[1] - 1
       )
     );
     const bucketYEnd = Math.ceil(

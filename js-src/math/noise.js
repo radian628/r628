@@ -63,7 +63,13 @@ function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
   const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
   return lerp(smoothstep(p[1] - fp[1]), h1, h2);
 }
+function boxMullerTransform(u) {
+  const a = Math.sqrt(-2 * Math.log(u[0]));
+  const b = 2 * Math.PI * u[1];
+  return [a * Math.cos(b), a * Math.sin(b)];
+}
 export {
+  boxMullerTransform,
   perlin2d,
   simpleRandVec2ToFloat,
   simpleRandVec2ToVec2

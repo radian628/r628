@@ -40,3 +40,10 @@ export function perlin2d(
 
   return lerp(smoothstep(p[1] - fp[1]), h1, h2);
 }
+
+export function boxMullerTransform(u: Vec2) {
+  const a = Math.sqrt(-2 * Math.log(u[0]));
+  const b = 2 * Math.PI * u[1];
+
+  return [a * Math.cos(b), a * Math.sin(b)];
+}
