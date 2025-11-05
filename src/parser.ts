@@ -8,9 +8,11 @@ export type Parser<TIn, TOut> = {
 };
 
 export function chainParser(parser: Parser<any, any>): any {
+  // @ts-expect-error
+  const oldParser: any = this;
   return {
     parse(e: any) {
-      const res = this.parse(e);
+      const res = oldParser.parse(e);
       return parser.parse(res);
     },
     $: chainParser,
