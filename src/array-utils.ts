@@ -48,3 +48,7 @@ export function argmax<T>(arr: [T, ...T[]], f: (t: T) => number): T {
   }
   return maxElement;
 }
+
+export function argmin<T>(arr: [T, ...T[]], f: (t: T) => number): T {
+  return argmax(arr, (t) => -f(t));
+}
