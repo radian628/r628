@@ -33,12 +33,12 @@ export function domQueryAll<TIn extends HTMLElement, TOut>(
 
 export function domQuery<TIn extends HTMLElement, TOut>(
   selector: string,
-  doesExist: (e: HTMLElement) => TOut,
+  doesExist: (e: TIn) => TOut,
   doesNotExist: () => TOut
 ): Parser<TIn, TOut> {
   return {
     parse(e) {
-      const res = e.querySelector(selector) as HTMLElement;
+      const res = e.querySelector(selector) as TIn;
       return res ? doesExist(res) : doesNotExist();
     },
     $: chainParser,
