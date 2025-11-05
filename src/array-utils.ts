@@ -22,3 +22,16 @@ export function bifurcate<T>(arr: T[], fn: (t: T) => boolean): [T[], T[]] {
   const bools = arr.map(fn);
   return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
 }
+
+export function groupBy<T, G>(arr: T[], getGroup: (t: T) => G): Map<G, T[]> {
+  const groups = new Map<G, T[]>();
+
+  for (const entry of arr) {
+    const groupName = getGroup(entry);
+    let group = groups.get(groupName) ?? [];
+    group.push(entry);
+    groups.set(groupName, group);
+  }
+
+  return groups;
+}

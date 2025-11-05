@@ -53,6 +53,7 @@ import {
 } from "../src/spatial-hash-table";
 import {
   createCombinedRoundRobinThreadpool,
+  getPerformanceStatistics,
   inMainThread,
 } from "../src/threadpool";
 
@@ -92,7 +93,7 @@ function pointDrawer(
 }
 
 const tp = createCombinedRoundRobinThreadpool(
-  () => {
+  (isMainThread: boolean) => {
     let graph: Graph<Point, Edge> = createGraph();
     let eyeballs: SpatialHashTable<Eyeball>;
 
@@ -220,17 +221,23 @@ const tp = createCombinedRoundRobinThreadpool(
       drawEyeballOffscreen(eyeball: Eyeball, originalCanvasDims: Vec2) {
         const eyeballSize = eyeball.irisRadius;
         const canvasDims = scale2(originalCanvasDims, eyeballSize * 2);
-        const canvas = new OffscreenCanvas(
-          Math.ceil(canvasDims[0]),
-          Math.ceil(canvasDims[1])
-        );
+        const canvas: OffscreenCanvas | HTMLCanvasElement = isMainThread
+          ? (document.getElementById("canvas")! as HTMLCanvasElement)
+          : new OffscreenCanvas(
+              Math.ceil(canvasDims[0]),
+              Math.ceil(canvasDims[1])
+            );
 
-        const ctx = canvas.getContext("2d")!;
+        const ctx: CanvasRenderingContext2D = canvas.getContext(
+          "2d"
+        )! as CanvasRenderingContext2D;
         const draw = pointDrawer(canvas, ctx);
 
         const e = eyeball;
 
-        const eyePos: Vec2 = [eyeballSize, eyeballSize];
+        const eyePos: Vec2 = isMainThread
+          ? eyeball.pos
+          : [eyeballSize, eyeballSize];
         {
           ctx.fillStyle = "black";
 
@@ -285,12 +292,14 @@ const tp = createCombinedRoundRobinThreadpool(
           }
         }
 
+        if (isMainThread) return;
+
         return {
           drawAt: mul2(
             sub2(e.pos, [eyeballSize, eyeballSize]),
             originalCanvasDims
           ),
-          image: canvas.transferToImageBitmap(),
+          image: (canvas as OffscreenCanvas).transferToImageBitmap(),
         };
       },
     };
@@ -300,7 +309,10 @@ const tp = createCombinedRoundRobinThreadpool(
   {
     drawEyeballOffscreen: {
       transferRetVal(r) {
-        return [r.image];
+        return r ? [r.image] : [];
+      },
+      runMode(args) {
+        return args[0].irisRadius > 0.04 ? "worker" : "main";
       },
     },
     shiftGraph: {
@@ -318,8 +330,6 @@ const tp = createCombinedRoundRobinThreadpool(
       },
     },
     getGraph: {
-      serializeArgs: id,
-      parseArgs: id,
       serializeRetVal(r) {
         return graph2json(r);
       },
@@ -334,8 +344,6 @@ const tp = createCombinedRoundRobinThreadpool(
       parseArgs(args) {
         return [json2graph(args)];
       },
-      serializeRetVal: id,
-      parseRetVal: id,
     },
     setEyeballs: {
       serializeArgs(ebs) {
@@ -344,8 +352,6 @@ const tp = createCombinedRoundRobinThreadpool(
       parseArgs(ebs) {
         return [parseSpatialHashTable<Eyeball>(ebs, getEyeballBounds)];
       },
-      serializeRetVal: id,
-      parseRetVal: id,
     },
   }
 );
@@ -394,11 +400,7 @@ function getEyeballBounds(e: Eyeball) {
   };
 }
 
-function tryInsertEyeball(
-
-) {
-
-}
+function tryInsertEyeball() {}
 
 function addEyeballs(
   eyeballs: SpatialHashTable<Eyeball>,
@@ -455,15 +457,20 @@ function waitForAnimationFrame() {
 }
 
 const frames: (() => any)[] = [];
-function enqueueAnimationFrame(process: () => any) {
-  frames.push(process);
+function enqueueAnimationFrame<T>(process: () => Promise<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    frames.push(async () => {
+      const res = await process();
+      resolve(res);
+    });
+  });
 }
 
-function loop() {
+async function loop() {
   let startTime = Date.now();
   while (Date.now() - startTime < 1000 / 60 && frames.length > 0) {
     const frame = frames.shift();
-    if (frame) frame();
+    if (frame) await frame();
   }
   requestAnimationFrame(loop);
 }
@@ -506,6 +513,7 @@ inMainThread(async () => {
   );
 
   const canvas = document.createElement("canvas");
+  canvas.id = "canvas";
   document.body.appendChild(canvas);
   canvas.width = 3000;
   canvas.height = 3000;
@@ -519,161 +527,107 @@ inMainThread(async () => {
   addEyeballs(mainThreadEyeballs, 40000, -2.0, -2.7, 3);
   tileEyeballs(mainThreadEyeballs);
 
+  await tp.broadcast.setEyeballs(mainThreadEyeballs);
+
   ctx.fillStyle = "white";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  [...mainThreadEyeballs.all()].map(async (e) => {
-    const r = await tp.send.drawEyeballOffscreen(e, [3000, 3000]);
-    enqueueAnimationFrame(() => {
-      ctx.drawImage(r.image, Math.floor(r.drawAt[0]), Math.floor(r.drawAt[1]));
-    });
-  });
-
-  await tp.broadcast.setEyeballs(mainThreadEyeballs);
-
-  Promise.all(
-    smartRange(Math.ceil(LINE_COUNT)).map(async (line) => {
-      const graph = createGraph<Point, Edge>();
-
-      smartRange(POINTS_PER_LINE).reduce<Vertex<{ pos: Vec2 }, {}> | null>(
-        (prev, point) => {
-          const pos: Vec2 = [
-            point.remap(-0.1, 1.1, true),
-            line.remap(-0.1, 1.1),
-          ];
-          const pt = addVertex<Point, Edge>(graph, {
-            pos,
-            initialPos: pos,
-            pushed: false,
-          });
-          if (!point.start() && prev) {
-            addEdge(graph, [prev, pt], {});
-          }
-
-          return pt;
-        },
-        null
-      );
-
-      const components = getConnectedComponents(
-        await tp.send.shiftGraph(graph)
-      );
-
-      enqueueAnimationFrame(() => {
-        ctx.fillStyle = "black";
-        for (const comp of components) {
-          const path = getDepthFirstTraversalOrder(comp, findEndpoint(comp));
-
-          const toDraw = variableDistancePointsOnCurve(
-            path.map((e) => e.data.pos),
-            (p) => {
-              let d = dot2(
-                normalize2(
-                  gradient2(
-                    (v) =>
-                      length2(
-                        lookupEyeballForceField(
-                          mainThreadEyeballs,
-                          v,
-                          undefined
-                        )
-                      ),
-                    p,
-                    0.001
-                  )
-                ),
-                normalize2([1, -1])
-              );
-
-              if (isNaN(d)) d = 0;
-
-              const normd = clamp(d + rand(-0.5, 0.5), 0, 1);
-
-              return lerp(normd, 1 / 2000, 1 / 300);
-            }
-          );
-
-          console.log(toDraw.length);
-
-          ctx.beginPath();
-          for (const e of toDraw) {
-            const pos = e;
-            draw.pointUnscaled(
-              add2(scale2(pos, canvas.width), [rand(-1, 1), rand(-1, 1)])
+  await Promise.all([
+    Promise.all(
+      [...mainThreadEyeballs.all()].map(async (e) => {
+        await enqueueAnimationFrame(async () => {
+          const r = await tp.send.drawEyeballOffscreen(e, [3000, 3000]);
+          if (r) {
+            ctx.drawImage(
+              r.image,
+              Math.floor(r.drawAt[0]),
+              Math.floor(r.drawAt[1])
             );
           }
-          ctx.stroke();
-        }
-      });
-    })
+        });
+      })
+    ),
+
+    Promise.all(
+      smartRange(Math.ceil(LINE_COUNT)).map(async (line) => {
+        const graph = createGraph<Point, Edge>();
+
+        smartRange(POINTS_PER_LINE).reduce<Vertex<{ pos: Vec2 }, {}> | null>(
+          (prev, point) => {
+            const pos: Vec2 = [
+              point.remap(-0.1, 1.1, true),
+              line.remap(-0.1, 1.1),
+            ];
+            const pt = addVertex<Point, Edge>(graph, {
+              pos,
+              initialPos: pos,
+              pushed: false,
+            });
+            if (!point.start() && prev) {
+              addEdge(graph, [prev, pt], {});
+            }
+
+            return pt;
+          },
+          null
+        );
+
+        const components = getConnectedComponents(
+          await tp.send.shiftGraph(graph)
+        );
+
+        await enqueueAnimationFrame(async () => {
+          ctx.fillStyle = "black";
+          for (const comp of components) {
+            const path = getDepthFirstTraversalOrder(comp, findEndpoint(comp));
+
+            const toDraw = variableDistancePointsOnCurve(
+              path.map((e) => e.data.pos),
+              (p) => {
+                let d = dot2(
+                  normalize2(
+                    gradient2(
+                      (v) =>
+                        length2(
+                          lookupEyeballForceField(
+                            mainThreadEyeballs,
+                            v,
+                            undefined
+                          )
+                        ),
+                      p,
+                      0.001
+                    )
+                  ),
+                  normalize2([1, -1])
+                );
+
+                if (isNaN(d)) d = 0;
+
+                const normd = clamp(d + rand(-0.5, 0.5), 0, 1);
+
+                return lerp(normd, 1 / 2000, 1 / 300);
+              }
+            );
+
+            console.log(toDraw.length);
+
+            ctx.beginPath();
+            for (const e of toDraw) {
+              const pos = e;
+              draw.pointUnscaled(
+                add2(scale2(pos, canvas.width), [rand(-1, 1), rand(-1, 1)])
+              );
+            }
+            ctx.stroke();
+          }
+        });
+      })
+    ),
+  ]);
+
+  console.log(
+    "PERF",
+    getPerformanceStatistics(await tp.getCurrentPerformanceRecords())
   );
-
-  for (const e of mainThreadEyeballs.all()) {
-    const toCenter = cart2Polar(sub2([0.5, 0.5], e.pos));
-
-    // const offset = polar2Cart(toCenter[0] * e.pupilRadius * 1.2, toCenter[1]);
-
-    // const offset: Vec2 = [-e.pupilRadius * 0.7, 0];
-
-    const offset: Vec2 = [0, 0];
-
-    const eyePos = add2(e.pos, offset);
-
-    // circle(ctx, {
-    //   radius: e.pupilRadius * canvas.width,
-    //   center: scale2(eyePos, canvas.width),
-    // });
-
-    //   enqueueAnimationFrame(() => {
-    //     ctx.fillStyle = "black";
-
-    //     const pointCount = Math.floor(12_000_000 * e.pupilRadius ** 2);
-
-    //     for (const i of range(pointCount)) {
-    //       const randomPointInCircle: Vec2 = [
-    //         rand(eyePos[0] - e.pupilRadius, eyePos[0] + e.pupilRadius),
-    //         rand(eyePos[1] - e.pupilRadius, eyePos[1] + e.pupilRadius),
-    //       ];
-    //       if (distance2(randomPointInCircle, eyePos) > e.pupilRadius) continue;
-
-    //       ctx.fillRect(...scale2(randomPointInCircle, canvas.width), 1, 1);
-    //     }
-    //   });
-    //   enqueueAnimationFrame(() => {
-    //     ctx.fillStyle = "black";
-
-    //     const pointCount = Math.floor(9_000_000 * e.irisRadius ** 2);
-
-    //     const seed: Vec2 = [Math.random() * 100, Math.random() * 100];
-
-    //     const randgen = (v: Vec2) => simpleRandVec2ToVec2(add2(v, seed));
-
-    //     for (const i of range(pointCount)) {
-    //       const randomPointInCircle: Vec2 = [
-    //         rand(-e.irisRadius, e.irisRadius),
-    //         rand(-e.irisRadius, e.irisRadius),
-    //       ];
-
-    //       const [r, theta] = cart2Polar(randomPointInCircle);
-
-    //       if (
-    //         r > e.irisRadius * rand(0.9, 1) ||
-    //         r < e.pupilRadius ||
-    //         perlin2d([(r / e.irisRadius) * 3.5, theta * 20], randgen) >
-    //           rand(-0.2, 0.2) ||
-    //         distance2(
-    //           [rescale(r, e.pupilRadius, e.irisRadius, 0, 1), theta / 2],
-    //           [0.5, -Math.PI / 4 / 2]
-    //         ) < rand(0.15, 0.36)
-    //       )
-    //         continue;
-
-    //       ctx.fillRect(
-    //         ...scale2(add2(randomPointInCircle, eyePos), canvas.width),
-    //         1,
-    //         1
-    //       );
-    //     }
-    //   });
-  }
 });

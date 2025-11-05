@@ -19901,6 +19901,40 @@ function throttle(callback, options) {
   return fn;
 }
 
+// src/array-utils.ts
+function interleave(arr, cb2) {
+  let out = [];
+  for (let i = 0; i < arr.length - 1; i++) {
+    out.push(arr[i], cb2(arr[i], arr[i + 1]));
+  }
+  if (arr.length > 0) {
+    out.push(arr.at(-1));
+  }
+  return out;
+}
+function splitBy(arr, amount) {
+  let outarr = [[]];
+  for (let i = 0; i < arr.length; i++) {
+    if (i % amount === amount - 1) outarr.push([]);
+    outarr.at(-1).push(arr[i]);
+  }
+  return outarr;
+}
+function bifurcate(arr, fn) {
+  const bools = arr.map(fn);
+  return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
+}
+function groupBy(arr, getGroup) {
+  const groups = /* @__PURE__ */ new Map();
+  for (const entry of arr) {
+    const groupName = getGroup(entry);
+    let group = groups.get(groupName) ?? [];
+    group.push(entry);
+    groups.set(groupName, group);
+  }
+  return groups;
+}
+
 // src/range.ts
 function range(hi) {
   let arr = [];
@@ -19984,21 +20018,75 @@ function cartesianProduct(...ts) {
 }
 
 // src/threadpool.ts
-function createRoundRobinThreadpool(src2, workerCount2, serialization2) {
+function getPerformanceStatistics(records) {
+  return Object.fromEntries(
+    Array.from(groupBy(records, (g) => g.name).entries()).map(([name, v]) => {
+      const totalRuntime = v.reduce((prev, curr) => prev + curr.runtime, 0) / v.length;
+      const invocationCount = v.length;
+      return [
+        name,
+        {
+          totalRuntime,
+          invocationCount,
+          averageRuntime: totalRuntime / invocationCount,
+          worstCaseRuntime: v.reduce(
+            (prev, curr) => Math.max(prev, curr.runtime),
+            0
+          ),
+          bestCaseRuntime: v.reduce(
+            (prev, curr) => Math.min(prev, curr.runtime),
+            0
+          )
+        }
+      ];
+    })
+  );
+}
+function wrapWithPromise(t) {
+  if (t instanceof Promise) {
+    return t;
+  }
+  return Promise.resolve(t);
+}
+function createRoundRobinThreadpool(src2, workerCount2, serialization2, t) {
   const count = workerCount2 ?? navigator.hardwareConcurrency;
+  const performanceRecords = [];
   const workers = [];
   let nextWorker = 0;
   for (let i = 0; i < count; i++) {
     workers.push(new Worker(src2));
   }
   function getNextWorker() {
-    const w2 = workers[nextWorker];
+    const workerChoice = nextWorker;
     nextWorker = (nextWorker + 1) % count;
-    return w2;
+    return workerChoice;
   }
   let id2 = 0;
-  function sendMessageToWorkerWithResponse(prop, args, worker) {
-    return new Promise(async (resolve, reject) => {
+  function sendMessageToWorkerWithResponse(prop, args, workerIndex) {
+    const worker = workers[workerIndex];
+    const serializationInfo = serialization2?.[prop];
+    const startTime = performance.now();
+    const shouldRunInMain = serializationInfo?.runMode?.(args) ?? "worker";
+    if (shouldRunInMain === "main") {
+      if (!t)
+        throw new Error(
+          "If a threadpool method is to run in the main thread, its interface should be provided to the main thread!"
+        );
+      const res2 = t[prop](...args);
+      performanceRecords.push(
+        wrapWithPromise(res2).then((retval) => {
+          return {
+            name: prop,
+            inputSize: serializationInfo?.estimateInputSize?.(args) ?? 1,
+            runtime: performance.now() - startTime,
+            metadata: serializationInfo?.getRuntimeMetadata?.(args, retval),
+            thread: { type: "main" }
+          };
+        })
+      );
+      return res2;
+    }
+    const res = new Promise(async (resolve, reject) => {
       const myid = id2;
       id2++;
       const onResponse = async (e) => {
@@ -20018,9 +20106,24 @@ function createRoundRobinThreadpool(src2, workerCount2, serialization2) {
         serialization2?.[prop]?.transferArgs?.(args) ?? []
       );
     });
+    performanceRecords.push(
+      res.then((retval) => {
+        return {
+          name: prop,
+          inputSize: serializationInfo?.estimateInputSize?.(args) ?? 1,
+          runtime: performance.now() - startTime,
+          metadata: serializationInfo?.getRuntimeMetadata?.(args, retval),
+          thread: { type: "worker", workerId: workerIndex }
+        };
+      })
+    );
+    return res;
   }
   return {
     threadCount: count,
+    getCurrentPerformanceRecords() {
+      return Promise.all(performanceRecords);
+    },
     send: new Proxy({}, {
       get(i, prop) {
         return async (...args) => {
@@ -20032,11 +20135,7 @@ function createRoundRobinThreadpool(src2, workerCount2, serialization2) {
     sendToThread: (threadIndex) => new Proxy({}, {
       get(i, prop) {
         return async (...args) => {
-          return sendMessageToWorkerWithResponse(
-            prop,
-            args,
-            workers[threadIndex]
-          );
+          return sendMessageToWorkerWithResponse(prop, args, threadIndex);
         };
       }
     }),
@@ -20044,7 +20143,9 @@ function createRoundRobinThreadpool(src2, workerCount2, serialization2) {
       get(i, prop) {
         return async (...args) => {
           return await Promise.all(
-            workers.map((w2) => sendMessageToWorkerWithResponse(prop, args, w2))
+            workers.map(
+              (w2, i2) => sendMessageToWorkerWithResponse(prop, args, i2)
+            )
           );
         };
       }
@@ -20069,13 +20170,14 @@ function createRoundRobinThread(t, serialization2) {
 }
 function createCombinedRoundRobinThreadpool(getInterface, src, workerCount, serialization) {
   if (eval("self.WorkerGlobalScope")) {
-    createRoundRobinThread(getInterface(), serialization);
+    createRoundRobinThread(getInterface(false), serialization);
     return;
   } else {
     return createRoundRobinThreadpool(
       src ?? document.currentScript.src,
       workerCount,
-      serialization
+      serialization,
+      getInterface(true)
     );
   }
 }
@@ -22443,6 +22545,111 @@ function lazy(callback) {
   };
 }
 
+// src/lookup-optimized-spatial-hash-table.ts
+var OVERFLOW_BUCKETS_BIT = 2147483648;
+function createLookupOptimizedSHTGenerator(params) {
+  const { bounds, resolution, getBounds, estimatedObjectsPerBucket } = params;
+  const htBounds = bounds;
+  function getBucketIndexes(bounds2) {
+    const bucketXStart = Math.floor(
+      rescaleClamped(
+        bounds2.a[0],
+        htBounds.a[0],
+        htBounds.b[0],
+        0,
+        resolution[0] - 1
+      )
+    );
+    const bucketXEnd = Math.ceil(
+      rescaleClamped(
+        bounds2.b[0],
+        htBounds.a[0],
+        htBounds.b[0],
+        0,
+        resolution[0]
+      )
+    );
+    const bucketYStart = Math.floor(
+      rescaleClamped(
+        bounds2.a[1],
+        htBounds.a[1],
+        htBounds.b[1],
+        0,
+        resolution[1] - 1
+      )
+    );
+    const bucketYEnd = Math.ceil(
+      rescaleClamped(
+        bounds2.b[1],
+        htBounds.a[1],
+        htBounds.b[1],
+        0,
+        resolution[1]
+      )
+    );
+    const indexes = [];
+    for (let x2 = bucketXStart; x2 < Math.max(bucketXEnd, bucketXStart + 1); x2++) {
+      for (let y2 = bucketYStart; y2 < Math.max(bucketYEnd, bucketYStart + 1); y2++) {
+        indexes.push(x2 + y2 * resolution[0]);
+      }
+    }
+    return indexes;
+  }
+  const bucketsArrayFixedSize = estimatedObjectsPerBucket + 1;
+  const bucketElementCount = resolution[0] * resolution[1] * bucketsArrayFixedSize;
+  return (objects) => {
+    const buckets = new Uint32Array(bucketElementCount);
+    const overflowBuckets = [];
+    for (let j = 0; j < objects.length; j++) {
+      const indexes = getBucketIndexes(getBounds(objects[j]));
+      for (const i of indexes) {
+        const indexIntoBucketsArray = i * bucketsArrayFixedSize;
+        const len = buckets[indexIntoBucketsArray];
+        if (len & OVERFLOW_BUCKETS_BIT) {
+          overflowBuckets[len & ~OVERFLOW_BUCKETS_BIT].push(objects[j]);
+        } else {
+          if (len === estimatedObjectsPerBucket) {
+            buckets[indexIntoBucketsArray] = overflowBuckets.length | OVERFLOW_BUCKETS_BIT;
+            overflowBuckets.push([objects[j]]);
+          } else {
+            let indexToSet = indexIntoBucketsArray + len + 1;
+            buckets[indexToSet] = j;
+            buckets[indexIntoBucketsArray]++;
+          }
+        }
+      }
+    }
+    return {
+      buckets,
+      overflowBuckets,
+      getBounds,
+      objects,
+      estimatedObjectsPerBucket,
+      queryRect(bounds2) {
+        const indexes = getBucketIndexes(bounds2);
+        return function* () {
+          for (const i of indexes) {
+            const bktBaseIndex = i * bucketsArrayFixedSize;
+            const bktInfo = buckets[bktBaseIndex];
+            const useOverflow = bktInfo & OVERFLOW_BUCKETS_BIT;
+            let count = useOverflow ? estimatedObjectsPerBucket : bktInfo;
+            for (let j = 1; j < count + 1; j++) {
+              yield objects[buckets[bktBaseIndex + j]];
+            }
+            if (useOverflow) {
+              for (const of of overflowBuckets[bktInfo & ~OVERFLOW_BUCKETS_BIT])
+                yield of;
+            }
+          }
+        }();
+      },
+      queryPoint(bounds2) {
+        return this.queryRect({ a: bounds2, b: bounds2 });
+      }
+    };
+  };
+}
+
 // src/localstorage-io.ts
 function registerStorageItem(name, defaultValue) {
   name = "radian628-wikidot-usertools-" + name;
@@ -23051,28 +23258,534 @@ function debounce(callback) {
   return fn;
 }
 
-// src/array-utils.ts
-function interleave(arr, cb2) {
-  let out = [];
-  for (let i = 0; i < arr.length - 1; i++) {
-    out.push(arr[i], cb2(arr[i], arr[i + 1]));
-  }
-  if (arr.length > 0) {
-    out.push(arr.at(-1));
-  }
-  return out;
+// src/math/noise.ts
+function fract(x2) {
+  return x2 - Math.floor(x2);
 }
-function splitBy(arr, amount) {
-  let outarr = [[]];
-  for (let i = 0; i < arr.length; i++) {
-    if (i % amount === amount - 1) outarr.push([]);
-    outarr.at(-1).push(arr[i]);
-  }
-  return outarr;
+function simpleRandVec2ToFloat(co) {
+  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
 }
-function bifurcate(arr, fn) {
-  const bools = arr.map(fn);
-  return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
+function simpleRandVec2ToVec2(co) {
+  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
+}
+function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
+  const fp = [Math.floor(p[0]), Math.floor(p[1])];
+  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
+  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
+  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
+  const v4 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
+  const o1 = sub2(p, fp);
+  const o2 = sub2(o1, [1, 0]);
+  const o3 = sub2(o1, [0, 1]);
+  const o4 = sub2(o1, [1, 1]);
+  const d1 = dot2(v1, o1);
+  const d2 = dot2(v2, o2);
+  const d3 = dot2(v3, o3);
+  const d4 = dot2(v4, o4);
+  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
+  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
+  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
+}
+function boxMullerTransform(u) {
+  const a = Math.sqrt(-2 * Math.log(u[0]));
+  const b = 2 * Math.PI * u[1];
+  return [a * Math.cos(b), a * Math.sin(b)];
+}
+
+// src/math/intersections.ts
+function quadraticFormula(a, b, c) {
+  const bSquaredMinusFourAC = b ** 2 - 4 * a * c;
+  if (bSquaredMinusFourAC < 0) return [];
+  if (bSquaredMinusFourAC === 0) return [-b / (2 * a)];
+  return [
+    (-b - Math.sqrt(bSquaredMinusFourAC)) / (2 * a),
+    (-b + Math.sqrt(bSquaredMinusFourAC)) / (2 * a)
+  ];
+}
+function circleIntersectLine(circle, seg) {
+  const bxMinusAx = seg.b[0] - seg.a[0];
+  const byMinusAy = seg.b[1] - seg.a[1];
+  const axMinusCx = seg.a[0] - circle.center[0];
+  const ayMinusCy = seg.a[1] - circle.center[1];
+  const a = bxMinusAx ** 2 + byMinusAy ** 2;
+  const b = 2 * (bxMinusAx * axMinusCx + byMinusAy * ayMinusCy);
+  const c = axMinusCx ** 2 + ayMinusCy ** 2 - circle.radius ** 2;
+  return quadraticFormula(a, b, c);
+}
+function lineIntersectLine(a, b) {
+  const ax = a.a[0];
+  const ay = a.a[1];
+  const bx = a.b[0];
+  const by = a.b[1];
+  const cx = b.a[0];
+  const cy = b.a[1];
+  const dx = b.b[0];
+  const dy = b.b[1];
+  return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
+}
+function rayIntersectLine(ray, b) {
+  return lineIntersectLine(
+    {
+      a: ray.center,
+      b: add2(ray.center, [Math.cos(ray.dir), Math.sin(ray.dir)])
+    },
+    b
+  );
+}
+function getSmallestAngleDifference(a, b) {
+  const minDiff = Math.min(
+    Math.abs(a - b),
+    Math.abs(a - b + Math.PI * 2),
+    Math.abs(a - b - Math.PI * 2)
+  );
+  const lowest = Math.min(a, b);
+  return [lowest, lowest + minDiff];
+}
+function getEqualAngularDivisionsOfLineSegment(center, b, interval) {
+  const [angle1, angle2] = getSmallestAngleDifference(
+    pointTo(center, b.a),
+    pointTo(center, b.b)
+  );
+  const truncatedAngle1 = Math.ceil(angle1 / interval) * interval;
+  let tValues = [];
+  for (let i = truncatedAngle1; i < angle2; i += interval) {
+    tValues.push(
+      rayIntersectLine(
+        {
+          center,
+          dir: i
+        },
+        b
+      )
+    );
+  }
+  return tValues;
+}
+function closestApproachOfLineSegmentToPoint(l, pt) {
+  const ax = l.a[0];
+  const ay = l.a[1];
+  const bx = l.b[0];
+  const by = l.b[1];
+  const cx = pt[0];
+  const cy = pt[1];
+  return (-(bx - ax) * (ax - cx) - (by - ay) * (ay - cy)) / ((bx - ax) ** 2 + (by - ay) ** 2);
+}
+function sampleLineSegment(l, t) {
+  return mix2(t, l.a, l.b);
+}
+
+// src/webgl/shader.ts
+function source2shader(gl, type, source) {
+  const shader = gl.createShader(
+    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
+  );
+  if (!shader) return err(void 0);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
+    return err(void 0);
+  }
+  return ok(shader);
+}
+function shaders2program(gl, v, f) {
+  const program = gl.createProgram();
+  gl.attachShader(program, v);
+  gl.attachShader(program, f);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+    return err(void 0);
+  }
+  return ok(program);
+}
+function sources2program(gl, vs, fs) {
+  const v = source2shader(gl, "v", vs);
+  const f = source2shader(gl, "f", fs);
+  if (!v.ok || !f.ok) return err(void 0);
+  return shaders2program(gl, v.data, f.data);
+}
+function fullscreenQuadBuffer(gl) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      -1,
+      -1,
+      1,
+      -1,
+      -1,
+      1,
+      1,
+      1,
+      -1,
+      1,
+      1,
+      -1
+    ]),
+    gl.STATIC_DRAW
+  );
+  return ok(buffer);
+}
+function glRenderToQuad(options) {
+  const canvas = document.createElement("canvas");
+  canvas.width = options.width;
+  canvas.height = options.height;
+  const gl = canvas.getContext(options.version ?? "webgl2");
+  gl.viewport(0, 0, options.width, options.height);
+  if (!gl) return err(void 0);
+  const buf = fullscreenQuadBuffer(gl);
+  const prog = sources2program(
+    gl,
+    `#version 300 es
+precision highp float;
+
+in vec2 in_vpos;
+out vec2 pos;
+
+void main() {
+  pos = in_vpos * 0.5 + 0.5;
+  gl_Position = vec4(in_vpos, 0.5, 1.0);
+}`,
+    (options.noheader ? "" : `#version 300 es
+precision highp float;
+in vec2 pos;
+out vec4 col;
+`) + (options.noAutoUniforms ? "" : [
+      [options.uniforms, "", "float"],
+      [options.intUniforms, "i", "int"],
+      [options.uintUniforms, "u", "uint"]
+    ].map(
+      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
+        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
+      }).join("\n")
+    ).join("\n")) + options.fragsource
+  );
+  if (!prog.data) return err(void 0);
+  gl.useProgram(prog.data);
+  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
+  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(attrloc);
+  for (const [uniforms, type] of [
+    [options.uniforms, "i"],
+    [options.intUniforms, "i"],
+    [options.uintUniforms, "ui"]
+  ]) {
+    for (const [k, v] of Object.entries(uniforms ?? {})) {
+      const v2 = Array.isArray(v) ? v : [v];
+      gl[`uniform${v2.length}${type}v`](
+        gl.getUniformLocation(prog.data, k),
+        v2
+      );
+    }
+  }
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  return ok(canvas);
+}
+
+// src/webgl/scene.ts
+function applyUniform(gl, prog, name, spec) {
+  const [t, d] = spec;
+  const l = gl.getUniformLocation(prog, name);
+  if (l === null) {
+    throw new Error(
+      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
+    );
+  }
+  if (t === "float") gl.uniform1f(l, d);
+  if (t === "vec2") gl.uniform2f(l, ...d);
+  if (t === "vec3") gl.uniform3f(l, ...d);
+  if (t === "vec4") gl.uniform4f(l, ...d);
+  if (t === "int") gl.uniform1i(l, d);
+  if (t === "ivec2") gl.uniform2i(l, ...d);
+  if (t === "ivec3") gl.uniform3i(l, ...d);
+  if (t === "ivec4") gl.uniform4i(l, ...d);
+  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
+  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
+  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
+  if (t === "float[]") gl.uniform1fv(l, d);
+  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
+  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
+  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
+  if (t === "int[]") gl.uniform1iv(l, d);
+  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
+  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
+  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
+  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
+  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
+  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
+}
+function applyUniforms(gl, prog, uniforms) {
+  for (const [k, v] of Object.entries(uniforms)) {
+    applyUniform(gl, prog, k, v);
+  }
+}
+function createScene(sceneSpec) {
+  const gl = sceneSpec.gl;
+  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
+  let sceneUniforms = sceneSpec.uniforms ?? {};
+  return {
+    uniforms() {
+      return sceneUniforms;
+    },
+    resetUniforms(u) {
+      sceneUniforms = u;
+    },
+    updateUniforms(u) {
+      sceneUniforms = { ...sceneUniforms, ...u };
+    },
+    addObject3D(spec) {
+      let objectUniforms = spec.uniforms ?? {};
+      return {
+        gl() {
+          return gl;
+        },
+        draw() {
+          gl.useProgram(spec.program);
+          spec.buffer.setLayout(spec.program);
+          applyUniforms(
+            gl,
+            spec.program,
+            combineUniforms(sceneUniforms, objectUniforms)
+          );
+          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
+        },
+        uniforms() {
+          return objectUniforms;
+        },
+        resetUniforms(u) {
+          objectUniforms = u;
+        },
+        updateUniforms(u) {
+          objectUniforms = { ...objectUniforms, ...u };
+        }
+      };
+    }
+  };
+}
+
+// src/webgl/mesh.ts
+function parametric2D(x2, y2, attr, getPoint) {
+  const data = [];
+  for (let j = 0; j < y2; j++) {
+    for (let i = 0; i < x2; i++) {
+      const a = getPoint(i, j);
+      const b = getPoint(i + 1, j);
+      const c = getPoint(i, j + 1);
+      const d = getPoint(i + 1, j + 1);
+      data.push({ [attr]: a });
+      data.push({ [attr]: c });
+      data.push({ [attr]: b });
+      data.push({ [attr]: c });
+      data.push({ [attr]: d });
+      data.push({ [attr]: b });
+    }
+  }
+  return data;
+}
+function uvSphere(x2, y2, rad, attr) {
+  return parametric2D(x2, y2, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
+    let px = Math.cos(a) * Math.cos(b) * rad;
+    let pz = Math.sin(a) * Math.cos(b) * rad;
+    let py = Math.sin(b) * rad;
+    return [px, py, pz];
+  });
+}
+function ring(x2, rad, height, attr) {
+  return parametric2D(x2, 1, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const px = Math.cos(a) * rad;
+    const pz = Math.sin(a) * rad;
+    const py = j === 1 ? height / 2 : -height / 2;
+    return [px, py, pz];
+  });
+}
+function torus(x2, y2, R, r, attr) {
+  return parametric2D(x2, y2, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const b = (j + y2) % y2 / y2 * Math.PI * 2;
+    let px = Math.cos(a);
+    let pz = Math.sin(a);
+    let py = Math.sin(b) * r;
+    px *= R + Math.cos(b) * r;
+    pz *= R + Math.cos(b) * r;
+    return [px, py, pz];
+  });
+}
+function move(mesh, attr, offset) {
+  return mesh.map((m) => ({
+    ...m,
+    [attr]: m[attr].map((e, i) => e + offset[i])
+  }));
+}
+function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
+  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
+  const rangeInv = 1 / (near - far);
+  return [
+    f / aspectRatio,
+    0,
+    0,
+    0,
+    0,
+    f,
+    0,
+    0,
+    0,
+    0,
+    (near + far) * rangeInv,
+    -1,
+    0,
+    0,
+    near * far * rangeInv * 2,
+    0
+  ];
+}
+function ortho(left, right, top, bottom, near, far) {
+  return [
+    2 / (right - left),
+    0,
+    0,
+    -(right + left) / (right - left),
+    0,
+    2 / (top - bottom),
+    0,
+    -(top + bottom) / (top - bottom),
+    0,
+    0,
+    -2 / (far - near),
+    -(far + near) / (far - near),
+    0,
+    0,
+    0,
+    1
+  ];
+}
+function cross(a, b) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0]
+  ];
+}
+function normalize(v) {
+  const len = Math.hypot(...v);
+  return scale3(v, 1 / len);
+}
+function rodrigues(v, k, theta) {
+  k = normalize(k);
+  return add3(
+    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+  );
+}
+function rotate(axis, angle) {
+  return [
+    ...rodrigues([1, 0, 0], axis, angle),
+    0,
+    ...rodrigues([0, 1, 0], axis, angle),
+    0,
+    ...rodrigues([0, 0, 1], axis, angle),
+    0,
+    0,
+    0,
+    0,
+    1
+  ];
+}
+function scale(axes) {
+  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
+}
+function translate(v) {
+  return [1, 0, 0, v[0], 0, 1, 0, v[1], 0, 0, 1, v[2], 0, 0, 0, 1];
+}
+
+// src/webgl/buffer.ts
+function getDatatypeSize(gl, datatype) {
+  return {
+    [gl.BYTE]: 1,
+    [gl.SHORT]: 2,
+    [gl.UNSIGNED_BYTE]: 1,
+    [gl.UNSIGNED_SHORT]: 2,
+    [gl.FLOAT]: 4,
+    [gl.HALF_FLOAT]: 2,
+    [gl.INT]: 4,
+    [gl.UNSIGNED_INT]: 4,
+    [gl.INT_2_10_10_10_REV]: 4,
+    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
+  }[datatype];
+}
+function createBufferWithLayout(gl, layout, data) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  const layoutEntries = Object.entries(layout);
+  let stride = 0;
+  const offsets = /* @__PURE__ */ new Map();
+  for (const [name, attrs] of layoutEntries) {
+    offsets.set(name, stride);
+    stride += attrs.size * getDatatypeSize(gl, attrs.type);
+  }
+  const arraybuf = new ArrayBuffer(stride * data.length);
+  const rawdata = new DataView(arraybuf);
+  let i = 0;
+  for (const d of data) {
+    for (const [name, attrs] of layoutEntries) {
+      for (let j = 0; j < attrs.size; j++) {
+        const val = d[name][j];
+        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
+        if (attrs.type === gl.BYTE) {
+          rawdata.setInt8(pos, val);
+        } else if (attrs.type === gl.UNSIGNED_BYTE) {
+          rawdata.setUint8(pos, val);
+        } else if (attrs.type === gl.FLOAT) {
+          rawdata.setFloat32(pos, val, true);
+        } else if (attrs.type === gl.SHORT) {
+          rawdata.setInt16(pos, val, true);
+        } else if (attrs.type === gl.UNSIGNED_SHORT) {
+          rawdata.setUint16(pos, val, true);
+        }
+      }
+    }
+    i++;
+  }
+  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
+  return {
+    vertexCount: data.length,
+    buffer,
+    setLayout(prog) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      for (const [name, attrs] of layoutEntries) {
+        const loc = gl.getAttribLocation(prog, name);
+        if (attrs.isInt) {
+          gl.vertexAttribIPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            stride,
+            offsets.get(name)
+          );
+        } else {
+          gl.vertexAttribPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            attrs.normalized ?? false,
+            stride,
+            offsets.get(name)
+          );
+        }
+        gl.enableVertexAttribArray(loc);
+      }
+    },
+    bindArray(gl2) {
+      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
+    },
+    bindIndex(gl2) {
+      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
+    }
+  };
 }
 
 // src/curve/quadratic-curve-to-svg.ts
@@ -26508,536 +27221,6 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
-// src/webgl/shader.ts
-function source2shader(gl, type, source) {
-  const shader = gl.createShader(
-    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
-  );
-  if (!shader) return err(void 0);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader));
-    return err(void 0);
-  }
-  return ok(shader);
-}
-function shaders2program(gl, v, f) {
-  const program = gl.createProgram();
-  gl.attachShader(program, v);
-  gl.attachShader(program, f);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(program));
-    return err(void 0);
-  }
-  return ok(program);
-}
-function sources2program(gl, vs, fs) {
-  const v = source2shader(gl, "v", vs);
-  const f = source2shader(gl, "f", fs);
-  if (!v.ok || !f.ok) return err(void 0);
-  return shaders2program(gl, v.data, f.data);
-}
-function fullscreenQuadBuffer(gl) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      -1,
-      -1,
-      1,
-      -1,
-      -1,
-      1,
-      1,
-      1,
-      -1,
-      1,
-      1,
-      -1
-    ]),
-    gl.STATIC_DRAW
-  );
-  return ok(buffer);
-}
-function glRenderToQuad(options) {
-  const canvas = document.createElement("canvas");
-  canvas.width = options.width;
-  canvas.height = options.height;
-  const gl = canvas.getContext(options.version ?? "webgl2");
-  gl.viewport(0, 0, options.width, options.height);
-  if (!gl) return err(void 0);
-  const buf = fullscreenQuadBuffer(gl);
-  const prog = sources2program(
-    gl,
-    `#version 300 es
-precision highp float;
-
-in vec2 in_vpos;
-out vec2 pos;
-
-void main() {
-  pos = in_vpos * 0.5 + 0.5;
-  gl_Position = vec4(in_vpos, 0.5, 1.0);
-}`,
-    (options.noheader ? "" : `#version 300 es
-precision highp float;
-in vec2 pos;
-out vec4 col;
-`) + (options.noAutoUniforms ? "" : [
-      [options.uniforms, "", "float"],
-      [options.intUniforms, "i", "int"],
-      [options.uintUniforms, "u", "uint"]
-    ].map(
-      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
-        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
-      }).join("\n")
-    ).join("\n")) + options.fragsource
-  );
-  if (!prog.data) return err(void 0);
-  gl.useProgram(prog.data);
-  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
-  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(attrloc);
-  for (const [uniforms, type] of [
-    [options.uniforms, "i"],
-    [options.intUniforms, "i"],
-    [options.uintUniforms, "ui"]
-  ]) {
-    for (const [k, v] of Object.entries(uniforms ?? {})) {
-      const v2 = Array.isArray(v) ? v : [v];
-      gl[`uniform${v2.length}${type}v`](
-        gl.getUniformLocation(prog.data, k),
-        v2
-      );
-    }
-  }
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-  return ok(canvas);
-}
-
-// src/webgl/scene.ts
-function applyUniform(gl, prog, name, spec) {
-  const [t, d] = spec;
-  const l = gl.getUniformLocation(prog, name);
-  if (l === null) {
-    throw new Error(
-      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
-    );
-  }
-  if (t === "float") gl.uniform1f(l, d);
-  if (t === "vec2") gl.uniform2f(l, ...d);
-  if (t === "vec3") gl.uniform3f(l, ...d);
-  if (t === "vec4") gl.uniform4f(l, ...d);
-  if (t === "int") gl.uniform1i(l, d);
-  if (t === "ivec2") gl.uniform2i(l, ...d);
-  if (t === "ivec3") gl.uniform3i(l, ...d);
-  if (t === "ivec4") gl.uniform4i(l, ...d);
-  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
-  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
-  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
-  if (t === "float[]") gl.uniform1fv(l, d);
-  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
-  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
-  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
-  if (t === "int[]") gl.uniform1iv(l, d);
-  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
-  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
-  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
-  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
-  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
-  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
-}
-function applyUniforms(gl, prog, uniforms) {
-  for (const [k, v] of Object.entries(uniforms)) {
-    applyUniform(gl, prog, k, v);
-  }
-}
-function createScene(sceneSpec) {
-  const gl = sceneSpec.gl;
-  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
-  let sceneUniforms = sceneSpec.uniforms ?? {};
-  return {
-    uniforms() {
-      return sceneUniforms;
-    },
-    resetUniforms(u) {
-      sceneUniforms = u;
-    },
-    updateUniforms(u) {
-      sceneUniforms = { ...sceneUniforms, ...u };
-    },
-    addObject3D(spec) {
-      let objectUniforms = spec.uniforms ?? {};
-      return {
-        gl() {
-          return gl;
-        },
-        draw() {
-          gl.useProgram(spec.program);
-          spec.buffer.setLayout(spec.program);
-          applyUniforms(
-            gl,
-            spec.program,
-            combineUniforms(sceneUniforms, objectUniforms)
-          );
-          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
-        },
-        uniforms() {
-          return objectUniforms;
-        },
-        resetUniforms(u) {
-          objectUniforms = u;
-        },
-        updateUniforms(u) {
-          objectUniforms = { ...objectUniforms, ...u };
-        }
-      };
-    }
-  };
-}
-
-// src/webgl/mesh.ts
-function parametric2D(x2, y2, attr, getPoint) {
-  const data = [];
-  for (let j = 0; j < y2; j++) {
-    for (let i = 0; i < x2; i++) {
-      const a = getPoint(i, j);
-      const b = getPoint(i + 1, j);
-      const c = getPoint(i, j + 1);
-      const d = getPoint(i + 1, j + 1);
-      data.push({ [attr]: a });
-      data.push({ [attr]: c });
-      data.push({ [attr]: b });
-      data.push({ [attr]: c });
-      data.push({ [attr]: d });
-      data.push({ [attr]: b });
-    }
-  }
-  return data;
-}
-function uvSphere(x2, y2, rad, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
-    let px = Math.cos(a) * Math.cos(b) * rad;
-    let pz = Math.sin(a) * Math.cos(b) * rad;
-    let py = Math.sin(b) * rad;
-    return [px, py, pz];
-  });
-}
-function ring(x2, rad, height, attr) {
-  return parametric2D(x2, 1, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const px = Math.cos(a) * rad;
-    const pz = Math.sin(a) * rad;
-    const py = j === 1 ? height / 2 : -height / 2;
-    return [px, py, pz];
-  });
-}
-function torus(x2, y2, R, r, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI * 2;
-    let px = Math.cos(a);
-    let pz = Math.sin(a);
-    let py = Math.sin(b) * r;
-    px *= R + Math.cos(b) * r;
-    pz *= R + Math.cos(b) * r;
-    return [px, py, pz];
-  });
-}
-function move(mesh, attr, offset) {
-  return mesh.map((m) => ({
-    ...m,
-    [attr]: m[attr].map((e, i) => e + offset[i])
-  }));
-}
-function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
-  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
-  const rangeInv = 1 / (near - far);
-  return [
-    f / aspectRatio,
-    0,
-    0,
-    0,
-    0,
-    f,
-    0,
-    0,
-    0,
-    0,
-    (near + far) * rangeInv,
-    -1,
-    0,
-    0,
-    near * far * rangeInv * 2,
-    0
-  ];
-}
-function ortho(left, right, top, bottom, near, far) {
-  return [
-    2 / (right - left),
-    0,
-    0,
-    -(right + left) / (right - left),
-    0,
-    2 / (top - bottom),
-    0,
-    -(top + bottom) / (top - bottom),
-    0,
-    0,
-    -2 / (far - near),
-    -(far + near) / (far - near),
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function cross(a, b) {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0]
-  ];
-}
-function normalize(v) {
-  const len = Math.hypot(...v);
-  return scale3(v, 1 / len);
-}
-function rodrigues(v, k, theta) {
-  k = normalize(k);
-  return add3(
-    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-  );
-}
-function rotate(axis, angle) {
-  return [
-    ...rodrigues([1, 0, 0], axis, angle),
-    0,
-    ...rodrigues([0, 1, 0], axis, angle),
-    0,
-    ...rodrigues([0, 0, 1], axis, angle),
-    0,
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function scale(axes) {
-  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
-}
-function translate(v) {
-  return [1, 0, 0, v[0], 0, 1, 0, v[1], 0, 0, 1, v[2], 0, 0, 0, 1];
-}
-
-// src/webgl/buffer.ts
-function getDatatypeSize(gl, datatype) {
-  return {
-    [gl.BYTE]: 1,
-    [gl.SHORT]: 2,
-    [gl.UNSIGNED_BYTE]: 1,
-    [gl.UNSIGNED_SHORT]: 2,
-    [gl.FLOAT]: 4,
-    [gl.HALF_FLOAT]: 2,
-    [gl.INT]: 4,
-    [gl.UNSIGNED_INT]: 4,
-    [gl.INT_2_10_10_10_REV]: 4,
-    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
-  }[datatype];
-}
-function createBufferWithLayout(gl, layout, data) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  const layoutEntries = Object.entries(layout);
-  let stride = 0;
-  const offsets = /* @__PURE__ */ new Map();
-  for (const [name, attrs] of layoutEntries) {
-    offsets.set(name, stride);
-    stride += attrs.size * getDatatypeSize(gl, attrs.type);
-  }
-  const arraybuf = new ArrayBuffer(stride * data.length);
-  const rawdata = new DataView(arraybuf);
-  let i = 0;
-  for (const d of data) {
-    for (const [name, attrs] of layoutEntries) {
-      for (let j = 0; j < attrs.size; j++) {
-        const val = d[name][j];
-        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
-        if (attrs.type === gl.BYTE) {
-          rawdata.setInt8(pos, val);
-        } else if (attrs.type === gl.UNSIGNED_BYTE) {
-          rawdata.setUint8(pos, val);
-        } else if (attrs.type === gl.FLOAT) {
-          rawdata.setFloat32(pos, val, true);
-        } else if (attrs.type === gl.SHORT) {
-          rawdata.setInt16(pos, val, true);
-        } else if (attrs.type === gl.UNSIGNED_SHORT) {
-          rawdata.setUint16(pos, val, true);
-        }
-      }
-    }
-    i++;
-  }
-  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
-  return {
-    vertexCount: data.length,
-    buffer,
-    setLayout(prog) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      for (const [name, attrs] of layoutEntries) {
-        const loc = gl.getAttribLocation(prog, name);
-        if (attrs.isInt) {
-          gl.vertexAttribIPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            stride,
-            offsets.get(name)
-          );
-        } else {
-          gl.vertexAttribPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            attrs.normalized ?? false,
-            stride,
-            offsets.get(name)
-          );
-        }
-        gl.enableVertexAttribArray(loc);
-      }
-    },
-    bindArray(gl2) {
-      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
-    },
-    bindIndex(gl2) {
-      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
-    }
-  };
-}
-
-// src/math/noise.ts
-function fract(x2) {
-  return x2 - Math.floor(x2);
-}
-function simpleRandVec2ToFloat(co) {
-  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
-}
-function simpleRandVec2ToVec2(co) {
-  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
-}
-function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
-  const fp = [Math.floor(p[0]), Math.floor(p[1])];
-  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
-  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
-  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
-  const v4 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
-  const o1 = sub2(p, fp);
-  const o2 = sub2(o1, [1, 0]);
-  const o3 = sub2(o1, [0, 1]);
-  const o4 = sub2(o1, [1, 1]);
-  const d1 = dot2(v1, o1);
-  const d2 = dot2(v2, o2);
-  const d3 = dot2(v3, o3);
-  const d4 = dot2(v4, o4);
-  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
-  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
-  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
-}
-function boxMullerTransform(u) {
-  const a = Math.sqrt(-2 * Math.log(u[0]));
-  const b = 2 * Math.PI * u[1];
-  return [a * Math.cos(b), a * Math.sin(b)];
-}
-
-// src/math/intersections.ts
-function quadraticFormula(a, b, c) {
-  const bSquaredMinusFourAC = b ** 2 - 4 * a * c;
-  if (bSquaredMinusFourAC < 0) return [];
-  if (bSquaredMinusFourAC === 0) return [-b / (2 * a)];
-  return [
-    (-b - Math.sqrt(bSquaredMinusFourAC)) / (2 * a),
-    (-b + Math.sqrt(bSquaredMinusFourAC)) / (2 * a)
-  ];
-}
-function circleIntersectLine(circle, seg) {
-  const bxMinusAx = seg.b[0] - seg.a[0];
-  const byMinusAy = seg.b[1] - seg.a[1];
-  const axMinusCx = seg.a[0] - circle.center[0];
-  const ayMinusCy = seg.a[1] - circle.center[1];
-  const a = bxMinusAx ** 2 + byMinusAy ** 2;
-  const b = 2 * (bxMinusAx * axMinusCx + byMinusAy * ayMinusCy);
-  const c = axMinusCx ** 2 + ayMinusCy ** 2 - circle.radius ** 2;
-  return quadraticFormula(a, b, c);
-}
-function lineIntersectLine(a, b) {
-  const ax = a.a[0];
-  const ay = a.a[1];
-  const bx = a.b[0];
-  const by = a.b[1];
-  const cx = b.a[0];
-  const cy = b.a[1];
-  const dx = b.b[0];
-  const dy = b.b[1];
-  return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
-}
-function rayIntersectLine(ray, b) {
-  return lineIntersectLine(
-    {
-      a: ray.center,
-      b: add2(ray.center, [Math.cos(ray.dir), Math.sin(ray.dir)])
-    },
-    b
-  );
-}
-function getSmallestAngleDifference(a, b) {
-  const minDiff = Math.min(
-    Math.abs(a - b),
-    Math.abs(a - b + Math.PI * 2),
-    Math.abs(a - b - Math.PI * 2)
-  );
-  const lowest = Math.min(a, b);
-  return [lowest, lowest + minDiff];
-}
-function getEqualAngularDivisionsOfLineSegment(center, b, interval) {
-  const [angle1, angle2] = getSmallestAngleDifference(
-    pointTo(center, b.a),
-    pointTo(center, b.b)
-  );
-  const truncatedAngle1 = Math.ceil(angle1 / interval) * interval;
-  let tValues = [];
-  for (let i = truncatedAngle1; i < angle2; i += interval) {
-    tValues.push(
-      rayIntersectLine(
-        {
-          center,
-          dir: i
-        },
-        b
-      )
-    );
-  }
-  return tValues;
-}
-function closestApproachOfLineSegmentToPoint(l, pt) {
-  const ax = l.a[0];
-  const ay = l.a[1];
-  const bx = l.b[0];
-  const by = l.b[1];
-  const cx = pt[0];
-  const cy = pt[1];
-  return (-(bx - ax) * (ax - cx) - (by - ay) * (ay - cy)) / ((bx - ax) ** 2 + (by - ay) ** 2);
-}
-function sampleLineSegment(l, t) {
-  return mix2(t, l.a, l.b);
-}
-
 // src/ui/react-string-field.tsx
 var import_react = __toESM(require_react());
 function StringField(props) {
@@ -27371,6 +27554,7 @@ export {
   createEvalbox,
   createGraph,
   createGraphFromData,
+  createLookupOptimizedSHTGenerator,
   createRoundRobinThread,
   createRoundRobinThreadpool,
   createScene,
@@ -27401,11 +27585,13 @@ export {
   getLinesAndCols,
   getMaximumAngleDifference,
   getOgg,
+  getPerformanceStatistics,
   getSmallestAngleDifference,
   glRenderToQuad,
   gradient2,
   graph2json,
   graphAudio,
+  groupBy,
   id,
   inCircle,
   inMainThread,

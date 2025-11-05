@@ -616,24 +616,90 @@
     }
   }
 
+  // src/array-utils.ts
+  function groupBy(arr, getGroup) {
+    const groups = /* @__PURE__ */ new Map();
+    for (const entry of arr) {
+      const groupName = getGroup(entry);
+      let group = groups.get(groupName) ?? [];
+      group.push(entry);
+      groups.set(groupName, group);
+    }
+    return groups;
+  }
+
   // src/threadpool.ts
-  function createRoundRobinThreadpool(src2, workerCount2, serialization2) {
+  function getPerformanceStatistics(records) {
+    return Object.fromEntries(
+      Array.from(groupBy(records, (g) => g.name).entries()).map(([name, v]) => {
+        const totalRuntime = v.reduce((prev, curr) => prev + curr.runtime, 0) / v.length;
+        const invocationCount = v.length;
+        return [
+          name,
+          {
+            totalRuntime,
+            invocationCount,
+            averageRuntime: totalRuntime / invocationCount,
+            worstCaseRuntime: v.reduce(
+              (prev, curr) => Math.max(prev, curr.runtime),
+              0
+            ),
+            bestCaseRuntime: v.reduce(
+              (prev, curr) => Math.min(prev, curr.runtime),
+              0
+            )
+          }
+        ];
+      })
+    );
+  }
+  function wrapWithPromise(t) {
+    if (t instanceof Promise) {
+      return t;
+    }
+    return Promise.resolve(t);
+  }
+  function createRoundRobinThreadpool(src2, workerCount2, serialization2, t) {
     const count = workerCount2 ?? navigator.hardwareConcurrency;
+    const performanceRecords = [];
     const workers = [];
     let nextWorker = 0;
     for (let i = 0; i < count; i++) {
       workers.push(new Worker(src2));
     }
     function getNextWorker() {
-      const w = workers[nextWorker];
+      const workerChoice = nextWorker;
       nextWorker = (nextWorker + 1) % count;
-      return w;
+      return workerChoice;
     }
-    let id2 = 0;
-    function sendMessageToWorkerWithResponse(prop, args, worker) {
-      return new Promise(async (resolve, reject) => {
-        const myid = id2;
-        id2++;
+    let id3 = 0;
+    function sendMessageToWorkerWithResponse(prop, args, workerIndex) {
+      const worker = workers[workerIndex];
+      const serializationInfo = serialization2?.[prop];
+      const startTime = performance.now();
+      const shouldRunInMain = serializationInfo?.runMode?.(args) ?? "worker";
+      if (shouldRunInMain === "main") {
+        if (!t)
+          throw new Error(
+            "If a threadpool method is to run in the main thread, its interface should be provided to the main thread!"
+          );
+        const res2 = t[prop](...args);
+        performanceRecords.push(
+          wrapWithPromise(res2).then((retval) => {
+            return {
+              name: prop,
+              inputSize: serializationInfo?.estimateInputSize?.(args) ?? 1,
+              runtime: performance.now() - startTime,
+              metadata: serializationInfo?.getRuntimeMetadata?.(args, retval),
+              thread: { type: "main" }
+            };
+          })
+        );
+        return res2;
+      }
+      const res = new Promise(async (resolve, reject) => {
+        const myid = id3;
+        id3++;
         const onResponse = async (e) => {
           if (e.data.id !== myid) return;
           worker.removeEventListener("message", onResponse);
@@ -651,9 +717,24 @@
           serialization2?.[prop]?.transferArgs?.(args) ?? []
         );
       });
+      performanceRecords.push(
+        res.then((retval) => {
+          return {
+            name: prop,
+            inputSize: serializationInfo?.estimateInputSize?.(args) ?? 1,
+            runtime: performance.now() - startTime,
+            metadata: serializationInfo?.getRuntimeMetadata?.(args, retval),
+            thread: { type: "worker", workerId: workerIndex }
+          };
+        })
+      );
+      return res;
     }
     return {
       threadCount: count,
+      getCurrentPerformanceRecords() {
+        return Promise.all(performanceRecords);
+      },
       send: new Proxy({}, {
         get(i, prop) {
           return async (...args) => {
@@ -665,11 +746,7 @@
       sendToThread: (threadIndex) => new Proxy({}, {
         get(i, prop) {
           return async (...args) => {
-            return sendMessageToWorkerWithResponse(
-              prop,
-              args,
-              workers[threadIndex]
-            );
+            return sendMessageToWorkerWithResponse(prop, args, threadIndex);
           };
         }
       }),
@@ -677,7 +754,9 @@
         get(i, prop) {
           return async (...args) => {
             return await Promise.all(
-              workers.map((w) => sendMessageToWorkerWithResponse(prop, args, w))
+              workers.map(
+                (w, i2) => sendMessageToWorkerWithResponse(prop, args, i2)
+              )
             );
           };
         }
@@ -702,13 +781,14 @@
   }
   function createCombinedRoundRobinThreadpool(getInterface, src, workerCount, serialization) {
     if (eval("self.WorkerGlobalScope")) {
-      createRoundRobinThread(getInterface(), serialization);
+      createRoundRobinThread(getInterface(false), serialization);
       return;
     } else {
       return createRoundRobinThreadpool(
         src ?? document.currentScript.src,
         workerCount,
-        serialization
+        serialization,
+        getInterface(true)
       );
     }
   }
@@ -735,7 +815,7 @@
     };
   }
   var tp = createCombinedRoundRobinThreadpool(
-    () => {
+    (isMainThread) => {
       let graph = createGraph();
       let eyeballs;
       function shiftLines() {
@@ -845,14 +925,16 @@
         drawEyeballOffscreen(eyeball, originalCanvasDims) {
           const eyeballSize = eyeball.irisRadius;
           const canvasDims = scale2(originalCanvasDims, eyeballSize * 2);
-          const canvas = new OffscreenCanvas(
+          const canvas = isMainThread ? document.getElementById("canvas") : new OffscreenCanvas(
             Math.ceil(canvasDims[0]),
             Math.ceil(canvasDims[1])
           );
-          const ctx = canvas.getContext("2d");
+          const ctx = canvas.getContext(
+            "2d"
+          );
           const draw = pointDrawer(canvas, ctx);
           const e = eyeball;
-          const eyePos = [eyeballSize, eyeballSize];
+          const eyePos = isMainThread ? eyeball.pos : [eyeballSize, eyeballSize];
           {
             ctx.fillStyle = "black";
             const pointCount = Math.floor(3e7 * e.pupilRadius ** 2);
@@ -889,6 +971,7 @@
               );
             }
           }
+          if (isMainThread) return;
           return {
             drawAt: mul2(
               sub2(e.pos, [eyeballSize, eyeballSize]),
@@ -904,7 +987,10 @@
     {
       drawEyeballOffscreen: {
         transferRetVal(r) {
-          return [r.image];
+          return r ? [r.image] : [];
+        },
+        runMode(args) {
+          return args[0].irisRadius > 0.04 ? "worker" : "main";
         }
       },
       shiftGraph: {
@@ -922,8 +1008,6 @@
         }
       },
       getGraph: {
-        serializeArgs: id,
-        parseArgs: id,
         serializeRetVal(r) {
           return graph2json(r);
         },
@@ -937,9 +1021,7 @@
         },
         parseArgs(args) {
           return [json2graph(args)];
-        },
-        serializeRetVal: id,
-        parseRetVal: id
+        }
       },
       setEyeballs: {
         serializeArgs(ebs) {
@@ -947,9 +1029,7 @@
         },
         parseArgs(ebs) {
           return [parseSpatialHashTable(ebs, getEyeballBounds)];
-        },
-        serializeRetVal: id,
-        parseRetVal: id
+        }
       }
     }
   );
@@ -1021,13 +1101,18 @@
   }
   var frames = [];
   function enqueueAnimationFrame(process) {
-    frames.push(process);
+    return new Promise((resolve, reject) => {
+      frames.push(async () => {
+        const res = await process();
+        resolve(res);
+      });
+    });
   }
-  function loop() {
+  async function loop() {
     let startTime = Date.now();
     while (Date.now() - startTime < 1e3 / 60 && frames.length > 0) {
       const frame = frames.shift();
-      if (frame) frame();
+      if (frame) await frame();
     }
     requestAnimationFrame(loop);
   }
@@ -1059,6 +1144,7 @@
       getEyeballBounds
     );
     const canvas = document.createElement("canvas");
+    canvas.id = "canvas";
     document.body.appendChild(canvas);
     canvas.width = 3e3;
     canvas.height = 3e3;
@@ -1069,84 +1155,93 @@
     addEyeballs(mainThreadEyeballs, 1e4, -1.7, -2, 2);
     addEyeballs(mainThreadEyeballs, 4e4, -2, -2.7, 3);
     tileEyeballs(mainThreadEyeballs);
+    await tp.broadcast.setEyeballs(mainThreadEyeballs);
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    [...mainThreadEyeballs.all()].map(async (e) => {
-      const r = await tp.send.drawEyeballOffscreen(e, [3e3, 3e3]);
-      enqueueAnimationFrame(() => {
-        ctx.drawImage(r.image, Math.floor(r.drawAt[0]), Math.floor(r.drawAt[1]));
-      });
-    });
-    await tp.broadcast.setEyeballs(mainThreadEyeballs);
-    Promise.all(
-      smartRange(Math.ceil(LINE_COUNT)).map(async (line) => {
-        const graph = createGraph();
-        smartRange(POINTS_PER_LINE).reduce(
-          (prev, point) => {
-            const pos = [
-              point.remap(-0.1, 1.1, true),
-              line.remap(-0.1, 1.1)
-            ];
-            const pt = addVertex(graph, {
-              pos,
-              initialPos: pos,
-              pushed: false
-            });
-            if (!point.start() && prev) {
-              addEdge(graph, [prev, pt], {});
-            }
-            return pt;
-          },
-          null
-        );
-        const components = getConnectedComponents(
-          await tp.send.shiftGraph(graph)
-        );
-        enqueueAnimationFrame(() => {
-          ctx.fillStyle = "black";
-          for (const comp of components) {
-            const path = getDepthFirstTraversalOrder(comp, findEndpoint(comp));
-            const toDraw = variableDistancePointsOnCurve(
-              path.map((e) => e.data.pos),
-              (p) => {
-                let d = dot2(
-                  normalize2(
-                    gradient2(
-                      (v) => length2(
-                        lookupEyeballForceField(
-                          mainThreadEyeballs,
-                          v,
-                          void 0
-                        )
-                      ),
-                      p,
-                      1e-3
-                    )
-                  ),
-                  normalize2([1, -1])
-                );
-                if (isNaN(d)) d = 0;
-                const normd = clamp(d + rand(-0.5, 0.5), 0, 1);
-                return lerp(normd, 1 / 2e3, 1 / 300);
-              }
-            );
-            console.log(toDraw.length);
-            ctx.beginPath();
-            for (const e of toDraw) {
-              const pos = e;
-              draw.pointUnscaled(
-                add2(scale2(pos, canvas.width), [rand(-1, 1), rand(-1, 1)])
+    await Promise.all([
+      Promise.all(
+        [...mainThreadEyeballs.all()].map(async (e) => {
+          await enqueueAnimationFrame(async () => {
+            const r = await tp.send.drawEyeballOffscreen(e, [3e3, 3e3]);
+            if (r) {
+              ctx.drawImage(
+                r.image,
+                Math.floor(r.drawAt[0]),
+                Math.floor(r.drawAt[1])
               );
             }
-            ctx.stroke();
-          }
-        });
-      })
+          });
+        })
+      ),
+      Promise.all(
+        smartRange(Math.ceil(LINE_COUNT)).map(async (line) => {
+          const graph = createGraph();
+          smartRange(POINTS_PER_LINE).reduce(
+            (prev, point) => {
+              const pos = [
+                point.remap(-0.1, 1.1, true),
+                line.remap(-0.1, 1.1)
+              ];
+              const pt = addVertex(graph, {
+                pos,
+                initialPos: pos,
+                pushed: false
+              });
+              if (!point.start() && prev) {
+                addEdge(graph, [prev, pt], {});
+              }
+              return pt;
+            },
+            null
+          );
+          const components = getConnectedComponents(
+            await tp.send.shiftGraph(graph)
+          );
+          await enqueueAnimationFrame(async () => {
+            ctx.fillStyle = "black";
+            for (const comp of components) {
+              const path = getDepthFirstTraversalOrder(comp, findEndpoint(comp));
+              const toDraw = variableDistancePointsOnCurve(
+                path.map((e) => e.data.pos),
+                (p) => {
+                  let d = dot2(
+                    normalize2(
+                      gradient2(
+                        (v) => length2(
+                          lookupEyeballForceField(
+                            mainThreadEyeballs,
+                            v,
+                            void 0
+                          )
+                        ),
+                        p,
+                        1e-3
+                      )
+                    ),
+                    normalize2([1, -1])
+                  );
+                  if (isNaN(d)) d = 0;
+                  const normd = clamp(d + rand(-0.5, 0.5), 0, 1);
+                  return lerp(normd, 1 / 2e3, 1 / 300);
+                }
+              );
+              console.log(toDraw.length);
+              ctx.beginPath();
+              for (const e of toDraw) {
+                const pos = e;
+                draw.pointUnscaled(
+                  add2(scale2(pos, canvas.width), [rand(-1, 1), rand(-1, 1)])
+                );
+              }
+              ctx.stroke();
+            }
+          });
+        })
+      )
+    ]);
+    console.log(
+      "PERF",
+      getPerformanceStatistics(await tp.getCurrentPerformanceRecords())
     );
-    for (const e of mainThreadEyeballs.all()) {
-      const toCenter = cart2Polar(sub2([0.5, 0.5], e.pos));
-      const offset = [0, 0];
-      const eyePos = add2(e.pos, offset);
-    }
   });
 })();

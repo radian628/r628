@@ -21,8 +21,19 @@ function bifurcate(arr, fn) {
   const bools = arr.map(fn);
   return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
 }
+function groupBy(arr, getGroup) {
+  const groups = /* @__PURE__ */ new Map();
+  for (const entry of arr) {
+    const groupName = getGroup(entry);
+    let group = groups.get(groupName) ?? [];
+    group.push(entry);
+    groups.set(groupName, group);
+  }
+  return groups;
+}
 export {
   bifurcate,
+  groupBy,
   interleave,
   splitBy
 };
