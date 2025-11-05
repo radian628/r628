@@ -35,7 +35,7 @@ export function domQuery<TIn extends HTMLElement, TOut>(
   selector: string,
   doesExist: (e: TIn) => TOut,
   doesNotExist: () => TOut
-): Parser<TIn, TOut> {
+): Parser<HTMLElement, TOut> {
   return {
     parse(e) {
       const res = e.querySelector(selector) as TIn;
