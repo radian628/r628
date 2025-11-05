@@ -71,7 +71,7 @@ export function get<TIn extends Record<any, any>, Prop extends keyof TIn>(
   return parser((t) => t[prop]);
 }
 
-export function parser<A, B>(fn: (a: A) => B) {
+export function parser<A, B>(fn: (a: A) => B): Parser<A, B> {
   return {
     parse: fn,
     $: chainParser,
