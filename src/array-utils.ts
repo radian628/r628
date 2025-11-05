@@ -35,3 +35,16 @@ export function groupBy<T, G>(arr: T[], getGroup: (t: T) => G): Map<G, T[]> {
 
   return groups;
 }
+
+export function argmax<T>(arr: [T, ...T[]], f: (t: T) => number): T {
+  let maxFound = -Infinity;
+  let maxElement = arr[0];
+  for (const e of arr) {
+    const val = f(e);
+    if (val > maxFound) {
+      maxElement = e;
+      maxFound = val;
+    }
+  }
+  return maxElement;
+}
