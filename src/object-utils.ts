@@ -4,10 +4,15 @@ export function setDeep<T, KeyChain extends (keyof any)[]>(
   value: NestedKeyOf<T, KeyChain>
 ): T {
   if (path.length === 0) return value;
+  // @ts-expect-error
+  const inner = setDeep(obj[path[0]], path.slice(1), value);
+  if (Array.isArray(obj)) {
+    // @ts-expect-error
+    return obj.map((e, i) => (i === path[0] ? inner : e));
+  }
   return {
     ...obj,
-    // @ts-expect-error
-    [path[0]]: setDeep(obj[path[0]], path.slice(1), value),
+    [path[0]]: inner,
   };
 }
 
