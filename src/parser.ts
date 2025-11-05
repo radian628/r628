@@ -19,11 +19,13 @@ export function chainParser(parser: Parser<any, any>): any {
 
 export function domQueryAll<TIn extends HTMLElement, TOut>(
   selector: string,
-  cb: (e: HTMLElement) => TOut
+  parser: Parser<TIn, TOut>
 ): Parser<TIn, TOut[]> {
   return {
     parse(e) {
-      return [...e.querySelectorAll(selector)].map((e) => cb(e as HTMLElement));
+      return [...e.querySelectorAll(selector)].map((e) =>
+        parser.parse(e as TIn)
+      );
     },
     $: chainParser,
   };
