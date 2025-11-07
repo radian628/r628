@@ -1,6 +1,6 @@
 // this is horrible why am i doing this
-export class ArrayMap<K, V, Arr extends [K, ...K[]] = [K, ...K[]]> {
-  maps: Map<number, Map<any, any>>;
+export class ArrayMap<K, V, Arr extends K[] = K[]> {
+  maps: Map<number, any>;
   constructor() {
     this.maps = new Map();
   }
@@ -20,11 +20,11 @@ export class ArrayMap<K, V, Arr extends [K, ...K[]] = [K, ...K[]]> {
       map = map.get(p);
       if (!map) return undefined;
     }
-    // @ts-expect-error
     return map;
   }
 
   has(path: Arr): boolean {
+    if (path.length === 0) return this.maps.has(0);
     let map = this.nthMap(path.length);
     for (const p of path) {
       map = map.get(p);
@@ -34,6 +34,11 @@ export class ArrayMap<K, V, Arr extends [K, ...K[]] = [K, ...K[]]> {
   }
 
   delete(path: Arr): V | undefined {
+    if (path.length === 0) {
+      const item = this.maps.get(0);
+      this.maps.delete(0);
+      return item;
+    }
     let map = this.nthMap(path.length);
     for (const p of path.slice(0, -1)) {
       map = map.get(p);
@@ -45,6 +50,10 @@ export class ArrayMap<K, V, Arr extends [K, ...K[]] = [K, ...K[]]> {
   }
 
   change(path: Arr, cb: (v: V | undefined) => V) {
+    if (path.length === 0) {
+      this.maps.set(0, cb(this.maps.get(0)));
+      return;
+    }
     let map = this.nthMap(path.length);
     for (const p of path.slice(0, -1)) {
       let oldMap = map;
@@ -62,7 +71,7 @@ export class ArrayMap<K, V, Arr extends [K, ...K[]] = [K, ...K[]]> {
   }
 
   forEach(map: (path: Arr, v: V) => void) {
-    const r = (n: number, m: Map<any, any>, path: K[]) => {
+    const r = (n: number, m: any, path: K[]) => {
       if (n === 0) {
         // @ts-expect-error
         map(path, m);
@@ -162,7 +171,6 @@ export function table<T>(
         propFilterValues![i],
       ]);
 
-      // @ts-expect-error
       const set = indexes.get(fullFilter);
       return set ? [...set] : [];
     },
@@ -207,8 +215,6 @@ export function table<T>(
     },
   };
 }
-
-type Test = Array<number>[typeof Symbol.iterator];
 
 export function tableWithData<T>(data: T[]) {
   const tbl = table<T>();

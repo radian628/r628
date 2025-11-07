@@ -141,6 +141,7 @@ out vec4 col;\n`) +
   ] as const) {
     for (const [k, v] of Object.entries(uniforms ?? {})) {
       const v2 = Array.isArray(v) ? v : [v];
+      // @ts-expect-error
       gl[`uniform${v2.length}${type}v`](
         gl.getUniformLocation(prog.data, k),
         v2

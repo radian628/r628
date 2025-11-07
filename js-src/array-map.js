@@ -21,6 +21,7 @@ var ArrayMap = class _ArrayMap {
     return map;
   }
   has(path) {
+    if (path.length === 0) return this.maps.has(0);
     let map = this.nthMap(path.length);
     for (const p of path) {
       map = map.get(p);
@@ -29,6 +30,11 @@ var ArrayMap = class _ArrayMap {
     return true;
   }
   delete(path) {
+    if (path.length === 0) {
+      const item2 = this.maps.get(0);
+      this.maps.delete(0);
+      return item2;
+    }
     let map = this.nthMap(path.length);
     for (const p of path.slice(0, -1)) {
       map = map.get(p);
@@ -39,6 +45,10 @@ var ArrayMap = class _ArrayMap {
     return item;
   }
   change(path, cb) {
+    if (path.length === 0) {
+      this.maps.set(0, cb(this.maps.get(0)));
+      return;
+    }
     let map = this.nthMap(path.length);
     for (const p of path.slice(0, -1)) {
       let oldMap = map;

@@ -1,4 +1,11 @@
 // src/math/vector.ts
+function cross(a, b) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0]
+  ];
+}
 function add3(a, b) {
   return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 }
@@ -113,13 +120,6 @@ function ortho(left, right, top, bottom, near, far) {
     1
   ];
 }
-function cross(a, b) {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0]
-  ];
-}
 function normalize(v) {
   const len = Math.hypot(...v);
   return scale3(v, 1 / len);
@@ -152,7 +152,6 @@ function translate(v) {
   return [1, 0, 0, v[0], 0, 1, 0, v[1], 0, 0, 1, v[2], 0, 0, 0, 1];
 }
 export {
-  cross,
   move,
   ortho,
   parametric2D,

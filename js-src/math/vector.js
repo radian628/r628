@@ -1038,6 +1038,15 @@ function cart2Polar(a) {
 function pointTo(a, b) {
   return Math.atan2(b[1] - a[1], b[0] - a[0]);
 }
+function componentwise2(a, f) {
+  return [f(a[0]), f(a[1])];
+}
+function componentwise3(a, f) {
+  return [f(a[0]), f(a[1]), f(a[2])];
+}
+function componentwise4(a, f) {
+  return [f(a[0]), f(a[1]), f(a[2]), f(a[3])];
+}
 function mulScalarByVec2(a, b) {
   return [a * b[0], a * b[1]];
 }
@@ -1729,6 +1738,15 @@ function rescale3(a, b) {
 function rescale4(a, b) {
   return scale4(normalize4(a), b);
 }
+function interp2(a, b, c, d) {
+  return add2(b, mul2(sub2(c, b), componentwise2(a, d)));
+}
+function interp3(a, b, c, d) {
+  return add3(b, mul3(sub3(c, b), componentwise3(a, d)));
+}
+function interp4(a, b, c, d) {
+  return add4(b, mul4(sub4(c, b), componentwise4(a, d)));
+}
 function sum2(a) {
   return a[0] + a[1];
 }
@@ -1761,6 +1779,9 @@ export {
   add3,
   add4,
   cart2Polar,
+  componentwise2,
+  componentwise3,
+  componentwise4,
   cross,
   distance2,
   distance3,
@@ -1771,6 +1792,9 @@ export {
   dot2,
   dot3,
   dot4,
+  interp2,
+  interp3,
+  interp4,
   length2,
   length3,
   length4,

@@ -31,9 +31,31 @@ function groupBy(arr, getGroup) {
   }
   return groups;
 }
+function argmax(arr, f) {
+  let maxFound = -Infinity;
+  let maxElement = arr[0];
+  for (const e of arr) {
+    const val = f(e);
+    if (val > maxFound) {
+      maxElement = e;
+      maxFound = val;
+    }
+  }
+  return maxElement;
+}
+function argmin(arr, f) {
+  return argmax(arr, (t) => -f(t));
+}
+function powerSet(arr) {
+  if (arr.length === 0) return [[]];
+  return powerSet(arr.slice(1)).flatMap((e) => [e, [arr[0], ...e]]);
+}
 export {
+  argmax,
+  argmin,
   bifurcate,
   groupBy,
   interleave,
+  powerSet,
   splitBy
 };

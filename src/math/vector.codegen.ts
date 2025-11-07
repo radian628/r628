@@ -192,7 +192,7 @@ export type Mat3x4 = [
   ${stringRangeMapJoin(12, () => "number", ",")}
 ];
 
-export function cross(a: Vec3, b: Vec3) {
+export function cross(a: Vec3, b: Vec3): Vec3 {
   return [
     a[1] * b[2] - a[2] * b[1],
     a[2] * b[0] - a[0] * b[2],
@@ -218,6 +218,16 @@ export function pointTo(a: Vec2, b: Vec2): number {
     b[0] - a[0]
   );
 } 
+
+export function componentwise2(a: Vec2, f: (x: number) => number): Vec2 {
+  return [f(a[0]), f(a[1])];
+}
+export function componentwise3(a: Vec3, f: (x: number) => number): Vec3 {
+  return [f(a[0]), f(a[1]), f(a[2])];
+}
+export function componentwise4(a: Vec4, f: (x: number) => number): Vec4 {
+  return [f(a[0]), f(a[1]), f(a[2]), f(a[3])];
+}
 
 ${cartesianProduct(
   rangeFrom(1, 5) as (2 | 3 | 4)[],
@@ -262,6 +272,12 @@ ${cartesianProduct(
     [vec, num],
     vec,
     (i) => `scale${i}(normalize${i}(a), b)`
+  ) +
+  createFunctionVariantsFullBody(
+    "interp",
+    [vec, vec, vec, (i) => `(x: number) => number`],
+    vec,
+    (i) => `add${i}(b, mul${i}(sub${i}(c, b), componentwise${i}(a, d)))`
   ) +
   createFunctionVariantsFullBody("sum", [vec], num, (i) =>
     i == 4

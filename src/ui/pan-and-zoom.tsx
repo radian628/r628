@@ -1,24 +1,18 @@
 import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { lerp, rescale } from "../interpolation";
 import { Mat3x2 } from "../math/vector";
-
-export type Rect = {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-};
+import { Rect } from "../spatial-hash-table";
 
 export function panAndZoomMatrix(
   rect: Rect,
   containerWidth: number,
   containerHeight: number
 ): Mat3x2 {
-  const scaleX = (1 / (rect.x2 - rect.x1)) * containerWidth;
-  const scaleY = (1 / (rect.y2 - rect.y1)) * containerHeight;
+  const scaleX = (1 / (rect.b[0] - rect.a[0])) * containerWidth;
+  const scaleY = (1 / (rect.b[1] - rect.a[1])) * containerHeight;
 
-  const translateX = -rect.x1 * scaleX;
-  const translateY = -rect.y1 * scaleY;
+  const translateX = -rect.a[0] * scaleX;
+  const translateY = -rect.a[1] * scaleY;
 
   return [scaleX, 0, 0, scaleY, translateX, translateY];
 }
@@ -59,14 +53,26 @@ export function PanAndZoom(props: {
 
       if (Math.abs(scrollVel.current) > scrollSnapToZero) {
         props.setCoords((c) => {
-          const targetOriginX = lerp(normalizedMousePos.current.x, c.x1, c.x2);
-          const targetOriginY = lerp(normalizedMousePos.current.y, c.y1, c.y2);
+          const targetOriginX = lerp(
+            normalizedMousePos.current.x,
+            c.a[0],
+            c.b[0]
+          );
+          const targetOriginY = lerp(
+            normalizedMousePos.current.y,
+            c.a[1],
+            c.b[1]
+          );
           const scrollAmount = (scrollVel.current * deltaTime) / 1000;
           return {
-            x1: lerp(scrollAmount, c.x1, targetOriginX),
-            y1: lerp(scrollAmount, c.y1, targetOriginY),
-            x2: lerp(scrollAmount, c.x2, targetOriginX),
-            y2: lerp(scrollAmount, c.y2, targetOriginY),
+            a: [
+              lerp(scrollAmount, c.a[0], targetOriginX),
+              lerp(scrollAmount, c.a[1], targetOriginY),
+            ],
+            b: [
+              lerp(scrollAmount, c.b[0], targetOriginX),
+              lerp(scrollAmount, c.b[1], targetOriginY),
+            ],
           };
         });
         props.onUpdate?.();
@@ -109,14 +115,12 @@ export function PanAndZoom(props: {
         };
         if (!mouseDown.current) return;
         props.setCoords((c) => {
-          const dx = -rescale(e.movementX, 0, rect.width, 0, c.x2 - c.x1);
-          const dy = -rescale(e.movementY, 0, rect.height, 0, c.y2 - c.y1);
+          const dx = -rescale(e.movementX, 0, rect.width, 0, c.b[0] - c.a[0]);
+          const dy = -rescale(e.movementY, 0, rect.height, 0, c.b[1] - c.a[1]);
 
           return {
-            x1: c.x1 + dx,
-            y1: c.y1 + dy,
-            x2: c.x2 + dx,
-            y2: c.y2 + dy,
+            a: [c.a[0] + dx, c.a[1] + dy],
+            b: [c.b[0] + dx, c.b[1] + dy],
           };
         });
         props.onUpdate?.();

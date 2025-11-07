@@ -18,5 +18,10 @@
   "main": "./src/index.ts",
   "devDependencies": {
     "@types/bun": "^1.2.21"
-  }
+  },
+  "scripts": {
+    "prepublishOnly": "bun run build"
+  },
+  "name": "r628",
+  "version": "0.1.1"
 }

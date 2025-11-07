@@ -1,3 +1,56 @@
+import { compose } from "./point-free";
+
+export function mapObjKeys<K extends keyof any, V>(
+  obj: Record<K, V>,
+  callback: (k: K, v: V) => K
+) {
+  return mapObjEntries(obj, (k, v) => [callback(k, v), v]);
+}
+
+export function mapObjValues<K extends keyof any, V>(
+  obj: Record<K, V>,
+  callback: (k: K, v: V) => V
+) {
+  return mapObjEntries(obj, (k, v) => [k, callback(k, v)] as const);
+}
+
+export function mapObjEntries<K extends keyof any, V>(
+  obj: Record<K, V>,
+  callback: (k: K, v: V) => [K, V]
+) {
+  return Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => callback(k as K, v as V))
+  );
+}
+
+export function map2obj<K extends keyof any, V>(map: Map<K, V>): Record<K, V> {
+  return Object.fromEntries(map.entries()) as Record<K, V>;
+}
+
+export function obj2map<R extends Record<any, any>>(
+  r: R
+): Map<keyof R, R[keyof R]> {
+  return new Map(Object.entries(r));
+}
+
+export function mapMapEntries<K, V>(
+  map: Map<K, V>,
+  callback: (k: K, v: V) => [K, V]
+) {
+  return new Map([...map.entries()].map((e) => callback(...e)));
+}
+
+export function mapMapKeys<K, V>(map: Map<K, V>, callback: (k: K, v: V) => K) {
+  return new Map([...map.entries()].map((e) => [callback(...e), e[1]]));
+}
+
+export function mapMapValues<K, V>(
+  map: Map<K, V>,
+  callback: (k: K, v: V) => V
+) {
+  return new Map([...map.entries()].map((e) => [e[0], callback(...e)]));
+}
+
 export function setDeep<T, KeyChain extends (keyof any)[]>(
   obj: T,
   path: KeyChain,
@@ -132,10 +185,4 @@ export type NestedKeyOf<T, K> = K extends [infer K1, ...infer Kr]
     : never
   : K extends []
     ? T
-    : never;
-
-type Last<Arr extends any[]> = Arr extends [infer Final]
-  ? Final
-  : Arr extends [infer Head, ...infer Tail]
-    ? Last<Tail>
     : never;

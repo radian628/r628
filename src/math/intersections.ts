@@ -1,3 +1,4 @@
+import { Rect } from "../spatial-hash-table";
 import { add2, mix2, pointTo, Vec2 } from "./vector";
 
 type Circle = {
@@ -128,4 +129,20 @@ export function closestApproachOfLineSegmentToPoint(l: LineSegment, pt: Vec2) {
 
 export function sampleLineSegment(l: LineSegment, t: number) {
   return mix2(t, l.a, l.b);
+}
+
+export function rangeIntersects(
+  a1: number,
+  a2: number,
+  b1: number,
+  b2: number
+) {
+  return !(a1 > b2 || b1 > a2);
+}
+
+export function rectIntersects(a: Rect, b: Rect) {
+  return (
+    rangeIntersects(a.a[0], a.b[0], b.a[0], b.b[0]) &&
+    rangeIntersects(a.a[1], a.b[1], b.a[1], b.b[1])
+  );
 }

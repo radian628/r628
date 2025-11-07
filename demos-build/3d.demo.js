@@ -1,5 +1,12 @@
 (() => {
   // src/math/vector.ts
+  function cross(a, b) {
+    return [
+      a[1] * b[2] - a[2] * b[1],
+      a[2] * b[0] - a[0] * b[2],
+      a[0] * b[1] - a[1] * b[0]
+    ];
+  }
   function mulMat4(a, b) {
     return [
       a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
@@ -170,13 +177,6 @@
       0,
       near * far * rangeInv * 2,
       0
-    ];
-  }
-  function cross(a, b) {
-    return [
-      a[1] * b[2] - a[2] * b[1],
-      a[2] * b[0] - a[0] * b[2],
-      a[0] * b[1] - a[1] * b[0]
     ];
   }
   function normalize(v) {

@@ -1,4 +1,13 @@
-import { add3, dot3, Mat4, scale3, Vec2, Vec3, Vec4 } from "../math/vector";
+import {
+  add3,
+  cross,
+  dot3,
+  Mat4,
+  scale3,
+  Vec2,
+  Vec3,
+  Vec4,
+} from "../math/vector";
 
 type MeshAttrs = Record<string, [number] | Vec2 | Vec3 | Vec4>;
 
@@ -150,14 +159,6 @@ export function ortho(
     0,
     0,
     1,
-  ];
-}
-
-export function cross(a: Vec3, b: Vec3): Vec3 {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0],
   ];
 }
 

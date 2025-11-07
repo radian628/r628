@@ -96,12 +96,20 @@ function closestApproachOfLineSegmentToPoint(l, pt) {
 function sampleLineSegment(l, t) {
   return mix2(t, l.a, l.b);
 }
+function rangeIntersects(a1, a2, b1, b2) {
+  return !(a1 > b2 || b1 > a2);
+}
+function rectIntersects(a, b) {
+  return rangeIntersects(a.a[0], a.b[0], b.a[0], b.b[0]) && rangeIntersects(a.a[1], a.b[1], b.a[1], b.b[1]);
+}
 export {
   circleIntersectLine,
   closestApproachOfLineSegmentToPoint,
   getEqualAngularDivisionsOfLineSegment,
   getSmallestAngleDifference,
   lineIntersectLine,
+  rangeIntersects,
   rayIntersectLine,
+  rectIntersects,
   sampleLineSegment
 };

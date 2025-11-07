@@ -3144,11 +3144,11 @@ var require_react_dom_client_development = __commonJS({
         checkFormFieldValueStringCoercion(node[valueField]);
         var currentValue = "" + node[valueField];
         if (!node.hasOwnProperty(valueField) && "undefined" !== typeof descriptor && "function" === typeof descriptor.get && "function" === typeof descriptor.set) {
-          var get = descriptor.get, set = descriptor.set;
+          var get2 = descriptor.get, set = descriptor.set;
           Object.defineProperty(node, valueField, {
             configurable: true,
             get: function() {
-              return get.call(this);
+              return get2.call(this);
             },
             set: function(value) {
               checkFormFieldValueStringCoercion(value);
@@ -19934,6 +19934,25 @@ function groupBy(arr, getGroup) {
   }
   return groups;
 }
+function argmax(arr, f) {
+  let maxFound = -Infinity;
+  let maxElement = arr[0];
+  for (const e of arr) {
+    const val = f(e);
+    if (val > maxFound) {
+      maxElement = e;
+      maxFound = val;
+    }
+  }
+  return maxElement;
+}
+function argmin(arr, f) {
+  return argmax(arr, (t) => -f(t));
+}
+function powerSet(arr) {
+  if (arr.length === 0) return [[]];
+  return powerSet(arr.slice(1)).flatMap((e) => [e, [arr[0], ...e]]);
+}
 
 // src/range.ts
 function range(hi) {
@@ -21340,6 +21359,13 @@ function z(a) {
 function w(a) {
   return a[3];
 }
+function cross(a, b) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0]
+  ];
+}
 function polar2Cart(r, theta) {
   return [r * Math.cos(theta), r * Math.sin(theta)];
 }
@@ -21351,6 +21377,15 @@ function cart2Polar(a) {
 }
 function pointTo(a, b) {
   return Math.atan2(b[1] - a[1], b[0] - a[0]);
+}
+function componentwise2(a, f) {
+  return [f(a[0]), f(a[1])];
+}
+function componentwise3(a, f) {
+  return [f(a[0]), f(a[1]), f(a[2])];
+}
+function componentwise4(a, f) {
+  return [f(a[0]), f(a[1]), f(a[2]), f(a[3])];
 }
 function mulScalarByVec2(a, b) {
   return [a * b[0], a * b[1]];
@@ -22043,6 +22078,15 @@ function rescale3(a, b) {
 function rescale4(a, b) {
   return scale4(normalize4(a), b);
 }
+function interp2(a, b, c, d) {
+  return add2(b, mul2(sub2(c, b), componentwise2(a, d)));
+}
+function interp3(a, b, c, d) {
+  return add3(b, mul3(sub3(c, b), componentwise3(a, d)));
+}
+function interp4(a, b, c, d) {
+  return add4(b, mul4(sub4(c, b), componentwise4(a, d)));
+}
 function sum2(a) {
   return a[0] + a[1];
 }
@@ -22343,6 +22387,186 @@ function lookupQuadtree(qt, x1, y1, x2, y2) {
   ];
 }
 
+// src/point-free.ts
+function compose(...args) {
+  return (x2) => {
+    for (const a of args) x2 = a(x2);
+    return x2;
+  };
+}
+
+// src/parser.ts
+function str2html(str) {
+  return new DOMParser().parseFromString(str, "text/html");
+}
+function chainParser(parser2) {
+  const oldParser = this;
+  return {
+    parse(e) {
+      const res = oldParser.parse(e);
+      return parser2.parse(res);
+    },
+    $: chainParser
+  };
+}
+function domQueryAll(selector, parser2) {
+  return {
+    parse(e) {
+      return [...e.querySelectorAll(selector)].map(
+        (e2) => parser2.parse(e2)
+      );
+    },
+    $: chainParser
+  };
+}
+function domQuery(selector, doesExist, doesNotExist) {
+  return {
+    parse(e) {
+      const res = e.querySelector(selector);
+      return res ? doesExist(res) : doesNotExist();
+    },
+    $: chainParser
+  };
+}
+function domQueryObj(fields) {
+  return {
+    parse(e) {
+      return Object.fromEntries(
+        Object.entries(fields).map(([k, v]) => [k, v.parse(e)])
+      );
+    },
+    $: chainParser
+  };
+}
+function get(prop) {
+  return parser((t) => t[prop]);
+}
+function parser(fn) {
+  return {
+    parse: fn,
+    $: chainParser
+  };
+}
+function regexMatch(regex) {
+  return parser((s) => s.match(regex)?.[0]);
+}
+function orElse(fallback) {
+  return parser((s) => s ?? fallback());
+}
+var ud = () => void 0;
+function str2int(fallback, radix) {
+  return parser((s) => {
+    const i = parseInt(s, radix);
+    if (isNaN(i)) {
+      return fallback();
+    }
+    return i;
+  });
+}
+function str2float(fallback) {
+  return parser((s) => {
+    const i = parseFloat(s);
+    if (isNaN(i)) return fallback();
+    return i;
+  });
+}
+function innerTextRegex(selector, regex, fallbackIfNotExist, fallbackIfNoMatch) {
+  return domQuery(
+    selector,
+    (e) => e.innerText.match(regex)?.[0] ?? fallbackIfNoMatch(e),
+    () => fallbackIfNotExist
+  );
+}
+
+// src/object-utils.ts
+function mapObjKeys(obj, callback) {
+  return mapObjEntries(obj, (k, v) => [callback(k, v), v]);
+}
+function mapObjValues(obj, callback) {
+  return mapObjEntries(obj, (k, v) => [k, callback(k, v)]);
+}
+function mapObjEntries(obj, callback) {
+  return Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => callback(k, v))
+  );
+}
+function map2obj(map) {
+  return Object.fromEntries(map.entries());
+}
+function obj2map(r) {
+  return new Map(Object.entries(r));
+}
+function mapMapEntries(map, callback) {
+  return new Map([...map.entries()].map((e) => callback(...e)));
+}
+function mapMapKeys(map, callback) {
+  return new Map([...map.entries()].map((e) => [callback(...e), e[1]]));
+}
+function mapMapValues(map, callback) {
+  return new Map([...map.entries()].map((e) => [e[0], callback(...e)]));
+}
+function setDeep(obj, path, value) {
+  if (path.length === 0) return value;
+  const inner = setDeep(obj[path[0]], path.slice(1), value);
+  if (Array.isArray(obj)) {
+    return obj.map((e, i) => i === path[0] ? inner : e);
+  }
+  return {
+    ...obj,
+    [path[0]]: inner
+  };
+}
+var ALL = Symbol("allKeys");
+function nestedMap(obj, path, value) {
+  function nestedMapInner(obj2, path2, value2, segs) {
+    if (path2.length === 0) return value2(...segs);
+    if (Array.isArray(path2[0])) {
+      if (Array.isArray(obj2)) {
+        const keys = new Set(path2[0]);
+        return obj2.map(
+          (e, i) => keys.has(i) ? nestedMapInner(e, path2.slice(1), value2, [[i, e], ...segs]) : e
+        );
+      } else {
+        const obj22 = { ...obj2 };
+        for (const key of path2[0]) {
+          obj22[key] = nestedMapInner(obj2[key], path2.slice(1), value2, [
+            [key, obj2[key]],
+            ...segs
+          ]);
+        }
+        return obj22;
+      }
+    } else if (path2[0] === ALL) {
+      if (Array.isArray(obj2)) {
+        return obj2.map(
+          (e, i) => nestedMapInner(e, path2.slice(1), value2, [[i, e], ...segs])
+        );
+      } else {
+        return Object.fromEntries(
+          Object.entries(obj2).map(([k, v]) => [
+            k,
+            nestedMapInner(v, path2.slice(1), value2, [[k, v], ...segs])
+          ])
+        );
+      }
+    } else {
+      const inner = nestedMapInner(obj2[path2[0]], path2.slice(1), value2, [
+        [path2[0], obj2],
+        ...segs
+      ]);
+      if (Array.isArray(obj2)) {
+        return obj2.map((e, i) => i === path2[0] ? inner : e);
+      }
+      return {
+        ...obj2,
+        [path2[0]]: inner
+      };
+    }
+  }
+  return nestedMapInner(obj, path, value, []);
+}
+var _ALL = Symbol("all2");
+
 // src/array-map.ts
 var ArrayMap = class _ArrayMap {
   maps;
@@ -22366,6 +22590,7 @@ var ArrayMap = class _ArrayMap {
     return map;
   }
   has(path) {
+    if (path.length === 0) return this.maps.has(0);
     let map = this.nthMap(path.length);
     for (const p of path) {
       map = map.get(p);
@@ -22374,6 +22599,11 @@ var ArrayMap = class _ArrayMap {
     return true;
   }
   delete(path) {
+    if (path.length === 0) {
+      const item2 = this.maps.get(0);
+      this.maps.delete(0);
+      return item2;
+    }
     let map = this.nthMap(path.length);
     for (const p of path.slice(0, -1)) {
       map = map.get(p);
@@ -22384,6 +22614,10 @@ var ArrayMap = class _ArrayMap {
     return item;
   }
   change(path, cb2) {
+    if (path.length === 0) {
+      this.maps.set(0, cb2(this.maps.get(0)));
+      return;
+    }
     let map = this.nthMap(path.length);
     for (const p of path.slice(0, -1)) {
       let oldMap = map;
@@ -22532,6 +22766,19 @@ function memo(callback, serializeParams) {
   };
   fn.getCache = () => map;
   return fn;
+}
+function memoWithTimedInvalidation(callback, lifetime, serializeParams) {
+  const m = memo((...p) => {
+    const res = callback(...p);
+    setTimeout(
+      () => {
+        m.invalidate(...p);
+      },
+      lifetime(p, res)
+    );
+    return res;
+  }, serializeParams);
+  return m;
 }
 function lazy(callback) {
   let executed = false;
@@ -22787,11 +23034,11 @@ function injectElementsAt(selector, position, element) {
 }
 
 // src/lens.ts
-function setDeep(obj, path, value) {
+function setDeep2(obj, path, value) {
   if (path.length === 0) return value;
   return {
     ...obj,
-    [path[0]]: setDeep(obj[path[0]], path.slice(1), value)
+    [path[0]]: setDeep2(obj[path[0]], path.slice(1), value)
   };
 }
 function getDeep(obj, path) {
@@ -22804,7 +23051,7 @@ function lensInner(s, path = []) {
     {
       get(target, prop, receiver) {
         if (prop === "$") {
-          return (v) => setDeep(s.at(-1), path, v);
+          return (v) => setDeep2(s.at(-1), path, v);
         } else if (prop === "$push") {
           return lensInner([...s, getDeep(s.at(-1), path)], []);
         } else if (prop === "$pop") {
@@ -22820,19 +23067,11 @@ function lens(t) {
   return lensInner([t], []);
 }
 
-// src/intersect.ts
-function rangeIntersects(a1, a2, b1, b2) {
-  return !(a1 > b2 || b1 > a2);
-}
-function rectIntersects(a, b) {
-  return rangeIntersects(a.left, a.right, b.left, b.right) && rangeIntersects(a.top, a.bottom, b.top, b.bottom);
-}
-
 // src/inject.ts
-async function injectFunction(get, set, injector) {
+async function injectFunction(get2, set, injector) {
   return new Promise((resolve, reject) => {
     const interval = setInterval(() => {
-      const fn = get();
+      const fn = get2();
       if (!fn) return;
       set(injector(fn));
       clearInterval(interval);
@@ -23258,122 +23497,6 @@ function debounce(callback) {
   return fn;
 }
 
-// src/math/noise.ts
-function fract(x2) {
-  return x2 - Math.floor(x2);
-}
-function simpleRandVec2ToFloat(co) {
-  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
-}
-function simpleRandVec2ToVec2(co) {
-  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
-}
-function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
-  const fp = [Math.floor(p[0]), Math.floor(p[1])];
-  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
-  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
-  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
-  const v4 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
-  const o1 = sub2(p, fp);
-  const o2 = sub2(o1, [1, 0]);
-  const o3 = sub2(o1, [0, 1]);
-  const o4 = sub2(o1, [1, 1]);
-  const d1 = dot2(v1, o1);
-  const d2 = dot2(v2, o2);
-  const d3 = dot2(v3, o3);
-  const d4 = dot2(v4, o4);
-  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
-  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
-  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
-}
-function boxMullerTransform(u) {
-  const a = Math.sqrt(-2 * Math.log(u[0]));
-  const b = 2 * Math.PI * u[1];
-  return [a * Math.cos(b), a * Math.sin(b)];
-}
-
-// src/math/intersections.ts
-function quadraticFormula(a, b, c) {
-  const bSquaredMinusFourAC = b ** 2 - 4 * a * c;
-  if (bSquaredMinusFourAC < 0) return [];
-  if (bSquaredMinusFourAC === 0) return [-b / (2 * a)];
-  return [
-    (-b - Math.sqrt(bSquaredMinusFourAC)) / (2 * a),
-    (-b + Math.sqrt(bSquaredMinusFourAC)) / (2 * a)
-  ];
-}
-function circleIntersectLine(circle, seg) {
-  const bxMinusAx = seg.b[0] - seg.a[0];
-  const byMinusAy = seg.b[1] - seg.a[1];
-  const axMinusCx = seg.a[0] - circle.center[0];
-  const ayMinusCy = seg.a[1] - circle.center[1];
-  const a = bxMinusAx ** 2 + byMinusAy ** 2;
-  const b = 2 * (bxMinusAx * axMinusCx + byMinusAy * ayMinusCy);
-  const c = axMinusCx ** 2 + ayMinusCy ** 2 - circle.radius ** 2;
-  return quadraticFormula(a, b, c);
-}
-function lineIntersectLine(a, b) {
-  const ax = a.a[0];
-  const ay = a.a[1];
-  const bx = a.b[0];
-  const by = a.b[1];
-  const cx = b.a[0];
-  const cy = b.a[1];
-  const dx = b.b[0];
-  const dy = b.b[1];
-  return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
-}
-function rayIntersectLine(ray, b) {
-  return lineIntersectLine(
-    {
-      a: ray.center,
-      b: add2(ray.center, [Math.cos(ray.dir), Math.sin(ray.dir)])
-    },
-    b
-  );
-}
-function getSmallestAngleDifference(a, b) {
-  const minDiff = Math.min(
-    Math.abs(a - b),
-    Math.abs(a - b + Math.PI * 2),
-    Math.abs(a - b - Math.PI * 2)
-  );
-  const lowest = Math.min(a, b);
-  return [lowest, lowest + minDiff];
-}
-function getEqualAngularDivisionsOfLineSegment(center, b, interval) {
-  const [angle1, angle2] = getSmallestAngleDifference(
-    pointTo(center, b.a),
-    pointTo(center, b.b)
-  );
-  const truncatedAngle1 = Math.ceil(angle1 / interval) * interval;
-  let tValues = [];
-  for (let i = truncatedAngle1; i < angle2; i += interval) {
-    tValues.push(
-      rayIntersectLine(
-        {
-          center,
-          dir: i
-        },
-        b
-      )
-    );
-  }
-  return tValues;
-}
-function closestApproachOfLineSegmentToPoint(l, pt) {
-  const ax = l.a[0];
-  const ay = l.a[1];
-  const bx = l.b[0];
-  const by = l.b[1];
-  const cx = pt[0];
-  const cy = pt[1];
-  return (-(bx - ax) * (ax - cx) - (by - ay) * (ay - cy)) / ((bx - ax) ** 2 + (by - ay) ** 2);
-}
-function sampleLineSegment(l, t) {
-  return mix2(t, l.a, l.b);
-}
-
 // src/webgl/shader.ts
 function source2shader(gl, type, source) {
   const shader = gl.createShader(
@@ -23661,13 +23784,6 @@ function ortho(left, right, top, bottom, near, far) {
     0,
     0,
     1
-  ];
-}
-function cross(a, b) {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0]
   ];
 }
 function normalize(v) {
@@ -27221,6 +27337,131 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
+// src/math/noise.ts
+function fract(x2) {
+  return x2 - Math.floor(x2);
+}
+function simpleRandVec2ToFloat(co) {
+  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
+}
+function simpleRandVec2ToVec2(co) {
+  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
+}
+function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
+  const fp = [Math.floor(p[0]), Math.floor(p[1])];
+  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
+  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
+  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
+  const v4 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
+  const o1 = sub2(p, fp);
+  const o2 = sub2(o1, [1, 0]);
+  const o3 = sub2(o1, [0, 1]);
+  const o4 = sub2(o1, [1, 1]);
+  const d1 = dot2(v1, o1);
+  const d2 = dot2(v2, o2);
+  const d3 = dot2(v3, o3);
+  const d4 = dot2(v4, o4);
+  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
+  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
+  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
+}
+function boxMullerTransform(u) {
+  const a = Math.sqrt(-2 * Math.log(u[0]));
+  const b = 2 * Math.PI * u[1];
+  return [a * Math.cos(b), a * Math.sin(b)];
+}
+
+// src/math/intersections.ts
+function quadraticFormula(a, b, c) {
+  const bSquaredMinusFourAC = b ** 2 - 4 * a * c;
+  if (bSquaredMinusFourAC < 0) return [];
+  if (bSquaredMinusFourAC === 0) return [-b / (2 * a)];
+  return [
+    (-b - Math.sqrt(bSquaredMinusFourAC)) / (2 * a),
+    (-b + Math.sqrt(bSquaredMinusFourAC)) / (2 * a)
+  ];
+}
+function circleIntersectLine(circle, seg) {
+  const bxMinusAx = seg.b[0] - seg.a[0];
+  const byMinusAy = seg.b[1] - seg.a[1];
+  const axMinusCx = seg.a[0] - circle.center[0];
+  const ayMinusCy = seg.a[1] - circle.center[1];
+  const a = bxMinusAx ** 2 + byMinusAy ** 2;
+  const b = 2 * (bxMinusAx * axMinusCx + byMinusAy * ayMinusCy);
+  const c = axMinusCx ** 2 + ayMinusCy ** 2 - circle.radius ** 2;
+  return quadraticFormula(a, b, c);
+}
+function lineIntersectLine(a, b) {
+  const ax = a.a[0];
+  const ay = a.a[1];
+  const bx = a.b[0];
+  const by = a.b[1];
+  const cx = b.a[0];
+  const cy = b.a[1];
+  const dx = b.b[0];
+  const dy = b.b[1];
+  return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
+}
+function rayIntersectLine(ray, b) {
+  return lineIntersectLine(
+    {
+      a: ray.center,
+      b: add2(ray.center, [Math.cos(ray.dir), Math.sin(ray.dir)])
+    },
+    b
+  );
+}
+function getSmallestAngleDifference(a, b) {
+  const minDiff = Math.min(
+    Math.abs(a - b),
+    Math.abs(a - b + Math.PI * 2),
+    Math.abs(a - b - Math.PI * 2)
+  );
+  const lowest = Math.min(a, b);
+  return [lowest, lowest + minDiff];
+}
+function getEqualAngularDivisionsOfLineSegment(center, b, interval) {
+  const [angle1, angle2] = getSmallestAngleDifference(
+    pointTo(center, b.a),
+    pointTo(center, b.b)
+  );
+  const truncatedAngle1 = Math.ceil(angle1 / interval) * interval;
+  let tValues = [];
+  for (let i = truncatedAngle1; i < angle2; i += interval) {
+    tValues.push(
+      rayIntersectLine(
+        {
+          center,
+          dir: i
+        },
+        b
+      )
+    );
+  }
+  return tValues;
+}
+function closestApproachOfLineSegmentToPoint(l, pt) {
+  const ax = l.a[0];
+  const ay = l.a[1];
+  const bx = l.b[0];
+  const by = l.b[1];
+  const cx = pt[0];
+  const cy = pt[1];
+  return (-(bx - ax) * (ax - cx) - (by - ay) * (ay - cy)) / ((bx - ax) ** 2 + (by - ay) ** 2);
+}
+function sampleLineSegment(l, t) {
+  return mix2(t, l.a, l.b);
+}
+function rangeIntersects(a1, a2, b1, b2) {
+  return !(a1 > b2 || b1 > a2);
+}
+function rectIntersects(a, b) {
+  return rangeIntersects(a.a[0], a.b[0], b.a[0], b.b[0]) && rangeIntersects(a.a[1], a.b[1], b.a[1], b.b[1]);
+}
+
+// src/ui/upload-image.tsx
+var pretendThisIsAModule = {};
+
 // src/ui/react-string-field.tsx
 var import_react = __toESM(require_react());
 function StringField(props) {
@@ -27428,10 +27669,10 @@ function simpleProgressBar(tasks) {
 // src/ui/pan-and-zoom.tsx
 var import_react5 = __toESM(require_react());
 function panAndZoomMatrix(rect, containerWidth, containerHeight) {
-  const scaleX = 1 / (rect.x2 - rect.x1) * containerWidth;
-  const scaleY = 1 / (rect.y2 - rect.y1) * containerHeight;
-  const translateX = -rect.x1 * scaleX;
-  const translateY = -rect.y1 * scaleY;
+  const scaleX = 1 / (rect.b[0] - rect.a[0]) * containerWidth;
+  const scaleY = 1 / (rect.b[1] - rect.a[1]) * containerHeight;
+  const translateX = -rect.a[0] * scaleX;
+  const translateY = -rect.a[1] * scaleY;
   return [scaleX, 0, 0, scaleY, translateX, translateY];
 }
 function panAndZoomCanvas2d(canvas, ctx, rect) {
@@ -27454,14 +27695,26 @@ function PanAndZoom(props) {
       scrollVel.current *= Math.pow(scrollDecay, deltaTime / 1e3);
       if (Math.abs(scrollVel.current) > scrollSnapToZero) {
         props.setCoords((c) => {
-          const targetOriginX = lerp(normalizedMousePos.current.x, c.x1, c.x2);
-          const targetOriginY = lerp(normalizedMousePos.current.y, c.y1, c.y2);
+          const targetOriginX = lerp(
+            normalizedMousePos.current.x,
+            c.a[0],
+            c.b[0]
+          );
+          const targetOriginY = lerp(
+            normalizedMousePos.current.y,
+            c.a[1],
+            c.b[1]
+          );
           const scrollAmount = scrollVel.current * deltaTime / 1e3;
           return {
-            x1: lerp(scrollAmount, c.x1, targetOriginX),
-            y1: lerp(scrollAmount, c.y1, targetOriginY),
-            x2: lerp(scrollAmount, c.x2, targetOriginX),
-            y2: lerp(scrollAmount, c.y2, targetOriginY)
+            a: [
+              lerp(scrollAmount, c.a[0], targetOriginX),
+              lerp(scrollAmount, c.a[1], targetOriginY)
+            ],
+            b: [
+              lerp(scrollAmount, c.b[0], targetOriginX),
+              lerp(scrollAmount, c.b[1], targetOriginY)
+            ]
           };
         });
         props.onUpdate?.();
@@ -27501,13 +27754,11 @@ function PanAndZoom(props) {
         };
         if (!mouseDown.current) return;
         props.setCoords((c) => {
-          const dx = -rescale(e.movementX, 0, rect.width, 0, c.x2 - c.x1);
-          const dy = -rescale(e.movementY, 0, rect.height, 0, c.y2 - c.y1);
+          const dx = -rescale(e.movementX, 0, rect.width, 0, c.b[0] - c.a[0]);
+          const dy = -rescale(e.movementY, 0, rect.height, 0, c.b[1] - c.a[1]);
           return {
-            x1: c.x1 + dx,
-            y1: c.y1 + dy,
-            x2: c.x2 + dx,
-            y2: c.y2 + dy
+            a: [c.a[0] + dx, c.a[1] + dy],
+            b: [c.b[0] + dx, c.b[1] + dy]
           };
         });
         props.onUpdate?.();
@@ -27517,6 +27768,7 @@ function PanAndZoom(props) {
   );
 }
 export {
+  ALL,
   ArrayMap,
   NumberField,
   ObjectField,
@@ -27533,6 +27785,8 @@ export {
   alterElements,
   applyUniform,
   applyUniforms,
+  argmax,
+  argmin,
   bezierAdaptive,
   bezierAdaptiveInner,
   bezierPreview,
@@ -27543,10 +27797,15 @@ export {
   canvasToBlob,
   cart2Polar,
   cartesianProduct,
+  chainParser,
   circleIntersectLine,
   clamp,
   clampToArray,
   closestApproachOfLineSegmentToPoint,
+  componentwise2,
+  componentwise3,
+  componentwise4,
+  compose,
   constant,
   convolve,
   createBufferWithLayout,
@@ -27560,6 +27819,7 @@ export {
   createScene,
   createWorkerReceiver,
   createWorkerWithInterface,
+  cross,
   debounce,
   deleteEdge,
   distance2,
@@ -27568,6 +27828,9 @@ export {
   div2,
   div3,
   div4,
+  domQuery,
+  domQueryAll,
+  domQueryObj,
   dot2,
   dot3,
   dot4,
@@ -27578,6 +27841,7 @@ export {
   err,
   findEndpoint,
   fullscreenQuadBuffer,
+  get,
   getClamped,
   getConnectedComponents,
   getDepthFirstTraversalOrder,
@@ -27598,7 +27862,11 @@ export {
   incidentEdges,
   injectElementsAt,
   injectFunction,
+  innerTextRegex,
   interleave,
+  interp2,
+  interp3,
+  interp4,
   islandsToSvg,
   json2graph,
   lazy,
@@ -27614,7 +27882,15 @@ export {
   loadImg,
   lookupQuadtree,
   makeQuadtree,
+  map2obj,
+  mapMapEntries,
+  mapMapKeys,
+  mapMapValues,
+  mapObjEntries,
+  mapObjKeys,
+  mapObjValues,
   memo,
+  memoWithTimedInvalidation,
   mix2,
   mix3,
   mix4,
@@ -27689,16 +27965,20 @@ export {
   neg2,
   neg3,
   neg4,
+  nestedMap,
   normalize2,
   normalize3,
   normalize4,
+  obj2map,
   objectFieldDataToNativeObject,
   ok,
+  orElse,
   ortho,
   panAndZoomCanvas2d,
   panAndZoomMatrix,
   parametric2D,
   parseSpatialHashTable,
+  parser,
   perlin2d,
   perspective,
   pickrand,
@@ -27706,6 +27986,8 @@ export {
   pointTo,
   polar2Cart,
   polarVec2Cart,
+  powerSet,
+  pretendThisIsAModule,
   quadraticCurveToPath,
   quadraticCurveToSvgPath,
   rand,
@@ -27715,6 +27997,7 @@ export {
   rangeIntersects,
   rayIntersectLine,
   rectIntersects,
+  regexMatch,
   registerStorageItem,
   resample,
   rescale,
@@ -27734,6 +28017,7 @@ export {
   scaleDuration,
   sdBezier,
   serializeSpatialHashTable,
+  setDeep,
   shaders2program,
   signal,
   silence,
@@ -27752,6 +28036,9 @@ export {
   spatialHashTable,
   splitBy,
   square,
+  str2float,
+  str2html,
+  str2int,
   stringField,
   stringMapJoin,
   stringRangeMapJoin,
@@ -27771,6 +28058,7 @@ export {
   throttle,
   torus,
   translate,
+  ud,
   unclampedSmoothstep,
   unlerp,
   useObjectFieldLayout,

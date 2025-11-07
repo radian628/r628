@@ -52,3 +52,8 @@ export function argmax<T>(arr: [T, ...T[]], f: (t: T) => number): T {
 export function argmin<T>(arr: [T, ...T[]], f: (t: T) => number): T {
   return argmax(arr, (t) => -f(t));
 }
+
+export function powerSet<T>(arr: T[]): T[][] {
+  if (arr.length === 0) return [[]];
+  return powerSet(arr.slice(1)).flatMap((e) => [e, [arr[0], ...e]]);
+}

@@ -1109,7 +1109,7 @@ export type Mat3x4 = [
   number,
 ]
 
-export function cross(a: Vec3, b: Vec3) {
+export function cross(a: Vec3, b: Vec3): Vec3 {
   return [
     a[1] * b[2] - a[2] * b[1],
     a[2] * b[0] - a[0] * b[2],
@@ -1131,6 +1131,16 @@ export function cart2Polar(a: Vec2): Vec2 {
 
 export function pointTo(a: Vec2, b: Vec2): number {
   return Math.atan2(b[1] - a[1], b[0] - a[0])
+}
+
+export function componentwise2(a: Vec2, f: (x: number) => number): Vec2 {
+  return [f(a[0]), f(a[1])]
+}
+export function componentwise3(a: Vec3, f: (x: number) => number): Vec3 {
+  return [f(a[0]), f(a[1]), f(a[2])]
+}
+export function componentwise4(a: Vec4, f: (x: number) => number): Vec4 {
+  return [f(a[0]), f(a[1]), f(a[2]), f(a[3])]
 }
 
 export function mulScalarByVec2(a: number, b: Vec2): Vec2 {
@@ -1827,6 +1837,30 @@ export function rescale3(a: Vec3, b: number): Vec3 {
 }
 export function rescale4(a: Vec4, b: number): Vec4 {
   return scale4(normalize4(a), b)
+}
+export function interp2(
+  a: Vec2,
+  b: Vec2,
+  c: Vec2,
+  d: (x: number) => number,
+): Vec2 {
+  return add2(b, mul2(sub2(c, b), componentwise2(a, d)))
+}
+export function interp3(
+  a: Vec3,
+  b: Vec3,
+  c: Vec3,
+  d: (x: number) => number,
+): Vec3 {
+  return add3(b, mul3(sub3(c, b), componentwise3(a, d)))
+}
+export function interp4(
+  a: Vec4,
+  b: Vec4,
+  c: Vec4,
+  d: (x: number) => number,
+): Vec4 {
+  return add4(b, mul4(sub4(c, b), componentwise4(a, d)))
 }
 export function sum2(a: Vec2): number {
   return a[0] + a[1]

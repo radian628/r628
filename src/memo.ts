@@ -1,8 +1,8 @@
 import { ArrayMap } from "./array-map.js";
 
-export function memo<Params extends [any, ...any[]], RetType>(
+export function memo<Params extends any[], RetType>(
   callback: (...params: Params) => RetType,
-  serializeParams?: (p: Params) => [any, ...any[]]
+  serializeParams?: (p: Params) => any[]
 ) {
   if (!serializeParams) serializeParams = (x) => x;
   const map = new ArrayMap<any, RetType>();
@@ -24,6 +24,24 @@ export function memo<Params extends [any, ...any[]], RetType>(
   fn.getCache = () => map;
 
   return fn;
+}
+
+export function memoWithTimedInvalidation<Params extends any[], RetType>(
+  callback: (...params: Params) => RetType,
+  lifetime: (params: Params, ret: RetType) => number,
+  serializeParams?: (p: Params) => any[]
+) {
+  const m = memo<Params, RetType>((...p) => {
+    const res = callback(...p);
+    setTimeout(
+      () => {
+        m.invalidate(...p);
+      },
+      lifetime(p, res)
+    );
+    return res;
+  }, serializeParams);
+  return m;
 }
 
 export function lazy<T>(callback: () => T): () => T {
