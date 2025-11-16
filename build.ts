@@ -3,6 +3,8 @@ import { glob } from "glob";
 import * as fs from "node:fs/promises";
 import { demosPlugin } from "./src-node/esbuild-demos";
 import * as path from "node:path";
+import { wgslPlugin } from "./src-node/esbuild-wgsl-plugin";
+import { rawQueryParamPlugin } from "./src-node/esbuild-raw-query-param";
 
 const codegenFiles = await glob("**/*.codegen.ts", {
   ignore: "node_modules/**",
@@ -82,7 +84,7 @@ const nonReactDemos = await esbuild.build({
   bundle: true,
   format: "iife",
   // write: false,
-  plugins: [demosPlugin()],
+  plugins: [demosPlugin(), wgslPlugin(), rawQueryParamPlugin],
 });
 
 // for (let out of nonReactDemos.outputFiles) {

@@ -63,7 +63,7 @@ type XRay<InitRoot, Root, Access, Context, Chain extends NestedModKey[]> =
     (Access extends (infer Elem)[]
       ? {
           $ec: <T>(
-            fn: (i: number, c: Context) => number
+            fn: (e: Elem, i: number, c: Context) => Elem
           ) => XRay<InitRoot, Root, Elem, T, [...Chain, number]>;
           $e: XRay<InitRoot, Root, Elem, number, [...Chain, number]>;
         }
@@ -130,26 +130,56 @@ let asd = undefined as unknown as XRay<
 >;
 
 export const xray = <A>(a: A): XRay<A, A, A, undefined, []> =>
-  undefined as unknown as XRay<A, A, A, undefined, []>;
+  xrayInner(a, (x) => x);
+
+export const xrayInner = <A>(
+  a: A,
+  set: (a: any) => any
+): XRay<A, A, A, undefined, []> =>
+  new Proxy(
+    {},
+    {
+      get(target, prop, receiver) {
+        if (prop === "$v") {
+          return set(a);
+        } else if (prop === "$") {
+        } else if (prop === "$s") {
+        } else if (prop === "$ctx") {
+        }
+
+        if (Array.isArray(a)) {
+          if (prop === "$e") {
+          } else if (prop === "$ec") {
+          }
+        } else if (typeof a === "object" && a) {
+          if (prop === "$m") {
+          } else if (prop === "$mx") {
+          } else {
+            // return xrayInner(a[prop as keyof A], );
+          }
+        }
+      },
+    }
+  ) as XRay<A, A, A, undefined, []>;
 
 // export const xr: <R, A, C, Ch extends NestedModKey[]>() => ((
 //   x: XRay<R, A, C, Ch>
 // ) => XRay<R, A, C, Ch>) &
 //   XRay<R, A, C, Ch> = undefined;
 
-const id: <T>(t: T) => T = (x) => x;
+// const id: <T>(t: T) => T = (x) => x;
 
-const test2 = asd.c.$([4, 5]);
+// const test2 = asd.c.$([4, 5]);
 
-const test3 = asd.$m((x) => ({
-  fuck: ["penis"],
-  cunt: 3,
-})).$v.cunt;
+// const test3 = asd.$m((x) => ({
+//   fuck: ["penis"],
+//   cunt: 3,
+// })).$v.cunt;
 
-const test4 = asd.$mx((o) => ({
-  fuck: o.fuck.$(["penis"]),
-  cunt: xray(3),
-})).$v.fuck;
+// const test4 = asd.$mx((o) => ({
+//   fuck: o.fuck.$(["penis"]),
+//   cunt: xray(3),
+// })).$v.fuck;
 
 // const test5 = asd.$f //
 //   .fuck((f) => f.$(["penis"])) //

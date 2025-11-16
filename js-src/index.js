@@ -1692,7 +1692,7 @@ var require_react_dom_development = __commonJS({
         return dispatcher;
       }
       "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-      var React6 = require_react(), Internals = {
+      var React7 = require_react(), Internals = {
         d: {
           f: noop,
           r: function() {
@@ -1710,7 +1710,7 @@ var require_react_dom_development = __commonJS({
         },
         p: 0,
         findDOMNode: null
-      }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React6.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React7.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       "function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error(
         "React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills"
       );
@@ -3252,7 +3252,7 @@ var require_react_dom_client_development = __commonJS({
         "number" === type && getActiveElement(node.ownerDocument) === node || node.defaultValue === "" + value || (node.defaultValue = "" + value);
       }
       function validateOptionProps(element, props) {
-        null == props.value && ("object" === typeof props.children && null !== props.children ? React6.Children.forEach(props.children, function(child) {
+        null == props.value && ("object" === typeof props.children && null !== props.children ? React7.Children.forEach(props.children, function(child) {
           null == child || "string" === typeof child || "number" === typeof child || "bigint" === typeof child || didWarnInvalidChild || (didWarnInvalidChild = true, console.error(
             "Cannot infer the option value of complex children. Pass a `value` prop or use a plain string as children to <option>."
           ));
@@ -16834,14 +16834,14 @@ var require_react_dom_client_development = __commonJS({
         ));
       }
       "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-      var Scheduler = require_scheduler(), React6 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_PROVIDER_TYPE = Symbol.for("react.provider"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
+      var Scheduler = require_scheduler(), React7 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_PROVIDER_TYPE = Symbol.for("react.provider"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
       Symbol.for("react.scope");
       var REACT_ACTIVITY_TYPE = Symbol.for("react.activity");
       Symbol.for("react.legacy_hidden");
       Symbol.for("react.tracing_marker");
       var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel");
       Symbol.for("react.view_transition");
-      var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React6.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
+      var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React7.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
         pending: false,
         data: null,
         method: null,
@@ -19563,7 +19563,7 @@ var require_react_dom_client_development = __commonJS({
         }
       };
       (function() {
-        var isomorphicReactPackageVersion = React6.version;
+        var isomorphicReactPackageVersion = React7.version;
         if ("19.1.1" !== isomorphicReactPackageVersion)
           throw Error(
             'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' + (isomorphicReactPackageVersion + "\n  - react-dom:  19.1.1\nLearn more: https://react.dev/warnings/version-mismatch")
@@ -19702,6 +19702,32 @@ var require_client = __commonJS({
     }
   }
 });
+
+// src/xray.ts
+var xray = (a) => xrayInner(a, (x2) => x2);
+var xrayInner = (a, set) => new Proxy(
+  {},
+  {
+    get(target, prop, receiver) {
+      if (prop === "$v") {
+        return set(a);
+      } else if (prop === "$") {
+      } else if (prop === "$s") {
+      } else if (prop === "$ctx") {
+      }
+      if (Array.isArray(a)) {
+        if (prop === "$e") {
+        } else if (prop === "$ec") {
+        }
+      } else if (typeof a === "object" && a) {
+        if (prop === "$m") {
+        } else if (prop === "$mx") {
+        } else {
+        }
+      }
+    }
+  }
+);
 
 // src/workerify.ts
 function workerifyServer(i, discriminator, onReceive, send) {
@@ -22569,7 +22595,6 @@ var _ALL = Symbol("all2");
 
 // src/array-map.ts
 var ArrayMap = class _ArrayMap {
-  maps;
   constructor() {
     this.maps = /* @__PURE__ */ new Map();
   }
@@ -23904,6 +23929,128 @@ function createBufferWithLayout(gl, layout, data) {
   };
 }
 
+// src/math/noise.ts
+function fract(x2) {
+  return x2 - Math.floor(x2);
+}
+function simpleRandVec2ToFloat(co) {
+  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
+}
+function simpleRandVec2ToVec2(co) {
+  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
+}
+function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
+  const fp = [Math.floor(p[0]), Math.floor(p[1])];
+  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
+  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
+  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
+  const v4 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
+  const o1 = sub2(p, fp);
+  const o2 = sub2(o1, [1, 0]);
+  const o3 = sub2(o1, [0, 1]);
+  const o4 = sub2(o1, [1, 1]);
+  const d1 = dot2(v1, o1);
+  const d2 = dot2(v2, o2);
+  const d3 = dot2(v3, o3);
+  const d4 = dot2(v4, o4);
+  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
+  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
+  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
+}
+function boxMullerTransform(u) {
+  const a = Math.sqrt(-2 * Math.log(u[0]));
+  const b = 2 * Math.PI * u[1];
+  return [a * Math.cos(b), a * Math.sin(b)];
+}
+
+// src/math/intersections.ts
+function quadraticFormula(a, b, c) {
+  const bSquaredMinusFourAC = b ** 2 - 4 * a * c;
+  if (bSquaredMinusFourAC < 0) return [];
+  if (bSquaredMinusFourAC === 0) return [-b / (2 * a)];
+  return [
+    (-b - Math.sqrt(bSquaredMinusFourAC)) / (2 * a),
+    (-b + Math.sqrt(bSquaredMinusFourAC)) / (2 * a)
+  ];
+}
+function circleIntersectLine(circle, seg) {
+  const bxMinusAx = seg.b[0] - seg.a[0];
+  const byMinusAy = seg.b[1] - seg.a[1];
+  const axMinusCx = seg.a[0] - circle.center[0];
+  const ayMinusCy = seg.a[1] - circle.center[1];
+  const a = bxMinusAx ** 2 + byMinusAy ** 2;
+  const b = 2 * (bxMinusAx * axMinusCx + byMinusAy * ayMinusCy);
+  const c = axMinusCx ** 2 + ayMinusCy ** 2 - circle.radius ** 2;
+  return quadraticFormula(a, b, c);
+}
+function lineIntersectLine(a, b) {
+  const ax = a.a[0];
+  const ay = a.a[1];
+  const bx = a.b[0];
+  const by = a.b[1];
+  const cx = b.a[0];
+  const cy = b.a[1];
+  const dx = b.b[0];
+  const dy = b.b[1];
+  return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
+}
+function rayIntersectLine(ray, b) {
+  return lineIntersectLine(
+    {
+      a: ray.center,
+      b: add2(ray.center, [Math.cos(ray.dir), Math.sin(ray.dir)])
+    },
+    b
+  );
+}
+function getSmallestAngleDifference(a, b) {
+  const minDiff = Math.min(
+    Math.abs(a - b),
+    Math.abs(a - b + Math.PI * 2),
+    Math.abs(a - b - Math.PI * 2)
+  );
+  const lowest = Math.min(a, b);
+  return [lowest, lowest + minDiff];
+}
+function getEqualAngularDivisionsOfLineSegment(center, b, interval) {
+  const [angle1, angle2] = getSmallestAngleDifference(
+    pointTo(center, b.a),
+    pointTo(center, b.b)
+  );
+  const truncatedAngle1 = Math.ceil(angle1 / interval) * interval;
+  let tValues = [];
+  for (let i = truncatedAngle1; i < angle2; i += interval) {
+    tValues.push(
+      rayIntersectLine(
+        {
+          center,
+          dir: i
+        },
+        b
+      )
+    );
+  }
+  return tValues;
+}
+function closestApproachOfLineSegmentToPoint(l, pt) {
+  const ax = l.a[0];
+  const ay = l.a[1];
+  const bx = l.b[0];
+  const by = l.b[1];
+  const cx = pt[0];
+  const cy = pt[1];
+  return (-(bx - ax) * (ax - cx) - (by - ay) * (ay - cy)) / ((bx - ax) ** 2 + (by - ay) ** 2);
+}
+function sampleLineSegment(l, t) {
+  return mix2(t, l.a, l.b);
+}
+function rangeIntersects(a1, a2, b1, b2) {
+  return !(a1 > b2 || b1 > a2);
+}
+function rectIntersects(a, b) {
+  return rangeIntersects(a.a[0], a.b[0], b.a[0], b.b[0]) && rangeIntersects(a.a[1], a.b[1], b.a[1], b.b[1]);
+}
+
 // src/curve/quadratic-curve-to-svg.ts
 function quadraticCurveToPath(curve, sigfigs, offset) {
   let startPoint = curve[0].a;
@@ -24139,6 +24286,97 @@ function bezierPreview(beziers, size) {
   }
   ctx.stroke();
   return c;
+}
+
+// src/webgpu/bind-group-generator.ts
+function getWgslPrimitiveDatatype(typename, formatname) {
+  if (formatname) return formatname;
+  if (typename === "f32" || typename === "i32" || typename === "u32" || typename === "f16")
+    return typename;
+  if (typename.startsWith("vec") || typename.startsWith("mat")) {
+    if (typename.endsWith("i")) {
+      return "i32";
+    } else if (typename.endsWith("u")) {
+      return "u32";
+    } else if (typename.endsWith("h")) {
+      return "f16";
+    }
+  }
+  return "f32";
+}
+function getWgslPrimitiveSize(typename) {
+  if (typename.startsWith("vec2")) return 2;
+  if (typename.startsWith("vec3")) return 3;
+  if (typename.startsWith("vec4")) return 4;
+  if (typename.startsWith("mat2x3")) return 6;
+  if (typename.startsWith("mat3x2")) return 6;
+  if (typename.startsWith("mat2x4")) return 8;
+  if (typename.startsWith("mat4x2")) return 8;
+  if (typename.startsWith("mat3x4")) return 12;
+  if (typename.startsWith("mat4x3")) return 12;
+  if (typename.startsWith("mat2")) return 4;
+  if (typename.startsWith("mat3")) return 9;
+  if (typename.startsWith("mat4")) return 16;
+  return 1;
+}
+function setWgslPrimitive(typename, formatname, view, offset, data) {
+  const datatype = getWgslPrimitiveDatatype(typename, formatname);
+  const size = getWgslPrimitiveSize(typename);
+  let stride = {
+    i32: 4,
+    f32: 4,
+    u32: 4,
+    f16: 2
+  }[datatype];
+  let method = {
+    i32: "setInt32",
+    f32: "setFloat32",
+    u32: "setUint32",
+    f16: "setFloat16"
+  }[datatype];
+  for (let i = 0; i < size; i++) {
+    view[method](offset + stride * i, data[i], true);
+  }
+}
+function generateUniformBufferInner(spec, values, view, offset) {
+  if (spec.members) {
+    for (const m of spec.members)
+      generateUniformBufferInner(
+        m.type,
+        values[m.name],
+        view,
+        offset + m.offset
+      );
+    return;
+  }
+  const typename = spec.name;
+  if (typename === "array") {
+    for (let i = 0; i < spec.count; i++) {
+      generateUniformBufferInner(
+        spec.format,
+        values[i],
+        view,
+        offset + spec.stride * i
+      );
+    }
+  } else {
+    setWgslPrimitive(
+      spec.name,
+      spec.format?.name,
+      view,
+      offset,
+      Array.isArray(values) ? values : [values]
+    );
+  }
+}
+function generateUniformBuffer(spec, values) {
+  const buf = new ArrayBuffer(spec.size);
+  const view = new DataView(buf);
+  generateUniformBufferInner(spec, values, view, 0);
+  return buf;
+}
+function makeUniformBuffer(spec, group, binding, data) {
+  return generateUniformBuffer(spec.bindGroups[group][binding].type, data);
 }
 
 // node_modules/ml-convolution/src/utils.js
@@ -27337,128 +27575,6 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
-// src/math/noise.ts
-function fract(x2) {
-  return x2 - Math.floor(x2);
-}
-function simpleRandVec2ToFloat(co) {
-  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
-}
-function simpleRandVec2ToVec2(co) {
-  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
-}
-function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
-  const fp = [Math.floor(p[0]), Math.floor(p[1])];
-  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
-  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
-  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
-  const v4 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
-  const o1 = sub2(p, fp);
-  const o2 = sub2(o1, [1, 0]);
-  const o3 = sub2(o1, [0, 1]);
-  const o4 = sub2(o1, [1, 1]);
-  const d1 = dot2(v1, o1);
-  const d2 = dot2(v2, o2);
-  const d3 = dot2(v3, o3);
-  const d4 = dot2(v4, o4);
-  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
-  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
-  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
-}
-function boxMullerTransform(u) {
-  const a = Math.sqrt(-2 * Math.log(u[0]));
-  const b = 2 * Math.PI * u[1];
-  return [a * Math.cos(b), a * Math.sin(b)];
-}
-
-// src/math/intersections.ts
-function quadraticFormula(a, b, c) {
-  const bSquaredMinusFourAC = b ** 2 - 4 * a * c;
-  if (bSquaredMinusFourAC < 0) return [];
-  if (bSquaredMinusFourAC === 0) return [-b / (2 * a)];
-  return [
-    (-b - Math.sqrt(bSquaredMinusFourAC)) / (2 * a),
-    (-b + Math.sqrt(bSquaredMinusFourAC)) / (2 * a)
-  ];
-}
-function circleIntersectLine(circle, seg) {
-  const bxMinusAx = seg.b[0] - seg.a[0];
-  const byMinusAy = seg.b[1] - seg.a[1];
-  const axMinusCx = seg.a[0] - circle.center[0];
-  const ayMinusCy = seg.a[1] - circle.center[1];
-  const a = bxMinusAx ** 2 + byMinusAy ** 2;
-  const b = 2 * (bxMinusAx * axMinusCx + byMinusAy * ayMinusCy);
-  const c = axMinusCx ** 2 + ayMinusCy ** 2 - circle.radius ** 2;
-  return quadraticFormula(a, b, c);
-}
-function lineIntersectLine(a, b) {
-  const ax = a.a[0];
-  const ay = a.a[1];
-  const bx = a.b[0];
-  const by = a.b[1];
-  const cx = b.a[0];
-  const cy = b.a[1];
-  const dx = b.b[0];
-  const dy = b.b[1];
-  return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
-}
-function rayIntersectLine(ray, b) {
-  return lineIntersectLine(
-    {
-      a: ray.center,
-      b: add2(ray.center, [Math.cos(ray.dir), Math.sin(ray.dir)])
-    },
-    b
-  );
-}
-function getSmallestAngleDifference(a, b) {
-  const minDiff = Math.min(
-    Math.abs(a - b),
-    Math.abs(a - b + Math.PI * 2),
-    Math.abs(a - b - Math.PI * 2)
-  );
-  const lowest = Math.min(a, b);
-  return [lowest, lowest + minDiff];
-}
-function getEqualAngularDivisionsOfLineSegment(center, b, interval) {
-  const [angle1, angle2] = getSmallestAngleDifference(
-    pointTo(center, b.a),
-    pointTo(center, b.b)
-  );
-  const truncatedAngle1 = Math.ceil(angle1 / interval) * interval;
-  let tValues = [];
-  for (let i = truncatedAngle1; i < angle2; i += interval) {
-    tValues.push(
-      rayIntersectLine(
-        {
-          center,
-          dir: i
-        },
-        b
-      )
-    );
-  }
-  return tValues;
-}
-function closestApproachOfLineSegmentToPoint(l, pt) {
-  const ax = l.a[0];
-  const ay = l.a[1];
-  const bx = l.b[0];
-  const by = l.b[1];
-  const cx = pt[0];
-  const cy = pt[1];
-  return (-(bx - ax) * (ax - cx) - (by - ay) * (ay - cy)) / ((bx - ax) ** 2 + (by - ay) ** 2);
-}
-function sampleLineSegment(l, t) {
-  return mix2(t, l.a, l.b);
-}
-function rangeIntersects(a1, a2, b1, b2) {
-  return !(a1 > b2 || b1 > a2);
-}
-function rectIntersects(a, b) {
-  return rangeIntersects(a.a[0], a.b[0], b.a[0], b.b[0]) && rangeIntersects(a.a[1], a.b[1], b.a[1], b.b[1]);
-}
-
 // src/ui/upload-image.tsx
 var pretendThisIsAModule = {};
 
@@ -27610,14 +27726,102 @@ function NumberField(propsOpt) {
   );
 }
 
-// src/ui/progress-bar.tsx
+// src/ui/react-infinite-scroll.tsx
 var import_react4 = __toESM(require_react());
+function useAsyncSequence(callback, init, dependencies) {
+  const [seq, setSeq] = (0, import_react4.useState)(init);
+  const batchIndex = (0, import_react4.useRef)(0);
+  const isRunning = (0, import_react4.useRef)(true);
+  (0, import_react4.useEffect)(() => {
+    let isLoopCurrent = true;
+    batchIndex.current += 1;
+    const thisBatch = batchIndex.current;
+    let seqTemp = init;
+    setSeq(init);
+    const f = async () => {
+      if (isRunning.current) {
+        if (!isLoopCurrent) return;
+        const res = await callback(seqTemp);
+        if (!isLoopCurrent) return;
+        if (batchIndex.current === thisBatch) {
+          seqTemp = res(seqTemp);
+          setSeq(seqTemp);
+        }
+      } else if (!isLoopCurrent) {
+        return;
+      }
+      setTimeout(f);
+    };
+    f();
+    return () => {
+      isLoopCurrent = false;
+    };
+  }, dependencies);
+  return {
+    seq,
+    isRunning
+  };
+}
+function useInfiniteScroll(props) {
+  const itemsLoaded = useAsyncSequence(
+    async (s) => {
+      if (s.done) {
+        return (s2) => s2;
+      }
+      const more = await props.getMore(s.index);
+      const done = await props.done(s.index, s.items, more);
+      return (s2) => {
+        if (done) {
+          return { ...s2, done: true };
+        } else {
+          return {
+            items: s2.items.concat(more),
+            index: s2.index + 1,
+            done: false
+          };
+        }
+      };
+    },
+    { index: 0, items: [], done: false },
+    [...props.dependencies]
+  );
+  return {
+    items: itemsLoaded.seq.items,
+    index: itemsLoaded.seq.index,
+    done: itemsLoaded.seq.done,
+    ScrollDetector: () => {
+      return /* @__PURE__ */ import_react4.default.createElement(
+        "div",
+        {
+          ref: (e) => {
+            if (!e) return;
+            const observer = new IntersectionObserver(
+              (e2) => {
+                itemsLoaded.isRunning.current = e2.at(-1)?.isIntersecting ?? true;
+              },
+              {
+                rootMargin: props.rootMargin
+              }
+            );
+            observer.observe(e);
+            return () => {
+              observer.disconnect();
+            };
+          }
+        }
+      );
+    }
+  };
+}
+
+// src/ui/progress-bar.tsx
+var import_react5 = __toESM(require_react());
 var import_client = __toESM(require_client());
 function ProgressBar(props) {
   const { tasks } = props;
-  const [currTaskIndex, setCurrTaskIndex] = (0, import_react4.useState)(0);
-  const [caption, setCaption] = (0, import_react4.useState)("Progress");
-  (0, import_react4.useEffect)(() => {
+  const [currTaskIndex, setCurrTaskIndex] = (0, import_react5.useState)(0);
+  const [caption, setCaption] = (0, import_react5.useState)("Progress");
+  (0, import_react5.useEffect)(() => {
     const currTask = tasks.at(currTaskIndex);
     if (currTask !== void 0) {
       if (typeof currTask == "string") {
@@ -27630,7 +27834,7 @@ function ProgressBar(props) {
       }
     }
   }, [currTaskIndex]);
-  return /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement("div", { style: { fontSize: "48px" } }, caption), /* @__PURE__ */ import_react4.default.createElement(
+  return /* @__PURE__ */ import_react5.default.createElement("div", null, /* @__PURE__ */ import_react5.default.createElement("div", { style: { fontSize: "48px" } }, caption), /* @__PURE__ */ import_react5.default.createElement(
     "div",
     {
       style: {
@@ -27639,7 +27843,7 @@ function ProgressBar(props) {
         border: "1px solid black"
       }
     },
-    /* @__PURE__ */ import_react4.default.createElement(
+    /* @__PURE__ */ import_react5.default.createElement(
       "div",
       {
         style: {
@@ -27656,7 +27860,7 @@ function simpleProgressBar(tasks) {
     const progressBarContainer = document.createElement("div");
     document.body.appendChild(progressBarContainer);
     (0, import_client.createRoot)(progressBarContainer).render(
-      /* @__PURE__ */ import_react4.default.createElement(
+      /* @__PURE__ */ import_react5.default.createElement(
         ProgressBar,
         {
           tasks: [...tasks, "Finished!", async () => resolve()]
@@ -27667,7 +27871,7 @@ function simpleProgressBar(tasks) {
 }
 
 // src/ui/pan-and-zoom.tsx
-var import_react5 = __toESM(require_react());
+var import_react6 = __toESM(require_react());
 function panAndZoomMatrix(rect, containerWidth, containerHeight) {
   const scaleX = 1 / (rect.b[0] - rect.a[0]) * containerWidth;
   const scaleY = 1 / (rect.b[1] - rect.a[1]) * containerHeight;
@@ -27682,10 +27886,10 @@ function PanAndZoom(props) {
   const scrollSensitivity = props.scrollSensitivity ?? 1;
   const scrollDecay = props.scrollDecay ?? 0.01;
   const scrollSnapToZero = props.scrollSnapToZero ?? 1e-3;
-  const scrollVel = (0, import_react5.useRef)(0);
-  const mouseDown = (0, import_react5.useRef)(false);
-  const normalizedMousePos = (0, import_react5.useRef)({ x: 0, y: 0 });
-  (0, import_react5.useEffect)(() => {
+  const scrollVel = (0, import_react6.useRef)(0);
+  const mouseDown = (0, import_react6.useRef)(false);
+  const normalizedMousePos = (0, import_react6.useRef)({ x: 0, y: 0 });
+  (0, import_react6.useEffect)(() => {
     let stopped = false;
     let lastTime = performance.now();
     const cb2 = (time) => {
@@ -27726,8 +27930,8 @@ function PanAndZoom(props) {
       stopped = true;
     };
   }, []);
-  const divref = (0, import_react5.useRef)(null);
-  return /* @__PURE__ */ import_react5.default.createElement(
+  const divref = (0, import_react6.useRef)(null);
+  return /* @__PURE__ */ import_react6.default.createElement(
     "div",
     {
       style: {
@@ -27841,6 +28045,7 @@ export {
   err,
   findEndpoint,
   fullscreenQuadBuffer,
+  generateUniformBuffer,
   get,
   getClamped,
   getConnectedComponents,
@@ -27882,6 +28087,7 @@ export {
   loadImg,
   lookupQuadtree,
   makeQuadtree,
+  makeUniformBuffer,
   map2obj,
   mapMapEntries,
   mapMapKeys,
@@ -28061,6 +28267,8 @@ export {
   ud,
   unclampedSmoothstep,
   unlerp,
+  useAsyncSequence,
+  useInfiniteScroll,
   useObjectFieldLayout,
   uvSphere,
   variableDistancePointsOnCurve,
@@ -28157,6 +28365,8 @@ export {
   wzzy,
   wzzz,
   x,
+  xray,
+  xrayInner,
   xw,
   xww,
   xwww,

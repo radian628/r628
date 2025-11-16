@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "target": "es2017",
+    "types": ["@webgpu/types", "@types/node", "@types/bun"],
+    "lib": ["dom", "ESNext"],
+    "esModuleInterop": true,
+    "noEmit": true,
+    "jsx": "react"
+  }
+}

@@ -1,6 +1,5 @@
 // src/array-map.ts
 var ArrayMap = class _ArrayMap {
-  maps;
   constructor() {
     this.maps = /* @__PURE__ */ new Map();
   }
