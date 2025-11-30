@@ -14,6 +14,10 @@ import { rotate, translate } from "../../../src/webgl/mesh";
 import { initBlitToScreen } from "./blit-to-screen";
 import { makeUniformBuffer } from "../../../src/webgpu/bind-group-generator";
 
+import BlitWGSLJson from "blit-to-screen.wgsl";
+
+console.log(BlitWGSLJson);
+
 (async () => {
   function inv4(m: Mat4): Mat4 {
     const M = new Matrix([

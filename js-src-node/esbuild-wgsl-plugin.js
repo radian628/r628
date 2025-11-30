@@ -5916,7 +5916,8 @@ function wgslPlugin() {
         );
         return {
           loader: "json",
-          contents: JSON.stringify(json)
+          contents: JSON.stringify(json),
+          watchFiles: [args.path]
         };
       });
     }

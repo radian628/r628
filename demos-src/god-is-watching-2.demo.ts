@@ -42,7 +42,7 @@ import {
   sub2,
   Vec2,
 } from "../src/math/vector";
-import { cartesianProduct, id, rand, range, smartRange } from "../src/range";
+import { id, rand, range, smartRange } from "../src/range";
 import {
   Circle,
   inCircle,

@@ -1,3 +1,8 @@
+// src/range.ts
+function id(x) {
+  return x;
+}
+
 // src/array-utils.ts
 function groupBy(arr, getGroup) {
   const groups = /* @__PURE__ */ new Map();
@@ -8,11 +13,6 @@ function groupBy(arr, getGroup) {
     groups.set(groupName, group);
   }
   return groups;
-}
-
-// src/range.ts
-function id(x) {
-  return x;
 }
 
 // src/threadpool.ts

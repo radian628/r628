@@ -40,6 +40,7 @@ export function wgslPlugin(): esbuild.Plugin {
         return {
           loader: "json",
           contents: JSON.stringify(json),
+          watchFiles: [args.path],
         };
       });
     },

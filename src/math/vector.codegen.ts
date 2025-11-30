@@ -113,6 +113,10 @@ const num = (i: number) => "number";
 
 let matmuls = new Set<string>();
 
+function columnMajorIndex(dims: [number, number], pos: [number, number]) {
+  return pos[1] + pos[0] * dims[1];
+}
+
 function genMatmul(a: CC, b: CC, c: CC) {
   let name = "";
   if (a === b && b === c) {
@@ -125,14 +129,22 @@ function genMatmul(a: CC, b: CC, c: CC) {
   if (matmuls.has(name)) return "";
   matmuls.add(name);
 
-  return `export function mul${name}(a: ${mat(b, a)}, b: ${mat(c, b)}): ${mat(c, a)} {
+  return `export function mul${name}(a: ${mat(b, a)}, b: ${mat(c, b)}): ${mat(a, c)} {
     return [
-      ${cartesianProduct(range(a), range(c))
-        .map(([col, row]) => {
+      ${cartesianProduct(range(c), range(a))
+        .map(([row, col]) => {
           return range(b)
             .map(
               (i) =>
-                `${b === 1 && a === 1 ? "a" : `a[${col * b + i}]`} * ${b === 1 && c === 1 ? "b" : `b[${row + i * c}]`}`
+                `${
+                  b === 1 && a === 1
+                    ? "a"
+                    : `a[${columnMajorIndex([b, a], [i, col])}]`
+                } * ${
+                  b === 1 && c === 1
+                    ? "b"
+                    : `b[${columnMajorIndex([c, b], [row, i])}]`
+                }`
             )
             .join("+");
         })

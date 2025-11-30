@@ -6,8 +6,12 @@ var ArrayMap = class _ArrayMap {
   nthMap(n) {
     let map = this.maps.get(n);
     if (!map) {
-      map = /* @__PURE__ */ new Map();
-      this.maps.set(n, map);
+      if (n !== 0) {
+        map = /* @__PURE__ */ new Map();
+        this.maps.set(n, map);
+      } else {
+        return void 0;
+      }
     }
     return map;
   }

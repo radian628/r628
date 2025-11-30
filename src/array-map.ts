@@ -8,8 +8,12 @@ export class ArrayMap<K, V, Arr extends K[] = K[]> {
   nthMap(n: number) {
     let map = this.maps.get(n);
     if (!map) {
-      map = new Map();
-      this.maps.set(n, map);
+      if (n !== 0) {
+        map = new Map();
+        this.maps.set(n, map);
+      } else {
+        return undefined;
+      }
     }
     return map;
   }
@@ -154,7 +158,6 @@ export function table<T>(
       }
 
       propFilterKeys = [...new Set(propFilterKeys)].sort() as any;
-      // @ts-expect-error
       const indexPathExists = indexPaths.get(propFilterKeys);
       if (!indexPathExists) {
         for (const d of data) {

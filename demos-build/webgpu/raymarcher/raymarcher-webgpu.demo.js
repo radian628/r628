@@ -5014,30 +5014,30 @@ ${indentData}`);
   }
   function mulVec4ByMat4(a, b) {
     return [
-      a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-      a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-      a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-      a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15]
+      a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
+      a[0] * b[4] + a[1] * b[5] + a[2] * b[6] + a[3] * b[7],
+      a[0] * b[8] + a[1] * b[9] + a[2] * b[10] + a[3] * b[11],
+      a[0] * b[12] + a[1] * b[13] + a[2] * b[14] + a[3] * b[15]
     ];
   }
   function mulMat4(a, b) {
     return [
-      a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-      a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-      a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-      a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
-      a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
-      a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
-      a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
-      a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15],
-      a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12],
-      a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13],
-      a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14],
-      a[8] * b[3] + a[9] * b[7] + a[10] * b[11] + a[11] * b[15],
-      a[12] * b[0] + a[13] * b[4] + a[14] * b[8] + a[15] * b[12],
-      a[12] * b[1] + a[13] * b[5] + a[14] * b[9] + a[15] * b[13],
-      a[12] * b[2] + a[13] * b[6] + a[14] * b[10] + a[15] * b[14],
-      a[12] * b[3] + a[13] * b[7] + a[14] * b[11] + a[15] * b[15]
+      a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3],
+      a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3],
+      a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3],
+      a[3] * b[0] + a[7] * b[1] + a[11] * b[2] + a[15] * b[3],
+      a[0] * b[4] + a[4] * b[5] + a[8] * b[6] + a[12] * b[7],
+      a[1] * b[4] + a[5] * b[5] + a[9] * b[6] + a[13] * b[7],
+      a[2] * b[4] + a[6] * b[5] + a[10] * b[6] + a[14] * b[7],
+      a[3] * b[4] + a[7] * b[5] + a[11] * b[6] + a[15] * b[7],
+      a[0] * b[8] + a[4] * b[9] + a[8] * b[10] + a[12] * b[11],
+      a[1] * b[8] + a[5] * b[9] + a[9] * b[10] + a[13] * b[11],
+      a[2] * b[8] + a[6] * b[9] + a[10] * b[10] + a[14] * b[11],
+      a[3] * b[8] + a[7] * b[9] + a[11] * b[10] + a[15] * b[11],
+      a[0] * b[12] + a[4] * b[13] + a[8] * b[14] + a[12] * b[15],
+      a[1] * b[12] + a[5] * b[13] + a[9] * b[14] + a[13] * b[15],
+      a[2] * b[12] + a[6] * b[13] + a[10] * b[14] + a[14] * b[15],
+      a[3] * b[12] + a[7] * b[13] + a[11] * b[14] + a[15] * b[15]
     ];
   }
   function add3(a, b) {
@@ -5095,7 +5095,7 @@ ${indentData}`);
     ];
   }
   function translate(v) {
-    return [1, 0, 0, v[0], 0, 1, 0, v[1], 0, 0, 1, v[2], 0, 0, 0, 1];
+    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
   }
 
   // raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/demos-src/webgpu/raymarcher/blit-to-screen.wgsl?raw
@@ -5296,7 +5296,11 @@ height: 100vh;
     return generateUniformBuffer(spec.bindGroups[group][binding].type, data);
   }
 
+  // wgsl:/mnt/c/Users/baker/Documents/GitHub/r628/demos-src/webgpu/raymarcher/blit-to-screen.wgsl
+  var blit_to_screen_default2 = { bindGroups: [[{ name: "samp", type: { name: "sampler", attributes: [{ id: 620, line: 10, name: "group", value: "0" }, { id: 621, line: 10, name: "binding", value: "0" }], size: 0, format: null, access: null }, group: 0, binding: 0, attributes: [{ id: 620, line: 10, name: "group", value: "0" }, { id: 621, line: 10, name: "binding", value: "0" }], resourceType: 3, access: "" }, { name: "tex", type: { name: "texture_2d_array", attributes: [{ id: 624, line: 11, name: "group", value: "0" }, { id: 625, line: 11, name: "binding", value: "1" }], size: 0, format: { name: "f32", attributes: null, size: 4 }, access: null }, group: 0, binding: 1, attributes: [{ id: 624, line: 11, name: "group", value: "0" }, { id: 625, line: 11, name: "binding", value: "1" }], resourceType: 2, access: "read" }]] };
+
   // demos-src/webgpu/raymarcher/raymarcher-webgpu.demo.ts
+  console.log(blit_to_screen_default2);
   (async () => {
     function inv4(m) {
       const M = new Matrix2([

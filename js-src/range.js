@@ -68,21 +68,8 @@ function rand(lo, hi, random) {
   if (!random) random = () => Math.random();
   return random() * (hi - lo) + lo;
 }
-function pickrand(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-function cartesianProductInner(ts, arr) {
-  if (ts.length === 0) return [arr];
-  return ts[0].map((e) => cartesianProductInner(ts.slice(1), [...arr, e])).flat(1);
-}
-function cartesianProduct(...ts) {
-  const res = cartesianProductInner(ts, []);
-  return res;
-}
 export {
-  cartesianProduct,
   id,
-  pickrand,
   rand,
   range,
   rangeFrom,

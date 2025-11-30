@@ -1,23 +1,46 @@
 import { compose } from "./point-free";
 
-export function mapObjKeys<K extends keyof any, V>(
+export function arrayToMapValues<K, V>(arr: V[], f: (key: V) => K): Map<K, V> {
+  return new Map(arr.map((x) => [f(x), x]));
+}
+
+export function arrayToObjValues<K extends keyof any, V>(
+  arr: V[],
+  f: (key: V) => K
+): Record<K, V> {
+  return map2obj(arrayToMapValues(arr, f));
+}
+
+export function arrayToMapKeys<K, V>(arr: K[], f: (key: K) => V): Map<K, V> {
+  return new Map(arr.map((x) => [x, f(x)]));
+}
+
+export function arrayToObjKeys<K extends keyof any, V>(
+  arr: K[],
+  f: (key: K) => V
+): Record<K, V> {
+  return map2obj(arrayToMapKeys(arr, f));
+}
+
+export function mapObjKeys<K extends keyof any, V, K2 extends keyof any>(
   obj: Record<K, V>,
-  callback: (k: K, v: V) => K
+  callback: (k: K, v: V) => K2
 ) {
   return mapObjEntries(obj, (k, v) => [callback(k, v), v]);
 }
 
-export function mapObjValues<K extends keyof any, V>(
+export function mapObjValues<K extends keyof any, V, V2>(
   obj: Record<K, V>,
-  callback: (k: K, v: V) => V
+  callback: (k: K, v: V) => V2
 ) {
   return mapObjEntries(obj, (k, v) => [k, callback(k, v)] as const);
 }
 
-export function mapObjEntries<K extends keyof any, V>(
+export function mapObjEntries<K extends keyof any, V, K2 extends keyof any, V2>(
   obj: Record<K, V>,
-  callback: (k: K, v: V) => [K, V]
-) {
+  callback: (k: K, v: V) => [K2, V2]
+): Record<K2, V2> {
+  // @ts-expect-error
   return Object.fromEntries(
     Object.entries(obj).map(([k, v]) => callback(k as K, v as V))
   );
@@ -33,20 +56,23 @@ export function obj2map<R extends Record<any, any>>(
   return new Map(Object.entries(r));
 }
 
-export function mapMapEntries<K, V>(
+export function mapMapEntries<K, V, K2, V2>(
   map: Map<K, V>,
-  callback: (k: K, v: V) => [K, V]
+  callback: (k: K, v: V) => [K2, V2]
 ) {
   return new Map([...map.entries()].map((e) => callback(...e)));
 }
 
-export function mapMapKeys<K, V>(map: Map<K, V>, callback: (k: K, v: V) => K) {
+export function mapMapKeys<K, V, K2>(
+  map: Map<K, V>,
+  callback: (k: K, v: V) => K2
+) {
   return new Map([...map.entries()].map((e) => [callback(...e), e[1]]));
 }
 
-export function mapMapValues<K, V>(
+export function mapMapValues<K, V, V2>(
   map: Map<K, V>,
-  callback: (k: K, v: V) => V
+  callback: (k: K, v: V) => V2
 ) {
   return new Map([...map.entries()].map((e) => [e[0], callback(...e)]));
 }

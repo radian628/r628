@@ -1,4 +1,16 @@
 // src/object-utils.ts
+function arrayToMapValues(arr, f) {
+  return new Map(arr.map((x) => [f(x), x]));
+}
+function arrayToObjValues(arr, f) {
+  return map2obj(arrayToMapValues(arr, f));
+}
+function arrayToMapKeys(arr, f) {
+  return new Map(arr.map((x) => [x, f(x)]));
+}
+function arrayToObjKeys(arr, f) {
+  return map2obj(arrayToMapKeys(arr, f));
+}
 function mapObjKeys(obj, callback) {
   return mapObjEntries(obj, (k, v) => [callback(k, v), v]);
 }
@@ -88,6 +100,10 @@ function nestedMap(obj, path, value) {
 var _ALL = Symbol("all2");
 export {
   ALL,
+  arrayToMapKeys,
+  arrayToMapValues,
+  arrayToObjKeys,
+  arrayToObjValues,
   map2obj,
   mapMapEntries,
   mapMapKeys,

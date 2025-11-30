@@ -1,3 +1,4 @@
+import { cartesianProduct } from "../src";
 import { createLookupOptimizedSHTGenerator } from "../src/lookup-optimized-spatial-hash-table";
 import {
   add2,
@@ -9,7 +10,7 @@ import {
   sub2,
   Vec2,
 } from "../src/math/vector";
-import { cartesianProduct, range, smartRange } from "../src/range";
+import { range, smartRange } from "../src/range";
 
 type Particle = {
   pos: Vec2;

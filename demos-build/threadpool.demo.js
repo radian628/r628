@@ -36,6 +36,7 @@
   }
   var init_array_utils = __esm({
     "src/array-utils.ts"() {
+      init_range();
     }
   });
 

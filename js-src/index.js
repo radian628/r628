@@ -640,8 +640,8 @@ var require_react_development = __commonJS({
           return escaperLookup[match];
         });
       }
-      function getElementKey(element, index) {
-        return "object" === typeof element && null !== element && null != element.key ? (checkKeyStringCoercion(element.key), escape("" + element.key)) : index.toString(36);
+      function getElementKey(element, index2) {
+        return "object" === typeof element && null !== element && null != element.key ? (checkKeyStringCoercion(element.key), escape("" + element.key)) : index2.toString(36);
       }
       function noop$1() {
       }
@@ -1434,12 +1434,12 @@ var require_scheduler_development = __commonJS({
         }
       }
       function push(heap, node) {
-        var index = heap.length;
+        var index2 = heap.length;
         heap.push(node);
-        a: for (; 0 < index; ) {
-          var parentIndex = index - 1 >>> 1, parent = heap[parentIndex];
+        a: for (; 0 < index2; ) {
+          var parentIndex = index2 - 1 >>> 1, parent = heap[parentIndex];
           if (0 < compare(parent, node))
-            heap[parentIndex] = node, heap[index] = parent, index = parentIndex;
+            heap[parentIndex] = node, heap[index2] = parent, index2 = parentIndex;
           else break a;
         }
       }
@@ -1451,12 +1451,12 @@ var require_scheduler_development = __commonJS({
         var first = heap[0], last2 = heap.pop();
         if (last2 !== first) {
           heap[0] = last2;
-          a: for (var index = 0, length = heap.length, halfLength = length >>> 1; index < halfLength; ) {
-            var leftIndex = 2 * (index + 1) - 1, left = heap[leftIndex], rightIndex = leftIndex + 1, right = heap[rightIndex];
+          a: for (var index2 = 0, length = heap.length, halfLength = length >>> 1; index2 < halfLength; ) {
+            var leftIndex = 2 * (index2 + 1) - 1, left = heap[leftIndex], rightIndex = leftIndex + 1, right = heap[rightIndex];
             if (0 > compare(left, last2))
-              rightIndex < length && 0 > compare(right, left) ? (heap[index] = right, heap[rightIndex] = last2, index = rightIndex) : (heap[index] = left, heap[leftIndex] = last2, index = leftIndex);
+              rightIndex < length && 0 > compare(right, left) ? (heap[index2] = right, heap[rightIndex] = last2, index2 = rightIndex) : (heap[index2] = left, heap[leftIndex] = last2, index2 = leftIndex);
             else if (rightIndex < length && 0 > compare(right, last2))
-              heap[index] = right, heap[rightIndex] = last2, index = rightIndex;
+              heap[index2] = right, heap[rightIndex] = last2, index2 = rightIndex;
             else break a;
           }
         }
@@ -1910,10 +1910,10 @@ var require_react_dom_client_development = __commonJS({
           fiber = fiber.next, id2--;
         return fiber;
       }
-      function copyWithSetImpl(obj, path, index, value) {
-        if (index >= path.length) return value;
-        var key = path[index], updated = isArrayImpl(obj) ? obj.slice() : assign({}, obj);
-        updated[key] = copyWithSetImpl(obj[key], path, index + 1, value);
+      function copyWithSetImpl(obj, path, index2, value) {
+        if (index2 >= path.length) return value;
+        var key = path[index2], updated = isArrayImpl(obj) ? obj.slice() : assign({}, obj);
+        updated[key] = copyWithSetImpl(obj[key], path, index2 + 1, value);
         return updated;
       }
       function copyWithRename(obj, oldPath, newPath) {
@@ -1930,21 +1930,21 @@ var require_react_dom_client_development = __commonJS({
           return copyWithRenameImpl(obj, oldPath, newPath, 0);
         }
       }
-      function copyWithRenameImpl(obj, oldPath, newPath, index) {
-        var oldKey = oldPath[index], updated = isArrayImpl(obj) ? obj.slice() : assign({}, obj);
-        index + 1 === oldPath.length ? (updated[newPath[index]] = updated[oldKey], isArrayImpl(updated) ? updated.splice(oldKey, 1) : delete updated[oldKey]) : updated[oldKey] = copyWithRenameImpl(
+      function copyWithRenameImpl(obj, oldPath, newPath, index2) {
+        var oldKey = oldPath[index2], updated = isArrayImpl(obj) ? obj.slice() : assign({}, obj);
+        index2 + 1 === oldPath.length ? (updated[newPath[index2]] = updated[oldKey], isArrayImpl(updated) ? updated.splice(oldKey, 1) : delete updated[oldKey]) : updated[oldKey] = copyWithRenameImpl(
           obj[oldKey],
           oldPath,
           newPath,
-          index + 1
+          index2 + 1
         );
         return updated;
       }
-      function copyWithDeleteImpl(obj, path, index) {
-        var key = path[index], updated = isArrayImpl(obj) ? obj.slice() : assign({}, obj);
-        if (index + 1 === path.length)
+      function copyWithDeleteImpl(obj, path, index2) {
+        var key = path[index2], updated = isArrayImpl(obj) ? obj.slice() : assign({}, obj);
+        if (index2 + 1 === path.length)
           return isArrayImpl(updated) ? updated.splice(key, 1) : delete updated[key], updated;
-        updated[key] = copyWithDeleteImpl(obj[key], path, index + 1);
+        updated[key] = copyWithDeleteImpl(obj[key], path, index2 + 1);
         return updated;
       }
       function shouldSuspendImpl() {
@@ -2549,13 +2549,13 @@ var require_react_dom_client_development = __commonJS({
         root2.shellSuspendCounter = 0;
         var entanglements = root2.entanglements, expirationTimes = root2.expirationTimes, hiddenUpdates = root2.hiddenUpdates;
         for (remainingLanes = previouslyPendingLanes & ~remainingLanes; 0 < remainingLanes; ) {
-          var index = 31 - clz32(remainingLanes), lane = 1 << index;
-          entanglements[index] = 0;
-          expirationTimes[index] = -1;
-          var hiddenUpdatesForLane = hiddenUpdates[index];
+          var index2 = 31 - clz32(remainingLanes), lane = 1 << index2;
+          entanglements[index2] = 0;
+          expirationTimes[index2] = -1;
+          var hiddenUpdatesForLane = hiddenUpdates[index2];
           if (null !== hiddenUpdatesForLane)
-            for (hiddenUpdates[index] = null, index = 0; index < hiddenUpdatesForLane.length; index++) {
-              var update = hiddenUpdatesForLane[index];
+            for (hiddenUpdates[index2] = null, index2 = 0; index2 < hiddenUpdatesForLane.length; index2++) {
+              var update = hiddenUpdatesForLane[index2];
               null !== update && (update.lane &= -536870913);
             }
           remainingLanes &= ~lane;
@@ -2573,8 +2573,8 @@ var require_react_dom_client_development = __commonJS({
       function markRootEntangled(root2, entangledLanes) {
         var rootEntangledLanes = root2.entangledLanes |= entangledLanes;
         for (root2 = root2.entanglements; rootEntangledLanes; ) {
-          var index = 31 - clz32(rootEntangledLanes), lane = 1 << index;
-          lane & entangledLanes | root2[index] & entangledLanes && (root2[index] |= entangledLanes);
+          var index2 = 31 - clz32(rootEntangledLanes), lane = 1 << index2;
+          lane & entangledLanes | root2[index2] & entangledLanes && (root2[index2] |= entangledLanes);
           rootEntangledLanes &= ~lane;
         }
       }
@@ -2620,21 +2620,21 @@ var require_react_dom_client_development = __commonJS({
       function addFiberToLanesMap(root2, fiber, lanes) {
         if (isDevToolsPresent)
           for (root2 = root2.pendingUpdatersLaneMap; 0 < lanes; ) {
-            var index = 31 - clz32(lanes), lane = 1 << index;
-            root2[index].add(fiber);
+            var index2 = 31 - clz32(lanes), lane = 1 << index2;
+            root2[index2].add(fiber);
             lanes &= ~lane;
           }
       }
       function movePendingFibersToMemoized(root2, lanes) {
         if (isDevToolsPresent)
           for (var pendingUpdatersLaneMap = root2.pendingUpdatersLaneMap, memoizedUpdaters = root2.memoizedUpdaters; 0 < lanes; ) {
-            var index = 31 - clz32(lanes);
-            root2 = 1 << index;
-            index = pendingUpdatersLaneMap[index];
-            0 < index.size && (index.forEach(function(fiber) {
+            var index2 = 31 - clz32(lanes);
+            root2 = 1 << index2;
+            index2 = pendingUpdatersLaneMap[index2];
+            0 < index2.size && (index2.forEach(function(fiber) {
               var alternate = fiber.alternate;
               null !== alternate && memoizedUpdaters.has(alternate) || memoizedUpdaters.add(fiber);
-            }), index.clear());
+            }), index2.clear());
             lanes &= ~root2;
           }
       }
@@ -4892,7 +4892,7 @@ var require_react_dom_client_development = __commonJS({
         treeForkProvider = workInProgress2;
         treeForkCount = totalChildren;
       }
-      function pushTreeId(workInProgress2, totalChildren, index) {
+      function pushTreeId(workInProgress2, totalChildren, index2) {
         warnIfNotHydrating();
         idStack[idStackIndex++] = treeContextId;
         idStack[idStackIndex++] = treeContextOverflow;
@@ -4902,17 +4902,17 @@ var require_react_dom_client_development = __commonJS({
         workInProgress2 = treeContextOverflow;
         var baseLength = 32 - clz32(baseIdWithLeadingBit) - 1;
         baseIdWithLeadingBit &= ~(1 << baseLength);
-        index += 1;
+        index2 += 1;
         var length = 32 - clz32(totalChildren) + baseLength;
         if (30 < length) {
           var numberOfOverflowBits = baseLength - baseLength % 5;
           length = (baseIdWithLeadingBit & (1 << numberOfOverflowBits) - 1).toString(32);
           baseIdWithLeadingBit >>= numberOfOverflowBits;
           baseLength -= numberOfOverflowBits;
-          treeContextId = 1 << 32 - clz32(totalChildren) + baseLength | index << baseLength | baseIdWithLeadingBit;
+          treeContextId = 1 << 32 - clz32(totalChildren) + baseLength | index2 << baseLength | baseIdWithLeadingBit;
           treeContextOverflow = length + workInProgress2;
         } else
-          treeContextId = 1 << length | index << baseLength | baseIdWithLeadingBit, treeContextOverflow = workInProgress2;
+          treeContextId = 1 << length | index2 << baseLength | baseIdWithLeadingBit, treeContextOverflow = workInProgress2;
       }
       function pushMaterializedTreeId(workInProgress2) {
         warnIfNotHydrating();
@@ -5434,13 +5434,13 @@ var require_react_dom_client_development = __commonJS({
       }
       function noop$3() {
       }
-      function trackUsedThenable(thenableState2, thenable, index) {
+      function trackUsedThenable(thenableState2, thenable, index2) {
         null !== ReactSharedInternals.actQueue && (ReactSharedInternals.didUsePromise = true);
         var trackedThenables = thenableState2.thenables;
-        index = trackedThenables[index];
-        void 0 === index ? trackedThenables.push(thenable) : index !== thenable && (thenableState2.didWarnAboutUncachedPromise || (thenableState2.didWarnAboutUncachedPromise = true, console.error(
+        index2 = trackedThenables[index2];
+        void 0 === index2 ? trackedThenables.push(thenable) : index2 !== thenable && (thenableState2.didWarnAboutUncachedPromise || (thenableState2.didWarnAboutUncachedPromise = true, console.error(
           "A component was suspended by an uncached promise. Creating promises inside a Client Component or hook is not yet supported, except via a Suspense-compatible library or framework."
-        )), thenable.then(noop$3, noop$3), thenable = index);
+        )), thenable.then(noop$3, noop$3), thenable = index2);
         switch (thenable.status) {
           case "fulfilled":
             return thenable.value;
@@ -5980,12 +5980,12 @@ var require_react_dom_client_development = __commonJS({
         return { lastEffect: null, events: null, stores: null, memoCache: null };
       }
       function useThenable(thenable) {
-        var index = thenableIndexCounter$1;
+        var index2 = thenableIndexCounter$1;
         thenableIndexCounter$1 += 1;
         null === thenableState$1 && (thenableState$1 = createThenableState());
-        thenable = trackUsedThenable(thenableState$1, thenable, index);
-        index = currentlyRenderingFiber;
-        null === (null === workInProgressHook ? index.memoizedState : workInProgressHook.next) && (index = index.alternate, ReactSharedInternals.H = null !== index && null !== index.memoizedState ? HooksDispatcherOnUpdateInDEV : HooksDispatcherOnMountInDEV);
+        thenable = trackUsedThenable(thenableState$1, thenable, index2);
+        index2 = currentlyRenderingFiber;
+        null === (null === workInProgressHook ? index2.memoizedState : workInProgressHook.next) && (index2 = index2.alternate, ReactSharedInternals.H = null !== index2 && null !== index2.memoizedState ? HooksDispatcherOnUpdateInDEV : HooksDispatcherOnMountInDEV);
         return thenable;
       }
       function use(usable) {
@@ -7043,10 +7043,10 @@ var require_react_dom_client_development = __commonJS({
         }
       }
       function unwrapThenable(thenable) {
-        var index = thenableIndexCounter;
+        var index2 = thenableIndexCounter;
         thenableIndexCounter += 1;
         null === thenableState && (thenableState = createThenableState());
-        return trackUsedThenable(thenableState, thenable, index);
+        return trackUsedThenable(thenableState, thenable, index2);
       }
       function coerceRef(workInProgress2, element) {
         element = element.props.ref;
@@ -8879,13 +8879,13 @@ var require_react_dom_client_development = __commonJS({
           propagationRoot
         );
       }
-      function validateSuspenseListNestedChild(childSlot, index) {
+      function validateSuspenseListNestedChild(childSlot, index2) {
         var isAnArray = isArrayImpl(childSlot);
         childSlot = !isAnArray && "function" === typeof getIteratorFn(childSlot);
         return isAnArray || childSlot ? (isAnArray = isAnArray ? "array" : "iterable", console.error(
           "A nested %s was passed to row #%s in <SuspenseList />. Wrap it in an additional SuspenseList to configure its revealOrder: <SuspenseList revealOrder=...> ... <SuspenseList revealOrder=...>{%s}</SuspenseList> ... </SuspenseList>",
           isAnArray,
-          index,
+          index2,
           isAnArray
         ), false) : true;
       }
@@ -12178,8 +12178,8 @@ var require_react_dom_client_development = __commonJS({
         didAttemptEntireTree && (root2.warmLanes |= suspendedLanes);
         didAttemptEntireTree = root2.expirationTimes;
         for (var lanes = suspendedLanes; 0 < lanes; ) {
-          var index = 31 - clz32(lanes), lane = 1 << index;
-          didAttemptEntireTree[index] = -1;
+          var index2 = 31 - clz32(lanes), lane = 1 << index2;
+          didAttemptEntireTree[index2] = -1;
           lanes &= ~lane;
         }
         0 !== spawnedLane && markSpawnedDeferredLane(root2, spawnedLane, suspendedLanes);
@@ -12220,8 +12220,8 @@ var require_react_dom_client_development = __commonJS({
         var allEntangledLanes = root2.entangledLanes;
         if (0 !== allEntangledLanes)
           for (root2 = root2.entanglements, allEntangledLanes &= lanes; 0 < allEntangledLanes; ) {
-            var index = 31 - clz32(allEntangledLanes), lane = 1 << index;
-            lanes |= root2[index];
+            var index2 = 31 - clz32(allEntangledLanes), lane = 1 << index2;
+            lanes |= root2[index2];
             allEntangledLanes &= ~lane;
           }
         entangledRenderLanes = lanes;
@@ -13180,10 +13180,10 @@ var require_react_dom_client_development = __commonJS({
       }
       function scheduleTaskForRootDuringMicrotask(root2, currentTime) {
         for (var suspendedLanes = root2.suspendedLanes, pingedLanes = root2.pingedLanes, expirationTimes = root2.expirationTimes, lanes = root2.pendingLanes & -62914561; 0 < lanes; ) {
-          var index = 31 - clz32(lanes), lane = 1 << index, expirationTime = expirationTimes[index];
+          var index2 = 31 - clz32(lanes), lane = 1 << index2, expirationTime = expirationTimes[index2];
           if (-1 === expirationTime) {
             if (0 === (lane & suspendedLanes) || 0 !== (lane & pingedLanes))
-              expirationTimes[index] = computeExpirationTime(lane, currentTime);
+              expirationTimes[index2] = computeExpirationTime(lane, currentTime);
           } else expirationTime <= currentTime && (root2.expiredLanes |= lane);
           lanes &= ~lane;
         }
@@ -16379,7 +16379,7 @@ var require_react_dom_client_development = __commonJS({
         return current;
       }
       function getLaneLabelMap() {
-        for (var map = /* @__PURE__ */ new Map(), lane = 1, index = 0; 31 > index; index++) {
+        for (var map = /* @__PURE__ */ new Map(), lane = 1, index2 = 0; 31 > index2; index2++) {
           var label = getLabelForLane(lane);
           map.set(lane, label);
           lane *= 2;
@@ -19927,6 +19927,77 @@ function throttle(callback, options) {
   return fn;
 }
 
+// src/range.ts
+function range(hi) {
+  let arr = [];
+  for (let i = 0; i < hi && i < 1e7; i++) {
+    arr.push(i);
+  }
+  return arr;
+}
+function rangeFrom(lo, hi) {
+  let arr = [];
+  for (let i = lo; i < hi && i < 1e7; i++) {
+    arr.push(i);
+  }
+  return arr;
+}
+function stringRangeMapJoin(hi, f, s = "\\n") {
+  const r = range(hi);
+  return r.map(f).join(s);
+}
+function stringMapJoin(a, f, s = "\\n") {
+  return a.map(f).join(s);
+}
+function smartRangeMap(n, cb2) {
+  const a = range(n);
+  const res1 = a.map((i, index2, arr) => {
+    return {
+      remap(lo, hi, inclEnd) {
+        return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
+      },
+      remapCenter(lo, hi) {
+        return (i + 1) / (n + 1) * (hi - lo) + lo;
+      },
+      segment(lo, hi) {
+        return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
+      },
+      slidingWindow(arr2) {
+        return [arr2[i], arr2[i + 1]];
+      },
+      randkf() {
+        if (i === 0) return 0;
+        if (i === n - 1) return 100;
+        const lo = i / (n - 2) * 100;
+        const hi = (i + 1) / (n - 2) * 100;
+        return rand(lo, hi);
+      },
+      get(arr2) {
+        return arr2[i];
+      },
+      i,
+      next: i + 1,
+      end: () => i === n - 1,
+      start: () => i === 0
+    };
+  });
+  const res = res1.map(cb2);
+  return res;
+}
+function smartRange(n) {
+  return smartRangeMap(n, id);
+}
+function id(x2) {
+  return x2;
+}
+function smartRangeStringMapJoin(n, cb2, s = "\\n") {
+  return stringMapJoin(smartRangeMap(n, id), cb2, s);
+}
+function rand(lo, hi, random) {
+  if (!random) random = () => Math.random();
+  return random() * (hi - lo) + lo;
+}
+
 // src/array-utils.ts
 function interleave(arr, cb2) {
   let out = [];
@@ -19979,79 +20050,13 @@ function powerSet(arr) {
   if (arr.length === 0) return [[]];
   return powerSet(arr.slice(1)).flatMap((e) => [e, [arr[0], ...e]]);
 }
-
-// src/range.ts
-function range(hi) {
-  let arr = [];
-  for (let i = 0; i < hi && i < 1e7; i++) {
-    arr.push(i);
-  }
-  return arr;
-}
-function rangeFrom(lo, hi) {
-  let arr = [];
-  for (let i = lo; i < hi && i < 1e7; i++) {
-    arr.push(i);
-  }
-  return arr;
-}
-function stringRangeMapJoin(hi, f, s = "\\n") {
-  const r = range(hi);
-  return r.map(f).join(s);
-}
-function stringMapJoin(a, f, s = "\\n") {
-  return a.map(f).join(s);
-}
-function smartRangeMap(n, cb2) {
-  const a = range(n);
-  const res1 = a.map((i, index, arr) => {
-    return {
-      remap(lo, hi, inclEnd) {
-        return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
-      },
-      remapCenter(lo, hi) {
-        return (i + 1) / (n + 1) * (hi - lo) + lo;
-      },
-      segment(lo, hi) {
-        return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
-      },
-      slidingWindow(arr2) {
-        return [arr2[i], arr2[i + 1]];
-      },
-      randkf() {
-        if (i === 0) return 0;
-        if (i === n - 1) return 100;
-        const lo = i / (n - 2) * 100;
-        const hi = (i + 1) / (n - 2) * 100;
-        return rand(lo, hi);
-      },
-      get(arr2) {
-        return arr2[i];
-      },
-      i,
-      next: i + 1,
-      end: () => i === n - 1,
-      start: () => i === 0
-    };
-  });
-  const res = res1.map(cb2);
-  return res;
-}
-function smartRange(n) {
-  return smartRangeMap(n, id);
-}
-function id(x2) {
-  return x2;
-}
-function smartRangeStringMapJoin(n, cb2, s = "\\n") {
-  return stringMapJoin(smartRangeMap(n, id), cb2, s);
-}
-function rand(lo, hi, random) {
-  if (!random) random = () => Math.random();
-  return random() * (hi - lo) + lo;
-}
-function pickrand(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
+function permute(arr) {
+  if (arr.length === 0) return [[]];
+  return permute(arr.slice(1)).flatMap(
+    (p) => range(p.length + 1).map(
+      (i) => p.slice(0, i).concat([arr[0]]).concat(p.slice(i))
+    )
+  );
 }
 function cartesianProductInner(ts, arr) {
   if (ts.length === 0) return [arr];
@@ -20061,11 +20066,45 @@ function cartesianProduct(...ts) {
   const res = cartesianProductInner(ts, []);
   return res;
 }
+function pickrand(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+function zip(...ts) {
+  return range(ts[0].length).map((i) => ts.map((t) => t[i]));
+}
+function index(arr) {
+  return zip(arr, range(arr.length));
+}
+function makeDitherKernel(iters) {
+  if (iters === 0) {
+    return [0];
+  }
+  const kernel = makeDitherKernel(iters - 1);
+  const oldLength = kernel.length;
+  const oldSideLength = Math.sqrt(oldLength);
+  const newLength = kernel.length * 4;
+  const newSideLength = Math.sqrt(newLength);
+  let k = new Array(newLength);
+  for (const [x2, y2, idx] of [
+    [0, 0, 0],
+    [1, 1, 1],
+    [1, 0, 2],
+    [0, 1, 3]
+  ]) {
+    let baseIndex = y2 * newSideLength + x2;
+    for (let i = 0; i < oldSideLength; i++) {
+      for (let j = 0; j < oldSideLength; j++) {
+        k[baseIndex + i * 2 * newSideLength + j * 2] = kernel[i * oldSideLength + j] + idx * kernel.length;
+      }
+    }
+  }
+  return k;
+}
 
 // src/threadpool.ts
 function getPerformanceStatistics(records) {
   return Object.fromEntries(
-    Array.from(groupBy(records, (g) => g.name).entries()).map(([name, v]) => {
+    Array.from(groupBy(records, (g2) => g2.name).entries()).map(([name, v]) => {
       const totalRuntime = v.reduce((prev, curr) => prev + curr.runtime, 0) / v.length;
       const invocationCount = v.length;
       return [
@@ -21423,196 +21462,196 @@ function mulScalarByVec4(a, b) {
   return [a * b[0], a * b[1], a * b[2], a * b[3]];
 }
 function mulVec2ByMat2(a, b) {
-  return [a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3]];
+  return [a[0] * b[0] + a[1] * b[1], a[0] * b[2] + a[1] * b[3]];
 }
 function mulVec2ByMat3x2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[3],
-    a[0] * b[1] + a[1] * b[4],
-    a[0] * b[2] + a[1] * b[5]
+    a[0] * b[0] + a[1] * b[1],
+    a[0] * b[2] + a[1] * b[3],
+    a[0] * b[4] + a[1] * b[5]
   ];
 }
 function mulVec2ByMat4x2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[4],
-    a[0] * b[1] + a[1] * b[5],
-    a[0] * b[2] + a[1] * b[6],
-    a[0] * b[3] + a[1] * b[7]
+    a[0] * b[0] + a[1] * b[1],
+    a[0] * b[2] + a[1] * b[3],
+    a[0] * b[4] + a[1] * b[5],
+    a[0] * b[6] + a[1] * b[7]
   ];
 }
 function mulVec3ByMat2x3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5]
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+    a[0] * b[3] + a[1] * b[4] + a[2] * b[5]
   ];
 }
 function mulVec3ByMat3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8]
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+    a[0] * b[3] + a[1] * b[4] + a[2] * b[5],
+    a[0] * b[6] + a[1] * b[7] + a[2] * b[8]
   ];
 }
 function mulVec3ByMat4x3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11]
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+    a[0] * b[3] + a[1] * b[4] + a[2] * b[5],
+    a[0] * b[6] + a[1] * b[7] + a[2] * b[8],
+    a[0] * b[9] + a[1] * b[10] + a[2] * b[11]
   ];
 }
 function mulVec4ByMat2x4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7]
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
+    a[0] * b[4] + a[1] * b[5] + a[2] * b[6] + a[3] * b[7]
   ];
 }
 function mulVec4ByMat3x4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11]
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
+    a[0] * b[4] + a[1] * b[5] + a[2] * b[6] + a[3] * b[7],
+    a[0] * b[8] + a[1] * b[9] + a[2] * b[10] + a[3] * b[11]
   ];
 }
 function mulVec4ByMat4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15]
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
+    a[0] * b[4] + a[1] * b[5] + a[2] * b[6] + a[3] * b[7],
+    a[0] * b[8] + a[1] * b[9] + a[2] * b[10] + a[3] * b[11],
+    a[0] * b[12] + a[1] * b[13] + a[2] * b[14] + a[3] * b[15]
   ];
 }
 function mulVec2ByScalar(a, b) {
   return [a[0] * b, a[1] * b];
 }
 function mulVec2ByVec2(a, b) {
-  return [a[0] * b[0], a[0] * b[1], a[1] * b[0], a[1] * b[1]];
+  return [a[0] * b[0], a[1] * b[0], a[0] * b[1], a[1] * b[1]];
 }
 function mulVec2ByVec3(a, b) {
   return [
     a[0] * b[0],
-    a[0] * b[1],
-    a[0] * b[2],
     a[1] * b[0],
+    a[0] * b[1],
     a[1] * b[1],
+    a[0] * b[2],
     a[1] * b[2]
   ];
 }
 function mulVec2ByVec4(a, b) {
   return [
     a[0] * b[0],
-    a[0] * b[1],
-    a[0] * b[2],
-    a[0] * b[3],
     a[1] * b[0],
+    a[0] * b[1],
     a[1] * b[1],
+    a[0] * b[2],
     a[1] * b[2],
+    a[0] * b[3],
     a[1] * b[3]
   ];
 }
 function mulMat2ByVec2(a, b) {
-  return [a[0] * b[0] + a[1] * b[1], a[2] * b[0] + a[3] * b[1]];
+  return [a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1]];
 }
 function mulMat2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[2],
-    a[0] * b[1] + a[1] * b[3],
-    a[2] * b[0] + a[3] * b[2],
-    a[2] * b[1] + a[3] * b[3]
+    a[0] * b[0] + a[2] * b[1],
+    a[1] * b[0] + a[3] * b[1],
+    a[0] * b[2] + a[2] * b[3],
+    a[1] * b[2] + a[3] * b[3]
   ];
 }
 function mulMat2ByMat3x2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[3],
-    a[0] * b[1] + a[1] * b[4],
-    a[0] * b[2] + a[1] * b[5],
-    a[2] * b[0] + a[3] * b[3],
-    a[2] * b[1] + a[3] * b[4],
-    a[2] * b[2] + a[3] * b[5]
+    a[0] * b[0] + a[2] * b[1],
+    a[1] * b[0] + a[3] * b[1],
+    a[0] * b[2] + a[2] * b[3],
+    a[1] * b[2] + a[3] * b[3],
+    a[0] * b[4] + a[2] * b[5],
+    a[1] * b[4] + a[3] * b[5]
   ];
 }
 function mulMat2ByMat4x2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[4],
-    a[0] * b[1] + a[1] * b[5],
-    a[0] * b[2] + a[1] * b[6],
-    a[0] * b[3] + a[1] * b[7],
-    a[2] * b[0] + a[3] * b[4],
-    a[2] * b[1] + a[3] * b[5],
-    a[2] * b[2] + a[3] * b[6],
-    a[2] * b[3] + a[3] * b[7]
+    a[0] * b[0] + a[2] * b[1],
+    a[1] * b[0] + a[3] * b[1],
+    a[0] * b[2] + a[2] * b[3],
+    a[1] * b[2] + a[3] * b[3],
+    a[0] * b[4] + a[2] * b[5],
+    a[1] * b[4] + a[3] * b[5],
+    a[0] * b[6] + a[2] * b[7],
+    a[1] * b[6] + a[3] * b[7]
   ];
 }
 function mulMat3x2ByVec3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
-    a[3] * b[0] + a[4] * b[1] + a[5] * b[2]
+    a[0] * b[0] + a[2] * b[1] + a[4] * b[2],
+    a[1] * b[0] + a[3] * b[1] + a[5] * b[2]
   ];
 }
 function mulMat3x2ByMat2x3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5],
-    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
-    a[3] * b[1] + a[4] * b[3] + a[5] * b[5]
+    a[0] * b[0] + a[2] * b[1] + a[4] * b[2],
+    a[1] * b[0] + a[3] * b[1] + a[5] * b[2],
+    a[0] * b[3] + a[2] * b[4] + a[4] * b[5],
+    a[1] * b[3] + a[3] * b[4] + a[5] * b[5]
   ];
 }
 function mulMat3x2ByMat3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
-    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
-    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
-    a[3] * b[2] + a[4] * b[5] + a[5] * b[8]
+    a[0] * b[0] + a[2] * b[1] + a[4] * b[2],
+    a[1] * b[0] + a[3] * b[1] + a[5] * b[2],
+    a[0] * b[3] + a[2] * b[4] + a[4] * b[5],
+    a[1] * b[3] + a[3] * b[4] + a[5] * b[5],
+    a[0] * b[6] + a[2] * b[7] + a[4] * b[8],
+    a[1] * b[6] + a[3] * b[7] + a[5] * b[8]
   ];
 }
 function mulMat3x2ByMat4x3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11],
-    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
-    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
-    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
-    a[3] * b[3] + a[4] * b[7] + a[5] * b[11]
+    a[0] * b[0] + a[2] * b[1] + a[4] * b[2],
+    a[1] * b[0] + a[3] * b[1] + a[5] * b[2],
+    a[0] * b[3] + a[2] * b[4] + a[4] * b[5],
+    a[1] * b[3] + a[3] * b[4] + a[5] * b[5],
+    a[0] * b[6] + a[2] * b[7] + a[4] * b[8],
+    a[1] * b[6] + a[3] * b[7] + a[5] * b[8],
+    a[0] * b[9] + a[2] * b[10] + a[4] * b[11],
+    a[1] * b[9] + a[3] * b[10] + a[5] * b[11]
   ];
 }
 function mulMat4x2ByVec4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
-    a[4] * b[0] + a[5] * b[1] + a[6] * b[2] + a[7] * b[3]
+    a[0] * b[0] + a[2] * b[1] + a[4] * b[2] + a[6] * b[3],
+    a[1] * b[0] + a[3] * b[1] + a[5] * b[2] + a[7] * b[3]
   ];
 }
 function mulMat4x2ByMat2x4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7],
-    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
-    a[4] * b[1] + a[5] * b[3] + a[6] * b[5] + a[7] * b[7]
+    a[0] * b[0] + a[2] * b[1] + a[4] * b[2] + a[6] * b[3],
+    a[1] * b[0] + a[3] * b[1] + a[5] * b[2] + a[7] * b[3],
+    a[0] * b[4] + a[2] * b[5] + a[4] * b[6] + a[6] * b[7],
+    a[1] * b[4] + a[3] * b[5] + a[5] * b[6] + a[7] * b[7]
   ];
 }
 function mulMat4x2ByMat3x4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11],
-    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
-    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
-    a[4] * b[2] + a[5] * b[5] + a[6] * b[8] + a[7] * b[11]
+    a[0] * b[0] + a[2] * b[1] + a[4] * b[2] + a[6] * b[3],
+    a[1] * b[0] + a[3] * b[1] + a[5] * b[2] + a[7] * b[3],
+    a[0] * b[4] + a[2] * b[5] + a[4] * b[6] + a[6] * b[7],
+    a[1] * b[4] + a[3] * b[5] + a[5] * b[6] + a[7] * b[7],
+    a[0] * b[8] + a[2] * b[9] + a[4] * b[10] + a[6] * b[11],
+    a[1] * b[8] + a[3] * b[9] + a[5] * b[10] + a[7] * b[11]
   ];
 }
 function mulMat4x2ByMat4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
-    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
-    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
-    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
-    a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15]
+    a[0] * b[0] + a[2] * b[1] + a[4] * b[2] + a[6] * b[3],
+    a[1] * b[0] + a[3] * b[1] + a[5] * b[2] + a[7] * b[3],
+    a[0] * b[4] + a[2] * b[5] + a[4] * b[6] + a[6] * b[7],
+    a[1] * b[4] + a[3] * b[5] + a[5] * b[6] + a[7] * b[7],
+    a[0] * b[8] + a[2] * b[9] + a[4] * b[10] + a[6] * b[11],
+    a[1] * b[8] + a[3] * b[9] + a[5] * b[10] + a[7] * b[11],
+    a[0] * b[12] + a[2] * b[13] + a[4] * b[14] + a[6] * b[15],
+    a[1] * b[12] + a[3] * b[13] + a[5] * b[14] + a[7] * b[15]
   ];
 }
 function mulVec3ByScalar(a, b) {
@@ -21621,178 +21660,178 @@ function mulVec3ByScalar(a, b) {
 function mulVec3ByVec2(a, b) {
   return [
     a[0] * b[0],
-    a[0] * b[1],
     a[1] * b[0],
-    a[1] * b[1],
     a[2] * b[0],
+    a[0] * b[1],
+    a[1] * b[1],
     a[2] * b[1]
   ];
 }
 function mulVec3ByVec3(a, b) {
   return [
     a[0] * b[0],
-    a[0] * b[1],
-    a[0] * b[2],
     a[1] * b[0],
-    a[1] * b[1],
-    a[1] * b[2],
     a[2] * b[0],
+    a[0] * b[1],
+    a[1] * b[1],
     a[2] * b[1],
+    a[0] * b[2],
+    a[1] * b[2],
     a[2] * b[2]
   ];
 }
 function mulVec3ByVec4(a, b) {
   return [
     a[0] * b[0],
-    a[0] * b[1],
-    a[0] * b[2],
-    a[0] * b[3],
     a[1] * b[0],
-    a[1] * b[1],
-    a[1] * b[2],
-    a[1] * b[3],
     a[2] * b[0],
+    a[0] * b[1],
+    a[1] * b[1],
     a[2] * b[1],
+    a[0] * b[2],
+    a[1] * b[2],
     a[2] * b[2],
+    a[0] * b[3],
+    a[1] * b[3],
     a[2] * b[3]
   ];
 }
 function mulMat2x3ByVec2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[1],
-    a[2] * b[0] + a[3] * b[1],
-    a[4] * b[0] + a[5] * b[1]
+    a[0] * b[0] + a[3] * b[1],
+    a[1] * b[0] + a[4] * b[1],
+    a[2] * b[0] + a[5] * b[1]
   ];
 }
 function mulMat2x3ByMat2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[2],
-    a[0] * b[1] + a[1] * b[3],
-    a[2] * b[0] + a[3] * b[2],
-    a[2] * b[1] + a[3] * b[3],
-    a[4] * b[0] + a[5] * b[2],
-    a[4] * b[1] + a[5] * b[3]
+    a[0] * b[0] + a[3] * b[1],
+    a[1] * b[0] + a[4] * b[1],
+    a[2] * b[0] + a[5] * b[1],
+    a[0] * b[2] + a[3] * b[3],
+    a[1] * b[2] + a[4] * b[3],
+    a[2] * b[2] + a[5] * b[3]
   ];
 }
 function mulMat2x3ByMat3x2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[3],
-    a[0] * b[1] + a[1] * b[4],
-    a[0] * b[2] + a[1] * b[5],
-    a[2] * b[0] + a[3] * b[3],
-    a[2] * b[1] + a[3] * b[4],
-    a[2] * b[2] + a[3] * b[5],
-    a[4] * b[0] + a[5] * b[3],
-    a[4] * b[1] + a[5] * b[4],
-    a[4] * b[2] + a[5] * b[5]
+    a[0] * b[0] + a[3] * b[1],
+    a[1] * b[0] + a[4] * b[1],
+    a[2] * b[0] + a[5] * b[1],
+    a[0] * b[2] + a[3] * b[3],
+    a[1] * b[2] + a[4] * b[3],
+    a[2] * b[2] + a[5] * b[3],
+    a[0] * b[4] + a[3] * b[5],
+    a[1] * b[4] + a[4] * b[5],
+    a[2] * b[4] + a[5] * b[5]
   ];
 }
 function mulMat2x3ByMat4x2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[4],
-    a[0] * b[1] + a[1] * b[5],
-    a[0] * b[2] + a[1] * b[6],
-    a[0] * b[3] + a[1] * b[7],
-    a[2] * b[0] + a[3] * b[4],
-    a[2] * b[1] + a[3] * b[5],
-    a[2] * b[2] + a[3] * b[6],
-    a[2] * b[3] + a[3] * b[7],
-    a[4] * b[0] + a[5] * b[4],
-    a[4] * b[1] + a[5] * b[5],
-    a[4] * b[2] + a[5] * b[6],
-    a[4] * b[3] + a[5] * b[7]
+    a[0] * b[0] + a[3] * b[1],
+    a[1] * b[0] + a[4] * b[1],
+    a[2] * b[0] + a[5] * b[1],
+    a[0] * b[2] + a[3] * b[3],
+    a[1] * b[2] + a[4] * b[3],
+    a[2] * b[2] + a[5] * b[3],
+    a[0] * b[4] + a[3] * b[5],
+    a[1] * b[4] + a[4] * b[5],
+    a[2] * b[4] + a[5] * b[5],
+    a[0] * b[6] + a[3] * b[7],
+    a[1] * b[6] + a[4] * b[7],
+    a[2] * b[6] + a[5] * b[7]
   ];
 }
 function mulMat3ByVec3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
-    a[3] * b[0] + a[4] * b[1] + a[5] * b[2],
-    a[6] * b[0] + a[7] * b[1] + a[8] * b[2]
+    a[0] * b[0] + a[3] * b[1] + a[6] * b[2],
+    a[1] * b[0] + a[4] * b[1] + a[7] * b[2],
+    a[2] * b[0] + a[5] * b[1] + a[8] * b[2]
   ];
 }
 function mulMat3ByMat2x3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5],
-    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
-    a[3] * b[1] + a[4] * b[3] + a[5] * b[5],
-    a[6] * b[0] + a[7] * b[2] + a[8] * b[4],
-    a[6] * b[1] + a[7] * b[3] + a[8] * b[5]
+    a[0] * b[0] + a[3] * b[1] + a[6] * b[2],
+    a[1] * b[0] + a[4] * b[1] + a[7] * b[2],
+    a[2] * b[0] + a[5] * b[1] + a[8] * b[2],
+    a[0] * b[3] + a[3] * b[4] + a[6] * b[5],
+    a[1] * b[3] + a[4] * b[4] + a[7] * b[5],
+    a[2] * b[3] + a[5] * b[4] + a[8] * b[5]
   ];
 }
 function mulMat3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
-    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
-    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
-    a[3] * b[2] + a[4] * b[5] + a[5] * b[8],
-    a[6] * b[0] + a[7] * b[3] + a[8] * b[6],
-    a[6] * b[1] + a[7] * b[4] + a[8] * b[7],
-    a[6] * b[2] + a[7] * b[5] + a[8] * b[8]
+    a[0] * b[0] + a[3] * b[1] + a[6] * b[2],
+    a[1] * b[0] + a[4] * b[1] + a[7] * b[2],
+    a[2] * b[0] + a[5] * b[1] + a[8] * b[2],
+    a[0] * b[3] + a[3] * b[4] + a[6] * b[5],
+    a[1] * b[3] + a[4] * b[4] + a[7] * b[5],
+    a[2] * b[3] + a[5] * b[4] + a[8] * b[5],
+    a[0] * b[6] + a[3] * b[7] + a[6] * b[8],
+    a[1] * b[6] + a[4] * b[7] + a[7] * b[8],
+    a[2] * b[6] + a[5] * b[7] + a[8] * b[8]
   ];
 }
 function mulMat3ByMat4x3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11],
-    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
-    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
-    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
-    a[3] * b[3] + a[4] * b[7] + a[5] * b[11],
-    a[6] * b[0] + a[7] * b[4] + a[8] * b[8],
-    a[6] * b[1] + a[7] * b[5] + a[8] * b[9],
-    a[6] * b[2] + a[7] * b[6] + a[8] * b[10],
-    a[6] * b[3] + a[7] * b[7] + a[8] * b[11]
+    a[0] * b[0] + a[3] * b[1] + a[6] * b[2],
+    a[1] * b[0] + a[4] * b[1] + a[7] * b[2],
+    a[2] * b[0] + a[5] * b[1] + a[8] * b[2],
+    a[0] * b[3] + a[3] * b[4] + a[6] * b[5],
+    a[1] * b[3] + a[4] * b[4] + a[7] * b[5],
+    a[2] * b[3] + a[5] * b[4] + a[8] * b[5],
+    a[0] * b[6] + a[3] * b[7] + a[6] * b[8],
+    a[1] * b[6] + a[4] * b[7] + a[7] * b[8],
+    a[2] * b[6] + a[5] * b[7] + a[8] * b[8],
+    a[0] * b[9] + a[3] * b[10] + a[6] * b[11],
+    a[1] * b[9] + a[4] * b[10] + a[7] * b[11],
+    a[2] * b[9] + a[5] * b[10] + a[8] * b[11]
   ];
 }
 function mulMat4x3ByVec4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
-    a[4] * b[0] + a[5] * b[1] + a[6] * b[2] + a[7] * b[3],
-    a[8] * b[0] + a[9] * b[1] + a[10] * b[2] + a[11] * b[3]
+    a[0] * b[0] + a[3] * b[1] + a[6] * b[2] + a[9] * b[3],
+    a[1] * b[0] + a[4] * b[1] + a[7] * b[2] + a[10] * b[3],
+    a[2] * b[0] + a[5] * b[1] + a[8] * b[2] + a[11] * b[3]
   ];
 }
 function mulMat4x3ByMat2x4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7],
-    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
-    a[4] * b[1] + a[5] * b[3] + a[6] * b[5] + a[7] * b[7],
-    a[8] * b[0] + a[9] * b[2] + a[10] * b[4] + a[11] * b[6],
-    a[8] * b[1] + a[9] * b[3] + a[10] * b[5] + a[11] * b[7]
+    a[0] * b[0] + a[3] * b[1] + a[6] * b[2] + a[9] * b[3],
+    a[1] * b[0] + a[4] * b[1] + a[7] * b[2] + a[10] * b[3],
+    a[2] * b[0] + a[5] * b[1] + a[8] * b[2] + a[11] * b[3],
+    a[0] * b[4] + a[3] * b[5] + a[6] * b[6] + a[9] * b[7],
+    a[1] * b[4] + a[4] * b[5] + a[7] * b[6] + a[10] * b[7],
+    a[2] * b[4] + a[5] * b[5] + a[8] * b[6] + a[11] * b[7]
   ];
 }
 function mulMat4x3ByMat3x4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11],
-    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
-    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
-    a[4] * b[2] + a[5] * b[5] + a[6] * b[8] + a[7] * b[11],
-    a[8] * b[0] + a[9] * b[3] + a[10] * b[6] + a[11] * b[9],
-    a[8] * b[1] + a[9] * b[4] + a[10] * b[7] + a[11] * b[10],
-    a[8] * b[2] + a[9] * b[5] + a[10] * b[8] + a[11] * b[11]
+    a[0] * b[0] + a[3] * b[1] + a[6] * b[2] + a[9] * b[3],
+    a[1] * b[0] + a[4] * b[1] + a[7] * b[2] + a[10] * b[3],
+    a[2] * b[0] + a[5] * b[1] + a[8] * b[2] + a[11] * b[3],
+    a[0] * b[4] + a[3] * b[5] + a[6] * b[6] + a[9] * b[7],
+    a[1] * b[4] + a[4] * b[5] + a[7] * b[6] + a[10] * b[7],
+    a[2] * b[4] + a[5] * b[5] + a[8] * b[6] + a[11] * b[7],
+    a[0] * b[8] + a[3] * b[9] + a[6] * b[10] + a[9] * b[11],
+    a[1] * b[8] + a[4] * b[9] + a[7] * b[10] + a[10] * b[11],
+    a[2] * b[8] + a[5] * b[9] + a[8] * b[10] + a[11] * b[11]
   ];
 }
 function mulMat4x3ByMat4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
-    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
-    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
-    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
-    a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15],
-    a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12],
-    a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13],
-    a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14],
-    a[8] * b[3] + a[9] * b[7] + a[10] * b[11] + a[11] * b[15]
+    a[0] * b[0] + a[3] * b[1] + a[6] * b[2] + a[9] * b[3],
+    a[1] * b[0] + a[4] * b[1] + a[7] * b[2] + a[10] * b[3],
+    a[2] * b[0] + a[5] * b[1] + a[8] * b[2] + a[11] * b[3],
+    a[0] * b[4] + a[3] * b[5] + a[6] * b[6] + a[9] * b[7],
+    a[1] * b[4] + a[4] * b[5] + a[7] * b[6] + a[10] * b[7],
+    a[2] * b[4] + a[5] * b[5] + a[8] * b[6] + a[11] * b[7],
+    a[0] * b[8] + a[3] * b[9] + a[6] * b[10] + a[9] * b[11],
+    a[1] * b[8] + a[4] * b[9] + a[7] * b[10] + a[10] * b[11],
+    a[2] * b[8] + a[5] * b[9] + a[8] * b[10] + a[11] * b[11],
+    a[0] * b[12] + a[3] * b[13] + a[6] * b[14] + a[9] * b[15],
+    a[1] * b[12] + a[4] * b[13] + a[7] * b[14] + a[10] * b[15],
+    a[2] * b[12] + a[5] * b[13] + a[8] * b[14] + a[11] * b[15]
   ];
 }
 function mulVec4ByScalar(a, b) {
@@ -21801,217 +21840,217 @@ function mulVec4ByScalar(a, b) {
 function mulVec4ByVec2(a, b) {
   return [
     a[0] * b[0],
-    a[0] * b[1],
     a[1] * b[0],
-    a[1] * b[1],
     a[2] * b[0],
-    a[2] * b[1],
     a[3] * b[0],
+    a[0] * b[1],
+    a[1] * b[1],
+    a[2] * b[1],
     a[3] * b[1]
   ];
 }
 function mulVec4ByVec3(a, b) {
   return [
     a[0] * b[0],
-    a[0] * b[1],
-    a[0] * b[2],
     a[1] * b[0],
-    a[1] * b[1],
-    a[1] * b[2],
     a[2] * b[0],
-    a[2] * b[1],
-    a[2] * b[2],
     a[3] * b[0],
+    a[0] * b[1],
+    a[1] * b[1],
+    a[2] * b[1],
     a[3] * b[1],
+    a[0] * b[2],
+    a[1] * b[2],
+    a[2] * b[2],
     a[3] * b[2]
   ];
 }
 function mulVec4ByVec4(a, b) {
   return [
     a[0] * b[0],
-    a[0] * b[1],
-    a[0] * b[2],
-    a[0] * b[3],
     a[1] * b[0],
-    a[1] * b[1],
-    a[1] * b[2],
-    a[1] * b[3],
     a[2] * b[0],
-    a[2] * b[1],
-    a[2] * b[2],
-    a[2] * b[3],
     a[3] * b[0],
+    a[0] * b[1],
+    a[1] * b[1],
+    a[2] * b[1],
     a[3] * b[1],
+    a[0] * b[2],
+    a[1] * b[2],
+    a[2] * b[2],
     a[3] * b[2],
+    a[0] * b[3],
+    a[1] * b[3],
+    a[2] * b[3],
     a[3] * b[3]
   ];
 }
 function mulMat2x4ByVec2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[1],
-    a[2] * b[0] + a[3] * b[1],
-    a[4] * b[0] + a[5] * b[1],
-    a[6] * b[0] + a[7] * b[1]
+    a[0] * b[0] + a[4] * b[1],
+    a[1] * b[0] + a[5] * b[1],
+    a[2] * b[0] + a[6] * b[1],
+    a[3] * b[0] + a[7] * b[1]
   ];
 }
 function mulMat2x4ByMat2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[2],
-    a[0] * b[1] + a[1] * b[3],
-    a[2] * b[0] + a[3] * b[2],
-    a[2] * b[1] + a[3] * b[3],
-    a[4] * b[0] + a[5] * b[2],
-    a[4] * b[1] + a[5] * b[3],
-    a[6] * b[0] + a[7] * b[2],
-    a[6] * b[1] + a[7] * b[3]
+    a[0] * b[0] + a[4] * b[1],
+    a[1] * b[0] + a[5] * b[1],
+    a[2] * b[0] + a[6] * b[1],
+    a[3] * b[0] + a[7] * b[1],
+    a[0] * b[2] + a[4] * b[3],
+    a[1] * b[2] + a[5] * b[3],
+    a[2] * b[2] + a[6] * b[3],
+    a[3] * b[2] + a[7] * b[3]
   ];
 }
 function mulMat2x4ByMat3x2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[3],
-    a[0] * b[1] + a[1] * b[4],
-    a[0] * b[2] + a[1] * b[5],
-    a[2] * b[0] + a[3] * b[3],
-    a[2] * b[1] + a[3] * b[4],
-    a[2] * b[2] + a[3] * b[5],
-    a[4] * b[0] + a[5] * b[3],
-    a[4] * b[1] + a[5] * b[4],
-    a[4] * b[2] + a[5] * b[5],
-    a[6] * b[0] + a[7] * b[3],
-    a[6] * b[1] + a[7] * b[4],
-    a[6] * b[2] + a[7] * b[5]
+    a[0] * b[0] + a[4] * b[1],
+    a[1] * b[0] + a[5] * b[1],
+    a[2] * b[0] + a[6] * b[1],
+    a[3] * b[0] + a[7] * b[1],
+    a[0] * b[2] + a[4] * b[3],
+    a[1] * b[2] + a[5] * b[3],
+    a[2] * b[2] + a[6] * b[3],
+    a[3] * b[2] + a[7] * b[3],
+    a[0] * b[4] + a[4] * b[5],
+    a[1] * b[4] + a[5] * b[5],
+    a[2] * b[4] + a[6] * b[5],
+    a[3] * b[4] + a[7] * b[5]
   ];
 }
 function mulMat2x4ByMat4x2(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[4],
-    a[0] * b[1] + a[1] * b[5],
-    a[0] * b[2] + a[1] * b[6],
-    a[0] * b[3] + a[1] * b[7],
-    a[2] * b[0] + a[3] * b[4],
-    a[2] * b[1] + a[3] * b[5],
-    a[2] * b[2] + a[3] * b[6],
-    a[2] * b[3] + a[3] * b[7],
-    a[4] * b[0] + a[5] * b[4],
-    a[4] * b[1] + a[5] * b[5],
-    a[4] * b[2] + a[5] * b[6],
-    a[4] * b[3] + a[5] * b[7],
-    a[6] * b[0] + a[7] * b[4],
-    a[6] * b[1] + a[7] * b[5],
-    a[6] * b[2] + a[7] * b[6],
-    a[6] * b[3] + a[7] * b[7]
+    a[0] * b[0] + a[4] * b[1],
+    a[1] * b[0] + a[5] * b[1],
+    a[2] * b[0] + a[6] * b[1],
+    a[3] * b[0] + a[7] * b[1],
+    a[0] * b[2] + a[4] * b[3],
+    a[1] * b[2] + a[5] * b[3],
+    a[2] * b[2] + a[6] * b[3],
+    a[3] * b[2] + a[7] * b[3],
+    a[0] * b[4] + a[4] * b[5],
+    a[1] * b[4] + a[5] * b[5],
+    a[2] * b[4] + a[6] * b[5],
+    a[3] * b[4] + a[7] * b[5],
+    a[0] * b[6] + a[4] * b[7],
+    a[1] * b[6] + a[5] * b[7],
+    a[2] * b[6] + a[6] * b[7],
+    a[3] * b[6] + a[7] * b[7]
   ];
 }
 function mulMat3x4ByVec3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
-    a[3] * b[0] + a[4] * b[1] + a[5] * b[2],
-    a[6] * b[0] + a[7] * b[1] + a[8] * b[2],
-    a[9] * b[0] + a[10] * b[1] + a[11] * b[2]
+    a[0] * b[0] + a[4] * b[1] + a[8] * b[2],
+    a[1] * b[0] + a[5] * b[1] + a[9] * b[2],
+    a[2] * b[0] + a[6] * b[1] + a[10] * b[2],
+    a[3] * b[0] + a[7] * b[1] + a[11] * b[2]
   ];
 }
 function mulMat3x4ByMat2x3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5],
-    a[3] * b[0] + a[4] * b[2] + a[5] * b[4],
-    a[3] * b[1] + a[4] * b[3] + a[5] * b[5],
-    a[6] * b[0] + a[7] * b[2] + a[8] * b[4],
-    a[6] * b[1] + a[7] * b[3] + a[8] * b[5],
-    a[9] * b[0] + a[10] * b[2] + a[11] * b[4],
-    a[9] * b[1] + a[10] * b[3] + a[11] * b[5]
+    a[0] * b[0] + a[4] * b[1] + a[8] * b[2],
+    a[1] * b[0] + a[5] * b[1] + a[9] * b[2],
+    a[2] * b[0] + a[6] * b[1] + a[10] * b[2],
+    a[3] * b[0] + a[7] * b[1] + a[11] * b[2],
+    a[0] * b[3] + a[4] * b[4] + a[8] * b[5],
+    a[1] * b[3] + a[5] * b[4] + a[9] * b[5],
+    a[2] * b[3] + a[6] * b[4] + a[10] * b[5],
+    a[3] * b[3] + a[7] * b[4] + a[11] * b[5]
   ];
 }
 function mulMat3x4ByMat3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
-    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
-    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
-    a[3] * b[2] + a[4] * b[5] + a[5] * b[8],
-    a[6] * b[0] + a[7] * b[3] + a[8] * b[6],
-    a[6] * b[1] + a[7] * b[4] + a[8] * b[7],
-    a[6] * b[2] + a[7] * b[5] + a[8] * b[8],
-    a[9] * b[0] + a[10] * b[3] + a[11] * b[6],
-    a[9] * b[1] + a[10] * b[4] + a[11] * b[7],
-    a[9] * b[2] + a[10] * b[5] + a[11] * b[8]
+    a[0] * b[0] + a[4] * b[1] + a[8] * b[2],
+    a[1] * b[0] + a[5] * b[1] + a[9] * b[2],
+    a[2] * b[0] + a[6] * b[1] + a[10] * b[2],
+    a[3] * b[0] + a[7] * b[1] + a[11] * b[2],
+    a[0] * b[3] + a[4] * b[4] + a[8] * b[5],
+    a[1] * b[3] + a[5] * b[4] + a[9] * b[5],
+    a[2] * b[3] + a[6] * b[4] + a[10] * b[5],
+    a[3] * b[3] + a[7] * b[4] + a[11] * b[5],
+    a[0] * b[6] + a[4] * b[7] + a[8] * b[8],
+    a[1] * b[6] + a[5] * b[7] + a[9] * b[8],
+    a[2] * b[6] + a[6] * b[7] + a[10] * b[8],
+    a[3] * b[6] + a[7] * b[7] + a[11] * b[8]
   ];
 }
 function mulMat3x4ByMat4x3(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11],
-    a[3] * b[0] + a[4] * b[4] + a[5] * b[8],
-    a[3] * b[1] + a[4] * b[5] + a[5] * b[9],
-    a[3] * b[2] + a[4] * b[6] + a[5] * b[10],
-    a[3] * b[3] + a[4] * b[7] + a[5] * b[11],
-    a[6] * b[0] + a[7] * b[4] + a[8] * b[8],
-    a[6] * b[1] + a[7] * b[5] + a[8] * b[9],
-    a[6] * b[2] + a[7] * b[6] + a[8] * b[10],
-    a[6] * b[3] + a[7] * b[7] + a[8] * b[11],
-    a[9] * b[0] + a[10] * b[4] + a[11] * b[8],
-    a[9] * b[1] + a[10] * b[5] + a[11] * b[9],
-    a[9] * b[2] + a[10] * b[6] + a[11] * b[10],
-    a[9] * b[3] + a[10] * b[7] + a[11] * b[11]
+    a[0] * b[0] + a[4] * b[1] + a[8] * b[2],
+    a[1] * b[0] + a[5] * b[1] + a[9] * b[2],
+    a[2] * b[0] + a[6] * b[1] + a[10] * b[2],
+    a[3] * b[0] + a[7] * b[1] + a[11] * b[2],
+    a[0] * b[3] + a[4] * b[4] + a[8] * b[5],
+    a[1] * b[3] + a[5] * b[4] + a[9] * b[5],
+    a[2] * b[3] + a[6] * b[4] + a[10] * b[5],
+    a[3] * b[3] + a[7] * b[4] + a[11] * b[5],
+    a[0] * b[6] + a[4] * b[7] + a[8] * b[8],
+    a[1] * b[6] + a[5] * b[7] + a[9] * b[8],
+    a[2] * b[6] + a[6] * b[7] + a[10] * b[8],
+    a[3] * b[6] + a[7] * b[7] + a[11] * b[8],
+    a[0] * b[9] + a[4] * b[10] + a[8] * b[11],
+    a[1] * b[9] + a[5] * b[10] + a[9] * b[11],
+    a[2] * b[9] + a[6] * b[10] + a[10] * b[11],
+    a[3] * b[9] + a[7] * b[10] + a[11] * b[11]
   ];
 }
 function mulMat4ByVec4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
-    a[4] * b[0] + a[5] * b[1] + a[6] * b[2] + a[7] * b[3],
-    a[8] * b[0] + a[9] * b[1] + a[10] * b[2] + a[11] * b[3],
-    a[12] * b[0] + a[13] * b[1] + a[14] * b[2] + a[15] * b[3]
+    a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3],
+    a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3],
+    a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3],
+    a[3] * b[0] + a[7] * b[1] + a[11] * b[2] + a[15] * b[3]
   ];
 }
 function mulMat4ByMat2x4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[2] + a[2] * b[4] + a[3] * b[6],
-    a[0] * b[1] + a[1] * b[3] + a[2] * b[5] + a[3] * b[7],
-    a[4] * b[0] + a[5] * b[2] + a[6] * b[4] + a[7] * b[6],
-    a[4] * b[1] + a[5] * b[3] + a[6] * b[5] + a[7] * b[7],
-    a[8] * b[0] + a[9] * b[2] + a[10] * b[4] + a[11] * b[6],
-    a[8] * b[1] + a[9] * b[3] + a[10] * b[5] + a[11] * b[7],
-    a[12] * b[0] + a[13] * b[2] + a[14] * b[4] + a[15] * b[6],
-    a[12] * b[1] + a[13] * b[3] + a[14] * b[5] + a[15] * b[7]
+    a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3],
+    a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3],
+    a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3],
+    a[3] * b[0] + a[7] * b[1] + a[11] * b[2] + a[15] * b[3],
+    a[0] * b[4] + a[4] * b[5] + a[8] * b[6] + a[12] * b[7],
+    a[1] * b[4] + a[5] * b[5] + a[9] * b[6] + a[13] * b[7],
+    a[2] * b[4] + a[6] * b[5] + a[10] * b[6] + a[14] * b[7],
+    a[3] * b[4] + a[7] * b[5] + a[11] * b[6] + a[15] * b[7]
   ];
 }
 function mulMat4ByMat3x4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6] + a[3] * b[9],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7] + a[3] * b[10],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8] + a[3] * b[11],
-    a[4] * b[0] + a[5] * b[3] + a[6] * b[6] + a[7] * b[9],
-    a[4] * b[1] + a[5] * b[4] + a[6] * b[7] + a[7] * b[10],
-    a[4] * b[2] + a[5] * b[5] + a[6] * b[8] + a[7] * b[11],
-    a[8] * b[0] + a[9] * b[3] + a[10] * b[6] + a[11] * b[9],
-    a[8] * b[1] + a[9] * b[4] + a[10] * b[7] + a[11] * b[10],
-    a[8] * b[2] + a[9] * b[5] + a[10] * b[8] + a[11] * b[11],
-    a[12] * b[0] + a[13] * b[3] + a[14] * b[6] + a[15] * b[9],
-    a[12] * b[1] + a[13] * b[4] + a[14] * b[7] + a[15] * b[10],
-    a[12] * b[2] + a[13] * b[5] + a[14] * b[8] + a[15] * b[11]
+    a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3],
+    a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3],
+    a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3],
+    a[3] * b[0] + a[7] * b[1] + a[11] * b[2] + a[15] * b[3],
+    a[0] * b[4] + a[4] * b[5] + a[8] * b[6] + a[12] * b[7],
+    a[1] * b[4] + a[5] * b[5] + a[9] * b[6] + a[13] * b[7],
+    a[2] * b[4] + a[6] * b[5] + a[10] * b[6] + a[14] * b[7],
+    a[3] * b[4] + a[7] * b[5] + a[11] * b[6] + a[15] * b[7],
+    a[0] * b[8] + a[4] * b[9] + a[8] * b[10] + a[12] * b[11],
+    a[1] * b[8] + a[5] * b[9] + a[9] * b[10] + a[13] * b[11],
+    a[2] * b[8] + a[6] * b[9] + a[10] * b[10] + a[14] * b[11],
+    a[3] * b[8] + a[7] * b[9] + a[11] * b[10] + a[15] * b[11]
   ];
 }
 function mulMat4(a, b) {
   return [
-    a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12],
-    a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13],
-    a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14],
-    a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15],
-    a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12],
-    a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13],
-    a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14],
-    a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15],
-    a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12],
-    a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13],
-    a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14],
-    a[8] * b[3] + a[9] * b[7] + a[10] * b[11] + a[11] * b[15],
-    a[12] * b[0] + a[13] * b[4] + a[14] * b[8] + a[15] * b[12],
-    a[12] * b[1] + a[13] * b[5] + a[14] * b[9] + a[15] * b[13],
-    a[12] * b[2] + a[13] * b[6] + a[14] * b[10] + a[15] * b[14],
-    a[12] * b[3] + a[13] * b[7] + a[14] * b[11] + a[15] * b[15]
+    a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3],
+    a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3],
+    a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3],
+    a[3] * b[0] + a[7] * b[1] + a[11] * b[2] + a[15] * b[3],
+    a[0] * b[4] + a[4] * b[5] + a[8] * b[6] + a[12] * b[7],
+    a[1] * b[4] + a[5] * b[5] + a[9] * b[6] + a[13] * b[7],
+    a[2] * b[4] + a[6] * b[5] + a[10] * b[6] + a[14] * b[7],
+    a[3] * b[4] + a[7] * b[5] + a[11] * b[6] + a[15] * b[7],
+    a[0] * b[8] + a[4] * b[9] + a[8] * b[10] + a[12] * b[11],
+    a[1] * b[8] + a[5] * b[9] + a[9] * b[10] + a[13] * b[11],
+    a[2] * b[8] + a[6] * b[9] + a[10] * b[10] + a[14] * b[11],
+    a[3] * b[8] + a[7] * b[9] + a[11] * b[10] + a[15] * b[11],
+    a[0] * b[12] + a[4] * b[13] + a[8] * b[14] + a[12] * b[15],
+    a[1] * b[12] + a[5] * b[13] + a[9] * b[14] + a[13] * b[15],
+    a[2] * b[12] + a[6] * b[13] + a[10] * b[14] + a[14] * b[15],
+    a[3] * b[12] + a[7] * b[13] + a[11] * b[14] + a[15] * b[15]
   ];
 }
 function add2(a, b) {
@@ -22505,6 +22544,18 @@ function innerTextRegex(selector, regex, fallbackIfNotExist, fallbackIfNoMatch) 
 }
 
 // src/object-utils.ts
+function arrayToMapValues(arr, f) {
+  return new Map(arr.map((x2) => [f(x2), x2]));
+}
+function arrayToObjValues(arr, f) {
+  return map2obj(arrayToMapValues(arr, f));
+}
+function arrayToMapKeys(arr, f) {
+  return new Map(arr.map((x2) => [x2, f(x2)]));
+}
+function arrayToObjKeys(arr, f) {
+  return map2obj(arrayToMapKeys(arr, f));
+}
 function mapObjKeys(obj, callback) {
   return mapObjEntries(obj, (k, v) => [callback(k, v), v]);
 }
@@ -22601,8 +22652,12 @@ var ArrayMap = class _ArrayMap {
   nthMap(n) {
     let map = this.maps.get(n);
     if (!map) {
-      map = /* @__PURE__ */ new Map();
-      this.maps.set(n, map);
+      if (n !== 0) {
+        map = /* @__PURE__ */ new Map();
+        this.maps.set(n, map);
+      } else {
+        return void 0;
+      }
     }
     return map;
   }
@@ -23328,7 +23383,7 @@ function subdivideEdgesByDistance(graph, maxDistance, distanceMetric, createNewS
   });
 }
 function graph2json(graph, serializeVertex, serializeEdge) {
-  let index = 0;
+  let index2 = 0;
   if (!serializeVertex) serializeVertex = id;
   if (!serializeEdge) serializeEdge = id;
   const vertexIndexMap = /* @__PURE__ */ new Map();
@@ -23337,9 +23392,9 @@ function graph2json(graph, serializeVertex, serializeEdge) {
     edges: []
   };
   for (const v of graph.vertices) {
-    vertexIndexMap.set(v, index);
+    vertexIndexMap.set(v, index2);
     json.vertices.push(serializeVertex(v.data));
-    index++;
+    index2++;
   }
   for (const e of graph.edges) {
     json.edges.push({
@@ -23373,7 +23428,7 @@ function json2graph(json, parseVertex, parseEdge) {
 function createEvalbox() {
   const evalbox = document.createElement("iframe");
   evalbox.sandbox = "allow-scripts";
-  let index = 0;
+  let index2 = 0;
   return new Promise((resolve, reject) => {
     const initLoadListener = () => {
       evalbox.removeEventListener("load", initLoadListener);
@@ -23381,7 +23436,7 @@ function createEvalbox() {
         iframe: evalbox,
         eval(str) {
           return new Promise((resolve2, reject2) => {
-            let myindex = index++;
+            let myindex = index2++;
             const listener = (e) => {
               if (e.data && e.data.id === myindex) {
                 resolve2(
@@ -23522,97 +23577,6 @@ function debounce(callback) {
   return fn;
 }
 
-// src/webgpu/bind-group-generator.ts
-function getWgslPrimitiveDatatype(typename, formatname) {
-  if (formatname) return formatname;
-  if (typename === "f32" || typename === "i32" || typename === "u32" || typename === "f16")
-    return typename;
-  if (typename.startsWith("vec") || typename.startsWith("mat")) {
-    if (typename.endsWith("i")) {
-      return "i32";
-    } else if (typename.endsWith("u")) {
-      return "u32";
-    } else if (typename.endsWith("h")) {
-      return "f16";
-    }
-  }
-  return "f32";
-}
-function getWgslPrimitiveSize(typename) {
-  if (typename.startsWith("vec2")) return 2;
-  if (typename.startsWith("vec3")) return 3;
-  if (typename.startsWith("vec4")) return 4;
-  if (typename.startsWith("mat2x3")) return 6;
-  if (typename.startsWith("mat3x2")) return 6;
-  if (typename.startsWith("mat2x4")) return 8;
-  if (typename.startsWith("mat4x2")) return 8;
-  if (typename.startsWith("mat3x4")) return 12;
-  if (typename.startsWith("mat4x3")) return 12;
-  if (typename.startsWith("mat2")) return 4;
-  if (typename.startsWith("mat3")) return 9;
-  if (typename.startsWith("mat4")) return 16;
-  return 1;
-}
-function setWgslPrimitive(typename, formatname, view, offset, data) {
-  const datatype = getWgslPrimitiveDatatype(typename, formatname);
-  const size = getWgslPrimitiveSize(typename);
-  let stride = {
-    i32: 4,
-    f32: 4,
-    u32: 4,
-    f16: 2
-  }[datatype];
-  let method = {
-    i32: "setInt32",
-    f32: "setFloat32",
-    u32: "setUint32",
-    f16: "setFloat16"
-  }[datatype];
-  for (let i = 0; i < size; i++) {
-    view[method](offset + stride * i, data[i], true);
-  }
-}
-function generateUniformBufferInner(spec, values, view, offset) {
-  if (spec.members) {
-    for (const m of spec.members)
-      generateUniformBufferInner(
-        m.type,
-        values[m.name],
-        view,
-        offset + m.offset
-      );
-    return;
-  }
-  const typename = spec.name;
-  if (typename === "array") {
-    for (let i = 0; i < spec.count; i++) {
-      generateUniformBufferInner(
-        spec.format,
-        values[i],
-        view,
-        offset + spec.stride * i
-      );
-    }
-  } else {
-    setWgslPrimitive(
-      spec.name,
-      spec.format?.name,
-      view,
-      offset,
-      Array.isArray(values) ? values : [values]
-    );
-  }
-}
-function generateUniformBuffer(spec, values) {
-  const buf = new ArrayBuffer(spec.size);
-  const view = new DataView(buf);
-  generateUniformBufferInner(spec, values, view, 0);
-  return buf;
-}
-function makeUniformBuffer(spec, group, binding, data) {
-  return generateUniformBuffer(spec.bindGroups[group][binding].type, data);
-}
-
 // src/math/noise.ts
 function fract(x2) {
   return x2 - Math.floor(x2);
@@ -23734,6 +23698,460 @@ function rangeIntersects(a1, a2, b1, b2) {
 function rectIntersects(a, b) {
   return rangeIntersects(a.a[0], a.b[0], b.a[0], b.b[0]) && rangeIntersects(a.a[1], a.b[1], b.a[1], b.b[1]);
 }
+
+// src/audio/stream-audio.ts
+var AudioStream = class {
+  constructor(params) {
+    this.getRange = params.getRange;
+    this.getRangeByChannel = params.getRangeByChannel;
+    this.duration = params.duration;
+    this.sampleRate = params.sampleRate;
+    this.channels = params.channels;
+  }
+};
+function createSignal(params) {
+  const constr = params.constructors;
+  const constructors = constr instanceof Function ? arrayToObjKeys(params.channels, (k) => (t, c) => constr(t, c)[k]) : constr;
+  return new AudioStream({
+    channels: params.channels,
+    async getRange(start, count) {
+      return mapObjEntries(constructors, (k, v) => [
+        k,
+        new Float32Array(
+          range(count).map((s) => {
+            return v((s + start) / this.sampleRate, s + start);
+          })
+        ).buffer
+      ]);
+    },
+    async getRangeByChannel(start, count, channel) {
+      return new Float32Array(
+        range(count).map(
+          (s) => constructors[channel]((s + start) / this.sampleRate, s + start)
+        )
+      ).buffer;
+    },
+    sampleRate: params.sampleRate,
+    duration: params.duration
+  });
+}
+function sameSignalOnData(sampleRate, channels, duration, f) {
+  return createSignal({
+    channels,
+    duration,
+    sampleRate,
+    length: Math.ceil(duration * sampleRate),
+    constructors: arrayToObjKeys(channels, () => f)
+  });
+}
+function waveform(sampleRate, channels, seconds, frequency, amplitude, phase, profile) {
+  return sameSignalOnData(
+    sampleRate,
+    channels,
+    seconds,
+    (t) => amplitude * profile((t * frequency + phase) % 1)
+  );
+}
+async function getRangeAndResample(src2, dstStart, dstCount, dstSampleRate) {
+  if (src2.sampleRate === dstSampleRate) {
+    return src2.getRange(dstStart, dstCount);
+  }
+  const startSeconds = dstStart / dstSampleRate;
+  const durationSeconds = dstCount / dstSampleRate;
+  const srcStart = Math.floor(startSeconds * src2.sampleRate);
+  const srcCount = Math.ceil((startSeconds + durationSeconds) * src2.sampleRate);
+  const srcRange = await src2.getRange(srcStart, srcCount - srcStart);
+  const srcRangeView = mapObjValues(
+    srcRange,
+    (k, x2) => new Float32Array(x2)
+  );
+  return mapObjValues(srcRangeView, (k, v) => {
+    return new Float32Array(
+      range(dstCount).map((dstIndex) => {
+        const time = dstIndex / dstSampleRate;
+        const sourceIndex = time * src2.sampleRate;
+        const srcSamplePrev = Math.floor(sourceIndex);
+        const srcSampleNext = srcSamplePrev + 1;
+        return lerp(sourceIndex % 1, v[srcSamplePrev], v[srcSampleNext]);
+      })
+    ).buffer;
+  });
+}
+function resample(audio, targetSampleRate) {
+  return combineAudio(
+    audio.channels,
+    targetSampleRate,
+    [audio],
+    (time, sample, ch) => ch
+  );
+}
+function combineAudio(channels, sampleRate, audio, f) {
+  const duration = Math.max(...audio.map((a) => a.duration));
+  const length = Math.ceil(duration * sampleRate);
+  const stream = new AudioStream({
+    channels,
+    duration,
+    sampleRate,
+    async getRange(start, count) {
+      const ranges = await Promise.all(
+        audio.map(
+          async (a) => mapObjValues(
+            await getRangeAndResample(
+              a,
+              start,
+              count,
+              sampleRate
+            ),
+            (k, v) => new Float32Array(v)
+          )
+        )
+      );
+      const ch = arrayToObjKeys(
+        channels,
+        (k) => new Float32Array(count)
+      );
+      for (const i of range(count)) {
+        const samples = ranges.map((r, i2) => {
+          if (audio[i2].channels.length === 1 && audio[i2].channels[0] === "center") {
+            return mapObjKeys(channels, () => r.center[i2]);
+          }
+          return mapObjValues(r, (k, v) => v[i2]);
+        });
+        const res = f(
+          (start + i) / sampleRate,
+          start + i,
+          ...samples
+        );
+        for (const c of channels) {
+          ch[c][i] = res[c];
+        }
+      }
+      return mapObjValues(ch, (k, v) => v.buffer);
+    },
+    getRangeByChannel(start, count, channel) {
+      return this.getRange(start, count)[channel];
+    }
+  });
+  return stream;
+}
+var AudioBuilder = class {
+  constructor(channels, sampleRate) {
+    this.channels = channels;
+    this.sampleRate = sampleRate;
+  }
+  waveform(seconds, frequency, amplitude, phase, profile) {
+    return waveform(
+      this.sampleRate,
+      this.channels,
+      seconds,
+      frequency,
+      amplitude,
+      phase,
+      profile
+    );
+  }
+  sine(seconds, frequency, amplitude, phase) {
+    return this.waveform(
+      seconds,
+      frequency,
+      amplitude,
+      phase,
+      (x2) => Math.sin(x2 * Math.PI * 2)
+    );
+  }
+  square(seconds, frequency, amplitude, phase) {
+    return this.waveform(
+      seconds,
+      frequency,
+      amplitude,
+      phase,
+      (x2) => x2 > 0.5 ? -1 : 1
+    );
+  }
+  saw(seconds, frequency, amplitude, phase) {
+    return this.waveform(
+      seconds,
+      frequency,
+      amplitude,
+      phase,
+      (x2) => x2 * 2 - 1
+    );
+  }
+};
+async function playStereo(audio) {
+  const ctx = new AudioContext();
+  const src2 = ctx.createBufferSource();
+  const len = Math.ceil(audio.sampleRate * audio.duration);
+  const buf = ctx.createBuffer(2, len, audio.sampleRate);
+  const range2 = await audio.getRange(0, len);
+  buf.copyToChannel(new Float32Array(range2.left), 0);
+  buf.copyToChannel(new Float32Array(range2.right), 1);
+  src2.buffer = buf;
+  src2.connect(ctx.destination);
+  src2.start();
+}
+function isWorklet() {
+  return eval("globalThis.registerProcessor") !== void 0;
+}
+var BLOCKSIZE = 8192;
+async function initBufferStreamerWorklet(src) {
+  if (isWorklet()) {
+    eval("registerProcessor")(
+      "buffer-streamer",
+      class extends eval("AudioWorkletProcessor") {
+        constructor() {
+          super();
+          this.buffers = [];
+          this.offsetIntoCurrentBuffer = 0;
+          this.port.onmessage = async (e) => {
+            const data = e.data;
+            if (data.type === "buffer") {
+              this.buffers.push({
+                left: new Float32Array(data.buffers.left),
+                right: new Float32Array(data.buffers.right)
+              });
+            }
+          };
+        }
+        process(inputs, outputs, parameters) {
+          const output = outputs[0];
+          const outputLength = output[0].length;
+          for (let i = 0; i < outputLength; i++) {
+            if (this.buffers.length > 0) {
+              output[0][i] = this.buffers[0].left[this.offsetIntoCurrentBuffer];
+              if (output[1]) {
+                output[1][i] = this.buffers[0].right[this.offsetIntoCurrentBuffer];
+              }
+              this.offsetIntoCurrentBuffer++;
+              if (this.offsetIntoCurrentBuffer >= this.buffers[0]?.left.length) {
+                this.offsetIntoCurrentBuffer = 0;
+                this.buffers.shift();
+              }
+            } else {
+              output[0][i] = 0;
+              if (output[1]) {
+                output[1][i] = 0;
+              }
+            }
+          }
+          return true;
+        }
+      }
+    );
+  } else {
+    return async (ctx) => {
+      await ctx.audioWorklet.addModule(src);
+      return () => {
+        const worklet = new AudioWorkletNode(ctx, "buffer-streamer");
+        return {
+          worklet,
+          pushData(left, right) {
+            worklet.port.postMessage(
+              {
+                type: "buffer",
+                buffers: {
+                  left: left.buffer,
+                  right: right.buffer
+                }
+              },
+              [left.buffer, right.buffer]
+            );
+          }
+        };
+      };
+    };
+  }
+}
+var CHUNKSIZE = 2048;
+function streamAudioToWorklet(stream, bs) {
+  let t = 0;
+  const loop = async () => {
+    const { left, right } = await stream.getRange(t, CHUNKSIZE);
+    bs.pushData(new Float32Array(left), new Float32Array(right));
+    t += CHUNKSIZE;
+    if (t <= Math.max(stream.duration * stream.sampleRate)) {
+      setTimeout(loop);
+    }
+  };
+  loop();
+}
+
+// src/audio/stream-audio-old.ts
+function createAudioStreamBuilder(params) {
+  const asb = { plugins: params.plugins };
+  for (const [k, g2] of Object.entries(params.plugins.global)) {
+    asb[k] = (...args) => g2(asb, ...args);
+  }
+  return asb;
+}
+function createSignal2(params) {
+  const constr = params.constructors;
+  const constructors = constr instanceof Function ? arrayToObjKeys(
+    params.builder.defaultChannels,
+    (k) => (t, c) => constr(t, c)[k]
+  ) : constr;
+  const stream = {
+    _isAudioStream: true,
+    duration: params.duration,
+    sampleRate: params.sampleRate,
+    async getRange(start, count) {
+      return mapObjEntries(constructors, (k, v) => [
+        k,
+        new Float32Array(
+          range(count).map((s) => {
+            return v((s + start) / this.sampleRate, s + start);
+          })
+        ).buffer
+      ]);
+    },
+    async getRangeByChannel(start, count, channel) {
+      return new Float32Array(
+        range(count).map(
+          (s) => params.constructors[channel]((s + start) / this.sampleRate, s + start)
+        )
+      ).buffer;
+    }
+  };
+  for (const [k, l] of Object.entries(params.builder.plugins.local)) {
+    stream[k] = (...args) => l(stream, ...args);
+  }
+  return stream;
+}
+async function getRangeAndResample2(stream, start, count, targetSampleRate) {
+  if (stream.sampleRate === targetSampleRate) {
+    return stream.getRange(start, count);
+  }
+  const startSeconds = start / targetSampleRate;
+  const durationSeconds = count / targetSampleRate;
+  const startSample = Math.floor(startSeconds * stream.sampleRate);
+  const endSample = Math.ceil(
+    (startSeconds + durationSeconds) * stream.sampleRate
+  );
+  const r = await stream.getRange(startSample, endSample - startSample);
+  const f32a = mapObjValues(
+    r,
+    (k, x2) => new Float32Array(x2)
+  );
+  return mapObjValues(f32a, (k, v) => {
+    return new Float32Array(
+      range(count).map((i) => {
+        const rawIndex = (i + start) / targetSampleRate * stream.sampleRate;
+        const prev = Math.floor(rawIndex);
+        const next = prev + 1;
+        return lerp(rawIndex % 1, v[prev], v[next]);
+      })
+    ).buffer;
+  });
+}
+function mergePluginGenerators(...generators) {
+  return;
+}
+var StreamAudioStdlib = (ch) => {
+  function sameSignalOnData2(builder, duration, f) {
+    return createSignal2({
+      builder,
+      sampleRate: builder.defaultSampleRate,
+      length: Math.ceil(duration * builder.defaultSampleRate),
+      duration,
+      constructors: arrayToObjKeys(builder.defaultChannels, () => f)
+    });
+  }
+  return {
+    global: {
+      silence(builder, seconds) {
+        return createSignal2({
+          builder,
+          sampleRate: builder.defaultSampleRate,
+          length: Math.ceil(seconds * builder.defaultSampleRate),
+          duration: seconds,
+          constructors: arrayToObjKeys(builder.defaultChannels, () => () => 0)
+        });
+      },
+      waveform(builder, seconds, frequency, amplitude = 1, phase = 0, profile) {
+        return sameSignalOnData2(builder, seconds, (t) => {
+          return amplitude * profile((t / frequency + phase) % 1);
+        });
+      },
+      sine(builder, seconds, frequency, amplitude = 1, phase = 0) {
+        return this.waveform(
+          builder,
+          seconds,
+          frequency,
+          amplitude,
+          phase,
+          (x2) => Math.sin(x2 * Math.PI * 2)
+        );
+      },
+      square(builder, seconds, frequency, amplitude = 1, phase = 0) {
+        return this.waveform(
+          builder,
+          seconds,
+          frequency,
+          amplitude,
+          phase,
+          (x2) => x2 > 0.5 ? -1 : 1
+        );
+      },
+      saw(builder, seconds, frequency, amplitude = 1, phase = 0) {
+        return this.waveform(
+          builder,
+          seconds,
+          frequency,
+          amplitude,
+          phase,
+          (x2) => x2 * 2 - 1
+        );
+      },
+      combineAudio(builder, audio, f) {
+        const duration = Math.max(...audio.map((a) => a.duration));
+        const length = Math.ceil(duration * builder.defaultSampleRate);
+        const stream = {
+          _isAudioStream: true,
+          duration,
+          length,
+          sampleRate: builder.defaultSampleRate,
+          async getRange(start, count) {
+            const ranges = await Promise.all(
+              audio.map(
+                async (a) => mapObjValues(
+                  await getRangeAndResample2(
+                    a,
+                    start,
+                    count,
+                    builder.defaultSampleRate
+                  ),
+                  (k, v) => new Float32Array(v)
+                )
+              )
+            );
+            return builder.defaultChannels.map((d) => {
+              const combinedChannel = new Float32Array(count);
+              return range(count).map((i) => {
+                const samples = ranges.map((r) => {
+                  return r[d][i];
+                });
+                return f(
+                  (start + i) / builder.defaultSampleRate,
+                  start + i,
+                  ...samples
+                );
+              });
+            });
+          },
+          getRangeByChannel(start, count, channel) {
+            return this.getRange(start, count)[channel];
+          }
+        };
+        for (const [k, l] of Object.entries(builder.plugins.local)) {
+          stream[k] = (...args) => l(stream, ...args);
+        }
+        return stream;
+      }
+    },
+    local: {}
+  };
+};
+var g = mergePluginGenerators(StreamAudioStdlib);
 
 // node_modules/ml-convolution/src/utils.js
 function checkSize(size) {
@@ -26758,7 +27176,7 @@ function play(audio, audioContext) {
   source.connect(actx.destination);
   source.start();
 }
-function resample(audio, newSampleRate) {
+function resample2(audio, newSampleRate) {
   let newSampleCount = audio.channels[0].length / audio.sampleRate * newSampleRate;
   let channels = [];
   for (const c of audio.channels) {
@@ -26785,13 +27203,13 @@ function resample(audio, newSampleRate) {
 }
 function modulateSampleTime(a, b) {
   if (b.sampleRate !== a.sampleRate) {
-    b = resample(b, a.sampleRate);
+    b = resample2(b, a.sampleRate);
   }
   for (let ci = 0; ci < a.channels.length; ci++) {
     const newChannel = new Float32Array(a.channels[ci].length);
     for (let i = 0; i < b.channels[ci].length; i++) {
-      const index = Math.floor(b.channels[ci][i] * a.sampleRate);
-      newChannel[i] = a.channels[ci][Math.min(Math.max(index, 0), a.channels[ci].length - 1)];
+      const index2 = Math.floor(b.channels[ci][i] * a.sampleRate);
+      newChannel[i] = a.channels[ci][Math.min(Math.max(index2, 0), a.channels[ci].length - 1)];
     }
     a.channels[ci] = newChannel;
   }
@@ -26799,7 +27217,7 @@ function modulateSampleTime(a, b) {
 }
 function add(a, b, offsetB = 0) {
   if (b.sampleRate !== a.sampleRate) {
-    b = resample(b, a.sampleRate);
+    b = resample2(b, a.sampleRate);
   }
   const offsetSamples = Math.floor(offsetB * a.sampleRate);
   for (let ci = 0; ci < a.channels.length; ci++) {
@@ -26811,7 +27229,7 @@ function add(a, b, offsetB = 0) {
 }
 function modulateGain(a, envelope2, offsetB = 0) {
   if (envelope2.sampleRate !== a.sampleRate) {
-    envelope2 = resample(envelope2, a.sampleRate);
+    envelope2 = resample2(envelope2, a.sampleRate);
   }
   const offsetSamples = Math.floor(offsetB * a.sampleRate);
   for (let ci = 0; ci < a.channels.length; ci++) {
@@ -26929,6 +27347,97 @@ async function getOgg(a) {
   await src2.add(sample);
   await output.finalize();
   return new Blob([output.target.buffer], { type: "audio/ogg" });
+}
+
+// src/webgpu/bind-group-generator.ts
+function getWgslPrimitiveDatatype(typename, formatname) {
+  if (formatname) return formatname;
+  if (typename === "f32" || typename === "i32" || typename === "u32" || typename === "f16")
+    return typename;
+  if (typename.startsWith("vec") || typename.startsWith("mat")) {
+    if (typename.endsWith("i")) {
+      return "i32";
+    } else if (typename.endsWith("u")) {
+      return "u32";
+    } else if (typename.endsWith("h")) {
+      return "f16";
+    }
+  }
+  return "f32";
+}
+function getWgslPrimitiveSize(typename) {
+  if (typename.startsWith("vec2")) return 2;
+  if (typename.startsWith("vec3")) return 3;
+  if (typename.startsWith("vec4")) return 4;
+  if (typename.startsWith("mat2x3")) return 6;
+  if (typename.startsWith("mat3x2")) return 6;
+  if (typename.startsWith("mat2x4")) return 8;
+  if (typename.startsWith("mat4x2")) return 8;
+  if (typename.startsWith("mat3x4")) return 12;
+  if (typename.startsWith("mat4x3")) return 12;
+  if (typename.startsWith("mat2")) return 4;
+  if (typename.startsWith("mat3")) return 9;
+  if (typename.startsWith("mat4")) return 16;
+  return 1;
+}
+function setWgslPrimitive(typename, formatname, view, offset, data) {
+  const datatype = getWgslPrimitiveDatatype(typename, formatname);
+  const size = getWgslPrimitiveSize(typename);
+  let stride = {
+    i32: 4,
+    f32: 4,
+    u32: 4,
+    f16: 2
+  }[datatype];
+  let method = {
+    i32: "setInt32",
+    f32: "setFloat32",
+    u32: "setUint32",
+    f16: "setFloat16"
+  }[datatype];
+  for (let i = 0; i < size; i++) {
+    view[method](offset + stride * i, data[i], true);
+  }
+}
+function generateUniformBufferInner(spec, values, view, offset) {
+  if (spec.members) {
+    for (const m of spec.members)
+      generateUniformBufferInner(
+        m.type,
+        values[m.name],
+        view,
+        offset + m.offset
+      );
+    return;
+  }
+  const typename = spec.name;
+  if (typename === "array") {
+    for (let i = 0; i < spec.count; i++) {
+      generateUniformBufferInner(
+        spec.format,
+        values[i],
+        view,
+        offset + spec.stride * i
+      );
+    }
+  } else {
+    setWgslPrimitive(
+      spec.name,
+      spec.format?.name,
+      view,
+      offset,
+      Array.isArray(values) ? values : [values]
+    );
+  }
+}
+function generateUniformBuffer(spec, values) {
+  const buf = new ArrayBuffer(spec.size);
+  const view = new DataView(buf);
+  generateUniformBufferInner(spec, values, view, 0);
+  return buf;
+}
+function makeUniformBuffer(spec, group, binding, data) {
+  return generateUniformBuffer(spec.bindGroups[group][binding].type, data);
 }
 
 // src/curve/quadratic-curve-to-svg.ts
@@ -27486,7 +27995,7 @@ function scale(axes) {
   return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
 }
 function translate(v) {
-  return [1, 0, 0, v[0], 0, 1, 0, v[1], 0, 0, 1, v[2], 0, 0, 0, 1];
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
 }
 
 // src/webgl/buffer.ts
@@ -27974,10 +28483,13 @@ function PanAndZoom(props) {
 export {
   ALL,
   ArrayMap,
+  AudioBuilder,
+  AudioStream,
   NumberField,
   ObjectField,
   PanAndZoom,
   ProgressBar,
+  StreamAudioStdlib,
   StringField,
   add,
   add2,
@@ -27991,6 +28503,10 @@ export {
   applyUniforms,
   argmax,
   argmin,
+  arrayToMapKeys,
+  arrayToMapValues,
+  arrayToObjKeys,
+  arrayToObjValues,
   bezierAdaptive,
   bezierAdaptiveInner,
   bezierPreview,
@@ -28012,6 +28528,7 @@ export {
   compose,
   constant,
   convolve,
+  createAudioStreamBuilder,
   createBufferWithLayout,
   createCombinedRoundRobinThreadpool,
   createEvalbox,
@@ -28065,6 +28582,8 @@ export {
   inCircle,
   inMainThread,
   incidentEdges,
+  index,
+  initBufferStreamerWorklet,
   injectElementsAt,
   injectFunction,
   innerTextRegex,
@@ -28072,6 +28591,7 @@ export {
   interp2,
   interp3,
   interp4,
+  isWorklet,
   islandsToSvg,
   json2graph,
   lazy,
@@ -28086,6 +28606,7 @@ export {
   listenForSelector,
   loadImg,
   lookupQuadtree,
+  makeDitherKernel,
   makeQuadtree,
   makeUniformBuffer,
   map2obj,
@@ -28186,9 +28707,11 @@ export {
   parseSpatialHashTable,
   parser,
   perlin2d,
+  permute,
   perspective,
   pickrand,
   play,
+  playStereo,
   pointTo,
   polar2Cart,
   polarVec2Cart,
@@ -28205,7 +28728,7 @@ export {
   rectIntersects,
   regexMatch,
   registerStorageItem,
-  resample,
+  resample2 as resample,
   rescale,
   rescale2,
   rescale3,
@@ -28245,6 +28768,7 @@ export {
   str2float,
   str2html,
   str2int,
+  streamAudioToWorklet,
   stringField,
   stringMapJoin,
   stringRangeMapJoin,
@@ -28537,6 +29061,7 @@ export {
   yzzy,
   yzzz,
   z,
+  zip,
   zw,
   zww,
   zwww,
