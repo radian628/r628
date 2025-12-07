@@ -70,10 +70,10 @@
           res[i] = 0;
         return res;
       };
-      FFT3.prototype.toComplexArray = function toComplexArray(input, storage) {
+      FFT3.prototype.toComplexArray = function toComplexArray(input2, storage) {
         var res = storage || this.createComplexArray();
         for (var i = 0; i < res.length; i += 2) {
-          res[i] = input[i >>> 1];
+          res[i] = input2[i >>> 1];
           res[i + 1] = 0;
         }
         return res;
@@ -456,25 +456,25 @@
         }(Error)
       );
       exports.TokenRangeError = TokenRangeError;
-      function extractByPositionRange(input, first, next) {
-        var firstIndex = first === void 0 ? input.length : first.index;
-        var nextIndex = next === void 0 ? input.length : next.index;
+      function extractByPositionRange(input2, first, next) {
+        var firstIndex = first === void 0 ? input2.length : first.index;
+        var nextIndex = next === void 0 ? input2.length : next.index;
         if (firstIndex >= nextIndex) {
           return "";
         }
-        return input.substring(firstIndex, nextIndex);
+        return input2.substring(firstIndex, nextIndex);
       }
       exports.extractByPositionRange = extractByPositionRange;
-      function extractByTokenRange(input, first, next) {
-        return extractByPositionRange(input, first === void 0 ? void 0 : first.pos, next === void 0 ? void 0 : next.pos);
+      function extractByTokenRange(input2, first, next) {
+        return extractByPositionRange(input2, first === void 0 ? void 0 : first.pos, next === void 0 ? void 0 : next.pos);
       }
       exports.extractByTokenRange = extractByTokenRange;
       var TokenImpl = (
         /** @class */
         function() {
-          function TokenImpl2(lexer, input, kind, text, pos, keep) {
+          function TokenImpl2(lexer, input2, kind, text, pos, keep) {
             this.lexer = lexer;
-            this.input = input;
+            this.input = input2;
             this.kind = kind;
             this.text = text;
             this.pos = pos;
@@ -511,14 +511,14 @@
               }
             }
           }
-          LexerImpl2.prototype.parse = function(input) {
-            return this.parseNextAvailable(input, 0, 1, 1);
+          LexerImpl2.prototype.parse = function(input2) {
+            return this.parseNextAvailable(input2, 0, 1, 1);
           };
-          LexerImpl2.prototype.parseNext = function(input, indexStart, rowBegin, columnBegin) {
-            if (indexStart === input.length) {
+          LexerImpl2.prototype.parseNext = function(input2, indexStart, rowBegin, columnBegin) {
+            if (indexStart === input2.length) {
               return void 0;
             }
-            var subString = input.substr(indexStart);
+            var subString = input2.substr(indexStart);
             var result;
             for (var _i = 0, _a = this.rules; _i < _a.length; _i++) {
               var _b = _a[_i], keep = _b[0], regexp = _b[1], kind = _b[2];
@@ -540,22 +540,22 @@
                       columnEnd++;
                   }
                 }
-                var newResult = new TokenImpl(this, input, kind, text, { index: indexStart, rowBegin, columnBegin, rowEnd, columnEnd }, keep);
+                var newResult = new TokenImpl(this, input2, kind, text, { index: indexStart, rowBegin, columnBegin, rowEnd, columnEnd }, keep);
                 if (result === void 0 || result.text.length < newResult.text.length) {
                   result = newResult;
                 }
               }
             }
             if (result === void 0) {
-              throw new TokenError({ index: indexStart, rowBegin, columnBegin, rowEnd: rowBegin, columnEnd: columnBegin }, "Unable to tokenize the rest of the input: " + input.substr(indexStart));
+              throw new TokenError({ index: indexStart, rowBegin, columnBegin, rowEnd: rowBegin, columnEnd: columnBegin }, "Unable to tokenize the rest of the input: " + input2.substr(indexStart));
             } else {
               return result;
             }
           };
-          LexerImpl2.prototype.parseNextAvailable = function(input, index, rowBegin, columnBegin) {
+          LexerImpl2.prototype.parseNextAvailable = function(input2, index, rowBegin, columnBegin) {
             var token;
             while (true) {
-              token = this.parseNext(input, token === void 0 ? index : token.pos.index + token.text.length, token === void 0 ? rowBegin : token.pos.rowEnd, token === void 0 ? columnBegin : token.pos.columnEnd);
+              token = this.parseNext(input2, token === void 0 ? index : token.pos.index + token.text.length, token === void 0 ? rowBegin : token.pos.rowEnd, token === void 0 ? columnBegin : token.pos.columnEnd);
               if (token === void 0) {
                 return void 0;
               } else if (token.keep) {
@@ -2676,10 +2676,10 @@
             implementation
           };
         }
-        function getCrossOriginStringAs(as, input) {
+        function getCrossOriginStringAs(as, input2) {
           if ("font" === as) return "";
-          if ("string" === typeof input)
-            return "use-credentials" === input ? input : "";
+          if ("string" === typeof input2)
+            return "use-credentials" === input2 ? input2 : "";
         }
         function getValueDescriptorExpectingObjectForWarning(thing) {
           return null === thing ? "`null`" : void 0 === thing ? "`undefined`" : "" === thing ? "an empty string" : 'something with type "' + typeof thing + '"';
@@ -13751,10 +13751,10 @@
                           end$jscomp$0
                         );
                         if (startMarker && endMarker && (1 !== selection.rangeCount || selection.anchorNode !== startMarker.node || selection.anchorOffset !== startMarker.offset || selection.focusNode !== endMarker.node || selection.focusOffset !== endMarker.offset)) {
-                          var range3 = doc.createRange();
-                          range3.setStart(startMarker.node, startMarker.offset);
+                          var range2 = doc.createRange();
+                          range2.setStart(startMarker.node, startMarker.offset);
                           selection.removeAllRanges();
-                          start$jscomp$0 > end$jscomp$0 ? (selection.addRange(range3), selection.extend(endMarker.node, endMarker.offset)) : (range3.setEnd(endMarker.node, endMarker.offset), selection.addRange(range3));
+                          start$jscomp$0 > end$jscomp$0 ? (selection.addRange(range2), selection.extend(endMarker.node, endMarker.offset)) : (range2.setEnd(endMarker.node, endMarker.offset), selection.addRange(range2));
                         }
                       }
                     }
@@ -21111,6 +21111,16 @@
     return fn;
   }
 
+  // src/download.ts
+  function download(file, name) {
+    const a = document.createElement("a");
+    a.download = name;
+    const url = URL.createObjectURL(file);
+    a.href = url;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   // src/math/intersections.ts
   function rangeIntersects(a1, a2, b1, b2) {
     return !(a1 > b2 || b1 > a2);
@@ -21211,16 +21221,16 @@
         const estimatedLength = Math.ceil(this.sampleRate * this.duration);
         const clampedStart = clamp(start, 0, estimatedLength);
         const clampedEnd = clamp(start + count, 0, estimatedLength);
-        const range3 = await params.getRange(
+        const range2 = await params.getRange(
           clampedStart,
           clampedEnd - clampedStart
         );
-        if (clampedEnd - clampedStart == count) return range3;
+        if (clampedEnd - clampedStart == count) return range2;
         const out = {};
         const padStart = -Math.min(0, start);
         for (const ch of this.channels) {
           const o = new Float32Array(count);
-          const i = range3[ch];
+          const i = range2[ch];
           for (let idx = 0; idx < i.length; idx++) {
             o[idx + padStart] = i[idx];
           }
@@ -21598,9 +21608,9 @@
     const src2 = ctx.createBufferSource();
     const len = Math.ceil(audio.sampleRate * audio.duration);
     const buf = ctx.createBuffer(2, len, audio.sampleRate);
-    const range3 = await audio.getRange(0, len);
-    buf.copyToChannel(new Float32Array(range3.left), 0);
-    buf.copyToChannel(new Float32Array(range3.right), 1);
+    const range2 = await audio.getRange(0, len);
+    buf.copyToChannel(new Float32Array(range2.left), 0);
+    buf.copyToChannel(new Float32Array(range2.right), 1);
     src2.buffer = buf;
     src2.connect(ctx.destination);
     src2.start();
@@ -21783,92 +21793,6 @@
   chord_inner.setPattern((0, import_typescript_parsec.alt_sc)(primitive_note, compound_note));
   var note = (0, import_typescript_parsec.alt_sc)(chord, compound_note, primitive_note);
   var track = (0, import_typescript_parsec.rep_sc)(note);
-  function parseNotes(src2) {
-    const tokens = noteLexer.parse(src2);
-    return (0, import_typescript_parsec.expectSingleResult)((0, import_typescript_parsec.expectEOF)(track.parse(tokens)));
-  }
-  function getBeatCount(notes) {
-    return notes.reduce((p, c) => p + c.timing, 0);
-  }
-  function createTrackSpecForNoteSequence(startTime, duration, notes, lastFreq, patch) {
-    let time = startTime;
-    let freq = lastFreq;
-    let spec = [];
-    const timingTotal = getBeatCount(notes);
-    for (const n of notes) {
-      const thisNoteDuration = duration * n.timing / timingTotal;
-      const data = createTrackSpecForNote(time, thisNoteDuration, n, freq, patch);
-      spec.push(...data.trackSpec);
-      time += thisNoteDuration;
-      freq = data.freq;
-    }
-    return {
-      freq,
-      trackSpec: spec
-    };
-  }
-  function createTrackSpecForNote(startTime, duration, note2, lastFreq, patch) {
-    if (note2.type === "note") {
-      const freq = note2freq(note2.noteData, lastFreq);
-      return {
-        freq,
-        trackSpec: [
-          {
-            start: startTime,
-            audio: patch(freq, duration)
-          }
-        ]
-      };
-    } else if (note2.type === "chord") {
-      const results = note2.notes.map(
-        (n) => createTrackSpecForNote(startTime, duration * n.timing, n, lastFreq, patch)
-      );
-      return {
-        freq: results.at(-1).freq,
-        trackSpec: results.flatMap((x) => x.trackSpec)
-      };
-    } else if (note2.type === "compound") {
-      return createTrackSpecForNoteSequence(
-        startTime,
-        duration,
-        note2.notes,
-        lastFreq,
-        patch
-      );
-    }
-  }
-  function createTrackSpec(track2, bpm, patch) {
-    return createTrackSpecForNoteSequence(
-      0,
-      getBeatCount(track2) * 60 / bpm,
-      track2,
-      440,
-      patch
-    ).trackSpec;
-  }
-  function note2freq(note2, lastfreq) {
-    if (note2[0].match(/[a-gA-G]/g)) {
-      let semitone = {
-        a: 0,
-        b: 2,
-        c: 3,
-        d: 5,
-        e: 7,
-        f: 8,
-        g: 10
-      }[note2[0].toLowerCase()];
-      let i;
-      for (i = 1; note2[i] === "b" || note2[i] === "#"; i++) {
-        semitone += note2[i] === "#" ? 1 : -1;
-      }
-      let octave = parseInt(note2.slice(i));
-      if (isNaN(octave)) octave = 4;
-      semitone += (octave - 4) * 12;
-      return Math.pow(2, semitone / 12) * 440;
-    } else {
-      return (lastfreq ?? 440) * Math.pow(2, parseInt(note2) / 12);
-    }
-  }
 
   // node_modules/ml-convolution/src/fftConvolution.js
   var import_fft2 = __toESM(require_fft());
@@ -21893,55 +21817,47 @@
   // src/ui/pan-and-zoom.tsx
   var import_react6 = __toESM(require_react());
 
-  // demos-src/audio-stream.demo.ts
-  var initWorklet = initBufferStreamerWorklet("audio-stream.demo.js");
-  if (!isWorklet()) {
-    (async () => {
-      const a = new AudioBuilder(["left", "right"], 44100);
-      const m = new AudioBuilder(["center"], 44100);
-      const adsr = m.adsrgen(1, 0.2, 0.2, 0);
-      const KERNSIZE = 100;
-      const track2 = parseNotes(`
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      `);
-      const trackSpec = createTrackSpec(
-        track2,
-        120,
-        (freq, duration) => (
-          // a
-          //   .sine(freq, 0.4)
-          //   .clip(0, duration)
-          //   .gain(adsr(duration * 0.1, duration * 0.2, duration * 0.5, duration))
-          a.noise().convolve(a.lpf(freq * 2, 32)).gain(m.constant(400 / Math.log(freq) ** 3)).clip(0, 0.05).gain(adsr(0, 5e-3, 0.025, 0.05))
-        )
-      );
-      const w = a.createTrack(trackSpec).preload();
-      for (const c of await displayAudio(w.clip(0, 4), 1, [4e3, 100], 1)) {
-        document.body.appendChild(c);
-      }
-      document.onclick = async () => {
-        const ctx = new AudioContext();
-        const createWorklet = await (await initWorklet)(ctx);
-        const bufferStreamer = createWorklet();
-        streamAudioToWorklet(w, bufferStreamer);
-        const osc = new OscillatorNode(ctx);
-        osc.connect(bufferStreamer.worklet).connect(ctx.destination);
-        osc.start();
-      };
-    })();
-  }
+  // demos-src/font-inliner.demo.ts
+  var input = document.createElement("input");
+  input.type = "file";
+  var extmap = {
+    woff: "font/woff",
+    woff2: "font/woff2",
+    otf: "font/otf",
+    eot: "application/vnd.ms-fontobject",
+    ttf: "font/ttf"
+  };
+  var formatmap = {
+    eot: "embedded-opentype",
+    otc: "collection",
+    ttc: "collection",
+    otf: "opentype",
+    ttf: "opentype",
+    svg: "svg",
+    svgz: "svg",
+    woff: "woff",
+    woff2: "woff2"
+  };
+  input.addEventListener("input", (e) => {
+    const file = input.files[0];
+    const name = file.name.replace(/\.\w+$/g, "");
+    const ext = file.name.match(/\.\w+$/g)?.[0];
+    const mimetype = extmap[ext.slice(1)];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      const cssfile = `@font-face {
+  font-family: "${name}";
+  src: url("${reader.result}") ${ext ? `format("${formatmap[ext.slice(1)] ?? ext.slice(1)}")` : ""};
+}`;
+      download(new Blob([cssfile], { type: "text/css" }), name + ".css");
+    });
+    reader.readAsDataURL(mimetype ? new Blob([file], { type: mimetype }) : file);
+  });
+  document.body.innerHTML = `
+<p>Upload a font file to the field below to generate and download a CSS file that you can <code>@import</code> into your project.</p> 
+`;
+  document.body.appendChild(input);
 })();
 /*! Bundled license information:
 

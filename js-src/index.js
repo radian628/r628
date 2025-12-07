@@ -28,7 +28,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var require_fft = __commonJS({
   "node_modules/fft.js/lib/fft.js"(exports, module) {
     "use strict";
-    function FFT2(size) {
+    function FFT3(size) {
       this.size = size | 0;
       if (this.size <= 1 || (this.size & this.size - 1) !== 0)
         throw new Error("FFT size must be a power of two and bigger than 1");
@@ -56,20 +56,20 @@ var require_fft = __commonJS({
       this._data = null;
       this._inv = 0;
     }
-    module.exports = FFT2;
-    FFT2.prototype.fromComplexArray = function fromComplexArray(complex, storage) {
+    module.exports = FFT3;
+    FFT3.prototype.fromComplexArray = function fromComplexArray(complex, storage) {
       var res = storage || new Array(complex.length >>> 1);
       for (var i = 0; i < complex.length; i += 2)
         res[i >>> 1] = complex[i];
       return res;
     };
-    FFT2.prototype.createComplexArray = function createComplexArray() {
+    FFT3.prototype.createComplexArray = function createComplexArray() {
       const res = new Array(this._csize);
       for (var i = 0; i < res.length; i++)
         res[i] = 0;
       return res;
     };
-    FFT2.prototype.toComplexArray = function toComplexArray(input, storage) {
+    FFT3.prototype.toComplexArray = function toComplexArray(input, storage) {
       var res = storage || this.createComplexArray();
       for (var i = 0; i < res.length; i += 2) {
         res[i] = input[i >>> 1];
@@ -77,7 +77,7 @@ var require_fft = __commonJS({
       }
       return res;
     };
-    FFT2.prototype.completeSpectrum = function completeSpectrum(spectrum) {
+    FFT3.prototype.completeSpectrum = function completeSpectrum(spectrum) {
       var size = this._csize;
       var half = size >>> 1;
       for (var i = 2; i < half; i += 2) {
@@ -85,7 +85,7 @@ var require_fft = __commonJS({
         spectrum[size - i + 1] = -spectrum[i + 1];
       }
     };
-    FFT2.prototype.transform = function transform(out, data) {
+    FFT3.prototype.transform = function transform(out, data) {
       if (out === data)
         throw new Error("Input and output buffers must be different");
       this._out = out;
@@ -95,7 +95,7 @@ var require_fft = __commonJS({
       this._out = null;
       this._data = null;
     };
-    FFT2.prototype.realTransform = function realTransform(out, data) {
+    FFT3.prototype.realTransform = function realTransform(out, data) {
       if (out === data)
         throw new Error("Input and output buffers must be different");
       this._out = out;
@@ -105,7 +105,7 @@ var require_fft = __commonJS({
       this._out = null;
       this._data = null;
     };
-    FFT2.prototype.inverseTransform = function inverseTransform(out, data) {
+    FFT3.prototype.inverseTransform = function inverseTransform(out, data) {
       if (out === data)
         throw new Error("Input and output buffers must be different");
       this._out = out;
@@ -117,7 +117,7 @@ var require_fft = __commonJS({
       this._out = null;
       this._data = null;
     };
-    FFT2.prototype._transform4 = function _transform4() {
+    FFT3.prototype._transform4 = function _transform4() {
       var out = this._out;
       var size = this._csize;
       var width = this._width;
@@ -199,7 +199,7 @@ var require_fft = __commonJS({
         }
       }
     };
-    FFT2.prototype._singleTransform2 = function _singleTransform2(outOff, off, step) {
+    FFT3.prototype._singleTransform2 = function _singleTransform2(outOff, off, step) {
       const out = this._out;
       const data = this._data;
       const evenR = data[off];
@@ -215,7 +215,7 @@ var require_fft = __commonJS({
       out[outOff + 2] = rightR;
       out[outOff + 3] = rightI;
     };
-    FFT2.prototype._singleTransform4 = function _singleTransform4(outOff, off, step) {
+    FFT3.prototype._singleTransform4 = function _singleTransform4(outOff, off, step) {
       const out = this._out;
       const data = this._data;
       const inv = this._inv ? -1 : 1;
@@ -254,7 +254,7 @@ var require_fft = __commonJS({
       out[outOff + 6] = FDr;
       out[outOff + 7] = FDi;
     };
-    FFT2.prototype._realTransform4 = function _realTransform4() {
+    FFT3.prototype._realTransform4 = function _realTransform4() {
       var out = this._out;
       var size = this._csize;
       var width = this._width;
@@ -356,7 +356,7 @@ var require_fft = __commonJS({
         }
       }
     };
-    FFT2.prototype._singleRealTransform2 = function _singleRealTransform2(outOff, off, step) {
+    FFT3.prototype._singleRealTransform2 = function _singleRealTransform2(outOff, off, step) {
       const out = this._out;
       const data = this._data;
       const evenR = data[off];
@@ -368,7 +368,7 @@ var require_fft = __commonJS({
       out[outOff + 2] = rightR;
       out[outOff + 3] = 0;
     };
-    FFT2.prototype._singleRealTransform4 = function _singleRealTransform4(outOff, off, step) {
+    FFT3.prototype._singleRealTransform4 = function _singleRealTransform4(outOff, off, step) {
       const out = this._out;
       const data = this._data;
       const inv = this._inv ? -1 : 1;
@@ -400,11 +400,1013 @@ var require_fft = __commonJS({
   }
 });
 
+// node_modules/typescript-parsec/lib/Lexer.js
+var require_Lexer = __commonJS({
+  "node_modules/typescript-parsec/lib/Lexer.js"(exports) {
+    "use strict";
+    var __extends = exports && exports.__extends || /* @__PURE__ */ function() {
+      var extendStatics = function(d, b) {
+        extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
+          d2.__proto__ = b2;
+        } || function(d2, b2) {
+          for (var p in b2) if (b2.hasOwnProperty(p)) d2[p] = b2[p];
+        };
+        return extendStatics(d, b);
+      };
+      return function(d, b) {
+        extendStatics(d, b);
+        function __() {
+          this.constructor = d;
+        }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+      };
+    }();
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.buildLexer = exports.extractByTokenRange = exports.extractByPositionRange = exports.TokenRangeError = exports.TokenError = void 0;
+    function posToString(pos) {
+      return pos === void 0 ? "<END-OF-FILE>" : JSON.stringify(pos);
+    }
+    var TokenError = (
+      /** @class */
+      function(_super) {
+        __extends(TokenError2, _super);
+        function TokenError2(pos, errorMessage) {
+          var _this = _super.call(this, posToString(pos) + ": " + errorMessage) || this;
+          _this.pos = pos;
+          _this.errorMessage = errorMessage;
+          return _this;
+        }
+        return TokenError2;
+      }(Error)
+    );
+    exports.TokenError = TokenError;
+    var TokenRangeError = (
+      /** @class */
+      function(_super) {
+        __extends(TokenRangeError2, _super);
+        function TokenRangeError2(first, next, errorMessage) {
+          var _this = _super.call(this, posToString(first) + " - " + posToString(next) + ": " + errorMessage) || this;
+          _this.first = first;
+          _this.next = next;
+          _this.errorMessage = errorMessage;
+          return _this;
+        }
+        return TokenRangeError2;
+      }(Error)
+    );
+    exports.TokenRangeError = TokenRangeError;
+    function extractByPositionRange(input, first, next) {
+      var firstIndex = first === void 0 ? input.length : first.index;
+      var nextIndex = next === void 0 ? input.length : next.index;
+      if (firstIndex >= nextIndex) {
+        return "";
+      }
+      return input.substring(firstIndex, nextIndex);
+    }
+    exports.extractByPositionRange = extractByPositionRange;
+    function extractByTokenRange(input, first, next) {
+      return extractByPositionRange(input, first === void 0 ? void 0 : first.pos, next === void 0 ? void 0 : next.pos);
+    }
+    exports.extractByTokenRange = extractByTokenRange;
+    var TokenImpl = (
+      /** @class */
+      function() {
+        function TokenImpl2(lexer, input, kind, text, pos, keep) {
+          this.lexer = lexer;
+          this.input = input;
+          this.kind = kind;
+          this.text = text;
+          this.pos = pos;
+          this.keep = keep;
+        }
+        Object.defineProperty(TokenImpl2.prototype, "next", {
+          get: function() {
+            if (this.nextToken === void 0) {
+              this.nextToken = this.lexer.parseNextAvailable(this.input, this.pos.index + this.text.length, this.pos.rowEnd, this.pos.columnEnd);
+              if (this.nextToken === void 0) {
+                this.nextToken = null;
+              }
+            }
+            return this.nextToken === null ? void 0 : this.nextToken;
+          },
+          enumerable: false,
+          configurable: true
+        });
+        return TokenImpl2;
+      }()
+    );
+    var LexerImpl = (
+      /** @class */
+      function() {
+        function LexerImpl2(rules) {
+          this.rules = rules;
+          for (var _i = 0, _a = this.rules; _i < _a.length; _i++) {
+            var rule2 = _a[_i];
+            if (rule2[1].source[0] !== "^") {
+              throw new Error('Regular expression patterns for a tokenizer should start with "^": ' + rule2[1].source);
+            }
+            if (!rule2[1].global) {
+              throw new Error("Regular expression patterns for a tokenizer should be global: " + rule2[1].source);
+            }
+          }
+        }
+        LexerImpl2.prototype.parse = function(input) {
+          return this.parseNextAvailable(input, 0, 1, 1);
+        };
+        LexerImpl2.prototype.parseNext = function(input, indexStart, rowBegin, columnBegin) {
+          if (indexStart === input.length) {
+            return void 0;
+          }
+          var subString = input.substr(indexStart);
+          var result;
+          for (var _i = 0, _a = this.rules; _i < _a.length; _i++) {
+            var _b = _a[_i], keep = _b[0], regexp = _b[1], kind = _b[2];
+            regexp.lastIndex = 0;
+            if (regexp.test(subString)) {
+              var text = subString.substr(0, regexp.lastIndex);
+              var rowEnd = rowBegin;
+              var columnEnd = columnBegin;
+              for (var _c = 0, text_1 = text; _c < text_1.length; _c++) {
+                var c = text_1[_c];
+                switch (c) {
+                  case "\r":
+                    break;
+                  case "\n":
+                    rowEnd++;
+                    columnEnd = 1;
+                    break;
+                  default:
+                    columnEnd++;
+                }
+              }
+              var newResult = new TokenImpl(this, input, kind, text, { index: indexStart, rowBegin, columnBegin, rowEnd, columnEnd }, keep);
+              if (result === void 0 || result.text.length < newResult.text.length) {
+                result = newResult;
+              }
+            }
+          }
+          if (result === void 0) {
+            throw new TokenError({ index: indexStart, rowBegin, columnBegin, rowEnd: rowBegin, columnEnd: columnBegin }, "Unable to tokenize the rest of the input: " + input.substr(indexStart));
+          } else {
+            return result;
+          }
+        };
+        LexerImpl2.prototype.parseNextAvailable = function(input, index2, rowBegin, columnBegin) {
+          var token;
+          while (true) {
+            token = this.parseNext(input, token === void 0 ? index2 : token.pos.index + token.text.length, token === void 0 ? rowBegin : token.pos.rowEnd, token === void 0 ? columnBegin : token.pos.columnEnd);
+            if (token === void 0) {
+              return void 0;
+            } else if (token.keep) {
+              return token;
+            }
+          }
+        };
+        return LexerImpl2;
+      }()
+    );
+    function buildLexer2(rules) {
+      return new LexerImpl(rules);
+    }
+    exports.buildLexer = buildLexer2;
+  }
+});
+
+// node_modules/typescript-parsec/lib/Parsers/ParserInterface.js
+var require_ParserInterface = __commonJS({
+  "node_modules/typescript-parsec/lib/Parsers/ParserInterface.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.unableToConsumeToken = exports.resultOrError = exports.betterError = void 0;
+    function betterError(e1, e2) {
+      if (e1 === void 0) {
+        return e2;
+      }
+      if (e2 === void 0) {
+        return e1;
+      }
+      if (e1.pos === void 0) {
+        return e1;
+      }
+      if (e2.pos === void 0) {
+        return e2;
+      }
+      if (e1.pos.index < e2.pos.index) {
+        return e2;
+      } else if (e1.pos.index > e2.pos.index) {
+        return e1;
+      } else {
+        return e1;
+      }
+    }
+    exports.betterError = betterError;
+    function resultOrError(result, error, successful) {
+      if (successful) {
+        return {
+          candidates: result,
+          successful: true,
+          error
+        };
+      } else {
+        return {
+          successful: false,
+          error
+        };
+      }
+    }
+    exports.resultOrError = resultOrError;
+    function unableToConsumeToken(token) {
+      return {
+        kind: "Error",
+        pos: token === void 0 ? void 0 : token.pos,
+        message: "Unable to consume token: " + (token === void 0 ? "<END-OF-FILE>" : token.text)
+      };
+    }
+    exports.unableToConsumeToken = unableToConsumeToken;
+  }
+});
+
+// node_modules/typescript-parsec/lib/Parsers/TokenParser.js
+var require_TokenParser = __commonJS({
+  "node_modules/typescript-parsec/lib/Parsers/TokenParser.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.tok = exports.str = exports.fail = exports.succ = exports.nil = void 0;
+    var ParserInterface_1 = require_ParserInterface();
+    function nil2() {
+      return {
+        parse: function(token) {
+          return {
+            candidates: [{
+              firstToken: token,
+              nextToken: token,
+              result: void 0
+            }],
+            successful: true,
+            error: void 0
+          };
+        }
+      };
+    }
+    exports.nil = nil2;
+    function succ(value) {
+      return {
+        parse: function(token) {
+          return {
+            candidates: [{
+              firstToken: token,
+              nextToken: token,
+              result: value
+            }],
+            successful: true,
+            error: void 0
+          };
+        }
+      };
+    }
+    exports.succ = succ;
+    function fail(errorMessage) {
+      return {
+        parse: function(token) {
+          return {
+            successful: false,
+            error: {
+              kind: "Error",
+              pos: token === null || token === void 0 ? void 0 : token.pos,
+              message: errorMessage
+            }
+          };
+        }
+      };
+    }
+    exports.fail = fail;
+    function str2(toMatch) {
+      return {
+        parse: function(token) {
+          if (token === void 0 || token.text !== toMatch) {
+            return {
+              successful: false,
+              error: ParserInterface_1.unableToConsumeToken(token)
+            };
+          }
+          return {
+            candidates: [{
+              firstToken: token,
+              nextToken: token.next,
+              result: token
+            }],
+            successful: true,
+            error: void 0
+          };
+        }
+      };
+    }
+    exports.str = str2;
+    function tok2(toMatch) {
+      return {
+        parse: function(token) {
+          if (token === void 0 || token.kind !== toMatch) {
+            return {
+              successful: false,
+              error: ParserInterface_1.unableToConsumeToken(token)
+            };
+          }
+          return {
+            candidates: [{
+              firstToken: token,
+              nextToken: token.next,
+              result: token
+            }],
+            successful: true,
+            error: void 0
+          };
+        }
+      };
+    }
+    exports.tok = tok2;
+  }
+});
+
+// node_modules/typescript-parsec/lib/Parsers/MonadicSequencialParser.js
+var require_MonadicSequencialParser = __commonJS({
+  "node_modules/typescript-parsec/lib/Parsers/MonadicSequencialParser.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.combine = void 0;
+    var ParserInterface_1 = require_ParserInterface();
+    function combine(first) {
+      var continuations = [];
+      for (var _i = 1; _i < arguments.length; _i++) {
+        continuations[_i - 1] = arguments[_i];
+      }
+      return {
+        parse: function(token) {
+          var firstOutput = first.parse(token);
+          if (!firstOutput.successful) {
+            return firstOutput;
+          }
+          var result = firstOutput.candidates;
+          var error = firstOutput.error;
+          for (var _i2 = 0, continuations_1 = continuations; _i2 < continuations_1.length; _i2++) {
+            var c = continuations_1[_i2];
+            if (result.length === 0) {
+              break;
+            }
+            var steps = result;
+            result = [];
+            for (var _a = 0, steps_1 = steps; _a < steps_1.length; _a++) {
+              var step = steps_1[_a];
+              var output = c(step.result).parse(step.nextToken);
+              error = ParserInterface_1.betterError(error, output.error);
+              if (output.successful) {
+                for (var _b = 0, _c = output.candidates; _b < _c.length; _b++) {
+                  var candidate = _c[_b];
+                  result.push({
+                    firstToken: step.firstToken,
+                    nextToken: candidate.nextToken,
+                    result: candidate.result
+                  });
+                }
+              }
+            }
+          }
+          return ParserInterface_1.resultOrError(result, error, result.length !== 0);
+        }
+      };
+    }
+    exports.combine = combine;
+  }
+});
+
+// node_modules/typescript-parsec/lib/Parsers/SequencialParser.js
+var require_SequencialParser = __commonJS({
+  "node_modules/typescript-parsec/lib/Parsers/SequencialParser.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.seq = void 0;
+    var ParserInterface_1 = require_ParserInterface();
+    function seq2() {
+      var ps = [];
+      for (var _i = 0; _i < arguments.length; _i++) {
+        ps[_i] = arguments[_i];
+      }
+      return {
+        parse: function(token) {
+          var error;
+          var result = [{ firstToken: token, nextToken: token, result: [] }];
+          for (var _i2 = 0, ps_1 = ps; _i2 < ps_1.length; _i2++) {
+            var p = ps_1[_i2];
+            if (result.length === 0) {
+              break;
+            }
+            var steps = result;
+            result = [];
+            for (var _a = 0, steps_1 = steps; _a < steps_1.length; _a++) {
+              var step = steps_1[_a];
+              var output = p.parse(step.nextToken);
+              error = ParserInterface_1.betterError(error, output.error);
+              if (output.successful) {
+                for (var _b = 0, _c = output.candidates; _b < _c.length; _b++) {
+                  var candidate = _c[_b];
+                  result.push({
+                    firstToken: step.firstToken,
+                    nextToken: candidate.nextToken,
+                    result: step.result.concat([candidate.result])
+                  });
+                }
+              }
+            }
+          }
+          return ParserInterface_1.resultOrError(result, error, result.length !== 0);
+        }
+      };
+    }
+    exports.seq = seq2;
+  }
+});
+
+// node_modules/typescript-parsec/lib/Parsers/AlternativeParser.js
+var require_AlternativeParser = __commonJS({
+  "node_modules/typescript-parsec/lib/Parsers/AlternativeParser.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.alt = void 0;
+    var ParserInterface_1 = require_ParserInterface();
+    function alt() {
+      var ps = [];
+      for (var _i = 0; _i < arguments.length; _i++) {
+        ps[_i] = arguments[_i];
+      }
+      return {
+        parse: function(token) {
+          var error;
+          var result = [];
+          var successful = false;
+          for (var _i2 = 0, ps_1 = ps; _i2 < ps_1.length; _i2++) {
+            var p = ps_1[_i2];
+            var output = p.parse(token);
+            error = ParserInterface_1.betterError(error, output.error);
+            if (output.successful) {
+              result = result.concat(output.candidates);
+              successful = true;
+            }
+          }
+          return ParserInterface_1.resultOrError(result, error, successful);
+        }
+      };
+    }
+    exports.alt = alt;
+  }
+});
+
+// node_modules/typescript-parsec/lib/Parsers/AlternativeScParser.js
+var require_AlternativeScParser = __commonJS({
+  "node_modules/typescript-parsec/lib/Parsers/AlternativeScParser.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.alt_sc = void 0;
+    var ParserInterface_1 = require_ParserInterface();
+    function alt_sc2() {
+      var ps = [];
+      for (var _i = 0; _i < arguments.length; _i++) {
+        ps[_i] = arguments[_i];
+      }
+      return {
+        parse: function(token) {
+          var error;
+          for (var _i2 = 0, ps_1 = ps; _i2 < ps_1.length; _i2++) {
+            var p = ps_1[_i2];
+            var output = p.parse(token);
+            error = ParserInterface_1.betterError(error, output.error);
+            if (output.successful) {
+              return ParserInterface_1.resultOrError(output.candidates, error, true);
+            }
+          }
+          return {
+            successful: false,
+            error
+          };
+        }
+      };
+    }
+    exports.alt_sc = alt_sc2;
+  }
+});
+
+// node_modules/typescript-parsec/lib/Parsers/OptionalParser.js
+var require_OptionalParser = __commonJS({
+  "node_modules/typescript-parsec/lib/Parsers/OptionalParser.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.opt_sc = exports.opt = void 0;
+    var AlternativeParser_1 = require_AlternativeParser();
+    var TokenParser_1 = require_TokenParser();
+    function opt(p) {
+      return AlternativeParser_1.alt(p, TokenParser_1.nil());
+    }
+    exports.opt = opt;
+    function opt_sc(p) {
+      return {
+        parse: function(token) {
+          var output = p.parse(token);
+          if (output.successful) {
+            return output;
+          } else {
+            return {
+              candidates: [{
+                firstToken: token,
+                nextToken: token,
+                result: void 0
+              }],
+              successful: true,
+              error: output.error
+            };
+          }
+        }
+      };
+    }
+    exports.opt_sc = opt_sc;
+  }
+});
+
+// node_modules/typescript-parsec/lib/Parsers/ApplyParser.js
+var require_ApplyParser = __commonJS({
+  "node_modules/typescript-parsec/lib/Parsers/ApplyParser.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.kmid = exports.kright = exports.kleft = exports.apply = void 0;
+    var SequencialParser_1 = require_SequencialParser();
+    function apply2(p, callback) {
+      return {
+        parse: function(token) {
+          var output = p.parse(token);
+          if (output.successful) {
+            return {
+              candidates: output.candidates.map(function(value) {
+                return {
+                  firstToken: token,
+                  nextToken: value.nextToken,
+                  result: callback(value.result, [token, value.nextToken])
+                };
+              }),
+              successful: true,
+              error: output.error
+            };
+          } else {
+            return output;
+          }
+        }
+      };
+    }
+    exports.apply = apply2;
+    function kleft2(p1, p2) {
+      return apply2(SequencialParser_1.seq(p1, p2), function(value) {
+        return value[0];
+      });
+    }
+    exports.kleft = kleft2;
+    function kright(p1, p2) {
+      return apply2(SequencialParser_1.seq(p1, p2), function(value) {
+        return value[1];
+      });
+    }
+    exports.kright = kright;
+    function kmid2(p1, p2, p3) {
+      return apply2(SequencialParser_1.seq(p1, p2, p3), function(value) {
+        return value[1];
+      });
+    }
+    exports.kmid = kmid2;
+  }
+});
+
+// node_modules/typescript-parsec/lib/Parsers/RepeativeParser.js
+var require_RepeativeParser = __commonJS({
+  "node_modules/typescript-parsec/lib/Parsers/RepeativeParser.js"(exports) {
+    "use strict";
+    var __spreadArrays = exports && exports.__spreadArrays || function() {
+      for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+      for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+          r[k] = a[j];
+      return r;
+    };
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.lrec_sc = exports.lrec = exports.list_n = exports.list_sc = exports.list = exports.rep_n = exports.repr = exports.rep_sc = exports.rep = void 0;
+    var ApplyParser_1 = require_ApplyParser();
+    var ParserInterface_1 = require_ParserInterface();
+    var SequencialParser_1 = require_SequencialParser();
+    var TokenParser_1 = require_TokenParser();
+    function rep(p) {
+      var reprParser = repr(p);
+      return {
+        parse: function(token) {
+          var output = reprParser.parse(token);
+          if (output.successful) {
+            return {
+              candidates: output.candidates.reverse(),
+              successful: true,
+              error: output.error
+            };
+          } else {
+            return output;
+          }
+        }
+      };
+    }
+    exports.rep = rep;
+    function rep_sc2(p) {
+      return {
+        parse: function(token) {
+          var error;
+          var result = [{ firstToken: token, nextToken: token, result: [] }];
+          while (true) {
+            var steps = result;
+            result = [];
+            for (var _i = 0, steps_1 = steps; _i < steps_1.length; _i++) {
+              var step = steps_1[_i];
+              var output = p.parse(step.nextToken);
+              error = ParserInterface_1.betterError(error, output.error);
+              if (output.successful) {
+                for (var _a = 0, _b = output.candidates; _a < _b.length; _a++) {
+                  var candidate = _b[_a];
+                  if (candidate.nextToken !== step.nextToken) {
+                    result.push({
+                      firstToken: step.firstToken,
+                      nextToken: candidate.nextToken,
+                      result: step.result.concat([candidate.result])
+                    });
+                  }
+                }
+              }
+            }
+            if (result.length === 0) {
+              result = steps;
+              break;
+            }
+          }
+          return ParserInterface_1.resultOrError(result, error, true);
+        }
+      };
+    }
+    exports.rep_sc = rep_sc2;
+    function repr(p) {
+      return {
+        parse: function(token) {
+          var error;
+          var result = [{ firstToken: token, nextToken: token, result: [] }];
+          for (var i = 0; i < result.length; i++) {
+            var step = result[i];
+            var output = p.parse(step.nextToken);
+            error = ParserInterface_1.betterError(error, output.error);
+            if (output.successful) {
+              for (var _i = 0, _a = output.candidates; _i < _a.length; _i++) {
+                var candidate = _a[_i];
+                if (candidate.nextToken !== step.nextToken) {
+                  result.push({
+                    firstToken: step.firstToken,
+                    nextToken: candidate.nextToken,
+                    result: step.result.concat([candidate.result])
+                  });
+                }
+              }
+            }
+          }
+          return ParserInterface_1.resultOrError(result, error, true);
+        }
+      };
+    }
+    exports.repr = repr;
+    function rep_n(p, count) {
+      return {
+        parse: function(token) {
+          var error;
+          var candidates = [{ firstToken: token, nextToken: token, result: [] }];
+          for (var i = 0; i < count; i++) {
+            var newCandidates = [];
+            for (var _i = 0, candidates_1 = candidates; _i < candidates_1.length; _i++) {
+              var step = candidates_1[_i];
+              var output = p.parse(step.nextToken);
+              error = ParserInterface_1.betterError(error, output.error);
+              if (output.successful) {
+                for (var _a = 0, _b = output.candidates; _a < _b.length; _a++) {
+                  var candidate = _b[_a];
+                  newCandidates.push({
+                    firstToken: step.firstToken,
+                    nextToken: candidate.nextToken,
+                    result: step.result.concat([candidate.result])
+                  });
+                }
+              }
+            }
+            if (newCandidates.length === 0) {
+              return {
+                successful: false,
+                error
+              };
+            } else {
+              candidates = newCandidates;
+            }
+          }
+          return ParserInterface_1.resultOrError(candidates, error, true);
+        }
+      };
+    }
+    exports.rep_n = rep_n;
+    function applyList(_a) {
+      var first = _a[0], tail = _a[1];
+      return __spreadArrays([first], tail);
+    }
+    function list(p, s) {
+      return ApplyParser_1.apply(SequencialParser_1.seq(p, rep(ApplyParser_1.kright(s, p))), applyList);
+    }
+    exports.list = list;
+    function list_sc(p, s) {
+      return ApplyParser_1.apply(SequencialParser_1.seq(p, rep_sc2(ApplyParser_1.kright(s, p))), applyList);
+    }
+    exports.list_sc = list_sc;
+    function list_n(p, s, count) {
+      if (count < 1) {
+        return TokenParser_1.succ([]);
+      } else if (count === 1) {
+        return ApplyParser_1.apply(p, function(value) {
+          return [value];
+        });
+      } else {
+        return ApplyParser_1.apply(SequencialParser_1.seq(p, rep_n(ApplyParser_1.kright(s, p), count - 1)), applyList);
+      }
+    }
+    exports.list_n = list_n;
+    function applyLrec(callback) {
+      return function(value) {
+        var result = value[0];
+        for (var _i = 0, _a = value[1]; _i < _a.length; _i++) {
+          var tail = _a[_i];
+          result = callback(result, tail);
+        }
+        return result;
+      };
+    }
+    function lrec(p, q, callback) {
+      return ApplyParser_1.apply(SequencialParser_1.seq(p, rep(q)), applyLrec(callback));
+    }
+    exports.lrec = lrec;
+    function lrec_sc2(p, q, callback) {
+      return ApplyParser_1.apply(SequencialParser_1.seq(p, rep_sc2(q)), applyLrec(callback));
+    }
+    exports.lrec_sc = lrec_sc2;
+  }
+});
+
+// node_modules/typescript-parsec/lib/Parsers/AmbiguousParser.js
+var require_AmbiguousParser = __commonJS({
+  "node_modules/typescript-parsec/lib/Parsers/AmbiguousParser.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.amb = void 0;
+    function amb(p) {
+      return {
+        parse: function(token) {
+          var branches = p.parse(token);
+          if (!branches.successful) {
+            return branches;
+          }
+          var group = /* @__PURE__ */ new Map();
+          for (var _i = 0, _a = branches.candidates; _i < _a.length; _i++) {
+            var r = _a[_i];
+            var rs = group.get(r.nextToken);
+            if (rs === void 0) {
+              group.set(r.nextToken, [r]);
+            } else {
+              rs.push(r);
+            }
+          }
+          return {
+            candidates: Array.from(group.values()).map(function(rs2) {
+              return {
+                firstToken: rs2[0].firstToken,
+                nextToken: rs2[0].nextToken,
+                result: rs2.map(function(r2) {
+                  return r2.result;
+                })
+              };
+            }),
+            successful: true,
+            error: branches.error
+          };
+        }
+      };
+    }
+    exports.amb = amb;
+  }
+});
+
+// node_modules/typescript-parsec/lib/Parsers/ErrorParser.js
+var require_ErrorParser = __commonJS({
+  "node_modules/typescript-parsec/lib/Parsers/ErrorParser.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.errd = exports.err = void 0;
+    function err2(p, errorMessage) {
+      return {
+        parse: function(token) {
+          var branches = p.parse(token);
+          if (branches.successful) {
+            return branches;
+          }
+          return {
+            successful: false,
+            error: {
+              kind: "Error",
+              pos: branches.error.pos,
+              message: errorMessage
+            }
+          };
+        }
+      };
+    }
+    exports.err = err2;
+    function errd(p, errorMessage, defaultValue) {
+      return {
+        parse: function(token) {
+          var branches = p.parse(token);
+          if (branches.successful) {
+            return branches;
+          }
+          return {
+            successful: true,
+            candidates: [{
+              firstToken: token,
+              nextToken: token,
+              result: defaultValue
+            }],
+            error: {
+              kind: "Error",
+              pos: branches.error.pos,
+              message: errorMessage
+            }
+          };
+        }
+      };
+    }
+    exports.errd = errd;
+  }
+});
+
+// node_modules/typescript-parsec/lib/Parsers/Rule.js
+var require_Rule = __commonJS({
+  "node_modules/typescript-parsec/lib/Parsers/Rule.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.expectSingleResult = exports.expectEOF = exports.rule = void 0;
+    var Lexer_1 = require_Lexer();
+    var ParserInterface_1 = require_ParserInterface();
+    var RuleImpl = (
+      /** @class */
+      function() {
+        function RuleImpl2() {
+        }
+        RuleImpl2.prototype.setPattern = function(parser2) {
+          this.parser = parser2;
+        };
+        RuleImpl2.prototype.parse = function(token) {
+          if (this.parser === void 0) {
+            throw new Error("Rule has not been initialized. setPattern is required before calling parse.");
+          }
+          return this.parser.parse(token);
+        };
+        return RuleImpl2;
+      }()
+    );
+    function rule2() {
+      return new RuleImpl();
+    }
+    exports.rule = rule2;
+    function expectEOF2(output) {
+      if (!output.successful) {
+        return output;
+      }
+      if (output.candidates.length === 0) {
+        return {
+          successful: false,
+          error: {
+            kind: "Error",
+            pos: void 0,
+            message: "No result is returned."
+          }
+        };
+      }
+      var filtered = [];
+      var error = output.error;
+      for (var _i = 0, _a = output.candidates; _i < _a.length; _i++) {
+        var candidate = _a[_i];
+        if (candidate.nextToken === void 0) {
+          filtered.push(candidate);
+        } else {
+          error = ParserInterface_1.betterError(error, {
+            kind: "Error",
+            pos: candidate.nextToken === void 0 ? void 0 : candidate.nextToken.pos,
+            message: 'The parser cannot reach the end of file, stops at "' + candidate.nextToken.text + '" at position ' + JSON.stringify(candidate.nextToken.pos) + "."
+          });
+        }
+      }
+      return ParserInterface_1.resultOrError(filtered, error, filtered.length !== 0);
+    }
+    exports.expectEOF = expectEOF2;
+    function expectSingleResult2(output) {
+      if (!output.successful) {
+        throw new Lexer_1.TokenError(output.error.pos, output.error.message);
+      }
+      if (output.candidates.length === 0) {
+        throw new Lexer_1.TokenError(void 0, "No result is returned.");
+      }
+      if (output.candidates.length !== 1) {
+        throw new Lexer_1.TokenError(void 0, "Multiple results are returned.");
+      }
+      return output.candidates[0].result;
+    }
+    exports.expectSingleResult = expectSingleResult2;
+  }
+});
+
+// node_modules/typescript-parsec/lib/ParserModule.js
+var require_ParserModule = __commonJS({
+  "node_modules/typescript-parsec/lib/ParserModule.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.makeParserModule = exports.lazy = void 0;
+    function lazy2(thunk) {
+      return {
+        parse: function(token) {
+          return thunk().parse(token);
+        }
+      };
+    }
+    exports.lazy = lazy2;
+    var defineReadOnly = function(target, propName, value) {
+      return Object.defineProperty(target, propName, {
+        configurable: true,
+        writable: false,
+        enumerable: true,
+        value
+      });
+    };
+    function makeParserModule(definitions) {
+      var parserModule = /* @__PURE__ */ Object.create(null);
+      var _loop_1 = function(key2, parserThunk2) {
+        parserModule = defineReadOnly(parserModule, key2, lazy2(function() {
+          return parserThunk2(parserModule);
+        }));
+      };
+      for (var _i = 0, _a = Object.entries(definitions); _i < _a.length; _i++) {
+        var _b = _a[_i], key = _b[0], parserThunk = _b[1];
+        _loop_1(key, parserThunk);
+      }
+      return parserModule;
+    }
+    exports.makeParserModule = makeParserModule;
+  }
+});
+
+// node_modules/typescript-parsec/lib/index.js
+var require_lib = __commonJS({
+  "node_modules/typescript-parsec/lib/index.js"(exports) {
+    "use strict";
+    var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      Object.defineProperty(o, k2, { enumerable: true, get: function() {
+        return m[k];
+      } });
+    } : function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      o[k2] = m[k];
+    });
+    var __exportStar = exports && exports.__exportStar || function(m, exports2) {
+      for (var p in m) if (p !== "default" && !exports2.hasOwnProperty(p)) __createBinding(exports2, m, p);
+    };
+    Object.defineProperty(exports, "__esModule", { value: true });
+    __exportStar(require_Lexer(), exports);
+    __exportStar(require_ParserInterface(), exports);
+    __exportStar(require_TokenParser(), exports);
+    __exportStar(require_MonadicSequencialParser(), exports);
+    __exportStar(require_SequencialParser(), exports);
+    __exportStar(require_AlternativeParser(), exports);
+    __exportStar(require_AlternativeScParser(), exports);
+    __exportStar(require_OptionalParser(), exports);
+    __exportStar(require_RepeativeParser(), exports);
+    __exportStar(require_ApplyParser(), exports);
+    __exportStar(require_AmbiguousParser(), exports);
+    __exportStar(require_ErrorParser(), exports);
+    __exportStar(require_Rule(), exports);
+    __exportStar(require_ParserModule(), exports);
+  }
+});
+
 // node_modules/next-power-of-two/index.js
 var require_next_power_of_two = __commonJS({
   "node_modules/next-power-of-two/index.js"(exports, module) {
-    module.exports = nextPowerOfTwo;
-    function nextPowerOfTwo(n) {
+    module.exports = nextPowerOfTwo2;
+    function nextPowerOfTwo2(n) {
       if (n === 0) return 1;
       n--;
       n |= n >> 1;
@@ -3174,7 +4176,7 @@ var require_react_dom_client_development = __commonJS({
           };
         }
       }
-      function track(node) {
+      function track2(node) {
         node._valueTracker || (node._valueTracker = trackValueOnNode(node));
       }
       function updateValueIfChanged(node) {
@@ -5027,7 +6029,7 @@ var require_react_dom_client_development = __commonJS({
               props.name,
               true
             );
-            track(didHydrate);
+            track2(didHydrate);
             break;
           case "option":
             validateOptionProps(didHydrate, props);
@@ -5043,7 +6045,7 @@ var require_react_dom_client_development = __commonJS({
               props.value,
               props.defaultValue,
               props.children
-            ), track(didHydrate);
+            ), track2(didHydrate);
         }
         type = props.children;
         "string" !== typeof type && "number" !== typeof type && "bigint" !== typeof type || didHydrate.textContent === "" + type || true === props.suppressHydrationWarning || checkForUnmatchedText(didHydrate.textContent, type) ? (null != props.popover && (listenToNonDelegatedEvent("beforetoggle", didHydrate), listenToNonDelegatedEvent("toggle", didHydrate)), null != props.onScroll && listenToNonDelegatedEvent("scroll", didHydrate), null != props.onScrollEnd && listenToNonDelegatedEvent("scrollend", didHydrate), null != props.onClick && (didHydrate.onclick = noop$1), didHydrate = true) : didHydrate = false;
@@ -14372,7 +15374,7 @@ var require_react_dom_client_development = __commonJS({
               hasSrcSet,
               false
             );
-            track(domElement);
+            track2(domElement);
             return;
           case "select":
             checkControlledValueProps("select", props);
@@ -14439,7 +15441,7 @@ var require_react_dom_client_development = __commonJS({
                 }
             validateTextareaProps(domElement, props);
             initTextarea(domElement, hasSrc, hasSrcSet, propKey);
-            track(domElement);
+            track2(domElement);
             return;
           case "option":
             validateOptionProps(domElement, props);
@@ -20104,7 +21106,7 @@ function makeDitherKernel(iters) {
 // src/threadpool.ts
 function getPerformanceStatistics(records) {
   return Object.fromEntries(
-    Array.from(groupBy(records, (g2) => g2.name).entries()).map(([name, v]) => {
+    Array.from(groupBy(records, (g) => g.name).entries()).map(([name, v]) => {
       const totalRuntime = v.reduce((prev, curr) => prev + curr.runtime, 0) / v.length;
       const invocationCount = v.length;
       return [
@@ -20331,19 +21333,19 @@ async function smartAsyncReplaceAll(input, rgx, callback, options) {
     cursor: finalCursorPos ?? 0
   };
 }
-function multiDelimit(str, delimiters) {
-  if (delimiters.length === 0) return str;
-  return str.split(delimiters[0]).map((e) => multiDelimit(e, delimiters.slice(1)));
+function multiDelimit(str2, delimiters) {
+  if (delimiters.length === 0) return str2;
+  return str2.split(delimiters[0]).map((e) => multiDelimit(e, delimiters.slice(1)));
 }
 function randUnicode(lo, hi, count, random) {
   if (!random) random = () => Math.random();
   return "".padEnd(count).split("").map((e) => String.fromCharCode(Math.floor(random() * (hi - lo)) + lo));
 }
-function getLinesAndCols(str) {
+function getLinesAndCols(str2) {
   let line = 1;
   let col = 1;
   let out = [];
-  for (const char of str) {
+  for (const char of str2) {
     out.push([line, col]);
     if (char === "\n") {
       line++;
@@ -20401,6 +21403,9 @@ function unclampedSmoothstep(x2) {
 }
 function smoothstep(x2) {
   return unclampedSmoothstep(clamp(x2, 0, 1));
+}
+function modulo(a, b) {
+  return a - b * Math.floor(a / b);
 }
 
 // src/math/vector.ts
@@ -22461,8 +23466,8 @@ function compose(...args) {
 }
 
 // src/parser.ts
-function str2html(str) {
-  return new DOMParser().parseFromString(str, "text/html");
+function str2html(str2) {
+  return new DOMParser().parseFromString(str2, "text/html");
 }
 function chainParser(parser2) {
   const oldParser = this;
@@ -23434,7 +24439,7 @@ function createEvalbox() {
       evalbox.removeEventListener("load", initLoadListener);
       resolve({
         iframe: evalbox,
-        eval(str) {
+        eval(str2) {
           return new Promise((resolve2, reject2) => {
             let myindex = index2++;
             const listener = (e) => {
@@ -23455,7 +24460,7 @@ function createEvalbox() {
             evalbox.contentWindow?.postMessage(
               {
                 id: myindex,
-                payload: str,
+                payload: str2,
                 type: "eval"
               },
               "*"
@@ -23577,40 +24582,6 @@ function debounce(callback) {
   return fn;
 }
 
-// src/math/noise.ts
-function fract(x2) {
-  return x2 - Math.floor(x2);
-}
-function simpleRandVec2ToFloat(co) {
-  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
-}
-function simpleRandVec2ToVec2(co) {
-  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
-}
-function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
-  const fp = [Math.floor(p[0]), Math.floor(p[1])];
-  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
-  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
-  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
-  const v4 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
-  const o1 = sub2(p, fp);
-  const o2 = sub2(o1, [1, 0]);
-  const o3 = sub2(o1, [0, 1]);
-  const o4 = sub2(o1, [1, 1]);
-  const d1 = dot2(v1, o1);
-  const d2 = dot2(v2, o2);
-  const d3 = dot2(v3, o3);
-  const d4 = dot2(v4, o4);
-  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
-  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
-  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
-}
-function boxMullerTransform(u) {
-  const a = Math.sqrt(-2 * Math.log(u[0]));
-  const b = 2 * Math.PI * u[1];
-  return [a * Math.cos(b), a * Math.sin(b)];
-}
-
 // src/math/intersections.ts
 function quadraticFormula(a, b, c) {
   const bSquaredMinusFourAC = b ** 2 - 4 * a * c;
@@ -23699,16 +24670,775 @@ function rectIntersects(a, b) {
   return rangeIntersects(a.a[0], a.b[0], b.a[0], b.b[0]) && rangeIntersects(a.a[1], a.b[1], b.a[1], b.b[1]);
 }
 
+// src/1d-spatial-hash-table.ts
+var OneDimensionalSpatialHashTable = class {
+  constructor(bucketCount, start, end, getBounds) {
+    this.start = start;
+    this.end = end;
+    this.buckets = range(bucketCount).map(() => /* @__PURE__ */ new Set());
+    this.objects = /* @__PURE__ */ new Map();
+    this.getBounds = getBounds;
+  }
+  positionToBucketIndex(pos) {
+    return modulo(
+      Math.floor(rescale(pos, this.start, this.end, 0, this.buckets.length)),
+      this.buckets.length
+    );
+  }
+  rangeToBucketSet(start, end) {
+    if (end - start >= this.end - this.start) {
+      return this.buckets;
+    } else {
+      const bucketStart = this.positionToBucketIndex(start);
+      const bucketEnd = this.positionToBucketIndex(end);
+      if (bucketStart >= bucketEnd) {
+        return this.buckets.slice(bucketStart).concat(this.buckets.slice(0, bucketEnd + 1));
+      } else {
+        return this.buckets.slice(bucketStart, bucketEnd + 1);
+      }
+    }
+  }
+  add(t) {
+    const bounds = this.getBounds(t);
+    const buckets = this.rangeToBucketSet(bounds.start, bounds.end);
+    for (const b of buckets) b.add(t);
+    this.objects.set(t, { buckets });
+  }
+  delete(t) {
+    const obj = this.objects.get(t);
+    for (const bkt of obj.buckets) {
+      bkt.delete(t);
+    }
+  }
+  query(start, end) {
+    const buckets = this.rangeToBucketSet(start, end);
+    return new Set(
+      buckets.flatMap((b) => Array.from(b)).filter((e) => {
+        const bounds = this.getBounds(e);
+        return rangeIntersects(bounds.start, bounds.end, start, end);
+      })
+    );
+  }
+};
+
+// src/webgpu/bind-group-generator.ts
+function getWgslPrimitiveDatatype(typename, formatname) {
+  if (formatname) return formatname;
+  if (typename === "f32" || typename === "i32" || typename === "u32" || typename === "f16")
+    return typename;
+  if (typename.startsWith("vec") || typename.startsWith("mat")) {
+    if (typename.endsWith("i")) {
+      return "i32";
+    } else if (typename.endsWith("u")) {
+      return "u32";
+    } else if (typename.endsWith("h")) {
+      return "f16";
+    }
+  }
+  return "f32";
+}
+function getWgslPrimitiveSize(typename) {
+  if (typename.startsWith("vec2")) return 2;
+  if (typename.startsWith("vec3")) return 3;
+  if (typename.startsWith("vec4")) return 4;
+  if (typename.startsWith("mat2x3")) return 6;
+  if (typename.startsWith("mat3x2")) return 6;
+  if (typename.startsWith("mat2x4")) return 8;
+  if (typename.startsWith("mat4x2")) return 8;
+  if (typename.startsWith("mat3x4")) return 12;
+  if (typename.startsWith("mat4x3")) return 12;
+  if (typename.startsWith("mat2")) return 4;
+  if (typename.startsWith("mat3")) return 9;
+  if (typename.startsWith("mat4")) return 16;
+  return 1;
+}
+function setWgslPrimitive(typename, formatname, view, offset, data) {
+  const datatype = getWgslPrimitiveDatatype(typename, formatname);
+  const size = getWgslPrimitiveSize(typename);
+  let stride = {
+    i32: 4,
+    f32: 4,
+    u32: 4,
+    f16: 2
+  }[datatype];
+  let method = {
+    i32: "setInt32",
+    f32: "setFloat32",
+    u32: "setUint32",
+    f16: "setFloat16"
+  }[datatype];
+  for (let i = 0; i < size; i++) {
+    view[method](offset + stride * i, data[i], true);
+  }
+}
+function generateUniformBufferInner(spec, values, view, offset) {
+  if (spec.members) {
+    for (const m of spec.members)
+      generateUniformBufferInner(
+        m.type,
+        values[m.name],
+        view,
+        offset + m.offset
+      );
+    return;
+  }
+  const typename = spec.name;
+  if (typename === "array") {
+    for (let i = 0; i < spec.count; i++) {
+      generateUniformBufferInner(
+        spec.format,
+        values[i],
+        view,
+        offset + spec.stride * i
+      );
+    }
+  } else {
+    setWgslPrimitive(
+      spec.name,
+      spec.format?.name,
+      view,
+      offset,
+      Array.isArray(values) ? values : [values]
+    );
+  }
+}
+function generateUniformBuffer(spec, values) {
+  const buf = new ArrayBuffer(spec.size);
+  const view = new DataView(buf);
+  generateUniformBufferInner(spec, values, view, 0);
+  return buf;
+}
+function makeUniformBuffer(spec, group, binding, data) {
+  return generateUniformBuffer(spec.bindGroups[group][binding].type, data);
+}
+
+// src/math/noise.ts
+function fract(x2) {
+  return x2 - Math.floor(x2);
+}
+function simpleRandVec2ToFloat(co) {
+  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
+}
+function simpleRandVec2ToVec2(co) {
+  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
+}
+function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
+  const fp = [Math.floor(p[0]), Math.floor(p[1])];
+  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
+  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
+  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
+  const v4 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
+  const o1 = sub2(p, fp);
+  const o2 = sub2(o1, [1, 0]);
+  const o3 = sub2(o1, [0, 1]);
+  const o4 = sub2(o1, [1, 1]);
+  const d1 = dot2(v1, o1);
+  const d2 = dot2(v2, o2);
+  const d3 = dot2(v3, o3);
+  const d4 = dot2(v4, o4);
+  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
+  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
+  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
+}
+function boxMullerTransform(u) {
+  const a = Math.sqrt(-2 * Math.log(u[0]));
+  const b = 2 * Math.PI * u[1];
+  return [a * Math.cos(b), a * Math.sin(b)];
+}
+
+// src/webgl/shader.ts
+function source2shader(gl, type, source) {
+  const shader = gl.createShader(
+    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
+  );
+  if (!shader) return err(void 0);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
+    return err(void 0);
+  }
+  return ok(shader);
+}
+function shaders2program(gl, v, f) {
+  const program = gl.createProgram();
+  gl.attachShader(program, v);
+  gl.attachShader(program, f);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+    return err(void 0);
+  }
+  return ok(program);
+}
+function sources2program(gl, vs, fs) {
+  const v = source2shader(gl, "v", vs);
+  const f = source2shader(gl, "f", fs);
+  if (!v.ok || !f.ok) return err(void 0);
+  return shaders2program(gl, v.data, f.data);
+}
+function fullscreenQuadBuffer(gl) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      -1,
+      -1,
+      1,
+      -1,
+      -1,
+      1,
+      1,
+      1,
+      -1,
+      1,
+      1,
+      -1
+    ]),
+    gl.STATIC_DRAW
+  );
+  return ok(buffer);
+}
+function glRenderToQuad(options) {
+  const canvas = document.createElement("canvas");
+  canvas.width = options.width;
+  canvas.height = options.height;
+  const gl = canvas.getContext(options.version ?? "webgl2");
+  gl.viewport(0, 0, options.width, options.height);
+  if (!gl) return err(void 0);
+  const buf = fullscreenQuadBuffer(gl);
+  const prog = sources2program(
+    gl,
+    `#version 300 es
+precision highp float;
+
+in vec2 in_vpos;
+out vec2 pos;
+
+void main() {
+  pos = in_vpos * 0.5 + 0.5;
+  gl_Position = vec4(in_vpos, 0.5, 1.0);
+}`,
+    (options.noheader ? "" : `#version 300 es
+precision highp float;
+in vec2 pos;
+out vec4 col;
+`) + (options.noAutoUniforms ? "" : [
+      [options.uniforms, "", "float"],
+      [options.intUniforms, "i", "int"],
+      [options.uintUniforms, "u", "uint"]
+    ].map(
+      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
+        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
+      }).join("\n")
+    ).join("\n")) + options.fragsource
+  );
+  if (!prog.data) return err(void 0);
+  gl.useProgram(prog.data);
+  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
+  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(attrloc);
+  for (const [uniforms, type] of [
+    [options.uniforms, "i"],
+    [options.intUniforms, "i"],
+    [options.uintUniforms, "ui"]
+  ]) {
+    for (const [k, v] of Object.entries(uniforms ?? {})) {
+      const v2 = Array.isArray(v) ? v : [v];
+      gl[`uniform${v2.length}${type}v`](
+        gl.getUniformLocation(prog.data, k),
+        v2
+      );
+    }
+  }
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  return ok(canvas);
+}
+
+// src/webgl/scene.ts
+function applyUniform(gl, prog, name, spec) {
+  const [t, d] = spec;
+  const l = gl.getUniformLocation(prog, name);
+  if (l === null) {
+    throw new Error(
+      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
+    );
+  }
+  if (t === "float") gl.uniform1f(l, d);
+  if (t === "vec2") gl.uniform2f(l, ...d);
+  if (t === "vec3") gl.uniform3f(l, ...d);
+  if (t === "vec4") gl.uniform4f(l, ...d);
+  if (t === "int") gl.uniform1i(l, d);
+  if (t === "ivec2") gl.uniform2i(l, ...d);
+  if (t === "ivec3") gl.uniform3i(l, ...d);
+  if (t === "ivec4") gl.uniform4i(l, ...d);
+  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
+  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
+  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
+  if (t === "float[]") gl.uniform1fv(l, d);
+  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
+  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
+  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
+  if (t === "int[]") gl.uniform1iv(l, d);
+  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
+  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
+  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
+  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
+  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
+  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
+}
+function applyUniforms(gl, prog, uniforms) {
+  for (const [k, v] of Object.entries(uniforms)) {
+    applyUniform(gl, prog, k, v);
+  }
+}
+function createScene(sceneSpec) {
+  const gl = sceneSpec.gl;
+  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
+  let sceneUniforms = sceneSpec.uniforms ?? {};
+  return {
+    uniforms() {
+      return sceneUniforms;
+    },
+    resetUniforms(u) {
+      sceneUniforms = u;
+    },
+    updateUniforms(u) {
+      sceneUniforms = { ...sceneUniforms, ...u };
+    },
+    addObject3D(spec) {
+      let objectUniforms = spec.uniforms ?? {};
+      return {
+        gl() {
+          return gl;
+        },
+        draw() {
+          gl.useProgram(spec.program);
+          spec.buffer.setLayout(spec.program);
+          applyUniforms(
+            gl,
+            spec.program,
+            combineUniforms(sceneUniforms, objectUniforms)
+          );
+          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
+        },
+        uniforms() {
+          return objectUniforms;
+        },
+        resetUniforms(u) {
+          objectUniforms = u;
+        },
+        updateUniforms(u) {
+          objectUniforms = { ...objectUniforms, ...u };
+        }
+      };
+    }
+  };
+}
+
+// src/webgl/mesh.ts
+function parametric2D(x2, y2, attr, getPoint) {
+  const data = [];
+  for (let j = 0; j < y2; j++) {
+    for (let i = 0; i < x2; i++) {
+      const a = getPoint(i, j);
+      const b = getPoint(i + 1, j);
+      const c = getPoint(i, j + 1);
+      const d = getPoint(i + 1, j + 1);
+      data.push({ [attr]: a });
+      data.push({ [attr]: c });
+      data.push({ [attr]: b });
+      data.push({ [attr]: c });
+      data.push({ [attr]: d });
+      data.push({ [attr]: b });
+    }
+  }
+  return data;
+}
+function uvSphere(x2, y2, rad, attr) {
+  return parametric2D(x2, y2, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
+    let px = Math.cos(a) * Math.cos(b) * rad;
+    let pz = Math.sin(a) * Math.cos(b) * rad;
+    let py = Math.sin(b) * rad;
+    return [px, py, pz];
+  });
+}
+function ring(x2, rad, height, attr) {
+  return parametric2D(x2, 1, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const px = Math.cos(a) * rad;
+    const pz = Math.sin(a) * rad;
+    const py = j === 1 ? height / 2 : -height / 2;
+    return [px, py, pz];
+  });
+}
+function torus(x2, y2, R, r, attr) {
+  return parametric2D(x2, y2, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const b = (j + y2) % y2 / y2 * Math.PI * 2;
+    let px = Math.cos(a);
+    let pz = Math.sin(a);
+    let py = Math.sin(b) * r;
+    px *= R + Math.cos(b) * r;
+    pz *= R + Math.cos(b) * r;
+    return [px, py, pz];
+  });
+}
+function move(mesh, attr, offset) {
+  return mesh.map((m) => ({
+    ...m,
+    [attr]: m[attr].map((e, i) => e + offset[i])
+  }));
+}
+function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
+  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
+  const rangeInv = 1 / (near - far);
+  return [
+    f / aspectRatio,
+    0,
+    0,
+    0,
+    0,
+    f,
+    0,
+    0,
+    0,
+    0,
+    (near + far) * rangeInv,
+    -1,
+    0,
+    0,
+    near * far * rangeInv * 2,
+    0
+  ];
+}
+function ortho(left, right, top, bottom, near, far) {
+  return [
+    2 / (right - left),
+    0,
+    0,
+    -(right + left) / (right - left),
+    0,
+    2 / (top - bottom),
+    0,
+    -(top + bottom) / (top - bottom),
+    0,
+    0,
+    -2 / (far - near),
+    -(far + near) / (far - near),
+    0,
+    0,
+    0,
+    1
+  ];
+}
+function normalize(v) {
+  const len = Math.hypot(...v);
+  return scale3(v, 1 / len);
+}
+function rodrigues(v, k, theta) {
+  k = normalize(k);
+  return add3(
+    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+  );
+}
+function rotate(axis, angle) {
+  return [
+    ...rodrigues([1, 0, 0], axis, angle),
+    0,
+    ...rodrigues([0, 1, 0], axis, angle),
+    0,
+    ...rodrigues([0, 0, 1], axis, angle),
+    0,
+    0,
+    0,
+    0,
+    1
+  ];
+}
+function scale(axes) {
+  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
+}
+function translate(v) {
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
+}
+
+// src/webgl/buffer.ts
+function getDatatypeSize(gl, datatype) {
+  return {
+    [gl.BYTE]: 1,
+    [gl.SHORT]: 2,
+    [gl.UNSIGNED_BYTE]: 1,
+    [gl.UNSIGNED_SHORT]: 2,
+    [gl.FLOAT]: 4,
+    [gl.HALF_FLOAT]: 2,
+    [gl.INT]: 4,
+    [gl.UNSIGNED_INT]: 4,
+    [gl.INT_2_10_10_10_REV]: 4,
+    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
+  }[datatype];
+}
+function createBufferWithLayout(gl, layout, data) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  const layoutEntries = Object.entries(layout);
+  let stride = 0;
+  const offsets = /* @__PURE__ */ new Map();
+  for (const [name, attrs] of layoutEntries) {
+    offsets.set(name, stride);
+    stride += attrs.size * getDatatypeSize(gl, attrs.type);
+  }
+  const arraybuf = new ArrayBuffer(stride * data.length);
+  const rawdata = new DataView(arraybuf);
+  let i = 0;
+  for (const d of data) {
+    for (const [name, attrs] of layoutEntries) {
+      for (let j = 0; j < attrs.size; j++) {
+        const val = d[name][j];
+        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
+        if (attrs.type === gl.BYTE) {
+          rawdata.setInt8(pos, val);
+        } else if (attrs.type === gl.UNSIGNED_BYTE) {
+          rawdata.setUint8(pos, val);
+        } else if (attrs.type === gl.FLOAT) {
+          rawdata.setFloat32(pos, val, true);
+        } else if (attrs.type === gl.SHORT) {
+          rawdata.setInt16(pos, val, true);
+        } else if (attrs.type === gl.UNSIGNED_SHORT) {
+          rawdata.setUint16(pos, val, true);
+        }
+      }
+    }
+    i++;
+  }
+  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
+  return {
+    vertexCount: data.length,
+    buffer,
+    setLayout(prog) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      for (const [name, attrs] of layoutEntries) {
+        const loc = gl.getAttribLocation(prog, name);
+        if (attrs.isInt) {
+          gl.vertexAttribIPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            stride,
+            offsets.get(name)
+          );
+        } else {
+          gl.vertexAttribPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            attrs.normalized ?? false,
+            stride,
+            offsets.get(name)
+          );
+        }
+        gl.enableVertexAttribArray(loc);
+      }
+    },
+    bindArray(gl2) {
+      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
+    },
+    bindIndex(gl2) {
+      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
+    }
+  };
+}
+
 // src/audio/stream-audio.ts
-var AudioStream = class {
+var import_fft = __toESM(require_fft());
+function createTrack(channels, sampleRate, constituents) {
+  const maxlen = Math.max(
+    ...constituents.map((c) => c.start + c.audio.duration)
+  );
+  const sht = new OneDimensionalSpatialHashTable(constituents.length, 0, maxlen, (a) => ({
+    start: a.start,
+    end: a.start + a.audio.duration
+  }));
+  for (const c of constituents) sht.add(c);
+  return new AudioStream({
+    channels,
+    sampleRate,
+    duration: maxlen,
+    async getRange(start, count) {
+      const startTime = start / sampleRate;
+      const endTime = (start + count) / sampleRate;
+      const audio = sht.query(startTime, endTime);
+      const out = {};
+      const inputs = await Promise.all(
+        [...audio].map(
+          (e) => e.audio.getRange(start - Math.ceil(e.start * sampleRate), count)
+        )
+      );
+      for (const ch of channels) {
+        const a = new Float32Array(count);
+        for (const inp of inputs) {
+          for (let i = 0; i < count; i++) {
+            a[i] += inp[ch][i] ?? 0;
+          }
+        }
+        out[ch] = a;
+      }
+      return out;
+    }
+  });
+}
+var AudioStream = class _AudioStream {
   constructor(params) {
-    this.getRange = params.getRange;
-    this.getRangeByChannel = params.getRangeByChannel;
+    this.getRange = async (start, count) => {
+      const estimatedLength = Math.ceil(this.sampleRate * this.duration);
+      const clampedStart = clamp(start, 0, estimatedLength);
+      const clampedEnd = clamp(start + count, 0, estimatedLength);
+      const range2 = await params.getRange(
+        clampedStart,
+        clampedEnd - clampedStart
+      );
+      if (clampedEnd - clampedStart == count) return range2;
+      const out = {};
+      const padStart = -Math.min(0, start);
+      for (const ch of this.channels) {
+        const o = new Float32Array(count);
+        const i = range2[ch];
+        for (let idx = 0; idx < i.length; idx++) {
+          o[idx + padStart] = i[idx];
+        }
+        out[ch] = o;
+      }
+      return out;
+    };
     this.duration = params.duration;
     this.sampleRate = params.sampleRate;
     this.channels = params.channels;
   }
+  gain(gain) {
+    return combineAudio(
+      this.channels,
+      this.sampleRate,
+      [this, gain],
+      (time, sample, a, g) => mapObjValues(a, (k, x2) => x2 * g[k])
+    );
+  }
+  add(stream) {
+    return combineAudio(
+      this.channels,
+      this.sampleRate,
+      [this, stream],
+      (time, sample, a, b) => mapObjValues(a, (k, x2) => x2 + b[k])
+    );
+  }
+  clip(start, end) {
+    return new _AudioStream({
+      channels: this.channels,
+      duration: end - start,
+      sampleRate: this.sampleRate,
+      getRange: (start2, count2) => {
+        return this.getRange(
+          start2 + Math.floor(start * this.sampleRate),
+          count2
+        );
+      }
+    });
+  }
+  convolve(_kernel) {
+    const kernel = broadcastTo(this.channels, this.sampleRate, _kernel);
+    const kernelSampleCount = Math.ceil(kernel.duration * kernel.sampleRate);
+    const kernelData = kernel.getRange(0, kernelSampleCount);
+    return new _AudioStream({
+      channels: this.channels,
+      duration: this.duration,
+      sampleRate: this.sampleRate,
+      getRange: async (start, count) => {
+        const kern = await kernelData;
+        return mapObjValues(
+          await this.getRange(start, count + kernelSampleCount),
+          (ch, v) => overlapSaveConvolve(
+            new Float32Array(v),
+            new Float32Array(kern[ch])
+          ).slice(0, count)
+        );
+      }
+    });
+  }
+  preload() {
+    const bufs = this.getRange(0, Math.ceil(this.duration * this.sampleRate));
+    return new _AudioStream({
+      channels: this.channels,
+      duration: this.duration,
+      sampleRate: this.sampleRate,
+      getRange: async (start, count) => {
+        const bufs2 = await bufs;
+        return mapObjValues(bufs2, (k, v) => v.slice(start, start + count));
+      }
+    });
+  }
 };
+function fft(x2) {
+  const f = new import_fft.default(x2.length);
+  const out = f.createComplexArray();
+  const data = f.toComplexArray(x2);
+  f.transform(out, data);
+  return new Float32Array(out);
+}
+function ifft(x2) {
+  const f = new import_fft.default(x2.length / 2);
+  const out = f.createComplexArray();
+  f.inverseTransform(out, x2);
+  return new Float32Array(range(out.length / 2).map((i) => out[i * 2]));
+}
+function fftConvolve(x2, h) {
+  const arr1 = fft(x2);
+  const arr2 = fft(h);
+  let out = new Float32Array(arr1.length);
+  for (let i = 0; i < arr1.length; i += 2) {
+    out[i] = arr1[i] * arr2[i] - arr1[i + 1] * arr2[i + 1];
+    out[i + 1] = arr1[i] * arr2[i + 1] + arr1[i + 1] * arr2[i];
+  }
+  return ifft(out);
+}
+function nextPowerOfTwo(x2) {
+  return Math.pow(2, Math.ceil(Math.log2(x2)));
+}
+function zeroPad(x2, length) {
+  if (x2.length === length) return x2;
+  const y2 = new Float32Array(length);
+  for (let i = 0; i < x2.length; i++) {
+    y2[i] = x2[i];
+  }
+  return y2;
+}
+var powersOfTwo = range(31).map((i) => 2 ** (i + 1));
+var getOptimumOverlapSaveFilterSize = memo((M) => {
+  const cost = (M2, N) => N * Math.log2(N + 1) / (N - M2 + 1);
+  return argmin(
+    powersOfTwo.filter((N) => cost(M, N) > 0),
+    (N) => cost(M, N)
+  );
+});
+function overlapSaveConvolve(x2, h) {
+  const M = h.length;
+  const N = getOptimumOverlapSaveFilterSize(M);
+  const kernel = zeroPad(h, N);
+  const L = N - M + 1;
+  const blockcount = Math.ceil(x2.length / L);
+  const dst = new Float32Array(L * blockcount);
+  for (let i = 0; i < blockcount; i++) {
+    const position = L * i;
+    const xslice = zeroPad(x2.slice(position, position + N), N);
+    const convolved = fftConvolve(xslice, kernel);
+    for (let j = 0; j < L; j++) {
+      dst[position + j] = convolved[M + j - 1];
+    }
+  }
+  return dst.slice(0, x2.length);
+}
 function createSignal(params) {
   const constr = params.constructors;
   const constructors = constr instanceof Function ? arrayToObjKeys(params.channels, (k) => (t, c) => constr(t, c)[k]) : constr;
@@ -23721,15 +25451,8 @@ function createSignal(params) {
           range(count).map((s) => {
             return v((s + start) / this.sampleRate, s + start);
           })
-        ).buffer
-      ]);
-    },
-    async getRangeByChannel(start, count, channel) {
-      return new Float32Array(
-        range(count).map(
-          (s) => constructors[channel]((s + start) / this.sampleRate, s + start)
         )
-      ).buffer;
+      ]);
     },
     sampleRate: params.sampleRate,
     duration: params.duration
@@ -23754,18 +25477,14 @@ function waveform(sampleRate, channels, seconds, frequency, amplitude, phase, pr
 }
 async function getRangeAndResample(src2, dstStart, dstCount, dstSampleRate) {
   if (src2.sampleRate === dstSampleRate) {
-    return src2.getRange(dstStart, dstCount);
+    return await src2.getRange(dstStart, dstCount);
   }
   const startSeconds = dstStart / dstSampleRate;
   const durationSeconds = dstCount / dstSampleRate;
   const srcStart = Math.floor(startSeconds * src2.sampleRate);
   const srcCount = Math.ceil((startSeconds + durationSeconds) * src2.sampleRate);
   const srcRange = await src2.getRange(srcStart, srcCount - srcStart);
-  const srcRangeView = mapObjValues(
-    srcRange,
-    (k, x2) => new Float32Array(x2)
-  );
-  return mapObjValues(srcRangeView, (k, v) => {
+  return mapObjValues(srcRange, (k, v) => {
     return new Float32Array(
       range(dstCount).map((dstIndex) => {
         const time = dstIndex / dstSampleRate;
@@ -23774,7 +25493,7 @@ async function getRangeAndResample(src2, dstStart, dstCount, dstSampleRate) {
         const srcSampleNext = srcSamplePrev + 1;
         return lerp(sourceIndex % 1, v[srcSamplePrev], v[srcSampleNext]);
       })
-    ).buffer;
+    );
   });
 }
 function resample(audio, targetSampleRate) {
@@ -23811,11 +25530,11 @@ function combineAudio(channels, sampleRate, audio, f) {
         (k) => new Float32Array(count)
       );
       for (const i of range(count)) {
-        const samples = ranges.map((r, i2) => {
-          if (audio[i2].channels.length === 1 && audio[i2].channels[0] === "center") {
-            return mapObjKeys(channels, () => r.center[i2]);
+        const samples = ranges.map((r, j) => {
+          if (audio[j].channels.length === 1 && audio[j].channels[0] === "center") {
+            return arrayToObjKeys(channels, () => r.center[i]);
           }
-          return mapObjValues(r, (k, v) => v[i2]);
+          return mapObjValues(r, (k, v) => v[i]);
         });
         const res = f(
           (start + i) / sampleRate,
@@ -23826,56 +25545,138 @@ function combineAudio(channels, sampleRate, audio, f) {
           ch[c][i] = res[c];
         }
       }
-      return mapObjValues(ch, (k, v) => v.buffer);
-    },
-    getRangeByChannel(start, count, channel) {
-      return this.getRange(start, count)[channel];
+      return ch;
     }
   });
   return stream;
 }
+function broadcastTo(channels, sampleRate, mono) {
+  return combineAudio(channels, sampleRate, [mono], (_, __, x2) => x2);
+}
+function lowPassFilterSample(n, N, m) {
+  return 1 / N * range(m * 2 + 1).map((i) => Math.cos(2 * Math.PI * (i - m) / N * n)).reduce((a, b) => a + b, 0);
+}
+function hannSample(n, N) {
+  return Math.sin(Math.PI * (n - N / 2) / N) ** 2;
+}
+var createLowPassFilter = memo(
+  (channels, sampleRate, freq, cycles) => {
+    const oneCycleSampleCount = Math.ceil(1 / freq * sampleRate);
+    const sampleCount = oneCycleSampleCount * cycles;
+    const duration = sampleCount / sampleRate;
+    console.log("created lpf");
+    const cutoff = cycles;
+    return createSignal({
+      duration,
+      sampleRate,
+      channels,
+      length: sampleCount,
+      constructors: arrayToObjKeys(
+        channels,
+        () => (t, s) => lowPassFilterSample(s, sampleCount, cutoff) * hannSample(s, sampleCount)
+      )
+    }).preload();
+  }
+);
 var AudioBuilder = class {
   constructor(channels, sampleRate) {
     this.channels = channels;
     this.sampleRate = sampleRate;
   }
-  waveform(seconds, frequency, amplitude, phase, profile) {
+  lpf(freq, cycles = 16) {
+    return createLowPassFilter(
+      this.channels,
+      this.sampleRate,
+      freq,
+      cycles
+    );
+  }
+  signal(duration, constructors) {
+    return createSignal({
+      sampleRate: this.sampleRate,
+      channels: this.channels,
+      constructors,
+      duration,
+      length: Math.ceil(duration * this.sampleRate)
+    });
+  }
+  waveform(frequency, amplitude, phase, profile) {
     return waveform(
       this.sampleRate,
       this.channels,
-      seconds,
+      Infinity,
       frequency,
       amplitude,
       phase,
       profile
     );
   }
-  sine(seconds, frequency, amplitude, phase) {
+  constant(x2) {
+    return createSignal({
+      sampleRate: this.sampleRate,
+      channels: this.channels,
+      duration: Infinity,
+      length: Infinity,
+      constructors: arrayToObjKeys(this.channels, () => () => x2)
+    });
+  }
+  sine(frequency, amplitude = 1, phase = 0) {
     return this.waveform(
-      seconds,
       frequency,
       amplitude,
       phase,
       (x2) => Math.sin(x2 * Math.PI * 2)
     );
   }
-  square(seconds, frequency, amplitude, phase) {
+  square(frequency, amplitude = 1, phase = 0) {
     return this.waveform(
-      seconds,
       frequency,
       amplitude,
       phase,
       (x2) => x2 > 0.5 ? -1 : 1
     );
   }
-  saw(seconds, frequency, amplitude, phase) {
-    return this.waveform(
-      seconds,
-      frequency,
-      amplitude,
-      phase,
-      (x2) => x2 * 2 - 1
+  saw(frequency, amplitude = 1, phase = 0) {
+    return this.waveform(frequency, amplitude, phase, (x2) => x2 * 2 - 1);
+  }
+  noise(amplitude = 1) {
+    return createSignal({
+      sampleRate: this.sampleRate,
+      channels: this.channels,
+      duration: Infinity,
+      length: Infinity,
+      constructors: arrayToObjKeys(
+        this.channels,
+        () => () => (Math.random() * 2 - 1) * amplitude
+      )
+    });
+  }
+  adsrgen(a, d, s, r) {
+    return (at, dt, st, rt) => {
+      return sameSignalOnData(this.sampleRate, this.channels, rt, (t) => {
+        if (t < at) return rescale(t, 0, at, 0, a);
+        if (t < dt) return rescale(t, at, dt, a, d);
+        if (t < st) return rescale(t, dt, st, d, s);
+        if (t < rt) return rescale(t, st, rt, s, r);
+        return 0;
+      });
+    };
+  }
+  boxcar(length, area = 1) {
+    const sampleCount = Math.ceil(length * this.sampleRate);
+    return this.constant(area / sampleCount).clip(
+      0,
+      sampleCount / this.sampleRate
     );
+  }
+  adsr(a, at, d, dt, s, st, r, rt) {
+    return this.adsrgen(a, d, s, r)(at, dt, st, rt);
+  }
+  broadcast(mono) {
+    return broadcastTo(this.channels, this.sampleRate, mono);
+  }
+  createTrack(constituents) {
+    return createTrack(this.channels, this.sampleRate, constituents);
   }
 };
 async function playStereo(audio) {
@@ -23962,7 +25763,7 @@ async function initBufferStreamerWorklet(src) {
     };
   }
 }
-var CHUNKSIZE = 2048;
+var CHUNKSIZE = 2048 * 16;
 function streamAudioToWorklet(stream, bs) {
   let t = 0;
   const loop = async () => {
@@ -23975,183 +25776,185 @@ function streamAudioToWorklet(stream, bs) {
   };
   loop();
 }
-
-// src/audio/stream-audio-old.ts
-function createAudioStreamBuilder(params) {
-  const asb = { plugins: params.plugins };
-  for (const [k, g2] of Object.entries(params.plugins.global)) {
-    asb[k] = (...args) => g2(asb, ...args);
+function displayAudioSamples(samples, size, amp = 1) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = size[0];
+  canvas.height = size[1];
+  ctx.beginPath();
+  for (const i of smartRange(samples.length)) {
+    ctx.lineTo(
+      i.remap(0, canvas.width),
+      rescale(samples[i.i], -amp, amp, 0, size[1])
+    );
   }
-  return asb;
+  ctx.stroke();
+  return canvas;
 }
-function createSignal2(params) {
-  const constr = params.constructors;
-  const constructors = constr instanceof Function ? arrayToObjKeys(
-    params.builder.defaultChannels,
-    (k) => (t, c) => constr(t, c)[k]
-  ) : constr;
-  const stream = {
-    _isAudioStream: true,
-    duration: params.duration,
-    sampleRate: params.sampleRate,
-    async getRange(start, count) {
-      return mapObjEntries(constructors, (k, v) => [
-        k,
-        new Float32Array(
-          range(count).map((s) => {
-            return v((s + start) / this.sampleRate, s + start);
-          })
-        ).buffer
-      ]);
-    },
-    async getRangeByChannel(start, count, channel) {
-      return new Float32Array(
-        range(count).map(
-          (s) => params.constructors[channel]((s + start) / this.sampleRate, s + start)
-        )
-      ).buffer;
+async function displayAudio(stream, amp = 1, res = [1e3, 200], chunks = 1) {
+  const len = Math.ceil(stream.duration * stream.sampleRate);
+  const left = new Float32Array(len);
+  const right = new Float32Array(len);
+  let divisions = smartRange(chunks + 1).map(
+    (c) => Math.floor(c.remap(0, len, true))
+  );
+  for (let i of range(chunks)) {
+    const audio = await stream.getRange(
+      divisions[i],
+      divisions[i + 1] - divisions[i]
+    );
+    const l = new Float32Array(audio.left);
+    const r = new Float32Array(audio.right);
+    for (let j = 0; j < l.length; j++) {
+      left[j + divisions[i]] = l[j];
+      right[j + divisions[i]] = r[j];
     }
-  };
-  for (const [k, l] of Object.entries(params.builder.plugins.local)) {
-    stream[k] = (...args) => l(stream, ...args);
   }
-  return stream;
+  return [
+    displayAudioSamples(left, res, amp),
+    displayAudioSamples(right, res, amp)
+  ];
 }
-async function getRangeAndResample2(stream, start, count, targetSampleRate) {
-  if (stream.sampleRate === targetSampleRate) {
-    return stream.getRange(start, count);
-  }
-  const startSeconds = start / targetSampleRate;
-  const durationSeconds = count / targetSampleRate;
-  const startSample = Math.floor(startSeconds * stream.sampleRate);
-  const endSample = Math.ceil(
-    (startSeconds + durationSeconds) * stream.sampleRate
-  );
-  const r = await stream.getRange(startSample, endSample - startSample);
-  const f32a = mapObjValues(
-    r,
-    (k, x2) => new Float32Array(x2)
-  );
-  return mapObjValues(f32a, (k, v) => {
-    return new Float32Array(
-      range(count).map((i) => {
-        const rawIndex = (i + start) / targetSampleRate * stream.sampleRate;
-        const prev = Math.floor(rawIndex);
-        const next = prev + 1;
-        return lerp(rawIndex % 1, v[prev], v[next]);
-      })
-    ).buffer;
-  });
+
+// src/audio/notes.ts
+var import_typescript_parsec = __toESM(require_lib());
+var noteLexer = (0, import_typescript_parsec.buildLexer)([
+  [true, /^\(/g, 0 /* Open */],
+  [true, /^\)/g, 1 /* Close */],
+  [true, /^\:/g, 2 /* Colon */],
+  [true, /^\//g, 3 /* Slash */],
+  [false, /^\s+/g, 4 /* Whitespace */],
+  [false, /^\/\/[^\n]*/g, 7 /* Comment */],
+  [true, /^(\+|\-)?[0-9]+/g, 5 /* Integer */],
+  [true, /^[a-gA-G](b#)*[0-9]*/g, 6 /* ChromaticKey */]
+]);
+var note_timing = (0, import_typescript_parsec.alt_sc)(
+  (0, import_typescript_parsec.apply)((0, import_typescript_parsec.kleft)((0, import_typescript_parsec.tok)(5 /* Integer */), (0, import_typescript_parsec.str)(":")), (t) => Number(t.text)),
+  (0, import_typescript_parsec.apply)((0, import_typescript_parsec.nil)(), () => 1)
+);
+var primitive_note = (0, import_typescript_parsec.apply)(
+  (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.alt_sc)((0, import_typescript_parsec.tok)(6 /* ChromaticKey */), (0, import_typescript_parsec.tok)(5 /* Integer */))),
+  ([timing, note2]) => ({
+    type: "note",
+    timing,
+    noteData: note2.text
+  })
+);
+var chord_inner = (0, import_typescript_parsec.rule)();
+var chord = (0, import_typescript_parsec.apply)(
+  (0, import_typescript_parsec.seq)(
+    note_timing,
+    (0, import_typescript_parsec.lrec_sc)(
+      (0, import_typescript_parsec.apply)(chord_inner, (x2) => [x2]),
+      (0, import_typescript_parsec.seq)((0, import_typescript_parsec.str)("/"), chord_inner),
+      (a, [_, b]) => [...a, b]
+    )
+  ),
+  ([timing, notes]) => ({
+    type: "chord",
+    timing,
+    notes
+  })
+);
+var compound_note = (0, import_typescript_parsec.rule)();
+var compound_note_inner = (0, import_typescript_parsec.rep_sc)(
+  (0, import_typescript_parsec.alt_sc)(primitive_note, chord, compound_note)
+);
+compound_note.setPattern(
+  (0, import_typescript_parsec.apply)(
+    (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.kmid)((0, import_typescript_parsec.str)("("), compound_note_inner, (0, import_typescript_parsec.str)(")"))),
+    ([timing, notes]) => ({ type: "compound", timing, notes })
+  )
+);
+chord_inner.setPattern((0, import_typescript_parsec.alt_sc)(primitive_note, compound_note));
+var note = (0, import_typescript_parsec.alt_sc)(chord, compound_note, primitive_note);
+var track = (0, import_typescript_parsec.rep_sc)(note);
+function parseNotes(src2) {
+  const tokens = noteLexer.parse(src2);
+  return (0, import_typescript_parsec.expectSingleResult)((0, import_typescript_parsec.expectEOF)(track.parse(tokens)));
 }
-function mergePluginGenerators(...generators) {
-  return;
+function getBeatCount(notes) {
+  return notes.reduce((p, c) => p + c.timing, 0);
 }
-var StreamAudioStdlib = (ch) => {
-  function sameSignalOnData2(builder, duration, f) {
-    return createSignal2({
-      builder,
-      sampleRate: builder.defaultSampleRate,
-      length: Math.ceil(duration * builder.defaultSampleRate),
-      duration,
-      constructors: arrayToObjKeys(builder.defaultChannels, () => f)
-    });
+function createTrackSpecForNoteSequence(startTime, duration, notes, lastFreq, patch) {
+  let time = startTime;
+  let freq = lastFreq;
+  let spec = [];
+  const timingTotal = getBeatCount(notes);
+  for (const n of notes) {
+    const thisNoteDuration = duration * n.timing / timingTotal;
+    const data = createTrackSpecForNote(time, thisNoteDuration, n, freq, patch);
+    spec.push(...data.trackSpec);
+    time += thisNoteDuration;
+    freq = data.freq;
   }
   return {
-    global: {
-      silence(builder, seconds) {
-        return createSignal2({
-          builder,
-          sampleRate: builder.defaultSampleRate,
-          length: Math.ceil(seconds * builder.defaultSampleRate),
-          duration: seconds,
-          constructors: arrayToObjKeys(builder.defaultChannels, () => () => 0)
-        });
-      },
-      waveform(builder, seconds, frequency, amplitude = 1, phase = 0, profile) {
-        return sameSignalOnData2(builder, seconds, (t) => {
-          return amplitude * profile((t / frequency + phase) % 1);
-        });
-      },
-      sine(builder, seconds, frequency, amplitude = 1, phase = 0) {
-        return this.waveform(
-          builder,
-          seconds,
-          frequency,
-          amplitude,
-          phase,
-          (x2) => Math.sin(x2 * Math.PI * 2)
-        );
-      },
-      square(builder, seconds, frequency, amplitude = 1, phase = 0) {
-        return this.waveform(
-          builder,
-          seconds,
-          frequency,
-          amplitude,
-          phase,
-          (x2) => x2 > 0.5 ? -1 : 1
-        );
-      },
-      saw(builder, seconds, frequency, amplitude = 1, phase = 0) {
-        return this.waveform(
-          builder,
-          seconds,
-          frequency,
-          amplitude,
-          phase,
-          (x2) => x2 * 2 - 1
-        );
-      },
-      combineAudio(builder, audio, f) {
-        const duration = Math.max(...audio.map((a) => a.duration));
-        const length = Math.ceil(duration * builder.defaultSampleRate);
-        const stream = {
-          _isAudioStream: true,
-          duration,
-          length,
-          sampleRate: builder.defaultSampleRate,
-          async getRange(start, count) {
-            const ranges = await Promise.all(
-              audio.map(
-                async (a) => mapObjValues(
-                  await getRangeAndResample2(
-                    a,
-                    start,
-                    count,
-                    builder.defaultSampleRate
-                  ),
-                  (k, v) => new Float32Array(v)
-                )
-              )
-            );
-            return builder.defaultChannels.map((d) => {
-              const combinedChannel = new Float32Array(count);
-              return range(count).map((i) => {
-                const samples = ranges.map((r) => {
-                  return r[d][i];
-                });
-                return f(
-                  (start + i) / builder.defaultSampleRate,
-                  start + i,
-                  ...samples
-                );
-              });
-            });
-          },
-          getRangeByChannel(start, count, channel) {
-            return this.getRange(start, count)[channel];
-          }
-        };
-        for (const [k, l] of Object.entries(builder.plugins.local)) {
-          stream[k] = (...args) => l(stream, ...args);
-        }
-        return stream;
-      }
-    },
-    local: {}
+    freq,
+    trackSpec: spec
   };
-};
-var g = mergePluginGenerators(StreamAudioStdlib);
+}
+function createTrackSpecForNote(startTime, duration, note2, lastFreq, patch) {
+  if (note2.type === "note") {
+    const freq = note2freq(note2.noteData, lastFreq);
+    return {
+      freq,
+      trackSpec: [
+        {
+          start: startTime,
+          audio: patch(freq, duration)
+        }
+      ]
+    };
+  } else if (note2.type === "chord") {
+    const results = note2.notes.map(
+      (n) => createTrackSpecForNote(startTime, duration * n.timing, n, lastFreq, patch)
+    );
+    return {
+      freq: results.at(-1).freq,
+      trackSpec: results.flatMap((x2) => x2.trackSpec)
+    };
+  } else if (note2.type === "compound") {
+    return createTrackSpecForNoteSequence(
+      startTime,
+      duration,
+      note2.notes,
+      lastFreq,
+      patch
+    );
+  }
+}
+function createTrackSpec(track2, bpm, patch) {
+  return createTrackSpecForNoteSequence(
+    0,
+    getBeatCount(track2) * 60 / bpm,
+    track2,
+    440,
+    patch
+  ).trackSpec;
+}
+function note2freq(note2, lastfreq) {
+  if (note2[0].match(/[a-gA-G]/g)) {
+    let semitone = {
+      a: 0,
+      b: 2,
+      c: 3,
+      d: 5,
+      e: 7,
+      f: 8,
+      g: 10
+    }[note2[0].toLowerCase()];
+    let i;
+    for (i = 1; note2[i] === "b" || note2[i] === "#"; i++) {
+      semitone += note2[i] === "#" ? 1 : -1;
+    }
+    let octave = parseInt(note2.slice(i));
+    if (isNaN(octave)) octave = 4;
+    semitone += (octave - 4) * 12;
+    return Math.pow(2, semitone / 12) * 440;
+  } else {
+    return (lastfreq ?? 440) * Math.pow(2, parseInt(note2) / 12);
+  }
+}
 
 // node_modules/ml-convolution/src/utils.js
 function checkSize(size) {
@@ -24187,7 +25990,7 @@ function createArray(len) {
 }
 
 // node_modules/ml-convolution/src/fftConvolution.js
-var import_fft = __toESM(require_fft());
+var import_fft2 = __toESM(require_fft());
 var import_next_power_of_two = __toESM(require_next_power_of_two());
 var FFTConvolution = class {
   constructor(size, kernel, borderType = "CONSTANT") {
@@ -24201,7 +26004,7 @@ var FFTConvolution = class {
     const resultLength = size + this.doubleOffset;
     this.fftLength = (0, import_next_power_of_two.default)(Math.max(resultLength, 2));
     this.fftComplexLength = this.fftLength * 2;
-    this.fft = new import_fft.default(this.fftLength);
+    this.fft = new import_fft2.default(this.fftLength);
     kernel = kernel.slice().reverse();
     const paddedKernel = createArray(this.fftComplexLength);
     this.fftKernel = createArray(this.fftComplexLength);
@@ -24775,11 +26578,11 @@ var Muxer = class {
     this.output = output;
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onTrackClose(track) {
+  onTrackClose(track2) {
   }
-  validateAndNormalizeTimestamp(track, timestampInSeconds, isKeyFrame) {
-    timestampInSeconds += track.source._timestampOffset;
-    let timestampInfo = this.trackTimestampInfo.get(track);
+  validateAndNormalizeTimestamp(track2, timestampInSeconds, isKeyFrame) {
+    timestampInSeconds += track2.source._timestampOffset;
+    let timestampInfo = this.trackTimestampInfo.get(track2);
     if (!timestampInfo) {
       if (!isKeyFrame) {
         throw new Error("First frame must be a key frame.");
@@ -24788,7 +26591,7 @@ var Muxer = class {
         maxTimestamp: timestampInSeconds,
         maxTimestampBeforeLastKeyFrame: timestampInSeconds
       };
-      this.trackTimestampInfo.set(track, timestampInfo);
+      this.trackTimestampInfo.set(track2, timestampInfo);
     }
     if (timestampInSeconds < 0) {
       throw new Error(`Timestamps must be non-negative (got ${timestampInSeconds}s).`);
@@ -25166,8 +26969,8 @@ var OggMuxer = class extends Muxer {
   addEncodedVideoPacket() {
     throw new Error("Video tracks are not supported.");
   }
-  getTrackData(track, meta) {
-    const existingTrackData = this.trackDatas.find((td) => td.track === track);
+  getTrackData(track2, meta) {
+    const existingTrackData = this.trackDatas.find((td) => td.track === track2);
     if (existingTrackData) {
       return existingTrackData;
     }
@@ -25175,16 +26978,16 @@ var OggMuxer = class extends Muxer {
     do {
       serialNumber = Math.floor(2 ** 32 * Math.random());
     } while (this.trackDatas.some((td) => td.serialNumber === serialNumber));
-    assert(track.source._codec === "vorbis" || track.source._codec === "opus");
+    assert(track2.source._codec === "vorbis" || track2.source._codec === "opus");
     validateAudioChunkMetadata(meta);
     assert(meta);
     assert(meta.decoderConfig);
     const newTrackData = {
-      track,
+      track: track2,
       serialNumber,
-      internalSampleRate: track.source._codec === "opus" ? OPUS_INTERNAL_SAMPLE_RATE : meta.decoderConfig.sampleRate,
+      internalSampleRate: track2.source._codec === "opus" ? OPUS_INTERNAL_SAMPLE_RATE : meta.decoderConfig.sampleRate,
       codecInfo: {
-        codec: track.source._codec,
+        codec: track2.source._codec,
         vorbisInfo: null,
         opusInfo: null
       },
@@ -25460,10 +27263,10 @@ var OggMuxer = class extends Muxer {
     }
     return commentHeader;
   }
-  async addEncodedAudioPacket(track, packet, meta) {
+  async addEncodedAudioPacket(track2, packet, meta) {
     const release = await this.mutex.acquire();
     try {
-      const trackData = this.getTrackData(track, meta);
+      const trackData = this.getTrackData(track2, meta);
       this.validateAndNormalizeTimestamp(trackData.track, packet.timestamp, packet.type === "key");
       const currentTimestampInSamples = trackData.currentTimestampInSamples;
       const { durationInSamples, vorbisBlockSize } = extractSampleMetadata(packet.data, trackData.codecInfo, trackData.vorbisLastBlocksize);
@@ -25484,8 +27287,8 @@ var OggMuxer = class extends Muxer {
     throw new Error("Subtitle tracks are not supported.");
   }
   allTracksAreKnown() {
-    for (const track of this.output._tracks) {
-      if (!track.source._closed && !this.trackDatas.some((x2) => x2.track === track)) {
+    for (const track2 of this.output._tracks) {
+      if (!track2.source._closed && !this.trackDatas.some((x2) => x2.track === track2)) {
         return false;
       }
     }
@@ -26977,7 +28780,7 @@ var Output = class {
       throw new Error("Source is already used for a track.");
     }
     const supportedTrackCounts = this.format.getSupportedTrackCounts();
-    const presentTracksOfThisType = this._tracks.reduce((count, track2) => count + (track2.type === type ? 1 : 0), 0);
+    const presentTracksOfThisType = this._tracks.reduce((count, track3) => count + (track3.type === type ? 1 : 0), 0);
     const maxCount = supportedTrackCounts[type].max;
     if (presentTracksOfThisType === maxCount) {
       throw new Error(maxCount === 0 ? `${this.format._name} does not support ${type} tracks.` : `${this.format._name} does not support more than ${maxCount} ${type} track${maxCount === 1 ? "" : "s"}.`);
@@ -26986,37 +28789,37 @@ var Output = class {
     if (this._tracks.length === maxTotalCount) {
       throw new Error(`${this.format._name} does not support more than ${maxTotalCount} tracks${maxTotalCount === 1 ? "" : "s"} in total.`);
     }
-    const track = {
+    const track2 = {
       id: this._tracks.length + 1,
       output: this,
       type,
       source,
       metadata
     };
-    if (track.type === "video") {
+    if (track2.type === "video") {
       const supportedVideoCodecs = this.format.getSupportedVideoCodecs();
       if (supportedVideoCodecs.length === 0) {
-        throw new Error(`${this.format._name} does not support video tracks.` + this.format._codecUnsupportedHint(track.source._codec));
-      } else if (!supportedVideoCodecs.includes(track.source._codec)) {
-        throw new Error(`Codec '${track.source._codec}' cannot be contained within ${this.format._name}. Supported video codecs are: ${supportedVideoCodecs.map((codec) => `'${codec}'`).join(", ")}.` + this.format._codecUnsupportedHint(track.source._codec));
+        throw new Error(`${this.format._name} does not support video tracks.` + this.format._codecUnsupportedHint(track2.source._codec));
+      } else if (!supportedVideoCodecs.includes(track2.source._codec)) {
+        throw new Error(`Codec '${track2.source._codec}' cannot be contained within ${this.format._name}. Supported video codecs are: ${supportedVideoCodecs.map((codec) => `'${codec}'`).join(", ")}.` + this.format._codecUnsupportedHint(track2.source._codec));
       }
-    } else if (track.type === "audio") {
+    } else if (track2.type === "audio") {
       const supportedAudioCodecs = this.format.getSupportedAudioCodecs();
       if (supportedAudioCodecs.length === 0) {
-        throw new Error(`${this.format._name} does not support audio tracks.` + this.format._codecUnsupportedHint(track.source._codec));
-      } else if (!supportedAudioCodecs.includes(track.source._codec)) {
-        throw new Error(`Codec '${track.source._codec}' cannot be contained within ${this.format._name}. Supported audio codecs are: ${supportedAudioCodecs.map((codec) => `'${codec}'`).join(", ")}.` + this.format._codecUnsupportedHint(track.source._codec));
+        throw new Error(`${this.format._name} does not support audio tracks.` + this.format._codecUnsupportedHint(track2.source._codec));
+      } else if (!supportedAudioCodecs.includes(track2.source._codec)) {
+        throw new Error(`Codec '${track2.source._codec}' cannot be contained within ${this.format._name}. Supported audio codecs are: ${supportedAudioCodecs.map((codec) => `'${codec}'`).join(", ")}.` + this.format._codecUnsupportedHint(track2.source._codec));
       }
-    } else if (track.type === "subtitle") {
+    } else if (track2.type === "subtitle") {
       const supportedSubtitleCodecs = this.format.getSupportedSubtitleCodecs();
       if (supportedSubtitleCodecs.length === 0) {
-        throw new Error(`${this.format._name} does not support subtitle tracks.` + this.format._codecUnsupportedHint(track.source._codec));
-      } else if (!supportedSubtitleCodecs.includes(track.source._codec)) {
-        throw new Error(`Codec '${track.source._codec}' cannot be contained within ${this.format._name}. Supported subtitle codecs are: ${supportedSubtitleCodecs.map((codec) => `'${codec}'`).join(", ")}.` + this.format._codecUnsupportedHint(track.source._codec));
+        throw new Error(`${this.format._name} does not support subtitle tracks.` + this.format._codecUnsupportedHint(track2.source._codec));
+      } else if (!supportedSubtitleCodecs.includes(track2.source._codec)) {
+        throw new Error(`Codec '${track2.source._codec}' cannot be contained within ${this.format._name}. Supported subtitle codecs are: ${supportedSubtitleCodecs.map((codec) => `'${codec}'`).join(", ")}.` + this.format._codecUnsupportedHint(track2.source._codec));
       }
     }
-    this._tracks.push(track);
-    source._connectedTrack = track;
+    this._tracks.push(track2);
+    source._connectedTrack = track2;
   }
   /**
    * Starts the creation of the output file. This method should be called after all tracks have been added. Only after
@@ -27027,7 +28830,7 @@ var Output = class {
   async start() {
     const supportedTrackCounts = this.format.getSupportedTrackCounts();
     for (const trackType of ALL_TRACK_TYPES) {
-      const presentTracksOfThisType = this._tracks.reduce((count, track) => count + (track.type === trackType ? 1 : 0), 0);
+      const presentTracksOfThisType = this._tracks.reduce((count, track2) => count + (track2.type === trackType ? 1 : 0), 0);
       const minCount = supportedTrackCounts[trackType].min;
       if (presentTracksOfThisType < minCount) {
         throw new Error(minCount === supportedTrackCounts[trackType].max ? `${this.format._name} requires exactly ${minCount} ${trackType} track${minCount === 1 ? "" : "s"}.` : `${this.format._name} requires at least ${minCount} ${trackType} track${minCount === 1 ? "" : "s"}.`);
@@ -27049,7 +28852,7 @@ var Output = class {
       this._writer.start();
       const release = await this._mutex.acquire();
       await this._muxer.start();
-      const promises = this._tracks.map((track) => track.source._start());
+      const promises = this._tracks.map((track2) => track2.source._start());
       await Promise.all(promises);
       release();
     })();
@@ -27349,109 +29152,18 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
-// src/webgpu/bind-group-generator.ts
-function getWgslPrimitiveDatatype(typename, formatname) {
-  if (formatname) return formatname;
-  if (typename === "f32" || typename === "i32" || typename === "u32" || typename === "f16")
-    return typename;
-  if (typename.startsWith("vec") || typename.startsWith("mat")) {
-    if (typename.endsWith("i")) {
-      return "i32";
-    } else if (typename.endsWith("u")) {
-      return "u32";
-    } else if (typename.endsWith("h")) {
-      return "f16";
-    }
-  }
-  return "f32";
-}
-function getWgslPrimitiveSize(typename) {
-  if (typename.startsWith("vec2")) return 2;
-  if (typename.startsWith("vec3")) return 3;
-  if (typename.startsWith("vec4")) return 4;
-  if (typename.startsWith("mat2x3")) return 6;
-  if (typename.startsWith("mat3x2")) return 6;
-  if (typename.startsWith("mat2x4")) return 8;
-  if (typename.startsWith("mat4x2")) return 8;
-  if (typename.startsWith("mat3x4")) return 12;
-  if (typename.startsWith("mat4x3")) return 12;
-  if (typename.startsWith("mat2")) return 4;
-  if (typename.startsWith("mat3")) return 9;
-  if (typename.startsWith("mat4")) return 16;
-  return 1;
-}
-function setWgslPrimitive(typename, formatname, view, offset, data) {
-  const datatype = getWgslPrimitiveDatatype(typename, formatname);
-  const size = getWgslPrimitiveSize(typename);
-  let stride = {
-    i32: 4,
-    f32: 4,
-    u32: 4,
-    f16: 2
-  }[datatype];
-  let method = {
-    i32: "setInt32",
-    f32: "setFloat32",
-    u32: "setUint32",
-    f16: "setFloat16"
-  }[datatype];
-  for (let i = 0; i < size; i++) {
-    view[method](offset + stride * i, data[i], true);
-  }
-}
-function generateUniformBufferInner(spec, values, view, offset) {
-  if (spec.members) {
-    for (const m of spec.members)
-      generateUniformBufferInner(
-        m.type,
-        values[m.name],
-        view,
-        offset + m.offset
-      );
-    return;
-  }
-  const typename = spec.name;
-  if (typename === "array") {
-    for (let i = 0; i < spec.count; i++) {
-      generateUniformBufferInner(
-        spec.format,
-        values[i],
-        view,
-        offset + spec.stride * i
-      );
-    }
-  } else {
-    setWgslPrimitive(
-      spec.name,
-      spec.format?.name,
-      view,
-      offset,
-      Array.isArray(values) ? values : [values]
-    );
-  }
-}
-function generateUniformBuffer(spec, values) {
-  const buf = new ArrayBuffer(spec.size);
-  const view = new DataView(buf);
-  generateUniformBufferInner(spec, values, view, 0);
-  return buf;
-}
-function makeUniformBuffer(spec, group, binding, data) {
-  return generateUniformBuffer(spec.bindGroups[group][binding].type, data);
-}
-
 // src/curve/quadratic-curve-to-svg.ts
 function quadraticCurveToPath(curve, sigfigs, offset) {
   let startPoint = curve[0].a;
-  const str = (n) => n.toPrecision(sigfigs);
-  let output = `M ${str(startPoint[0] + offset[0])} ${str(
+  const str2 = (n) => n.toPrecision(sigfigs);
+  let output = `M ${str2(startPoint[0] + offset[0])} ${str2(
     startPoint[1] + offset[1]
   )}`;
   let prevpoint = startPoint;
   for (const b of curve) {
-    output += `q ${str(b.b[0] - prevpoint[0])} ${str(
+    output += `q ${str2(b.b[0] - prevpoint[0])} ${str2(
       b.b[1] - prevpoint[1]
-    )},${str(b.c[0] - prevpoint[0])} ${str(b.c[1] - prevpoint[1])}`;
+    )},${str2(b.c[0] - prevpoint[0])} ${str2(b.c[1] - prevpoint[1])}`;
     prevpoint = b.c;
   }
   return output;
@@ -27677,413 +29389,6 @@ function bezierPreview(beziers, size) {
   return c;
 }
 
-// src/webgl/shader.ts
-function source2shader(gl, type, source) {
-  const shader = gl.createShader(
-    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
-  );
-  if (!shader) return err(void 0);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader));
-    return err(void 0);
-  }
-  return ok(shader);
-}
-function shaders2program(gl, v, f) {
-  const program = gl.createProgram();
-  gl.attachShader(program, v);
-  gl.attachShader(program, f);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(program));
-    return err(void 0);
-  }
-  return ok(program);
-}
-function sources2program(gl, vs, fs) {
-  const v = source2shader(gl, "v", vs);
-  const f = source2shader(gl, "f", fs);
-  if (!v.ok || !f.ok) return err(void 0);
-  return shaders2program(gl, v.data, f.data);
-}
-function fullscreenQuadBuffer(gl) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      -1,
-      -1,
-      1,
-      -1,
-      -1,
-      1,
-      1,
-      1,
-      -1,
-      1,
-      1,
-      -1
-    ]),
-    gl.STATIC_DRAW
-  );
-  return ok(buffer);
-}
-function glRenderToQuad(options) {
-  const canvas = document.createElement("canvas");
-  canvas.width = options.width;
-  canvas.height = options.height;
-  const gl = canvas.getContext(options.version ?? "webgl2");
-  gl.viewport(0, 0, options.width, options.height);
-  if (!gl) return err(void 0);
-  const buf = fullscreenQuadBuffer(gl);
-  const prog = sources2program(
-    gl,
-    `#version 300 es
-precision highp float;
-
-in vec2 in_vpos;
-out vec2 pos;
-
-void main() {
-  pos = in_vpos * 0.5 + 0.5;
-  gl_Position = vec4(in_vpos, 0.5, 1.0);
-}`,
-    (options.noheader ? "" : `#version 300 es
-precision highp float;
-in vec2 pos;
-out vec4 col;
-`) + (options.noAutoUniforms ? "" : [
-      [options.uniforms, "", "float"],
-      [options.intUniforms, "i", "int"],
-      [options.uintUniforms, "u", "uint"]
-    ].map(
-      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
-        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
-      }).join("\n")
-    ).join("\n")) + options.fragsource
-  );
-  if (!prog.data) return err(void 0);
-  gl.useProgram(prog.data);
-  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
-  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(attrloc);
-  for (const [uniforms, type] of [
-    [options.uniforms, "i"],
-    [options.intUniforms, "i"],
-    [options.uintUniforms, "ui"]
-  ]) {
-    for (const [k, v] of Object.entries(uniforms ?? {})) {
-      const v2 = Array.isArray(v) ? v : [v];
-      gl[`uniform${v2.length}${type}v`](
-        gl.getUniformLocation(prog.data, k),
-        v2
-      );
-    }
-  }
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-  return ok(canvas);
-}
-
-// src/webgl/scene.ts
-function applyUniform(gl, prog, name, spec) {
-  const [t, d] = spec;
-  const l = gl.getUniformLocation(prog, name);
-  if (l === null) {
-    throw new Error(
-      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
-    );
-  }
-  if (t === "float") gl.uniform1f(l, d);
-  if (t === "vec2") gl.uniform2f(l, ...d);
-  if (t === "vec3") gl.uniform3f(l, ...d);
-  if (t === "vec4") gl.uniform4f(l, ...d);
-  if (t === "int") gl.uniform1i(l, d);
-  if (t === "ivec2") gl.uniform2i(l, ...d);
-  if (t === "ivec3") gl.uniform3i(l, ...d);
-  if (t === "ivec4") gl.uniform4i(l, ...d);
-  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
-  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
-  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
-  if (t === "float[]") gl.uniform1fv(l, d);
-  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
-  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
-  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
-  if (t === "int[]") gl.uniform1iv(l, d);
-  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
-  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
-  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
-  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
-  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
-  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
-}
-function applyUniforms(gl, prog, uniforms) {
-  for (const [k, v] of Object.entries(uniforms)) {
-    applyUniform(gl, prog, k, v);
-  }
-}
-function createScene(sceneSpec) {
-  const gl = sceneSpec.gl;
-  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
-  let sceneUniforms = sceneSpec.uniforms ?? {};
-  return {
-    uniforms() {
-      return sceneUniforms;
-    },
-    resetUniforms(u) {
-      sceneUniforms = u;
-    },
-    updateUniforms(u) {
-      sceneUniforms = { ...sceneUniforms, ...u };
-    },
-    addObject3D(spec) {
-      let objectUniforms = spec.uniforms ?? {};
-      return {
-        gl() {
-          return gl;
-        },
-        draw() {
-          gl.useProgram(spec.program);
-          spec.buffer.setLayout(spec.program);
-          applyUniforms(
-            gl,
-            spec.program,
-            combineUniforms(sceneUniforms, objectUniforms)
-          );
-          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
-        },
-        uniforms() {
-          return objectUniforms;
-        },
-        resetUniforms(u) {
-          objectUniforms = u;
-        },
-        updateUniforms(u) {
-          objectUniforms = { ...objectUniforms, ...u };
-        }
-      };
-    }
-  };
-}
-
-// src/webgl/mesh.ts
-function parametric2D(x2, y2, attr, getPoint) {
-  const data = [];
-  for (let j = 0; j < y2; j++) {
-    for (let i = 0; i < x2; i++) {
-      const a = getPoint(i, j);
-      const b = getPoint(i + 1, j);
-      const c = getPoint(i, j + 1);
-      const d = getPoint(i + 1, j + 1);
-      data.push({ [attr]: a });
-      data.push({ [attr]: c });
-      data.push({ [attr]: b });
-      data.push({ [attr]: c });
-      data.push({ [attr]: d });
-      data.push({ [attr]: b });
-    }
-  }
-  return data;
-}
-function uvSphere(x2, y2, rad, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
-    let px = Math.cos(a) * Math.cos(b) * rad;
-    let pz = Math.sin(a) * Math.cos(b) * rad;
-    let py = Math.sin(b) * rad;
-    return [px, py, pz];
-  });
-}
-function ring(x2, rad, height, attr) {
-  return parametric2D(x2, 1, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const px = Math.cos(a) * rad;
-    const pz = Math.sin(a) * rad;
-    const py = j === 1 ? height / 2 : -height / 2;
-    return [px, py, pz];
-  });
-}
-function torus(x2, y2, R, r, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI * 2;
-    let px = Math.cos(a);
-    let pz = Math.sin(a);
-    let py = Math.sin(b) * r;
-    px *= R + Math.cos(b) * r;
-    pz *= R + Math.cos(b) * r;
-    return [px, py, pz];
-  });
-}
-function move(mesh, attr, offset) {
-  return mesh.map((m) => ({
-    ...m,
-    [attr]: m[attr].map((e, i) => e + offset[i])
-  }));
-}
-function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
-  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
-  const rangeInv = 1 / (near - far);
-  return [
-    f / aspectRatio,
-    0,
-    0,
-    0,
-    0,
-    f,
-    0,
-    0,
-    0,
-    0,
-    (near + far) * rangeInv,
-    -1,
-    0,
-    0,
-    near * far * rangeInv * 2,
-    0
-  ];
-}
-function ortho(left, right, top, bottom, near, far) {
-  return [
-    2 / (right - left),
-    0,
-    0,
-    -(right + left) / (right - left),
-    0,
-    2 / (top - bottom),
-    0,
-    -(top + bottom) / (top - bottom),
-    0,
-    0,
-    -2 / (far - near),
-    -(far + near) / (far - near),
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function normalize(v) {
-  const len = Math.hypot(...v);
-  return scale3(v, 1 / len);
-}
-function rodrigues(v, k, theta) {
-  k = normalize(k);
-  return add3(
-    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-  );
-}
-function rotate(axis, angle) {
-  return [
-    ...rodrigues([1, 0, 0], axis, angle),
-    0,
-    ...rodrigues([0, 1, 0], axis, angle),
-    0,
-    ...rodrigues([0, 0, 1], axis, angle),
-    0,
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function scale(axes) {
-  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
-}
-function translate(v) {
-  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
-}
-
-// src/webgl/buffer.ts
-function getDatatypeSize(gl, datatype) {
-  return {
-    [gl.BYTE]: 1,
-    [gl.SHORT]: 2,
-    [gl.UNSIGNED_BYTE]: 1,
-    [gl.UNSIGNED_SHORT]: 2,
-    [gl.FLOAT]: 4,
-    [gl.HALF_FLOAT]: 2,
-    [gl.INT]: 4,
-    [gl.UNSIGNED_INT]: 4,
-    [gl.INT_2_10_10_10_REV]: 4,
-    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
-  }[datatype];
-}
-function createBufferWithLayout(gl, layout, data) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  const layoutEntries = Object.entries(layout);
-  let stride = 0;
-  const offsets = /* @__PURE__ */ new Map();
-  for (const [name, attrs] of layoutEntries) {
-    offsets.set(name, stride);
-    stride += attrs.size * getDatatypeSize(gl, attrs.type);
-  }
-  const arraybuf = new ArrayBuffer(stride * data.length);
-  const rawdata = new DataView(arraybuf);
-  let i = 0;
-  for (const d of data) {
-    for (const [name, attrs] of layoutEntries) {
-      for (let j = 0; j < attrs.size; j++) {
-        const val = d[name][j];
-        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
-        if (attrs.type === gl.BYTE) {
-          rawdata.setInt8(pos, val);
-        } else if (attrs.type === gl.UNSIGNED_BYTE) {
-          rawdata.setUint8(pos, val);
-        } else if (attrs.type === gl.FLOAT) {
-          rawdata.setFloat32(pos, val, true);
-        } else if (attrs.type === gl.SHORT) {
-          rawdata.setInt16(pos, val, true);
-        } else if (attrs.type === gl.UNSIGNED_SHORT) {
-          rawdata.setUint16(pos, val, true);
-        }
-      }
-    }
-    i++;
-  }
-  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
-  return {
-    vertexCount: data.length,
-    buffer,
-    setLayout(prog) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      for (const [name, attrs] of layoutEntries) {
-        const loc = gl.getAttribLocation(prog, name);
-        if (attrs.isInt) {
-          gl.vertexAttribIPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            stride,
-            offsets.get(name)
-          );
-        } else {
-          gl.vertexAttribPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            attrs.normalized ?? false,
-            stride,
-            offsets.get(name)
-          );
-        }
-        gl.enableVertexAttribArray(loc);
-      }
-    },
-    bindArray(gl2) {
-      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
-    },
-    bindIndex(gl2) {
-      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
-    }
-  };
-}
-
 // src/ui/upload-image.tsx
 var pretendThisIsAModule = {};
 
@@ -28238,7 +29543,7 @@ function NumberField(propsOpt) {
 // src/ui/react-infinite-scroll.tsx
 var import_react4 = __toESM(require_react());
 function useAsyncSequence(callback, init, dependencies) {
-  const [seq, setSeq] = (0, import_react4.useState)(init);
+  const [seq2, setSeq] = (0, import_react4.useState)(init);
   const batchIndex = (0, import_react4.useRef)(0);
   const isRunning = (0, import_react4.useRef)(true);
   (0, import_react4.useEffect)(() => {
@@ -28267,7 +29572,7 @@ function useAsyncSequence(callback, init, dependencies) {
     };
   }, dependencies);
   return {
-    seq,
+    seq: seq2,
     isRunning
   };
 }
@@ -28487,9 +29792,9 @@ export {
   AudioStream,
   NumberField,
   ObjectField,
+  OneDimensionalSpatialHashTable,
   PanAndZoom,
   ProgressBar,
-  StreamAudioStdlib,
   StringField,
   add,
   add2,
@@ -28528,7 +29833,6 @@ export {
   compose,
   constant,
   convolve,
-  createAudioStreamBuilder,
   createBufferWithLayout,
   createCombinedRoundRobinThreadpool,
   createEvalbox,
@@ -28538,11 +29842,18 @@ export {
   createRoundRobinThread,
   createRoundRobinThreadpool,
   createScene,
+  createSignal,
+  createTrack,
+  createTrackSpec,
+  createTrackSpecForNote,
+  createTrackSpecForNoteSequence,
   createWorkerReceiver,
   createWorkerWithInterface,
   cross,
   debounce,
   deleteEdge,
+  displayAudio,
+  displayAudioSamples,
   distance2,
   distance3,
   distance4,
@@ -28564,6 +29875,7 @@ export {
   fullscreenQuadBuffer,
   generateUniformBuffer,
   get,
+  getBeatCount,
   getClamped,
   getConnectedComponents,
   getDepthFirstTraversalOrder,
@@ -28623,6 +29935,7 @@ export {
   mix4,
   modulateGain,
   modulateSampleTime,
+  modulo,
   monoToStereo,
   move,
   mul2,
@@ -28696,6 +30009,7 @@ export {
   normalize2,
   normalize3,
   normalize4,
+  note2freq,
   obj2map,
   objectFieldDataToNativeObject,
   ok,
@@ -28704,6 +30018,7 @@ export {
   panAndZoomCanvas2d,
   panAndZoomMatrix,
   parametric2D,
+  parseNotes,
   parseSpatialHashTable,
   parser,
   perlin2d,

@@ -26,11 +26,15 @@ function unclampedSmoothstep(x) {
 function smoothstep(x) {
   return unclampedSmoothstep(clamp(x, 0, 1));
 }
+function modulo(a, b) {
+  return a - b * Math.floor(a / b);
+}
 export {
   clamp,
   clampToArray,
   getClamped,
   lerp,
+  modulo,
   rescale,
   rescaleClamped,
   smoothstep,

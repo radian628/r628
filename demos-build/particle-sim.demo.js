@@ -29,7 +29,7 @@
   var require_fft = __commonJS({
     "node_modules/fft.js/lib/fft.js"(exports, module) {
       "use strict";
-      function FFT2(size) {
+      function FFT3(size) {
         this.size = size | 0;
         if (this.size <= 1 || (this.size & this.size - 1) !== 0)
           throw new Error("FFT size must be a power of two and bigger than 1");
@@ -57,20 +57,20 @@
         this._data = null;
         this._inv = 0;
       }
-      module.exports = FFT2;
-      FFT2.prototype.fromComplexArray = function fromComplexArray(complex, storage) {
+      module.exports = FFT3;
+      FFT3.prototype.fromComplexArray = function fromComplexArray(complex, storage) {
         var res = storage || new Array(complex.length >>> 1);
         for (var i = 0; i < complex.length; i += 2)
           res[i >>> 1] = complex[i];
         return res;
       };
-      FFT2.prototype.createComplexArray = function createComplexArray() {
+      FFT3.prototype.createComplexArray = function createComplexArray() {
         const res = new Array(this._csize);
         for (var i = 0; i < res.length; i++)
           res[i] = 0;
         return res;
       };
-      FFT2.prototype.toComplexArray = function toComplexArray(input, storage) {
+      FFT3.prototype.toComplexArray = function toComplexArray(input, storage) {
         var res = storage || this.createComplexArray();
         for (var i = 0; i < res.length; i += 2) {
           res[i] = input[i >>> 1];
@@ -78,7 +78,7 @@
         }
         return res;
       };
-      FFT2.prototype.completeSpectrum = function completeSpectrum(spectrum) {
+      FFT3.prototype.completeSpectrum = function completeSpectrum(spectrum) {
         var size = this._csize;
         var half = size >>> 1;
         for (var i = 2; i < half; i += 2) {
@@ -86,7 +86,7 @@
           spectrum[size - i + 1] = -spectrum[i + 1];
         }
       };
-      FFT2.prototype.transform = function transform(out, data) {
+      FFT3.prototype.transform = function transform(out, data) {
         if (out === data)
           throw new Error("Input and output buffers must be different");
         this._out = out;
@@ -96,7 +96,7 @@
         this._out = null;
         this._data = null;
       };
-      FFT2.prototype.realTransform = function realTransform(out, data) {
+      FFT3.prototype.realTransform = function realTransform(out, data) {
         if (out === data)
           throw new Error("Input and output buffers must be different");
         this._out = out;
@@ -106,7 +106,7 @@
         this._out = null;
         this._data = null;
       };
-      FFT2.prototype.inverseTransform = function inverseTransform(out, data) {
+      FFT3.prototype.inverseTransform = function inverseTransform(out, data) {
         if (out === data)
           throw new Error("Input and output buffers must be different");
         this._out = out;
@@ -118,7 +118,7 @@
         this._out = null;
         this._data = null;
       };
-      FFT2.prototype._transform4 = function _transform4() {
+      FFT3.prototype._transform4 = function _transform4() {
         var out = this._out;
         var size = this._csize;
         var width = this._width;
@@ -200,7 +200,7 @@
           }
         }
       };
-      FFT2.prototype._singleTransform2 = function _singleTransform2(outOff, off, step) {
+      FFT3.prototype._singleTransform2 = function _singleTransform2(outOff, off, step) {
         const out = this._out;
         const data = this._data;
         const evenR = data[off];
@@ -216,7 +216,7 @@
         out[outOff + 2] = rightR;
         out[outOff + 3] = rightI;
       };
-      FFT2.prototype._singleTransform4 = function _singleTransform4(outOff, off, step) {
+      FFT3.prototype._singleTransform4 = function _singleTransform4(outOff, off, step) {
         const out = this._out;
         const data = this._data;
         const inv = this._inv ? -1 : 1;
@@ -255,7 +255,7 @@
         out[outOff + 6] = FDr;
         out[outOff + 7] = FDi;
       };
-      FFT2.prototype._realTransform4 = function _realTransform4() {
+      FFT3.prototype._realTransform4 = function _realTransform4() {
         var out = this._out;
         var size = this._csize;
         var width = this._width;
@@ -357,7 +357,7 @@
           }
         }
       };
-      FFT2.prototype._singleRealTransform2 = function _singleRealTransform2(outOff, off, step) {
+      FFT3.prototype._singleRealTransform2 = function _singleRealTransform2(outOff, off, step) {
         const out = this._out;
         const data = this._data;
         const evenR = data[off];
@@ -369,7 +369,7 @@
         out[outOff + 2] = rightR;
         out[outOff + 3] = 0;
       };
-      FFT2.prototype._singleRealTransform4 = function _singleRealTransform4(outOff, off, step) {
+      FFT3.prototype._singleRealTransform4 = function _singleRealTransform4(outOff, off, step) {
         const out = this._out;
         const data = this._data;
         const inv = this._inv ? -1 : 1;
@@ -401,11 +401,1013 @@
     }
   });
 
+  // node_modules/typescript-parsec/lib/Lexer.js
+  var require_Lexer = __commonJS({
+    "node_modules/typescript-parsec/lib/Lexer.js"(exports) {
+      "use strict";
+      var __extends = exports && exports.__extends || /* @__PURE__ */ function() {
+        var extendStatics = function(d, b) {
+          extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
+            d2.__proto__ = b2;
+          } || function(d2, b2) {
+            for (var p in b2) if (b2.hasOwnProperty(p)) d2[p] = b2[p];
+          };
+          return extendStatics(d, b);
+        };
+        return function(d, b) {
+          extendStatics(d, b);
+          function __() {
+            this.constructor = d;
+          }
+          d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+        };
+      }();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.buildLexer = exports.extractByTokenRange = exports.extractByPositionRange = exports.TokenRangeError = exports.TokenError = void 0;
+      function posToString(pos) {
+        return pos === void 0 ? "<END-OF-FILE>" : JSON.stringify(pos);
+      }
+      var TokenError = (
+        /** @class */
+        function(_super) {
+          __extends(TokenError2, _super);
+          function TokenError2(pos, errorMessage) {
+            var _this = _super.call(this, posToString(pos) + ": " + errorMessage) || this;
+            _this.pos = pos;
+            _this.errorMessage = errorMessage;
+            return _this;
+          }
+          return TokenError2;
+        }(Error)
+      );
+      exports.TokenError = TokenError;
+      var TokenRangeError = (
+        /** @class */
+        function(_super) {
+          __extends(TokenRangeError2, _super);
+          function TokenRangeError2(first, next, errorMessage) {
+            var _this = _super.call(this, posToString(first) + " - " + posToString(next) + ": " + errorMessage) || this;
+            _this.first = first;
+            _this.next = next;
+            _this.errorMessage = errorMessage;
+            return _this;
+          }
+          return TokenRangeError2;
+        }(Error)
+      );
+      exports.TokenRangeError = TokenRangeError;
+      function extractByPositionRange(input, first, next) {
+        var firstIndex = first === void 0 ? input.length : first.index;
+        var nextIndex = next === void 0 ? input.length : next.index;
+        if (firstIndex >= nextIndex) {
+          return "";
+        }
+        return input.substring(firstIndex, nextIndex);
+      }
+      exports.extractByPositionRange = extractByPositionRange;
+      function extractByTokenRange(input, first, next) {
+        return extractByPositionRange(input, first === void 0 ? void 0 : first.pos, next === void 0 ? void 0 : next.pos);
+      }
+      exports.extractByTokenRange = extractByTokenRange;
+      var TokenImpl = (
+        /** @class */
+        function() {
+          function TokenImpl2(lexer, input, kind, text, pos, keep) {
+            this.lexer = lexer;
+            this.input = input;
+            this.kind = kind;
+            this.text = text;
+            this.pos = pos;
+            this.keep = keep;
+          }
+          Object.defineProperty(TokenImpl2.prototype, "next", {
+            get: function() {
+              if (this.nextToken === void 0) {
+                this.nextToken = this.lexer.parseNextAvailable(this.input, this.pos.index + this.text.length, this.pos.rowEnd, this.pos.columnEnd);
+                if (this.nextToken === void 0) {
+                  this.nextToken = null;
+                }
+              }
+              return this.nextToken === null ? void 0 : this.nextToken;
+            },
+            enumerable: false,
+            configurable: true
+          });
+          return TokenImpl2;
+        }()
+      );
+      var LexerImpl = (
+        /** @class */
+        function() {
+          function LexerImpl2(rules) {
+            this.rules = rules;
+            for (var _i = 0, _a = this.rules; _i < _a.length; _i++) {
+              var rule2 = _a[_i];
+              if (rule2[1].source[0] !== "^") {
+                throw new Error('Regular expression patterns for a tokenizer should start with "^": ' + rule2[1].source);
+              }
+              if (!rule2[1].global) {
+                throw new Error("Regular expression patterns for a tokenizer should be global: " + rule2[1].source);
+              }
+            }
+          }
+          LexerImpl2.prototype.parse = function(input) {
+            return this.parseNextAvailable(input, 0, 1, 1);
+          };
+          LexerImpl2.prototype.parseNext = function(input, indexStart, rowBegin, columnBegin) {
+            if (indexStart === input.length) {
+              return void 0;
+            }
+            var subString = input.substr(indexStart);
+            var result;
+            for (var _i = 0, _a = this.rules; _i < _a.length; _i++) {
+              var _b = _a[_i], keep = _b[0], regexp = _b[1], kind = _b[2];
+              regexp.lastIndex = 0;
+              if (regexp.test(subString)) {
+                var text = subString.substr(0, regexp.lastIndex);
+                var rowEnd = rowBegin;
+                var columnEnd = columnBegin;
+                for (var _c = 0, text_1 = text; _c < text_1.length; _c++) {
+                  var c = text_1[_c];
+                  switch (c) {
+                    case "\r":
+                      break;
+                    case "\n":
+                      rowEnd++;
+                      columnEnd = 1;
+                      break;
+                    default:
+                      columnEnd++;
+                  }
+                }
+                var newResult = new TokenImpl(this, input, kind, text, { index: indexStart, rowBegin, columnBegin, rowEnd, columnEnd }, keep);
+                if (result === void 0 || result.text.length < newResult.text.length) {
+                  result = newResult;
+                }
+              }
+            }
+            if (result === void 0) {
+              throw new TokenError({ index: indexStart, rowBegin, columnBegin, rowEnd: rowBegin, columnEnd: columnBegin }, "Unable to tokenize the rest of the input: " + input.substr(indexStart));
+            } else {
+              return result;
+            }
+          };
+          LexerImpl2.prototype.parseNextAvailable = function(input, index, rowBegin, columnBegin) {
+            var token;
+            while (true) {
+              token = this.parseNext(input, token === void 0 ? index : token.pos.index + token.text.length, token === void 0 ? rowBegin : token.pos.rowEnd, token === void 0 ? columnBegin : token.pos.columnEnd);
+              if (token === void 0) {
+                return void 0;
+              } else if (token.keep) {
+                return token;
+              }
+            }
+          };
+          return LexerImpl2;
+        }()
+      );
+      function buildLexer2(rules) {
+        return new LexerImpl(rules);
+      }
+      exports.buildLexer = buildLexer2;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/Parsers/ParserInterface.js
+  var require_ParserInterface = __commonJS({
+    "node_modules/typescript-parsec/lib/Parsers/ParserInterface.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.unableToConsumeToken = exports.resultOrError = exports.betterError = void 0;
+      function betterError(e1, e2) {
+        if (e1 === void 0) {
+          return e2;
+        }
+        if (e2 === void 0) {
+          return e1;
+        }
+        if (e1.pos === void 0) {
+          return e1;
+        }
+        if (e2.pos === void 0) {
+          return e2;
+        }
+        if (e1.pos.index < e2.pos.index) {
+          return e2;
+        } else if (e1.pos.index > e2.pos.index) {
+          return e1;
+        } else {
+          return e1;
+        }
+      }
+      exports.betterError = betterError;
+      function resultOrError(result, error, successful) {
+        if (successful) {
+          return {
+            candidates: result,
+            successful: true,
+            error
+          };
+        } else {
+          return {
+            successful: false,
+            error
+          };
+        }
+      }
+      exports.resultOrError = resultOrError;
+      function unableToConsumeToken(token) {
+        return {
+          kind: "Error",
+          pos: token === void 0 ? void 0 : token.pos,
+          message: "Unable to consume token: " + (token === void 0 ? "<END-OF-FILE>" : token.text)
+        };
+      }
+      exports.unableToConsumeToken = unableToConsumeToken;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/Parsers/TokenParser.js
+  var require_TokenParser = __commonJS({
+    "node_modules/typescript-parsec/lib/Parsers/TokenParser.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.tok = exports.str = exports.fail = exports.succ = exports.nil = void 0;
+      var ParserInterface_1 = require_ParserInterface();
+      function nil2() {
+        return {
+          parse: function(token) {
+            return {
+              candidates: [{
+                firstToken: token,
+                nextToken: token,
+                result: void 0
+              }],
+              successful: true,
+              error: void 0
+            };
+          }
+        };
+      }
+      exports.nil = nil2;
+      function succ(value) {
+        return {
+          parse: function(token) {
+            return {
+              candidates: [{
+                firstToken: token,
+                nextToken: token,
+                result: value
+              }],
+              successful: true,
+              error: void 0
+            };
+          }
+        };
+      }
+      exports.succ = succ;
+      function fail(errorMessage) {
+        return {
+          parse: function(token) {
+            return {
+              successful: false,
+              error: {
+                kind: "Error",
+                pos: token === null || token === void 0 ? void 0 : token.pos,
+                message: errorMessage
+              }
+            };
+          }
+        };
+      }
+      exports.fail = fail;
+      function str2(toMatch) {
+        return {
+          parse: function(token) {
+            if (token === void 0 || token.text !== toMatch) {
+              return {
+                successful: false,
+                error: ParserInterface_1.unableToConsumeToken(token)
+              };
+            }
+            return {
+              candidates: [{
+                firstToken: token,
+                nextToken: token.next,
+                result: token
+              }],
+              successful: true,
+              error: void 0
+            };
+          }
+        };
+      }
+      exports.str = str2;
+      function tok2(toMatch) {
+        return {
+          parse: function(token) {
+            if (token === void 0 || token.kind !== toMatch) {
+              return {
+                successful: false,
+                error: ParserInterface_1.unableToConsumeToken(token)
+              };
+            }
+            return {
+              candidates: [{
+                firstToken: token,
+                nextToken: token.next,
+                result: token
+              }],
+              successful: true,
+              error: void 0
+            };
+          }
+        };
+      }
+      exports.tok = tok2;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/Parsers/MonadicSequencialParser.js
+  var require_MonadicSequencialParser = __commonJS({
+    "node_modules/typescript-parsec/lib/Parsers/MonadicSequencialParser.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.combine = void 0;
+      var ParserInterface_1 = require_ParserInterface();
+      function combine(first) {
+        var continuations = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+          continuations[_i - 1] = arguments[_i];
+        }
+        return {
+          parse: function(token) {
+            var firstOutput = first.parse(token);
+            if (!firstOutput.successful) {
+              return firstOutput;
+            }
+            var result = firstOutput.candidates;
+            var error = firstOutput.error;
+            for (var _i2 = 0, continuations_1 = continuations; _i2 < continuations_1.length; _i2++) {
+              var c = continuations_1[_i2];
+              if (result.length === 0) {
+                break;
+              }
+              var steps = result;
+              result = [];
+              for (var _a = 0, steps_1 = steps; _a < steps_1.length; _a++) {
+                var step = steps_1[_a];
+                var output = c(step.result).parse(step.nextToken);
+                error = ParserInterface_1.betterError(error, output.error);
+                if (output.successful) {
+                  for (var _b = 0, _c = output.candidates; _b < _c.length; _b++) {
+                    var candidate = _c[_b];
+                    result.push({
+                      firstToken: step.firstToken,
+                      nextToken: candidate.nextToken,
+                      result: candidate.result
+                    });
+                  }
+                }
+              }
+            }
+            return ParserInterface_1.resultOrError(result, error, result.length !== 0);
+          }
+        };
+      }
+      exports.combine = combine;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/Parsers/SequencialParser.js
+  var require_SequencialParser = __commonJS({
+    "node_modules/typescript-parsec/lib/Parsers/SequencialParser.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.seq = void 0;
+      var ParserInterface_1 = require_ParserInterface();
+      function seq2() {
+        var ps = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+          ps[_i] = arguments[_i];
+        }
+        return {
+          parse: function(token) {
+            var error;
+            var result = [{ firstToken: token, nextToken: token, result: [] }];
+            for (var _i2 = 0, ps_1 = ps; _i2 < ps_1.length; _i2++) {
+              var p = ps_1[_i2];
+              if (result.length === 0) {
+                break;
+              }
+              var steps = result;
+              result = [];
+              for (var _a = 0, steps_1 = steps; _a < steps_1.length; _a++) {
+                var step = steps_1[_a];
+                var output = p.parse(step.nextToken);
+                error = ParserInterface_1.betterError(error, output.error);
+                if (output.successful) {
+                  for (var _b = 0, _c = output.candidates; _b < _c.length; _b++) {
+                    var candidate = _c[_b];
+                    result.push({
+                      firstToken: step.firstToken,
+                      nextToken: candidate.nextToken,
+                      result: step.result.concat([candidate.result])
+                    });
+                  }
+                }
+              }
+            }
+            return ParserInterface_1.resultOrError(result, error, result.length !== 0);
+          }
+        };
+      }
+      exports.seq = seq2;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/Parsers/AlternativeParser.js
+  var require_AlternativeParser = __commonJS({
+    "node_modules/typescript-parsec/lib/Parsers/AlternativeParser.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.alt = void 0;
+      var ParserInterface_1 = require_ParserInterface();
+      function alt() {
+        var ps = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+          ps[_i] = arguments[_i];
+        }
+        return {
+          parse: function(token) {
+            var error;
+            var result = [];
+            var successful = false;
+            for (var _i2 = 0, ps_1 = ps; _i2 < ps_1.length; _i2++) {
+              var p = ps_1[_i2];
+              var output = p.parse(token);
+              error = ParserInterface_1.betterError(error, output.error);
+              if (output.successful) {
+                result = result.concat(output.candidates);
+                successful = true;
+              }
+            }
+            return ParserInterface_1.resultOrError(result, error, successful);
+          }
+        };
+      }
+      exports.alt = alt;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/Parsers/AlternativeScParser.js
+  var require_AlternativeScParser = __commonJS({
+    "node_modules/typescript-parsec/lib/Parsers/AlternativeScParser.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.alt_sc = void 0;
+      var ParserInterface_1 = require_ParserInterface();
+      function alt_sc2() {
+        var ps = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+          ps[_i] = arguments[_i];
+        }
+        return {
+          parse: function(token) {
+            var error;
+            for (var _i2 = 0, ps_1 = ps; _i2 < ps_1.length; _i2++) {
+              var p = ps_1[_i2];
+              var output = p.parse(token);
+              error = ParserInterface_1.betterError(error, output.error);
+              if (output.successful) {
+                return ParserInterface_1.resultOrError(output.candidates, error, true);
+              }
+            }
+            return {
+              successful: false,
+              error
+            };
+          }
+        };
+      }
+      exports.alt_sc = alt_sc2;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/Parsers/OptionalParser.js
+  var require_OptionalParser = __commonJS({
+    "node_modules/typescript-parsec/lib/Parsers/OptionalParser.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.opt_sc = exports.opt = void 0;
+      var AlternativeParser_1 = require_AlternativeParser();
+      var TokenParser_1 = require_TokenParser();
+      function opt(p) {
+        return AlternativeParser_1.alt(p, TokenParser_1.nil());
+      }
+      exports.opt = opt;
+      function opt_sc(p) {
+        return {
+          parse: function(token) {
+            var output = p.parse(token);
+            if (output.successful) {
+              return output;
+            } else {
+              return {
+                candidates: [{
+                  firstToken: token,
+                  nextToken: token,
+                  result: void 0
+                }],
+                successful: true,
+                error: output.error
+              };
+            }
+          }
+        };
+      }
+      exports.opt_sc = opt_sc;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/Parsers/ApplyParser.js
+  var require_ApplyParser = __commonJS({
+    "node_modules/typescript-parsec/lib/Parsers/ApplyParser.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.kmid = exports.kright = exports.kleft = exports.apply = void 0;
+      var SequencialParser_1 = require_SequencialParser();
+      function apply2(p, callback) {
+        return {
+          parse: function(token) {
+            var output = p.parse(token);
+            if (output.successful) {
+              return {
+                candidates: output.candidates.map(function(value) {
+                  return {
+                    firstToken: token,
+                    nextToken: value.nextToken,
+                    result: callback(value.result, [token, value.nextToken])
+                  };
+                }),
+                successful: true,
+                error: output.error
+              };
+            } else {
+              return output;
+            }
+          }
+        };
+      }
+      exports.apply = apply2;
+      function kleft2(p1, p2) {
+        return apply2(SequencialParser_1.seq(p1, p2), function(value) {
+          return value[0];
+        });
+      }
+      exports.kleft = kleft2;
+      function kright(p1, p2) {
+        return apply2(SequencialParser_1.seq(p1, p2), function(value) {
+          return value[1];
+        });
+      }
+      exports.kright = kright;
+      function kmid2(p1, p2, p3) {
+        return apply2(SequencialParser_1.seq(p1, p2, p3), function(value) {
+          return value[1];
+        });
+      }
+      exports.kmid = kmid2;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/Parsers/RepeativeParser.js
+  var require_RepeativeParser = __commonJS({
+    "node_modules/typescript-parsec/lib/Parsers/RepeativeParser.js"(exports) {
+      "use strict";
+      var __spreadArrays = exports && exports.__spreadArrays || function() {
+        for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+        for (var r = Array(s), k = 0, i = 0; i < il; i++)
+          for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+        return r;
+      };
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.lrec_sc = exports.lrec = exports.list_n = exports.list_sc = exports.list = exports.rep_n = exports.repr = exports.rep_sc = exports.rep = void 0;
+      var ApplyParser_1 = require_ApplyParser();
+      var ParserInterface_1 = require_ParserInterface();
+      var SequencialParser_1 = require_SequencialParser();
+      var TokenParser_1 = require_TokenParser();
+      function rep(p) {
+        var reprParser = repr(p);
+        return {
+          parse: function(token) {
+            var output = reprParser.parse(token);
+            if (output.successful) {
+              return {
+                candidates: output.candidates.reverse(),
+                successful: true,
+                error: output.error
+              };
+            } else {
+              return output;
+            }
+          }
+        };
+      }
+      exports.rep = rep;
+      function rep_sc2(p) {
+        return {
+          parse: function(token) {
+            var error;
+            var result = [{ firstToken: token, nextToken: token, result: [] }];
+            while (true) {
+              var steps = result;
+              result = [];
+              for (var _i = 0, steps_1 = steps; _i < steps_1.length; _i++) {
+                var step = steps_1[_i];
+                var output = p.parse(step.nextToken);
+                error = ParserInterface_1.betterError(error, output.error);
+                if (output.successful) {
+                  for (var _a = 0, _b = output.candidates; _a < _b.length; _a++) {
+                    var candidate = _b[_a];
+                    if (candidate.nextToken !== step.nextToken) {
+                      result.push({
+                        firstToken: step.firstToken,
+                        nextToken: candidate.nextToken,
+                        result: step.result.concat([candidate.result])
+                      });
+                    }
+                  }
+                }
+              }
+              if (result.length === 0) {
+                result = steps;
+                break;
+              }
+            }
+            return ParserInterface_1.resultOrError(result, error, true);
+          }
+        };
+      }
+      exports.rep_sc = rep_sc2;
+      function repr(p) {
+        return {
+          parse: function(token) {
+            var error;
+            var result = [{ firstToken: token, nextToken: token, result: [] }];
+            for (var i = 0; i < result.length; i++) {
+              var step = result[i];
+              var output = p.parse(step.nextToken);
+              error = ParserInterface_1.betterError(error, output.error);
+              if (output.successful) {
+                for (var _i = 0, _a = output.candidates; _i < _a.length; _i++) {
+                  var candidate = _a[_i];
+                  if (candidate.nextToken !== step.nextToken) {
+                    result.push({
+                      firstToken: step.firstToken,
+                      nextToken: candidate.nextToken,
+                      result: step.result.concat([candidate.result])
+                    });
+                  }
+                }
+              }
+            }
+            return ParserInterface_1.resultOrError(result, error, true);
+          }
+        };
+      }
+      exports.repr = repr;
+      function rep_n(p, count) {
+        return {
+          parse: function(token) {
+            var error;
+            var candidates = [{ firstToken: token, nextToken: token, result: [] }];
+            for (var i = 0; i < count; i++) {
+              var newCandidates = [];
+              for (var _i = 0, candidates_1 = candidates; _i < candidates_1.length; _i++) {
+                var step = candidates_1[_i];
+                var output = p.parse(step.nextToken);
+                error = ParserInterface_1.betterError(error, output.error);
+                if (output.successful) {
+                  for (var _a = 0, _b = output.candidates; _a < _b.length; _a++) {
+                    var candidate = _b[_a];
+                    newCandidates.push({
+                      firstToken: step.firstToken,
+                      nextToken: candidate.nextToken,
+                      result: step.result.concat([candidate.result])
+                    });
+                  }
+                }
+              }
+              if (newCandidates.length === 0) {
+                return {
+                  successful: false,
+                  error
+                };
+              } else {
+                candidates = newCandidates;
+              }
+            }
+            return ParserInterface_1.resultOrError(candidates, error, true);
+          }
+        };
+      }
+      exports.rep_n = rep_n;
+      function applyList(_a) {
+        var first = _a[0], tail = _a[1];
+        return __spreadArrays([first], tail);
+      }
+      function list(p, s) {
+        return ApplyParser_1.apply(SequencialParser_1.seq(p, rep(ApplyParser_1.kright(s, p))), applyList);
+      }
+      exports.list = list;
+      function list_sc(p, s) {
+        return ApplyParser_1.apply(SequencialParser_1.seq(p, rep_sc2(ApplyParser_1.kright(s, p))), applyList);
+      }
+      exports.list_sc = list_sc;
+      function list_n(p, s, count) {
+        if (count < 1) {
+          return TokenParser_1.succ([]);
+        } else if (count === 1) {
+          return ApplyParser_1.apply(p, function(value) {
+            return [value];
+          });
+        } else {
+          return ApplyParser_1.apply(SequencialParser_1.seq(p, rep_n(ApplyParser_1.kright(s, p), count - 1)), applyList);
+        }
+      }
+      exports.list_n = list_n;
+      function applyLrec(callback) {
+        return function(value) {
+          var result = value[0];
+          for (var _i = 0, _a = value[1]; _i < _a.length; _i++) {
+            var tail = _a[_i];
+            result = callback(result, tail);
+          }
+          return result;
+        };
+      }
+      function lrec(p, q, callback) {
+        return ApplyParser_1.apply(SequencialParser_1.seq(p, rep(q)), applyLrec(callback));
+      }
+      exports.lrec = lrec;
+      function lrec_sc2(p, q, callback) {
+        return ApplyParser_1.apply(SequencialParser_1.seq(p, rep_sc2(q)), applyLrec(callback));
+      }
+      exports.lrec_sc = lrec_sc2;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/Parsers/AmbiguousParser.js
+  var require_AmbiguousParser = __commonJS({
+    "node_modules/typescript-parsec/lib/Parsers/AmbiguousParser.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.amb = void 0;
+      function amb(p) {
+        return {
+          parse: function(token) {
+            var branches = p.parse(token);
+            if (!branches.successful) {
+              return branches;
+            }
+            var group = /* @__PURE__ */ new Map();
+            for (var _i = 0, _a = branches.candidates; _i < _a.length; _i++) {
+              var r = _a[_i];
+              var rs = group.get(r.nextToken);
+              if (rs === void 0) {
+                group.set(r.nextToken, [r]);
+              } else {
+                rs.push(r);
+              }
+            }
+            return {
+              candidates: Array.from(group.values()).map(function(rs2) {
+                return {
+                  firstToken: rs2[0].firstToken,
+                  nextToken: rs2[0].nextToken,
+                  result: rs2.map(function(r2) {
+                    return r2.result;
+                  })
+                };
+              }),
+              successful: true,
+              error: branches.error
+            };
+          }
+        };
+      }
+      exports.amb = amb;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/Parsers/ErrorParser.js
+  var require_ErrorParser = __commonJS({
+    "node_modules/typescript-parsec/lib/Parsers/ErrorParser.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.errd = exports.err = void 0;
+      function err2(p, errorMessage) {
+        return {
+          parse: function(token) {
+            var branches = p.parse(token);
+            if (branches.successful) {
+              return branches;
+            }
+            return {
+              successful: false,
+              error: {
+                kind: "Error",
+                pos: branches.error.pos,
+                message: errorMessage
+              }
+            };
+          }
+        };
+      }
+      exports.err = err2;
+      function errd(p, errorMessage, defaultValue) {
+        return {
+          parse: function(token) {
+            var branches = p.parse(token);
+            if (branches.successful) {
+              return branches;
+            }
+            return {
+              successful: true,
+              candidates: [{
+                firstToken: token,
+                nextToken: token,
+                result: defaultValue
+              }],
+              error: {
+                kind: "Error",
+                pos: branches.error.pos,
+                message: errorMessage
+              }
+            };
+          }
+        };
+      }
+      exports.errd = errd;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/Parsers/Rule.js
+  var require_Rule = __commonJS({
+    "node_modules/typescript-parsec/lib/Parsers/Rule.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.expectSingleResult = exports.expectEOF = exports.rule = void 0;
+      var Lexer_1 = require_Lexer();
+      var ParserInterface_1 = require_ParserInterface();
+      var RuleImpl = (
+        /** @class */
+        function() {
+          function RuleImpl2() {
+          }
+          RuleImpl2.prototype.setPattern = function(parser) {
+            this.parser = parser;
+          };
+          RuleImpl2.prototype.parse = function(token) {
+            if (this.parser === void 0) {
+              throw new Error("Rule has not been initialized. setPattern is required before calling parse.");
+            }
+            return this.parser.parse(token);
+          };
+          return RuleImpl2;
+        }()
+      );
+      function rule2() {
+        return new RuleImpl();
+      }
+      exports.rule = rule2;
+      function expectEOF2(output) {
+        if (!output.successful) {
+          return output;
+        }
+        if (output.candidates.length === 0) {
+          return {
+            successful: false,
+            error: {
+              kind: "Error",
+              pos: void 0,
+              message: "No result is returned."
+            }
+          };
+        }
+        var filtered = [];
+        var error = output.error;
+        for (var _i = 0, _a = output.candidates; _i < _a.length; _i++) {
+          var candidate = _a[_i];
+          if (candidate.nextToken === void 0) {
+            filtered.push(candidate);
+          } else {
+            error = ParserInterface_1.betterError(error, {
+              kind: "Error",
+              pos: candidate.nextToken === void 0 ? void 0 : candidate.nextToken.pos,
+              message: 'The parser cannot reach the end of file, stops at "' + candidate.nextToken.text + '" at position ' + JSON.stringify(candidate.nextToken.pos) + "."
+            });
+          }
+        }
+        return ParserInterface_1.resultOrError(filtered, error, filtered.length !== 0);
+      }
+      exports.expectEOF = expectEOF2;
+      function expectSingleResult2(output) {
+        if (!output.successful) {
+          throw new Lexer_1.TokenError(output.error.pos, output.error.message);
+        }
+        if (output.candidates.length === 0) {
+          throw new Lexer_1.TokenError(void 0, "No result is returned.");
+        }
+        if (output.candidates.length !== 1) {
+          throw new Lexer_1.TokenError(void 0, "Multiple results are returned.");
+        }
+        return output.candidates[0].result;
+      }
+      exports.expectSingleResult = expectSingleResult2;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/ParserModule.js
+  var require_ParserModule = __commonJS({
+    "node_modules/typescript-parsec/lib/ParserModule.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.makeParserModule = exports.lazy = void 0;
+      function lazy(thunk) {
+        return {
+          parse: function(token) {
+            return thunk().parse(token);
+          }
+        };
+      }
+      exports.lazy = lazy;
+      var defineReadOnly = function(target, propName, value) {
+        return Object.defineProperty(target, propName, {
+          configurable: true,
+          writable: false,
+          enumerable: true,
+          value
+        });
+      };
+      function makeParserModule(definitions) {
+        var parserModule = /* @__PURE__ */ Object.create(null);
+        var _loop_1 = function(key2, parserThunk2) {
+          parserModule = defineReadOnly(parserModule, key2, lazy(function() {
+            return parserThunk2(parserModule);
+          }));
+        };
+        for (var _i = 0, _a = Object.entries(definitions); _i < _a.length; _i++) {
+          var _b = _a[_i], key = _b[0], parserThunk = _b[1];
+          _loop_1(key, parserThunk);
+        }
+        return parserModule;
+      }
+      exports.makeParserModule = makeParserModule;
+    }
+  });
+
+  // node_modules/typescript-parsec/lib/index.js
+  var require_lib = __commonJS({
+    "node_modules/typescript-parsec/lib/index.js"(exports) {
+      "use strict";
+      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        Object.defineProperty(o, k2, { enumerable: true, get: function() {
+          return m[k];
+        } });
+      } : function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      });
+      var __exportStar = exports && exports.__exportStar || function(m, exports2) {
+        for (var p in m) if (p !== "default" && !exports2.hasOwnProperty(p)) __createBinding(exports2, m, p);
+      };
+      Object.defineProperty(exports, "__esModule", { value: true });
+      __exportStar(require_Lexer(), exports);
+      __exportStar(require_ParserInterface(), exports);
+      __exportStar(require_TokenParser(), exports);
+      __exportStar(require_MonadicSequencialParser(), exports);
+      __exportStar(require_SequencialParser(), exports);
+      __exportStar(require_AlternativeParser(), exports);
+      __exportStar(require_AlternativeScParser(), exports);
+      __exportStar(require_OptionalParser(), exports);
+      __exportStar(require_RepeativeParser(), exports);
+      __exportStar(require_ApplyParser(), exports);
+      __exportStar(require_AmbiguousParser(), exports);
+      __exportStar(require_ErrorParser(), exports);
+      __exportStar(require_Rule(), exports);
+      __exportStar(require_ParserModule(), exports);
+    }
+  });
+
   // node_modules/next-power-of-two/index.js
   var require_next_power_of_two = __commonJS({
     "node_modules/next-power-of-two/index.js"(exports, module) {
-      module.exports = nextPowerOfTwo;
-      function nextPowerOfTwo(n) {
+      module.exports = nextPowerOfTwo2;
+      function nextPowerOfTwo2(n) {
         if (n === 0) return 1;
         n--;
         n |= n >> 1;
@@ -3175,7 +4177,7 @@
             };
           }
         }
-        function track(node) {
+        function track2(node) {
           node._valueTracker || (node._valueTracker = trackValueOnNode(node));
         }
         function updateValueIfChanged(node) {
@@ -5028,7 +6030,7 @@
                 props.name,
                 true
               );
-              track(didHydrate);
+              track2(didHydrate);
               break;
             case "option":
               validateOptionProps(didHydrate, props);
@@ -5044,7 +6046,7 @@
                 props.value,
                 props.defaultValue,
                 props.children
-              ), track(didHydrate);
+              ), track2(didHydrate);
           }
           type = props.children;
           "string" !== typeof type && "number" !== typeof type && "bigint" !== typeof type || didHydrate.textContent === "" + type || true === props.suppressHydrationWarning || checkForUnmatchedText(didHydrate.textContent, type) ? (null != props.popover && (listenToNonDelegatedEvent("beforetoggle", didHydrate), listenToNonDelegatedEvent("toggle", didHydrate)), null != props.onScroll && listenToNonDelegatedEvent("scroll", didHydrate), null != props.onScrollEnd && listenToNonDelegatedEvent("scrollend", didHydrate), null != props.onClick && (didHydrate.onclick = noop$1), didHydrate = true) : didHydrate = false;
@@ -14373,7 +15375,7 @@
                 hasSrcSet,
                 false
               );
-              track(domElement);
+              track2(domElement);
               return;
             case "select":
               checkControlledValueProps("select", props);
@@ -14440,7 +15442,7 @@
                   }
               validateTextareaProps(domElement, props);
               initTextarea(domElement, hasSrc, hasSrcSet, propKey);
-              track(domElement);
+              track2(domElement);
               return;
             case "option":
               validateOptionProps(domElement, props);
@@ -19769,6 +20771,21 @@
     }
     return groups;
   }
+  function argmax(arr, f) {
+    let maxFound = -Infinity;
+    let maxElement = arr[0];
+    for (const e of arr) {
+      const val = f(e);
+      if (val > maxFound) {
+        maxElement = e;
+        maxFound = val;
+      }
+    }
+    return maxElement;
+  }
+  function argmin(arr, f) {
+    return argmax(arr, (t) => -f(t));
+  }
   function cartesianProductInner(ts, arr) {
     if (ts.length === 0) return [arr];
     return ts[0].map((e) => cartesianProductInner(ts.slice(1), [...arr, e])).flat(1);
@@ -19781,7 +20798,7 @@
   // src/threadpool.ts
   function getPerformanceStatistics(records) {
     return Object.fromEntries(
-      Array.from(groupBy(records, (g2) => g2.name).entries()).map(([name, v]) => {
+      Array.from(groupBy(records, (g) => g.name).entries()).map(([name, v]) => {
         const totalRuntime = v.reduce((prev, curr) => prev + curr.runtime, 0) / v.length;
         const invocationCount = v.length;
         return [
@@ -19956,11 +20973,17 @@
   function unlerp(x, a, b) {
     return (x - a) / (b - a);
   }
+  function rescale(x, a1, b1, a2, b2) {
+    return lerp(unlerp(x, a1, b1), a2, b2);
+  }
   function rescaleClamped(x, a1, b1, a2, b2) {
     return lerp(clamp(unlerp(x, a1, b1), 0, 1), a2, b2);
   }
   function clamp(x, lo, hi) {
     return Math.max(Math.min(x, hi), lo);
+  }
+  function modulo(a, b) {
+    return a - b * Math.floor(a / b);
   }
 
   // src/math/vector.ts
@@ -20002,9 +21025,6 @@
   function arrayToObjKeys(arr, f) {
     return map2obj(arrayToMapKeys(arr, f));
   }
-  function mapObjKeys(obj, callback) {
-    return mapObjEntries(obj, (k, v) => [callback(k, v), v]);
-  }
   function mapObjValues(obj, callback) {
     return mapObjEntries(obj, (k, v) => [k, callback(k, v)]);
   }
@@ -20018,6 +21038,121 @@
   }
   var ALL = Symbol("allKeys");
   var _ALL = Symbol("all2");
+
+  // src/array-map.ts
+  var ArrayMap = class _ArrayMap {
+    constructor() {
+      this.maps = /* @__PURE__ */ new Map();
+    }
+    nthMap(n) {
+      let map = this.maps.get(n);
+      if (!map) {
+        if (n !== 0) {
+          map = /* @__PURE__ */ new Map();
+          this.maps.set(n, map);
+        } else {
+          return void 0;
+        }
+      }
+      return map;
+    }
+    get(path) {
+      let map = this.nthMap(path.length);
+      for (const p of path) {
+        map = map.get(p);
+        if (!map) return void 0;
+      }
+      return map;
+    }
+    has(path) {
+      if (path.length === 0) return this.maps.has(0);
+      let map = this.nthMap(path.length);
+      for (const p of path) {
+        map = map.get(p);
+        if (!map) return false;
+      }
+      return true;
+    }
+    delete(path) {
+      if (path.length === 0) {
+        const item2 = this.maps.get(0);
+        this.maps.delete(0);
+        return item2;
+      }
+      let map = this.nthMap(path.length);
+      for (const p of path.slice(0, -1)) {
+        map = map.get(p);
+        if (!map) return void 0;
+      }
+      const item = map.get(path.at(-1));
+      map.delete(path.at(-1));
+      return item;
+    }
+    change(path, cb2) {
+      if (path.length === 0) {
+        this.maps.set(0, cb2(this.maps.get(0)));
+        return;
+      }
+      let map = this.nthMap(path.length);
+      for (const p of path.slice(0, -1)) {
+        let oldMap = map;
+        map = map.get(p);
+        if (!map) {
+          map = /* @__PURE__ */ new Map();
+          oldMap.set(p, map);
+        }
+      }
+      map.set(path.at(-1), cb2(map.get(path.at(-1))));
+    }
+    set(path, value) {
+      this.change(path, () => value);
+    }
+    forEach(map) {
+      const r = (n, m, path) => {
+        if (n === 0) {
+          map(path, m);
+        } else {
+          for (const [k, v] of m) r(n - 1, m, path.concat(k));
+        }
+      };
+      for (const [n, map2] of this.maps) {
+        r(n, map2, []);
+      }
+    }
+    serialize() {
+      const out = [];
+      this.forEach((arr, v) => out.push([arr, v]));
+      return out;
+    }
+    static fromSerialized(s) {
+      const am = new _ArrayMap();
+      for (const [k, v] of s) {
+        am.set(k, v);
+      }
+      return am;
+    }
+  };
+
+  // src/memo.ts
+  function memo(callback, serializeParams) {
+    if (!serializeParams) serializeParams = (x) => x;
+    const map = new ArrayMap();
+    const fn = (...params) => {
+      const serialized = serializeParams(params);
+      let hasCached = map.has(serialized);
+      if (hasCached) {
+        return map.get(serialized);
+      }
+      const result = callback(...params);
+      map.set(serialized, result);
+      return result;
+    };
+    fn.invalidate = (...params) => {
+      map.delete(serializeParams(params));
+    };
+    fn.getCache = () => map;
+    return fn;
+  }
 
   // src/lookup-optimized-spatial-hash-table.ts
   var OVERFLOW_BUCKETS_BIT = 2147483648;
@@ -20124,16 +21259,248 @@
     };
   }
 
+  // src/math/intersections.ts
+  function rangeIntersects(a1, a2, b1, b2) {
+    return !(a1 > b2 || b1 > a2);
+  }
+
+  // src/1d-spatial-hash-table.ts
+  var OneDimensionalSpatialHashTable = class {
+    constructor(bucketCount, start, end, getBounds) {
+      this.start = start;
+      this.end = end;
+      this.buckets = range(bucketCount).map(() => /* @__PURE__ */ new Set());
+      this.objects = /* @__PURE__ */ new Map();
+      this.getBounds = getBounds;
+    }
+    positionToBucketIndex(pos) {
+      return modulo(
+        Math.floor(rescale(pos, this.start, this.end, 0, this.buckets.length)),
+        this.buckets.length
+      );
+    }
+    rangeToBucketSet(start, end) {
+      if (end - start >= this.end - this.start) {
+        return this.buckets;
+      } else {
+        const bucketStart = this.positionToBucketIndex(start);
+        const bucketEnd = this.positionToBucketIndex(end);
+        if (bucketStart >= bucketEnd) {
+          return this.buckets.slice(bucketStart).concat(this.buckets.slice(0, bucketEnd + 1));
+        } else {
+          return this.buckets.slice(bucketStart, bucketEnd + 1);
+        }
+      }
+    }
+    add(t) {
+      const bounds = this.getBounds(t);
+      const buckets = this.rangeToBucketSet(bounds.start, bounds.end);
+      for (const b of buckets) b.add(t);
+      this.objects.set(t, { buckets });
+    }
+    delete(t) {
+      const obj = this.objects.get(t);
+      for (const bkt of obj.buckets) {
+        bkt.delete(t);
+      }
+    }
+    query(start, end) {
+      const buckets = this.rangeToBucketSet(start, end);
+      return new Set(
+        buckets.flatMap((b) => Array.from(b)).filter((e) => {
+          const bounds = this.getBounds(e);
+          return rangeIntersects(bounds.start, bounds.end, start, end);
+        })
+      );
+    }
+  };
+
   // src/audio/stream-audio.ts
-  var AudioStream = class {
+  var import_fft = __toESM(require_fft());
+  function createTrack(channels, sampleRate, constituents) {
+    const maxlen = Math.max(
+      ...constituents.map((c) => c.start + c.audio.duration)
+    );
+    const sht = new OneDimensionalSpatialHashTable(constituents.length, 0, maxlen, (a) => ({
+      start: a.start,
+      end: a.start + a.audio.duration
+    }));
+    for (const c of constituents) sht.add(c);
+    return new AudioStream({
+      channels,
+      sampleRate,
+      duration: maxlen,
+      async getRange(start, count) {
+        const startTime = start / sampleRate;
+        const endTime = (start + count) / sampleRate;
+        const audio = sht.query(startTime, endTime);
+        const out = {};
+        const inputs = await Promise.all(
+          [...audio].map(
+            (e) => e.audio.getRange(start - Math.ceil(e.start * sampleRate), count)
+          )
+        );
+        for (const ch of channels) {
+          const a = new Float32Array(count);
+          for (const inp of inputs) {
+            for (let i = 0; i < count; i++) {
+              a[i] += inp[ch][i] ?? 0;
+            }
+          }
+          out[ch] = a;
+        }
+        return out;
+      }
+    });
+  }
+  var AudioStream = class _AudioStream {
     constructor(params) {
-      this.getRange = params.getRange;
-      this.getRangeByChannel = params.getRangeByChannel;
+      this.getRange = async (start, count) => {
+        const estimatedLength = Math.ceil(this.sampleRate * this.duration);
+        const clampedStart = clamp(start, 0, estimatedLength);
+        const clampedEnd = clamp(start + count, 0, estimatedLength);
+        const range3 = await params.getRange(
+          clampedStart,
+          clampedEnd - clampedStart
+        );
+        if (clampedEnd - clampedStart == count) return range3;
+        const out = {};
+        const padStart = -Math.min(0, start);
+        for (const ch of this.channels) {
+          const o = new Float32Array(count);
+          const i = range3[ch];
+          for (let idx = 0; idx < i.length; idx++) {
+            o[idx + padStart] = i[idx];
+          }
+          out[ch] = o;
+        }
+        return out;
+      };
       this.duration = params.duration;
       this.sampleRate = params.sampleRate;
       this.channels = params.channels;
     }
+    gain(gain) {
+      return combineAudio(
+        this.channels,
+        this.sampleRate,
+        [this, gain],
+        (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k])
+      );
+    }
+    add(stream) {
+      return combineAudio(
+        this.channels,
+        this.sampleRate,
+        [this, stream],
+        (time, sample, a, b) => mapObjValues(a, (k, x) => x + b[k])
+      );
+    }
+    clip(start, end) {
+      return new _AudioStream({
+        channels: this.channels,
+        duration: end - start,
+        sampleRate: this.sampleRate,
+        getRange: (start2, count2) => {
+          return this.getRange(
+            start2 + Math.floor(start * this.sampleRate),
+            count2
+          );
+        }
+      });
+    }
+    convolve(_kernel) {
+      const kernel = broadcastTo(this.channels, this.sampleRate, _kernel);
+      const kernelSampleCount = Math.ceil(kernel.duration * kernel.sampleRate);
+      const kernelData = kernel.getRange(0, kernelSampleCount);
+      return new _AudioStream({
+        channels: this.channels,
+        duration: this.duration,
+        sampleRate: this.sampleRate,
+        getRange: async (start, count) => {
+          const kern = await kernelData;
+          return mapObjValues(
+            await this.getRange(start, count + kernelSampleCount),
+            (ch, v) => overlapSaveConvolve(
+              new Float32Array(v),
+              new Float32Array(kern[ch])
+            ).slice(0, count)
+          );
+        }
+      });
+    }
+    preload() {
+      const bufs = this.getRange(0, Math.ceil(this.duration * this.sampleRate));
+      return new _AudioStream({
+        channels: this.channels,
+        duration: this.duration,
+        sampleRate: this.sampleRate,
+        getRange: async (start, count) => {
+          const bufs2 = await bufs;
+          return mapObjValues(bufs2, (k, v) => v.slice(start, start + count));
+        }
+      });
+    }
   };
+  function fft(x) {
+    const f = new import_fft.default(x.length);
+    const out = f.createComplexArray();
+    const data = f.toComplexArray(x);
+    f.transform(out, data);
+    return new Float32Array(out);
+  }
+  function ifft(x) {
+    const f = new import_fft.default(x.length / 2);
+    const out = f.createComplexArray();
+    f.inverseTransform(out, x);
+    return new Float32Array(range(out.length / 2).map((i) => out[i * 2]));
+  }
+  function fftConvolve(x, h) {
+    const arr1 = fft(x);
+    const arr2 = fft(h);
+    let out = new Float32Array(arr1.length);
+    for (let i = 0; i < arr1.length; i += 2) {
+      out[i] = arr1[i] * arr2[i] - arr1[i + 1] * arr2[i + 1];
+      out[i + 1] = arr1[i] * arr2[i + 1] + arr1[i + 1] * arr2[i];
+    }
+    return ifft(out);
+  }
+  function nextPowerOfTwo(x) {
+    return Math.pow(2, Math.ceil(Math.log2(x)));
+  }
+  function zeroPad(x, length) {
+    if (x.length === length) return x;
+    const y = new Float32Array(length);
+    for (let i = 0; i < x.length; i++) {
+      y[i] = x[i];
+    }
+    return y;
+  }
+  var powersOfTwo = range(31).map((i) => 2 ** (i + 1));
+  var getOptimumOverlapSaveFilterSize = memo((M) => {
+    const cost = (M2, N) => N * Math.log2(N + 1) / (N - M2 + 1);
+    return argmin(
+      powersOfTwo.filter((N) => cost(M, N) > 0),
+      (N) => cost(M, N)
+    );
+  });
+  function overlapSaveConvolve(x, h) {
+    const M = h.length;
+    const N = getOptimumOverlapSaveFilterSize(M);
+    const kernel = zeroPad(h, N);
+    const L = N - M + 1;
+    const blockcount = Math.ceil(x.length / L);
+    const dst = new Float32Array(L * blockcount);
+    for (let i = 0; i < blockcount; i++) {
+      const position = L * i;
+      const xslice = zeroPad(x.slice(position, position + N), N);
+      const convolved = fftConvolve(xslice, kernel);
+      for (let j = 0; j < L; j++) {
+        dst[position + j] = convolved[M + j - 1];
+      }
+    }
+    return dst.slice(0, x.length);
+  }
   function createSignal(params) {
     const constr = params.constructors;
     const constructors = constr instanceof Function ? arrayToObjKeys(params.channels, (k) => (t, c) => constr(t, c)[k]) : constr;
@@ -20146,15 +21513,8 @@
             range(count).map((s) => {
               return v((s + start) / this.sampleRate, s + start);
             })
-          ).buffer
-        ]);
-      },
-      async getRangeByChannel(start, count, channel) {
-        return new Float32Array(
-          range(count).map(
-            (s) => constructors[channel]((s + start) / this.sampleRate, s + start)
           )
-        ).buffer;
+        ]);
       },
       sampleRate: params.sampleRate,
       duration: params.duration
@@ -20179,18 +21539,14 @@
   }
   async function getRangeAndResample(src2, dstStart, dstCount, dstSampleRate) {
     if (src2.sampleRate === dstSampleRate) {
-      return src2.getRange(dstStart, dstCount);
+      return await src2.getRange(dstStart, dstCount);
     }
     const startSeconds = dstStart / dstSampleRate;
     const durationSeconds = dstCount / dstSampleRate;
     const srcStart = Math.floor(startSeconds * src2.sampleRate);
     const srcCount = Math.ceil((startSeconds + durationSeconds) * src2.sampleRate);
     const srcRange = await src2.getRange(srcStart, srcCount - srcStart);
-    const srcRangeView = mapObjValues(
-      srcRange,
-      (k, x) => new Float32Array(x)
-    );
-    return mapObjValues(srcRangeView, (k, v) => {
+    return mapObjValues(srcRange, (k, v) => {
       return new Float32Array(
         range(dstCount).map((dstIndex) => {
           const time = dstIndex / dstSampleRate;
@@ -20199,7 +21555,7 @@
           const srcSampleNext = srcSamplePrev + 1;
           return lerp(sourceIndex % 1, v[srcSamplePrev], v[srcSampleNext]);
         })
-      ).buffer;
+      );
     });
   }
   function resample(audio, targetSampleRate) {
@@ -20236,11 +21592,11 @@
           (k) => new Float32Array(count)
         );
         for (const i of range(count)) {
-          const samples = ranges.map((r, i2) => {
-            if (audio[i2].channels.length === 1 && audio[i2].channels[0] === "center") {
-              return mapObjKeys(channels, () => r.center[i2]);
+          const samples = ranges.map((r, j) => {
+            if (audio[j].channels.length === 1 && audio[j].channels[0] === "center") {
+              return arrayToObjKeys(channels, () => r.center[i]);
             }
-            return mapObjValues(r, (k, v) => v[i2]);
+            return mapObjValues(r, (k, v) => v[i]);
           });
           const res = f(
             (start + i) / sampleRate,
@@ -20251,56 +21607,138 @@
             ch[c][i] = res[c];
           }
         }
-        return mapObjValues(ch, (k, v) => v.buffer);
-      },
-      getRangeByChannel(start, count, channel) {
-        return this.getRange(start, count)[channel];
+        return ch;
       }
     });
     return stream;
   }
+  function broadcastTo(channels, sampleRate, mono) {
+    return combineAudio(channels, sampleRate, [mono], (_, __, x) => x);
+  }
+  function lowPassFilterSample(n, N, m) {
+    return 1 / N * range(m * 2 + 1).map((i) => Math.cos(2 * Math.PI * (i - m) / N * n)).reduce((a, b) => a + b, 0);
+  }
+  function hannSample(n, N) {
+    return Math.sin(Math.PI * (n - N / 2) / N) ** 2;
+  }
+  var createLowPassFilter = memo(
+    (channels, sampleRate, freq, cycles) => {
+      const oneCycleSampleCount = Math.ceil(1 / freq * sampleRate);
+      const sampleCount = oneCycleSampleCount * cycles;
+      const duration = sampleCount / sampleRate;
+      console.log("created lpf");
+      const cutoff = cycles;
+      return createSignal({
+        duration,
+        sampleRate,
+        channels,
+        length: sampleCount,
+        constructors: arrayToObjKeys(
+          channels,
+          () => (t, s) => lowPassFilterSample(s, sampleCount, cutoff) * hannSample(s, sampleCount)
+        )
+      }).preload();
+    }
+  );
   var AudioBuilder = class {
     constructor(channels, sampleRate) {
       this.channels = channels;
       this.sampleRate = sampleRate;
     }
-    waveform(seconds, frequency, amplitude, phase, profile) {
+    lpf(freq, cycles = 16) {
+      return createLowPassFilter(
+        this.channels,
+        this.sampleRate,
+        freq,
+        cycles
+      );
+    }
+    signal(duration, constructors) {
+      return createSignal({
+        sampleRate: this.sampleRate,
+        channels: this.channels,
+        constructors,
+        duration,
+        length: Math.ceil(duration * this.sampleRate)
+      });
+    }
+    waveform(frequency, amplitude, phase, profile) {
       return waveform(
         this.sampleRate,
         this.channels,
-        seconds,
+        Infinity,
         frequency,
         amplitude,
         phase,
         profile
       );
     }
-    sine(seconds, frequency, amplitude, phase) {
+    constant(x) {
+      return createSignal({
+        sampleRate: this.sampleRate,
+        channels: this.channels,
+        duration: Infinity,
+        length: Infinity,
+        constructors: arrayToObjKeys(this.channels, () => () => x)
+      });
+    }
+    sine(frequency, amplitude = 1, phase = 0) {
       return this.waveform(
-        seconds,
         frequency,
         amplitude,
         phase,
         (x) => Math.sin(x * Math.PI * 2)
       );
     }
-    square(seconds, frequency, amplitude, phase) {
+    square(frequency, amplitude = 1, phase = 0) {
       return this.waveform(
-        seconds,
         frequency,
         amplitude,
         phase,
         (x) => x > 0.5 ? -1 : 1
       );
     }
-    saw(seconds, frequency, amplitude, phase) {
-      return this.waveform(
-        seconds,
-        frequency,
-        amplitude,
-        phase,
-        (x) => x * 2 - 1
+    saw(frequency, amplitude = 1, phase = 0) {
+      return this.waveform(frequency, amplitude, phase, (x) => x * 2 - 1);
+    }
+    noise(amplitude = 1) {
+      return createSignal({
+        sampleRate: this.sampleRate,
+        channels: this.channels,
+        duration: Infinity,
+        length: Infinity,
+        constructors: arrayToObjKeys(
+          this.channels,
+          () => () => (Math.random() * 2 - 1) * amplitude
+        )
+      });
+    }
+    adsrgen(a, d, s, r) {
+      return (at, dt, st, rt) => {
+        return sameSignalOnData(this.sampleRate, this.channels, rt, (t) => {
+          if (t < at) return rescale(t, 0, at, 0, a);
+          if (t < dt) return rescale(t, at, dt, a, d);
+          if (t < st) return rescale(t, dt, st, d, s);
+          if (t < rt) return rescale(t, st, rt, s, r);
+          return 0;
+        });
+      };
+    }
+    boxcar(length, area = 1) {
+      const sampleCount = Math.ceil(length * this.sampleRate);
+      return this.constant(area / sampleCount).clip(
+        0,
+        sampleCount / this.sampleRate
       );
+    }
+    adsr(a, at, d, dt, s, st, r, rt) {
+      return this.adsrgen(a, d, s, r)(at, dt, st, rt);
+    }
+    broadcast(mono) {
+      return broadcastTo(this.channels, this.sampleRate, mono);
+    }
+    createTrack(constituents) {
+      return createTrack(this.channels, this.sampleRate, constituents);
     }
   };
   async function playStereo(audio) {
@@ -20387,7 +21825,7 @@
       };
     }
   }
-  var CHUNKSIZE = 2048;
+  var CHUNKSIZE = 2048 * 16;
   function streamAudioToWorklet(stream, bs) {
     let t = 0;
     const loop2 = async () => {
@@ -20400,179 +21838,102 @@
     };
     loop2();
   }
-
-  // src/audio/stream-audio-old.ts
-  function createSignal2(params) {
-    const constr = params.constructors;
-    const constructors = constr instanceof Function ? arrayToObjKeys(
-      params.builder.defaultChannels,
-      (k) => (t, c) => constr(t, c)[k]
-    ) : constr;
-    const stream = {
-      _isAudioStream: true,
-      duration: params.duration,
-      sampleRate: params.sampleRate,
-      async getRange(start, count) {
-        return mapObjEntries(constructors, (k, v) => [
-          k,
-          new Float32Array(
-            range(count).map((s) => {
-              return v((s + start) / this.sampleRate, s + start);
-            })
-          ).buffer
-        ]);
-      },
-      async getRangeByChannel(start, count, channel) {
-        return new Float32Array(
-          range(count).map(
-            (s) => params.constructors[channel]((s + start) / this.sampleRate, s + start)
-          )
-        ).buffer;
+  function displayAudioSamples(samples, size, amp = 1) {
+    const canvas2 = document.createElement("canvas");
+    const ctx2 = canvas2.getContext("2d");
+    canvas2.width = size[0];
+    canvas2.height = size[1];
+    ctx2.beginPath();
+    for (const i of smartRange(samples.length)) {
+      ctx2.lineTo(
+        i.remap(0, canvas2.width),
+        rescale(samples[i.i], -amp, amp, 0, size[1])
+      );
+    }
+    ctx2.stroke();
+    return canvas2;
+  }
+  async function displayAudio(stream, amp = 1, res = [1e3, 200], chunks = 1) {
+    const len = Math.ceil(stream.duration * stream.sampleRate);
+    const left = new Float32Array(len);
+    const right = new Float32Array(len);
+    let divisions = smartRange(chunks + 1).map(
+      (c) => Math.floor(c.remap(0, len, true))
+    );
+    for (let i of range(chunks)) {
+      const audio = await stream.getRange(
+        divisions[i],
+        divisions[i + 1] - divisions[i]
+      );
+      const l = new Float32Array(audio.left);
+      const r = new Float32Array(audio.right);
+      for (let j = 0; j < l.length; j++) {
+        left[j + divisions[i]] = l[j];
+        right[j + divisions[i]] = r[j];
       }
-    };
-    for (const [k, l] of Object.entries(params.builder.plugins.local)) {
-      stream[k] = (...args) => l(stream, ...args);
     }
-    return stream;
+    return [
+      displayAudioSamples(left, res, amp),
+      displayAudioSamples(right, res, amp)
+    ];
   }
-  async function getRangeAndResample2(stream, start, count, targetSampleRate) {
-    if (stream.sampleRate === targetSampleRate) {
-      return stream.getRange(start, count);
-    }
-    const startSeconds = start / targetSampleRate;
-    const durationSeconds = count / targetSampleRate;
-    const startSample = Math.floor(startSeconds * stream.sampleRate);
-    const endSample = Math.ceil(
-      (startSeconds + durationSeconds) * stream.sampleRate
-    );
-    const r = await stream.getRange(startSample, endSample - startSample);
-    const f32a = mapObjValues(
-      r,
-      (k, x) => new Float32Array(x)
-    );
-    return mapObjValues(f32a, (k, v) => {
-      return new Float32Array(
-        range(count).map((i) => {
-          const rawIndex = (i + start) / targetSampleRate * stream.sampleRate;
-          const prev = Math.floor(rawIndex);
-          const next = prev + 1;
-          return lerp(rawIndex % 1, v[prev], v[next]);
-        })
-      ).buffer;
-    });
-  }
-  function mergePluginGenerators(...generators) {
-    return;
-  }
-  var StreamAudioStdlib = (ch) => {
-    function sameSignalOnData2(builder, duration, f) {
-      return createSignal2({
-        builder,
-        sampleRate: builder.defaultSampleRate,
-        length: Math.ceil(duration * builder.defaultSampleRate),
-        duration,
-        constructors: arrayToObjKeys(builder.defaultChannels, () => f)
-      });
-    }
-    return {
-      global: {
-        silence(builder, seconds) {
-          return createSignal2({
-            builder,
-            sampleRate: builder.defaultSampleRate,
-            length: Math.ceil(seconds * builder.defaultSampleRate),
-            duration: seconds,
-            constructors: arrayToObjKeys(builder.defaultChannels, () => () => 0)
-          });
-        },
-        waveform(builder, seconds, frequency, amplitude = 1, phase = 0, profile) {
-          return sameSignalOnData2(builder, seconds, (t) => {
-            return amplitude * profile((t / frequency + phase) % 1);
-          });
-        },
-        sine(builder, seconds, frequency, amplitude = 1, phase = 0) {
-          return this.waveform(
-            builder,
-            seconds,
-            frequency,
-            amplitude,
-            phase,
-            (x) => Math.sin(x * Math.PI * 2)
-          );
-        },
-        square(builder, seconds, frequency, amplitude = 1, phase = 0) {
-          return this.waveform(
-            builder,
-            seconds,
-            frequency,
-            amplitude,
-            phase,
-            (x) => x > 0.5 ? -1 : 1
-          );
-        },
-        saw(builder, seconds, frequency, amplitude = 1, phase = 0) {
-          return this.waveform(
-            builder,
-            seconds,
-            frequency,
-            amplitude,
-            phase,
-            (x) => x * 2 - 1
-          );
-        },
-        combineAudio(builder, audio, f) {
-          const duration = Math.max(...audio.map((a) => a.duration));
-          const length = Math.ceil(duration * builder.defaultSampleRate);
-          const stream = {
-            _isAudioStream: true,
-            duration,
-            length,
-            sampleRate: builder.defaultSampleRate,
-            async getRange(start, count) {
-              const ranges = await Promise.all(
-                audio.map(
-                  async (a) => mapObjValues(
-                    await getRangeAndResample2(
-                      a,
-                      start,
-                      count,
-                      builder.defaultSampleRate
-                    ),
-                    (k, v) => new Float32Array(v)
-                  )
-                )
-              );
-              return builder.defaultChannels.map((d) => {
-                const combinedChannel = new Float32Array(count);
-                return range(count).map((i) => {
-                  const samples = ranges.map((r) => {
-                    return r[d][i];
-                  });
-                  return f(
-                    (start + i) / builder.defaultSampleRate,
-                    start + i,
-                    ...samples
-                  );
-                });
-              });
-            },
-            getRangeByChannel(start, count, channel) {
-              return this.getRange(start, count)[channel];
-            }
-          };
-          for (const [k, l] of Object.entries(builder.plugins.local)) {
-            stream[k] = (...args) => l(stream, ...args);
-          }
-          return stream;
-        }
-      },
-      local: {}
-    };
-  };
-  var g = mergePluginGenerators(StreamAudioStdlib);
+
+  // src/audio/notes.ts
+  var import_typescript_parsec = __toESM(require_lib());
+  var noteLexer = (0, import_typescript_parsec.buildLexer)([
+    [true, /^\(/g, 0 /* Open */],
+    [true, /^\)/g, 1 /* Close */],
+    [true, /^\:/g, 2 /* Colon */],
+    [true, /^\//g, 3 /* Slash */],
+    [false, /^\s+/g, 4 /* Whitespace */],
+    [false, /^\/\/[^\n]*/g, 7 /* Comment */],
+    [true, /^(\+|\-)?[0-9]+/g, 5 /* Integer */],
+    [true, /^[a-gA-G](b#)*[0-9]*/g, 6 /* ChromaticKey */]
+  ]);
+  var note_timing = (0, import_typescript_parsec.alt_sc)(
+    (0, import_typescript_parsec.apply)((0, import_typescript_parsec.kleft)((0, import_typescript_parsec.tok)(5 /* Integer */), (0, import_typescript_parsec.str)(":")), (t) => Number(t.text)),
+    (0, import_typescript_parsec.apply)((0, import_typescript_parsec.nil)(), () => 1)
+  );
+  var primitive_note = (0, import_typescript_parsec.apply)(
+    (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.alt_sc)((0, import_typescript_parsec.tok)(6 /* ChromaticKey */), (0, import_typescript_parsec.tok)(5 /* Integer */))),
+    ([timing, note2]) => ({
+      type: "note",
+      timing,
+      noteData: note2.text
+    })
+  );
+  var chord_inner = (0, import_typescript_parsec.rule)();
+  var chord = (0, import_typescript_parsec.apply)(
+    (0, import_typescript_parsec.seq)(
+      note_timing,
+      (0, import_typescript_parsec.lrec_sc)(
+        (0, import_typescript_parsec.apply)(chord_inner, (x) => [x]),
+        (0, import_typescript_parsec.seq)((0, import_typescript_parsec.str)("/"), chord_inner),
+        (a, [_, b]) => [...a, b]
+      )
+    ),
+    ([timing, notes]) => ({
+      type: "chord",
+      timing,
+      notes
+    })
+  );
+  var compound_note = (0, import_typescript_parsec.rule)();
+  var compound_note_inner = (0, import_typescript_parsec.rep_sc)(
+    (0, import_typescript_parsec.alt_sc)(primitive_note, chord, compound_note)
+  );
+  compound_note.setPattern(
+    (0, import_typescript_parsec.apply)(
+      (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.kmid)((0, import_typescript_parsec.str)("("), compound_note_inner, (0, import_typescript_parsec.str)(")"))),
+      ([timing, notes]) => ({ type: "compound", timing, notes })
+    )
+  );
+  chord_inner.setPattern((0, import_typescript_parsec.alt_sc)(primitive_note, compound_note));
+  var note = (0, import_typescript_parsec.alt_sc)(chord, compound_note, primitive_note);
+  var track = (0, import_typescript_parsec.rep_sc)(note);
 
   // node_modules/ml-convolution/src/fftConvolution.js
-  var import_fft = __toESM(require_fft());
+  var import_fft2 = __toESM(require_fft());
   var import_next_power_of_two = __toESM(require_next_power_of_two());
 
   // src/ui/react-string-field.tsx

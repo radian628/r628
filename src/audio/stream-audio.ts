@@ -1,11 +1,82 @@
-import { lerp } from "../interpolation";
+// import {
+//   AudioSample,
+//   AudioSampleSource,
+//   BufferTarget,
+//   OggOutputFormat,
+//   Output,
+//   WavOutputFormat,
+// } from "mediabunny";
+import { OneDimensionalSpatialHashTable } from "../1d-spatial-hash-table";
+import { argmin } from "../array-utils";
+import { clamp, lerp, rescale } from "../interpolation";
+import { Vec2 } from "../math/vector";
+import { memo } from "../memo";
 import {
   arrayToObjKeys,
   mapObjEntries,
   mapObjKeys,
   mapObjValues,
 } from "../object-utils";
-import { range } from "../range";
+import { range, smartRange } from "../range";
+import { Rect, spatialHashTable } from "../spatial-hash-table";
+import FFT from "fft.js";
+
+export type TrackSpec<Channels extends string> = {
+  start: number;
+  audio: AudioStream<Channels>;
+}[];
+
+export function createTrack<Channels extends string>(
+  channels: Channels[],
+  sampleRate: number,
+  constituents: TrackSpec<Channels>
+) {
+  const maxlen = Math.max(
+    ...constituents.map((c) => c.start + c.audio.duration)
+  );
+
+  const sht = new OneDimensionalSpatialHashTable<{
+    start: number;
+    audio: AudioStream<Channels>;
+  }>(constituents.length, 0, maxlen, (a) => ({
+    start: a.start,
+    end: a.start + a.audio.duration,
+  }));
+
+  for (const c of constituents) sht.add(c);
+
+  return new AudioStream<Channels>({
+    channels,
+    sampleRate,
+    duration: maxlen,
+    async getRange(start, count) {
+      const startTime = start / sampleRate;
+      const endTime = (start + count) / sampleRate;
+      const audio = sht.query(startTime, endTime);
+
+      // @ts-expect-error
+      const out: Record<Channels, Float32Array> = {};
+
+      const inputs = await Promise.all(
+        [...audio].map((e) =>
+          e.audio.getRange(start - Math.ceil(e.start * sampleRate), count)
+        )
+      );
+
+      for (const ch of channels) {
+        const a = new Float32Array(count);
+        for (const inp of inputs) {
+          for (let i = 0; i < count; i++) {
+            a[i] += inp[ch][i] ?? 0;
+          }
+        }
+        out[ch] = a;
+      }
+
+      return out;
+    },
+  });
+}
 
 export class AudioStream<Channels extends string> {
   constructor(params: {
@@ -15,15 +86,38 @@ export class AudioStream<Channels extends string> {
     getRange: (
       start: number,
       count: number
-    ) => Promise<Record<Channels, ArrayBuffer> | undefined>;
-    getRangeByChannel: <C extends Channels>(
-      start: number,
-      count: number,
-      channel: C
-    ) => Promise<ArrayBuffer> | undefined;
+    ) => Promise<Record<Channels, Float32Array> | undefined>;
   }) {
-    this.getRange = params.getRange;
-    this.getRangeByChannel = params.getRangeByChannel;
+    this.getRange = async (start, count) => {
+      const estimatedLength = Math.ceil(this.sampleRate * this.duration);
+      const clampedStart = clamp(start, 0, estimatedLength);
+      const clampedEnd = clamp(start + count, 0, estimatedLength);
+
+      const range = await params.getRange(
+        clampedStart,
+        clampedEnd - clampedStart
+      );
+
+      if (clampedEnd - clampedStart == count) return range;
+
+      // @ts-expect-error
+      const out: Record<Channels, Float32Array> = {};
+
+      const padStart = -Math.min(0, start);
+
+      for (const ch of this.channels) {
+        const o = new Float32Array(count);
+        const i = range[ch];
+
+        for (let idx = 0; idx < i.length; idx++) {
+          o[idx + padStart] = i[idx];
+        }
+
+        out[ch] = o;
+      }
+
+      return out;
+    };
     this.duration = params.duration;
     this.sampleRate = params.sampleRate;
     this.channels = params.channels;
@@ -36,12 +130,167 @@ export class AudioStream<Channels extends string> {
   getRange: (
     start: number,
     count: number
-  ) => Promise<Record<Channels, ArrayBuffer> | undefined>;
-  getRangeByChannel: <C extends Channels>(
-    start: number,
-    count: number,
-    channel: C
-  ) => Promise<ArrayBuffer> | undefined;
+  ) => Promise<Record<Channels, Float32Array> | undefined>;
+
+  gain(gain: MonoOrMulti<Channels>) {
+    return combineAudio(
+      this.channels,
+      this.sampleRate,
+      [this, gain],
+      (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k])
+    );
+  }
+
+  add(stream: AudioStream<Channels>) {
+    return combineAudio(
+      this.channels,
+      this.sampleRate,
+      [this, stream],
+      (time, sample, a, b) => mapObjValues(a, (k, x) => x + b[k])
+    );
+  }
+
+  clip(start: number, end: number) {
+    return new AudioStream({
+      channels: this.channels,
+      duration: end - start,
+      sampleRate: this.sampleRate,
+      getRange: (start2: number, count2: number) => {
+        return this.getRange(
+          start2 + Math.floor(start * this.sampleRate),
+          count2
+        );
+      },
+    });
+  }
+
+  convolve(_kernel: MonoOrMulti<Channels>) {
+    const kernel = broadcastTo(this.channels, this.sampleRate, _kernel);
+
+    const kernelSampleCount = Math.ceil(kernel.duration * kernel.sampleRate);
+
+    const kernelData = kernel.getRange(0, kernelSampleCount);
+
+    return new AudioStream({
+      channels: this.channels,
+      duration: this.duration,
+      sampleRate: this.sampleRate,
+      getRange: async (start, count) => {
+        const kern = await kernelData;
+        return mapObjValues(
+          await this.getRange(start, count + kernelSampleCount),
+          (ch, v) =>
+            overlapSaveConvolve(
+              new Float32Array(v),
+              new Float32Array(kern[ch])
+            ).slice(0, count)
+        );
+      },
+    });
+  }
+
+  preload() {
+    const bufs = this.getRange(0, Math.ceil(this.duration * this.sampleRate));
+    return new AudioStream({
+      channels: this.channels,
+      duration: this.duration,
+      sampleRate: this.sampleRate,
+      getRange: async (start, count) => {
+        const bufs2 = await bufs;
+        return mapObjValues(bufs2, (k, v) => v.slice(start, start + count));
+      },
+    });
+  }
+}
+
+function fft(x: Float32Array): Float32Array {
+  const f = new FFT(x.length);
+
+  const out = f.createComplexArray();
+
+  // @ts-expect-error
+  const data = f.toComplexArray(x);
+
+  f.transform(out, data);
+
+  return new Float32Array(out);
+}
+
+function ifft(x: Float32Array) {
+  const f = new FFT(x.length / 2);
+
+  const out = f.createComplexArray();
+
+  f.inverseTransform(out, x);
+
+  return new Float32Array(range(out.length / 2).map((i) => out[i * 2]));
+}
+
+function fftConvolve(x: Float32Array, h: Float32Array) {
+  const arr1 = fft(x);
+  const arr2 = fft(h);
+
+  let out = new Float32Array(arr1.length);
+
+  for (let i = 0; i < arr1.length; i += 2) {
+    out[i] = arr1[i] * arr2[i] - arr1[i + 1] * arr2[i + 1];
+    out[i + 1] = arr1[i] * arr2[i + 1] + arr1[i + 1] * arr2[i];
+  }
+
+  return ifft(out);
+}
+
+function nextPowerOfTwo(x: number) {
+  return Math.pow(2, Math.ceil(Math.log2(x)));
+}
+
+function zeroPad(x: Float32Array, length: number) {
+  if (x.length === length) return x;
+
+  const y = new Float32Array(length);
+
+  for (let i = 0; i < x.length; i++) {
+    y[i] = x[i];
+  }
+
+  return y;
+}
+
+const powersOfTwo = range(31).map((i) => 2 ** (i + 1));
+
+const getOptimumOverlapSaveFilterSize = memo((M: number) => {
+  const cost = (M: number, N: number) => (N * Math.log2(N + 1)) / (N - M + 1);
+
+  return argmin(
+    powersOfTwo.filter((N) => cost(M, N) > 0) as [number, ...number[]],
+    (N) => cost(M, N)
+  );
+});
+
+function overlapSaveConvolve(x: Float32Array, h: Float32Array): Float32Array {
+  const M = h.length;
+  const N = getOptimumOverlapSaveFilterSize(M);
+  const kernel = zeroPad(h, N);
+
+  const L = N - M + 1;
+
+  const blockcount = Math.ceil(x.length / L);
+
+  const dst = new Float32Array(L * blockcount);
+
+  for (let i = 0; i < blockcount; i++) {
+    const position = L * i;
+
+    const xslice = zeroPad(x.slice(position, position + N), N);
+
+    const convolved = fftConvolve(xslice, kernel);
+
+    for (let j = 0; j < L; j++) {
+      dst[position + j] = convolved[M + j - 1];
+    }
+  }
+
+  return dst.slice(0, x.length);
 }
 
 export function createSignal<Channels extends string>(params: {
@@ -71,15 +320,8 @@ export function createSignal<Channels extends string>(params: {
           range(count).map((s) => {
             return v((s + start) / this.sampleRate, s + start);
           })
-        ).buffer,
+        ),
       ]);
-    },
-    async getRangeByChannel(start, count, channel) {
-      return new Float32Array(
-        range(count).map((s) =>
-          constructors[channel]((s + start) / this.sampleRate, s + start)
-        )
-      ).buffer;
     },
     sampleRate: params.sampleRate,
     duration: params.duration,
@@ -123,10 +365,10 @@ async function getRangeAndResample<Channels extends string>(
   dstStart: number,
   dstCount: number,
   dstSampleRate: number
-): Promise<Record<Channels, ArrayBuffer>> {
+): Promise<Record<Channels, Float32Array>> {
   // fallthrough case for same sample rate
   if (src.sampleRate === dstSampleRate) {
-    return src.getRange(dstStart, dstCount);
+    return await src.getRange(dstStart, dstCount);
   }
 
   // get timing info for audio range
@@ -140,14 +382,8 @@ async function getRangeAndResample<Channels extends string>(
   // get that sample range in the source audio
   const srcRange = await src.getRange(srcStart, srcCount - srcStart);
 
-  // create float32array views to read audio
-  const srcRangeView = mapObjValues<Channels, ArrayBuffer, Float32Array>(
-    srcRange,
-    (k, x) => new Float32Array(x)
-  );
-
   // resample audio
-  return mapObjValues(srcRangeView, (k, v) => {
+  return mapObjValues(srcRange, (k, v) => {
     return new Float32Array(
       range(dstCount).map((dstIndex) => {
         const time = dstIndex / dstSampleRate;
@@ -158,7 +394,7 @@ async function getRangeAndResample<Channels extends string>(
 
         return lerp(sourceIndex % 1, v[srcSamplePrev], v[srcSampleNext]);
       })
-    ).buffer;
+    );
   });
 }
 
@@ -223,13 +459,13 @@ function combineAudio<
       // fill dst audio
       for (const i of range(count)) {
         // reformat individual audio samples from each src track
-        const samples = ranges.map((r, i) => {
+        const samples = ranges.map((r, j) => {
           // if the track is mono, just copy its data to all channels
           if (
-            audio[i].channels.length === 1 &&
-            audio[i].channels[0] === "center"
+            audio[j].channels.length === 1 &&
+            audio[j].channels[0] === "center"
           ) {
-            return mapObjKeys(channels, () => r.center[i]);
+            return arrayToObjKeys(channels, () => r.center[i]);
           }
 
           // otherwise just use it normally
@@ -248,15 +484,67 @@ function combineAudio<
         }
       }
 
-      return mapObjValues(ch, (k, v) => v.buffer as ArrayBuffer);
-    },
-    getRangeByChannel(start, count, channel) {
-      return this.getRange(start, count)[channel];
+      return ch;
     },
   });
 
   return stream;
 }
+function broadcastTo<Channels extends string>(
+  channels: Channels[],
+  sampleRate: number,
+  mono: MonoOrMulti<Channels>
+) {
+  return combineAudio(channels, sampleRate, [mono], (_, __, x) => x);
+}
+
+type MonoOrMulti<Channels extends string> =
+  | AudioStream<Channels>
+  | AudioStream<"center">;
+
+function lowPassFilterSample(n: number, N: number, m: number) {
+  return (
+    (1 / N) *
+    range(m * 2 + 1)
+      .map((i) => Math.cos(((2 * Math.PI * (i - m)) / N) * n))
+      .reduce((a, b) => a + b, 0)
+  );
+}
+
+function hannSample(n: number, N: number) {
+  return Math.sin((Math.PI * (n - N / 2)) / N) ** 2;
+}
+
+const createLowPassFilter = memo(
+  <T extends string>(
+    channels: T[],
+    sampleRate: number,
+    freq: number,
+    cycles: number
+  ) => {
+    const oneCycleSampleCount = Math.ceil((1 / freq) * sampleRate);
+    const sampleCount = oneCycleSampleCount * cycles;
+    const duration = sampleCount / sampleRate;
+
+    console.log("created lpf");
+
+    // const cutoff = Math.round(duration * freq);
+    const cutoff = cycles;
+
+    return createSignal({
+      duration,
+      sampleRate,
+      channels,
+      length: sampleCount,
+      constructors: arrayToObjKeys(
+        channels,
+        () => (t, s) =>
+          lowPassFilterSample(s, sampleCount, cutoff) *
+          hannSample(s, sampleCount)
+      ),
+    }).preload();
+  }
+);
 
 export class AudioBuilder<Channels extends string> {
   constructor(channels: Channels[], sampleRate: number) {
@@ -267,8 +555,29 @@ export class AudioBuilder<Channels extends string> {
   channels: Channels[];
   sampleRate: number;
 
+  lpf(freq: number, cycles: number = 16) {
+    return createLowPassFilter(
+      this.channels,
+      this.sampleRate,
+      freq,
+      cycles
+    ) as AudioStream<Channels>;
+  }
+
+  signal(
+    duration: number,
+    constructors: Parameters<typeof createSignal>[0]["constructors"]
+  ) {
+    return createSignal({
+      sampleRate: this.sampleRate,
+      channels: this.channels,
+      constructors,
+      duration,
+      length: Math.ceil(duration * this.sampleRate),
+    });
+  }
+
   waveform(
-    seconds: number,
     frequency: number,
     amplitude: number,
     phase: number,
@@ -277,7 +586,7 @@ export class AudioBuilder<Channels extends string> {
     return waveform(
       this.sampleRate,
       this.channels,
-      seconds,
+      Infinity,
       frequency,
       amplitude,
       phase,
@@ -285,41 +594,97 @@ export class AudioBuilder<Channels extends string> {
     );
   }
 
+  constant(x: number) {
+    return createSignal({
+      sampleRate: this.sampleRate,
+      channels: this.channels,
+      duration: Infinity,
+      length: Infinity,
+      constructors: arrayToObjKeys(this.channels, () => () => x),
+    });
+  }
+
   sine(
-    seconds: number,
     frequency: number,
-    amplitude: number,
-    phase: number
+    amplitude: number = 1,
+    phase: number = 0
   ): AudioStream<Channels> {
-    return this.waveform(seconds, frequency, amplitude, phase, (x) =>
+    return this.waveform(frequency, amplitude, phase, (x) =>
       Math.sin(x * Math.PI * 2)
     );
   }
 
   square(
-    seconds: number,
     frequency: number,
-    amplitude: number,
-    phase: number
+    amplitude: number = 1,
+    phase: number = 0
   ): AudioStream<Channels> {
-    return this.waveform(seconds, frequency, amplitude, phase, (x) =>
+    return this.waveform(frequency, amplitude, phase, (x) =>
       x > 0.5 ? -1 : 1
     );
   }
 
   saw(
-    seconds: number,
     frequency: number,
-    amplitude: number,
-    phase: number
+    amplitude: number = 1,
+    phase: number = 0
   ): AudioStream<Channels> {
-    return this.waveform(
-      seconds,
-      frequency,
-      amplitude,
-      phase,
-      (x) => x * 2.0 - 1.0
+    return this.waveform(frequency, amplitude, phase, (x) => x * 2.0 - 1.0);
+  }
+
+  noise(amplitude: number = 1): AudioStream<Channels> {
+    return createSignal({
+      sampleRate: this.sampleRate,
+      channels: this.channels,
+      duration: Infinity,
+      length: Infinity,
+      constructors: arrayToObjKeys(
+        this.channels,
+        () => () => (Math.random() * 2.0 - 1.0) * amplitude
+      ),
+    });
+  }
+
+  adsrgen(a: number, d: number, s: number, r: number) {
+    return (at: number, dt: number, st: number, rt: number) => {
+      return sameSignalOnData(this.sampleRate, this.channels, rt, (t) => {
+        if (t < at) return rescale(t, 0, at, 0, a);
+        if (t < dt) return rescale(t, at, dt, a, d);
+        if (t < st) return rescale(t, dt, st, d, s);
+        if (t < rt) return rescale(t, st, rt, s, r);
+
+        return 0;
+      });
+    };
+  }
+
+  boxcar(length: number, area: number = 1) {
+    const sampleCount = Math.ceil(length * this.sampleRate);
+    return this.constant(area / sampleCount).clip(
+      0,
+      sampleCount / this.sampleRate
     );
+  }
+
+  adsr(
+    a: number,
+    at: number,
+    d: number,
+    dt: number,
+    s: number,
+    st: number,
+    r: number,
+    rt: number
+  ) {
+    return this.adsrgen(a, d, s, r)(at, dt, st, rt);
+  }
+
+  broadcast(mono: MonoOrMulti<Channels>) {
+    return broadcastTo(this.channels, this.sampleRate, mono);
+  }
+
+  createTrack(constituents: TrackSpec<Channels>) {
+    return createTrack(this.channels, this.sampleRate, constituents);
   }
 }
 
@@ -431,7 +796,7 @@ type BufferStreamer = ReturnType<
   Awaited<ReturnType<Awaited<ReturnType<typeof initBufferStreamerWorklet>>>>
 >;
 
-const CHUNKSIZE = 2048;
+const CHUNKSIZE = 2048 * 16;
 
 export function streamAudioToWorklet(
   stream: AudioStream<"left" | "right">,
@@ -451,3 +816,92 @@ export function streamAudioToWorklet(
 
   loop();
 }
+
+export function displayAudioSamples(
+  samples: Float32Array,
+  size: Vec2,
+  amp: number = 1
+) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = size[0];
+  canvas.height = size[1];
+
+  ctx.beginPath();
+  for (const i of smartRange(samples.length)) {
+    ctx.lineTo(
+      i.remap(0, canvas.width),
+      rescale(samples[i.i], -amp, amp, 0, size[1])
+    );
+  }
+  ctx.stroke();
+
+  return canvas;
+}
+
+export async function displayAudio(
+  stream: AudioStream<"left" | "right">,
+  amp: number = 1,
+  res: Vec2 = [1000, 200],
+  chunks: number = 1
+) {
+  const len = Math.ceil(stream.duration * stream.sampleRate);
+
+  const left = new Float32Array(len);
+  const right = new Float32Array(len);
+
+  let divisions = smartRange(chunks + 1).map((c) =>
+    Math.floor(c.remap(0, len, true))
+  );
+
+  for (let i of range(chunks)) {
+    const audio = await stream.getRange(
+      divisions[i],
+      divisions[i + 1] - divisions[i]
+    );
+    const l = new Float32Array(audio.left);
+    const r = new Float32Array(audio.right);
+
+    for (let j = 0; j < l.length; j++) {
+      left[j + divisions[i]] = l[j];
+      right[j + divisions[i]] = r[j];
+    }
+  }
+
+  return [
+    displayAudioSamples(left, res, amp),
+    displayAudioSamples(right, res, amp),
+  ];
+}
+
+// export async function getOgg(a: AudioStream<"left" | "right">) {
+//   const output = new Output({
+//     format: new WavOutputFormat(),
+//     target: new BufferTarget(),
+//   });
+
+//   const sample = new AudioSample({
+//     data: new Float32Array(
+//       (await a.getRange(0, Math.ceil(a.sampleRate * a.duration))).left
+//     ),
+//     format: "f32-planar",
+//     numberOfChannels: 1,
+//     sampleRate: a.sampleRate,
+//     timestamp: 0,
+//   });
+
+//   const src = new AudioSampleSource({
+//     // codec: "opus",
+//     codec: "pcm-f32",
+//     // codec: "vorbis",
+//     // bitrate: 128e3,
+//   });
+//   output.addAudioTrack(src);
+
+//   await output.start();
+//   await src.add(sample);
+//   await output.finalize();
+
+//   return new Blob([output.target.buffer!], { type: "audio/wav" });
+// }

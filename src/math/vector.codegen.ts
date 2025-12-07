@@ -1,12 +1,8 @@
 import * as fs from "node:fs/promises";
 import * as prettier from "prettier";
 import * as path from "node:path";
-import {
-  cartesianProduct,
-  range,
-  rangeFrom,
-  stringRangeMapJoin,
-} from "../range";
+import { range, rangeFrom, stringRangeMapJoin } from "../range";
+import { cartesianProduct } from "../array-utils";
 
 const paramNames = "abcd";
 

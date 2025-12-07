@@ -5,6 +5,7 @@
     "@types/react-dom": "^19.1.9",
     "@webgpu/types": "^0.1.66",
     "esbuild": "^0.25.8",
+    "fft.js": "^4.0.4",
     "glob": "^11.0.3",
     "mediabunny": "^1.14.2",
     "ml-convolution": "^2.0.0",
@@ -15,6 +16,7 @@
     "svgo": "^4.0.0",
     "typedoc": "^0.28.13",
     "typescript": "^5.9.3",
+    "typescript-parsec": "^0.3.4",
     "uuid": "^13.0.0",
     "wgsl_reflect": "^1.2.3"
   },

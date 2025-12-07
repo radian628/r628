@@ -44,3 +44,7 @@ export function unclampedSmoothstep(x: number) {
 export function smoothstep(x: number) {
   return unclampedSmoothstep(clamp(x, 0, 1));
 }
+
+export function modulo(a: number, b: number) {
+  return a - b * Math.floor(a / b);
+}
