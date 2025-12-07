@@ -24721,131 +24721,6 @@ var OneDimensionalSpatialHashTable = class {
   }
 };
 
-// src/webgpu/bind-group-generator.ts
-function getWgslPrimitiveDatatype(typename, formatname) {
-  if (formatname) return formatname;
-  if (typename === "f32" || typename === "i32" || typename === "u32" || typename === "f16")
-    return typename;
-  if (typename.startsWith("vec") || typename.startsWith("mat")) {
-    if (typename.endsWith("i")) {
-      return "i32";
-    } else if (typename.endsWith("u")) {
-      return "u32";
-    } else if (typename.endsWith("h")) {
-      return "f16";
-    }
-  }
-  return "f32";
-}
-function getWgslPrimitiveSize(typename) {
-  if (typename.startsWith("vec2")) return 2;
-  if (typename.startsWith("vec3")) return 3;
-  if (typename.startsWith("vec4")) return 4;
-  if (typename.startsWith("mat2x3")) return 6;
-  if (typename.startsWith("mat3x2")) return 6;
-  if (typename.startsWith("mat2x4")) return 8;
-  if (typename.startsWith("mat4x2")) return 8;
-  if (typename.startsWith("mat3x4")) return 12;
-  if (typename.startsWith("mat4x3")) return 12;
-  if (typename.startsWith("mat2")) return 4;
-  if (typename.startsWith("mat3")) return 9;
-  if (typename.startsWith("mat4")) return 16;
-  return 1;
-}
-function setWgslPrimitive(typename, formatname, view, offset, data) {
-  const datatype = getWgslPrimitiveDatatype(typename, formatname);
-  const size = getWgslPrimitiveSize(typename);
-  let stride = {
-    i32: 4,
-    f32: 4,
-    u32: 4,
-    f16: 2
-  }[datatype];
-  let method = {
-    i32: "setInt32",
-    f32: "setFloat32",
-    u32: "setUint32",
-    f16: "setFloat16"
-  }[datatype];
-  for (let i = 0; i < size; i++) {
-    view[method](offset + stride * i, data[i], true);
-  }
-}
-function generateUniformBufferInner(spec, values, view, offset) {
-  if (spec.members) {
-    for (const m of spec.members)
-      generateUniformBufferInner(
-        m.type,
-        values[m.name],
-        view,
-        offset + m.offset
-      );
-    return;
-  }
-  const typename = spec.name;
-  if (typename === "array") {
-    for (let i = 0; i < spec.count; i++) {
-      generateUniformBufferInner(
-        spec.format,
-        values[i],
-        view,
-        offset + spec.stride * i
-      );
-    }
-  } else {
-    setWgslPrimitive(
-      spec.name,
-      spec.format?.name,
-      view,
-      offset,
-      Array.isArray(values) ? values : [values]
-    );
-  }
-}
-function generateUniformBuffer(spec, values) {
-  const buf = new ArrayBuffer(spec.size);
-  const view = new DataView(buf);
-  generateUniformBufferInner(spec, values, view, 0);
-  return buf;
-}
-function makeUniformBuffer(spec, group, binding, data) {
-  return generateUniformBuffer(spec.bindGroups[group][binding].type, data);
-}
-
-// src/math/noise.ts
-function fract(x2) {
-  return x2 - Math.floor(x2);
-}
-function simpleRandVec2ToFloat(co) {
-  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
-}
-function simpleRandVec2ToVec2(co) {
-  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
-}
-function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
-  const fp = [Math.floor(p[0]), Math.floor(p[1])];
-  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
-  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
-  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
-  const v4 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
-  const o1 = sub2(p, fp);
-  const o2 = sub2(o1, [1, 0]);
-  const o3 = sub2(o1, [0, 1]);
-  const o4 = sub2(o1, [1, 1]);
-  const d1 = dot2(v1, o1);
-  const d2 = dot2(v2, o2);
-  const d3 = dot2(v3, o3);
-  const d4 = dot2(v4, o4);
-  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
-  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
-  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
-}
-function boxMullerTransform(u) {
-  const a = Math.sqrt(-2 * Math.log(u[0]));
-  const b = 2 * Math.PI * u[1];
-  return [a * Math.cos(b), a * Math.sin(b)];
-}
-
 // src/webgl/shader.ts
 function source2shader(gl, type, source) {
   const shader = gl.createShader(
@@ -29387,6 +29262,131 @@ function bezierPreview(beziers, size) {
   }
   ctx.stroke();
   return c;
+}
+
+// src/math/noise.ts
+function fract(x2) {
+  return x2 - Math.floor(x2);
+}
+function simpleRandVec2ToFloat(co) {
+  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
+}
+function simpleRandVec2ToVec2(co) {
+  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
+}
+function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
+  const fp = [Math.floor(p[0]), Math.floor(p[1])];
+  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
+  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
+  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
+  const v4 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
+  const o1 = sub2(p, fp);
+  const o2 = sub2(o1, [1, 0]);
+  const o3 = sub2(o1, [0, 1]);
+  const o4 = sub2(o1, [1, 1]);
+  const d1 = dot2(v1, o1);
+  const d2 = dot2(v2, o2);
+  const d3 = dot2(v3, o3);
+  const d4 = dot2(v4, o4);
+  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
+  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
+  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
+}
+function boxMullerTransform(u) {
+  const a = Math.sqrt(-2 * Math.log(u[0]));
+  const b = 2 * Math.PI * u[1];
+  return [a * Math.cos(b), a * Math.sin(b)];
+}
+
+// src/webgpu/bind-group-generator.ts
+function getWgslPrimitiveDatatype(typename, formatname) {
+  if (formatname) return formatname;
+  if (typename === "f32" || typename === "i32" || typename === "u32" || typename === "f16")
+    return typename;
+  if (typename.startsWith("vec") || typename.startsWith("mat")) {
+    if (typename.endsWith("i")) {
+      return "i32";
+    } else if (typename.endsWith("u")) {
+      return "u32";
+    } else if (typename.endsWith("h")) {
+      return "f16";
+    }
+  }
+  return "f32";
+}
+function getWgslPrimitiveSize(typename) {
+  if (typename.startsWith("vec2")) return 2;
+  if (typename.startsWith("vec3")) return 3;
+  if (typename.startsWith("vec4")) return 4;
+  if (typename.startsWith("mat2x3")) return 6;
+  if (typename.startsWith("mat3x2")) return 6;
+  if (typename.startsWith("mat2x4")) return 8;
+  if (typename.startsWith("mat4x2")) return 8;
+  if (typename.startsWith("mat3x4")) return 12;
+  if (typename.startsWith("mat4x3")) return 12;
+  if (typename.startsWith("mat2")) return 4;
+  if (typename.startsWith("mat3")) return 9;
+  if (typename.startsWith("mat4")) return 16;
+  return 1;
+}
+function setWgslPrimitive(typename, formatname, view, offset, data) {
+  const datatype = getWgslPrimitiveDatatype(typename, formatname);
+  const size = getWgslPrimitiveSize(typename);
+  let stride = {
+    i32: 4,
+    f32: 4,
+    u32: 4,
+    f16: 2
+  }[datatype];
+  let method = {
+    i32: "setInt32",
+    f32: "setFloat32",
+    u32: "setUint32",
+    f16: "setFloat16"
+  }[datatype];
+  for (let i = 0; i < size; i++) {
+    view[method](offset + stride * i, data[i], true);
+  }
+}
+function generateUniformBufferInner(spec, values, view, offset) {
+  if (spec.members) {
+    for (const m of spec.members)
+      generateUniformBufferInner(
+        m.type,
+        values[m.name],
+        view,
+        offset + m.offset
+      );
+    return;
+  }
+  const typename = spec.name;
+  if (typename === "array") {
+    for (let i = 0; i < spec.count; i++) {
+      generateUniformBufferInner(
+        spec.format,
+        values[i],
+        view,
+        offset + spec.stride * i
+      );
+    }
+  } else {
+    setWgslPrimitive(
+      spec.name,
+      spec.format?.name,
+      view,
+      offset,
+      Array.isArray(values) ? values : [values]
+    );
+  }
+}
+function generateUniformBuffer(spec, values) {
+  const buf = new ArrayBuffer(spec.size);
+  const view = new DataView(buf);
+  generateUniformBufferInner(spec, values, view, 0);
+  return buf;
+}
+function makeUniformBuffer(spec, group, binding, data) {
+  return generateUniformBuffer(spec.bindGroups[group][binding].type, data);
 }
 
 // src/ui/upload-image.tsx
