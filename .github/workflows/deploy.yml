@@ -7,7 +7,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: test
+        run: |
+          ls
+
       - name: Package static files for upload
+        id: deployment
         uses: actions/upload-pages-artifact@v3
         with:
           path: demos-build/
