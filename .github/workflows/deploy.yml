@@ -7,9 +7,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: test
-        run: |
-          ls
+      - name: checkout
+        uses: actions/checkout@v4
 
       - name: Package static files for upload
         id: deployment
