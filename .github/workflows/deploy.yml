@@ -4,7 +4,17 @@ on:
       - main
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Package static files for upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: demos-build/
+
   deploy:
+    needs: build
+
     permissions:
       pages: write
       id-token: write
@@ -19,5 +29,3 @@ jobs:
       - name: Deploy to GitHub pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          path: demos-build/
