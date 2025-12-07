@@ -21859,6 +21859,7 @@
 <p>The <code>font-family</code> value used by the font will just be the name of the font file you originally uploaded, but without the file extension. So for example if you uploaded <code>InterVariable.woff2</code>, then to use the resulting css file, you would need to use <code>font-family: "InterVariable";</code>.</p>
 `;
   document.body.appendChild(input);
+  console.log("got here");
 })();
 /*! Bundled license information:
 

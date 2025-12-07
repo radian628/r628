@@ -50,3 +50,5 @@ document.body.innerHTML = `
 `;
 
 document.body.appendChild(input);
+
+console.log("got here");
