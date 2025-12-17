@@ -21367,6 +21367,7 @@
         const out = {};
         const padStart = -Math.min(0, start);
         for (const ch of this.channels) {
+          console.log("eeeee", count);
           const o = new Float32Array(count);
           const i = range3[ch];
           for (let idx = 0; idx < i.length; idx++) {
@@ -21385,7 +21386,8 @@
         this.channels,
         this.sampleRate,
         [this, gain],
-        (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k])
+        (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k]),
+        this.duration
       );
     }
     add(stream) {
@@ -21566,8 +21568,8 @@
       (time, sample, ch) => ch
     );
   }
-  function combineAudio(channels, sampleRate, audio, f) {
-    const duration = Math.max(...audio.map((a) => a.duration));
+  function combineAudio(channels, sampleRate, audio, f, customDuration) {
+    const duration = customDuration ? customDuration : Math.max(...audio.map((a) => a.duration));
     const length = Math.ceil(duration * sampleRate);
     const stream = new AudioStream({
       channels,
@@ -21888,7 +21890,7 @@
     [false, /^\s+/g, 4 /* Whitespace */],
     [false, /^\/\/[^\n]*/g, 7 /* Comment */],
     [true, /^(\+|\-)?[0-9]+/g, 5 /* Integer */],
-    [true, /^[a-gA-G](b#)*[0-9]*/g, 6 /* ChromaticKey */]
+    [true, /^[a-gA-G][b#]*[0-9]*/g, 6 /* ChromaticKey */]
   ]);
   var note_timing = (0, import_typescript_parsec.alt_sc)(
     (0, import_typescript_parsec.apply)((0, import_typescript_parsec.kleft)((0, import_typescript_parsec.tok)(5 /* Integer */), (0, import_typescript_parsec.str)(":")), (t) => Number(t.text)),

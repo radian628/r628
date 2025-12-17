@@ -57,7 +57,7 @@ const noteLexer = buildLexer([
   [false, /^\s+/g, TokenKind.Whitespace],
   [false, /^\/\/[^\n]*/g, TokenKind.Comment],
   [true, /^(\+|\-)?[0-9]+/g, TokenKind.Integer],
-  [true, /^[a-gA-G](b#)*[0-9]*/g, TokenKind.ChromaticKey],
+  [true, /^[a-gA-G][b#]*[0-9]*/g, TokenKind.ChromaticKey],
 ]);
 
 const note_timing: Parser<TokenKind, Timing> = alt_sc(

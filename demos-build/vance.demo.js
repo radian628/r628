@@ -70,10 +70,10 @@
           res[i] = 0;
         return res;
       };
-      FFT3.prototype.toComplexArray = function toComplexArray(input2, storage) {
+      FFT3.prototype.toComplexArray = function toComplexArray(input, storage) {
         var res = storage || this.createComplexArray();
         for (var i = 0; i < res.length; i += 2) {
-          res[i] = input2[i >>> 1];
+          res[i] = input[i >>> 1];
           res[i + 1] = 0;
         }
         return res;
@@ -456,25 +456,25 @@
         }(Error)
       );
       exports.TokenRangeError = TokenRangeError;
-      function extractByPositionRange(input2, first, next) {
-        var firstIndex = first === void 0 ? input2.length : first.index;
-        var nextIndex = next === void 0 ? input2.length : next.index;
+      function extractByPositionRange(input, first, next) {
+        var firstIndex = first === void 0 ? input.length : first.index;
+        var nextIndex = next === void 0 ? input.length : next.index;
         if (firstIndex >= nextIndex) {
           return "";
         }
-        return input2.substring(firstIndex, nextIndex);
+        return input.substring(firstIndex, nextIndex);
       }
       exports.extractByPositionRange = extractByPositionRange;
-      function extractByTokenRange(input2, first, next) {
-        return extractByPositionRange(input2, first === void 0 ? void 0 : first.pos, next === void 0 ? void 0 : next.pos);
+      function extractByTokenRange(input, first, next) {
+        return extractByPositionRange(input, first === void 0 ? void 0 : first.pos, next === void 0 ? void 0 : next.pos);
       }
       exports.extractByTokenRange = extractByTokenRange;
       var TokenImpl = (
         /** @class */
         function() {
-          function TokenImpl2(lexer, input2, kind, text, pos, keep) {
+          function TokenImpl2(lexer, input, kind, text, pos, keep) {
             this.lexer = lexer;
-            this.input = input2;
+            this.input = input;
             this.kind = kind;
             this.text = text;
             this.pos = pos;
@@ -511,14 +511,14 @@
               }
             }
           }
-          LexerImpl2.prototype.parse = function(input2) {
-            return this.parseNextAvailable(input2, 0, 1, 1);
+          LexerImpl2.prototype.parse = function(input) {
+            return this.parseNextAvailable(input, 0, 1, 1);
           };
-          LexerImpl2.prototype.parseNext = function(input2, indexStart, rowBegin, columnBegin) {
-            if (indexStart === input2.length) {
+          LexerImpl2.prototype.parseNext = function(input, indexStart, rowBegin, columnBegin) {
+            if (indexStart === input.length) {
               return void 0;
             }
-            var subString = input2.substr(indexStart);
+            var subString = input.substr(indexStart);
             var result;
             for (var _i = 0, _a = this.rules; _i < _a.length; _i++) {
               var _b = _a[_i], keep = _b[0], regexp = _b[1], kind = _b[2];
@@ -540,22 +540,22 @@
                       columnEnd++;
                   }
                 }
-                var newResult = new TokenImpl(this, input2, kind, text, { index: indexStart, rowBegin, columnBegin, rowEnd, columnEnd }, keep);
+                var newResult = new TokenImpl(this, input, kind, text, { index: indexStart, rowBegin, columnBegin, rowEnd, columnEnd }, keep);
                 if (result === void 0 || result.text.length < newResult.text.length) {
                   result = newResult;
                 }
               }
             }
             if (result === void 0) {
-              throw new TokenError({ index: indexStart, rowBegin, columnBegin, rowEnd: rowBegin, columnEnd: columnBegin }, "Unable to tokenize the rest of the input: " + input2.substr(indexStart));
+              throw new TokenError({ index: indexStart, rowBegin, columnBegin, rowEnd: rowBegin, columnEnd: columnBegin }, "Unable to tokenize the rest of the input: " + input.substr(indexStart));
             } else {
               return result;
             }
           };
-          LexerImpl2.prototype.parseNextAvailable = function(input2, index, rowBegin, columnBegin) {
+          LexerImpl2.prototype.parseNextAvailable = function(input, index, rowBegin, columnBegin) {
             var token;
             while (true) {
-              token = this.parseNext(input2, token === void 0 ? index : token.pos.index + token.text.length, token === void 0 ? rowBegin : token.pos.rowEnd, token === void 0 ? columnBegin : token.pos.columnEnd);
+              token = this.parseNext(input, token === void 0 ? index : token.pos.index + token.text.length, token === void 0 ? rowBegin : token.pos.rowEnd, token === void 0 ? columnBegin : token.pos.columnEnd);
               if (token === void 0) {
                 return void 0;
               } else if (token.keep) {
@@ -2676,10 +2676,10 @@
             implementation
           };
         }
-        function getCrossOriginStringAs(as, input2) {
+        function getCrossOriginStringAs(as, input) {
           if ("font" === as) return "";
-          if ("string" === typeof input2)
-            return "use-credentials" === input2 ? input2 : "";
+          if ("string" === typeof input)
+            return "use-credentials" === input ? input : "";
         }
         function getValueDescriptorExpectingObjectForWarning(thing) {
           return null === thing ? "`null`" : void 0 === thing ? "`undefined`" : "" === thing ? "an empty string" : 'something with type "' + typeof thing + '"';
@@ -20786,6 +20786,17 @@
   function argmin(arr, f) {
     return argmax(arr, (t) => -f(t));
   }
+  function cartesianProductInner(ts, arr) {
+    if (ts.length === 0) return [arr];
+    return ts[0].map((e) => cartesianProductInner(ts.slice(1), [...arr, e])).flat(1);
+  }
+  function cartesianProduct(...ts) {
+    const res = cartesianProductInner(ts, []);
+    return res;
+  }
+  function pickrand(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
 
   // src/threadpool.ts
   function getPerformanceStatistics(records) {
@@ -21109,16 +21120,6 @@
     };
     fn.getCache = () => map;
     return fn;
-  }
-
-  // src/download.ts
-  function download(file, name) {
-    const a = document.createElement("a");
-    a.download = name;
-    const url = URL.createObjectURL(file);
-    a.href = url;
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   // src/math/intersections.ts
@@ -21819,49 +21820,94 @@
   // src/ui/pan-and-zoom.tsx
   var import_react6 = __toESM(require_react());
 
-  // demos-src/font-inliner.demo.ts
-  var input = document.createElement("input");
-  input.type = "file";
-  var extmap = {
-    woff: "font/woff",
-    woff2: "font/woff2",
-    otf: "font/otf",
-    eot: "application/vnd.ms-fontobject",
-    ttf: "font/ttf"
-  };
-  var formatmap = {
-    eot: "embedded-opentype",
-    otc: "collection",
-    ttc: "collection",
-    otf: "opentype",
-    ttf: "opentype",
-    svg: "svg",
-    svgz: "svg",
-    woff: "woff",
-    woff2: "woff2"
-  };
-  input.addEventListener("input", (e) => {
-    const file = input.files[0];
-    const name = file.name.replace(/\.\w+$/g, "");
-    const ext = file.name.match(/\.\w+$/g)?.[0];
-    const mimetype = extmap[ext.slice(1)];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.addEventListener("load", () => {
-      const cssfile = `@font-face {
-  font-family: "${name}";
-  src: url("${reader.result}") ${ext ? `format("${formatmap[ext.slice(1)] ?? ext.slice(1)}")` : ""};
-}`;
-      download(new Blob([cssfile], { type: "text/css" }), name + ".css");
+  // demos-src/vance.demo.ts
+  function asyncImage(src2) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        resolve(img);
+      };
+      img.src = src2;
     });
-    reader.readAsDataURL(mimetype ? new Blob([file], { type: mimetype }) : file);
-  });
-  document.body.innerHTML = `
-<p>Upload a font file to the field below to generate and download a CSS file that you can <code>@import</code> into your project.</p>
-<p>The <code>font-family</code> value used by the font will just be the name of the font file you originally uploaded, but without the file extension. So for example if you uploaded <code>InterVariable.woff2</code>, then to use the resulting css file, you would need to use <code>font-family: "InterVariable";</code>.</p>
-`;
-  document.body.appendChild(input);
-  console.log("got here");
+  }
+  main();
+  function createScaledVances(vance, scale) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = Math.ceil(vance.width * scale);
+    canvas.height = Math.ceil(vance.height * scale);
+    ctx.drawImage(vance, 0, 0, canvas.width, canvas.height);
+    const imgdata = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    return { alphaMask: createAlphaMask(imgdata), image: canvas };
+  }
+  function createAlphaMask(imgdata) {
+    let mask = new Uint8Array(imgdata.data.length / 4);
+    for (let i = 0; i < mask.length; i++) {
+      mask[i] = imgdata.data[i * 4 + 3];
+    }
+    return {
+      width: imgdata.width,
+      height: imgdata.height,
+      mask
+    };
+  }
+  function sampleAlphaMaskZeroPad(mask, coords) {
+    if (coords[0] < 0) return 0;
+    if (coords[0] > mask.width - 1) return 0;
+    if (coords[1] < 0) return 0;
+    if (coords[1] > mask.height - 1) return 0;
+    return sampleAlphaMask(mask, coords);
+  }
+  function sampleAlphaMask(mask, coords) {
+    return mask.mask[coords[1] * mask.width + coords[0]];
+  }
+  function maskIntersectAmount(a, b, bOffset) {
+    let sum = 0;
+    for (let y = 0; y < b.height; y++) {
+      for (let x = 0; x < b.width; x++) {
+        sum += sampleAlphaMask(b, [x, y]) * sampleAlphaMaskZeroPad(a, [x + bOffset[0], y + bOffset[1]]);
+      }
+    }
+    return sum;
+  }
+  async function main() {
+    const images = await Promise.all(
+      ["vance.png", "trump.png", "biden.png", "kirk.png"].map(asyncImage)
+    );
+    const canvas = document.createElement("canvas");
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = 1440;
+    canvas.height = 1440;
+    ctx.fillStyle = "white";
+    ctx.font = "Bold 144px 'Times New Roman'";
+    ctx.textAlign = "center";
+    ctx.fillText("SCP-9009", canvas.width / 2, canvas.height / 2 - 80);
+    ctx.fillText('"White People"', canvas.width / 2, canvas.height / 2 + 80);
+    const textmask = createAlphaMask(
+      ctx.getImageData(0, 0, canvas.width, canvas.height)
+    );
+    for (const i of range(7).reverse()) {
+      const scaleFactor = 1 / Math.pow(2, i);
+      const scaledImages = images.map((i2) => createScaledVances(i2, scaleFactor));
+      const count = 5 / scaleFactor;
+      const stepX = canvas.width / count;
+      const stepY = canvas.height / count;
+      cartesianProduct(smartRange(count), smartRange(count)).map(([i2, j]) => {
+        const x = i2.remap(0, canvas.width) + rand(-stepX, stepX);
+        const y = j.remap(0, canvas.height) + rand(-stepY, stepY);
+        const rx = Math.round(x);
+        const ry = Math.round(y);
+        const img = pickrand(scaledImages);
+        if (maskIntersectAmount(textmask, img.alphaMask, [rx, ry]) > 0) {
+          return;
+        }
+        ctx.drawImage(img.image, x, y, img.alphaMask.width, img.alphaMask.height);
+      });
+    }
+    ctx.fillText("SCP-9009", canvas.width / 2, canvas.height / 2 - 80);
+    ctx.fillText('"White People"', canvas.width / 2, canvas.height / 2 + 80);
+  }
 })();
 /*! Bundled license information:
 

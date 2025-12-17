@@ -21219,6 +21219,7 @@
         const out = {};
         const padStart = -Math.min(0, start);
         for (const ch of this.channels) {
+          console.log("eeeee", count);
           const o = new Float32Array(count);
           const i = range3[ch];
           for (let idx = 0; idx < i.length; idx++) {
@@ -21237,7 +21238,8 @@
         this.channels,
         this.sampleRate,
         [this, gain],
-        (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k])
+        (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k]),
+        this.duration
       );
     }
     add(stream) {
@@ -21418,8 +21420,8 @@
       (time, sample, ch) => ch
     );
   }
-  function combineAudio(channels, sampleRate, audio, f) {
-    const duration = Math.max(...audio.map((a) => a.duration));
+  function combineAudio(channels, sampleRate, audio, f, customDuration) {
+    const duration = customDuration ? customDuration : Math.max(...audio.map((a) => a.duration));
     const length = Math.ceil(duration * sampleRate);
     const stream = new AudioStream({
       channels,
@@ -21740,7 +21742,7 @@
     [false, /^\s+/g, 4 /* Whitespace */],
     [false, /^\/\/[^\n]*/g, 7 /* Comment */],
     [true, /^(\+|\-)?[0-9]+/g, 5 /* Integer */],
-    [true, /^[a-gA-G](b#)*[0-9]*/g, 6 /* ChromaticKey */]
+    [true, /^[a-gA-G][b#]*[0-9]*/g, 6 /* ChromaticKey */]
   ]);
   var note_timing = (0, import_typescript_parsec.alt_sc)(
     (0, import_typescript_parsec.apply)((0, import_typescript_parsec.kleft)((0, import_typescript_parsec.tok)(5 /* Integer */), (0, import_typescript_parsec.str)(":")), (t) => Number(t.text)),
@@ -21900,33 +21902,43 @@
       const a = new AudioBuilder(["left", "right"], 44100);
       const m = new AudioBuilder(["center"], 44100);
       const adsr = m.adsrgen(1, 0.2, 0.2, 0);
+      const adsrn = (a2, d, s, r) => (len) => adsr(a2 * len, d * len, s * len, r * len);
       const KERNSIZE = 100;
+      const clap = (freq, duration) => a.noise().convolve(a.lpf(freq * 2, 32)).gain(m.constant(400 / Math.log(freq) ** 3)).clip(0, 0.05).gain(adsr(0, 5e-3, 0.025, 0.05));
+      const melody = (freq, duration) => {
+        console.log("duration", duration);
+        return a.sine(freq).gain(m.constant(0.5)).add(a.square(freq * 0.5).gain(m.constant(0.2))).clip(0, duration).gain(adsrn(0.1, 0.3, 0.6, 1)(duration));
+      };
       const track2 = parseNotes(`
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
+      4:(
+      c4 3 4  
+      c4 3 4  
+      c4 3 4  
+      c4 3 4  
+      c4 3 4  
+      c4
+      )/c2
+
+      4:(
+      b4 4 4
+      b4 4 4
+      b4 4 4
+      b4 4 4
+      b4 4 4
+      b4
+      )/b2
+
+      4:(
+      bb4 5 4
+      bb4 5 4
+      bb4 5 4
+      bb4 5 4
+      bb4 5 4
+      bb4
+      )/bb2
       `);
-      const trackSpec = createTrackSpec(
-        track2,
-        120,
-        (freq, duration) => (
-          // a
-          //   .sine(freq, 0.4)
-          //   .clip(0, duration)
-          //   .gain(adsr(duration * 0.1, duration * 0.2, duration * 0.5, duration))
-          a.noise().convolve(a.lpf(freq * 2, 32)).gain(m.constant(400 / Math.log(freq) ** 3)).clip(0, 0.05).gain(adsr(0, 5e-3, 0.025, 0.05))
-        )
-      );
+      console.log(track2);
+      const trackSpec = createTrackSpec(track2, 120, melody);
       const w = a.createTrack(trackSpec).preload();
       for (const c of await displayAudio(w.clip(0, 4), 1, [4e3, 100], 1)) {
         document.body.appendChild(c);

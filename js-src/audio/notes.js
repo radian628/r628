@@ -1036,7 +1036,7 @@ var noteLexer = (0, import_typescript_parsec.buildLexer)([
   [false, /^\s+/g, 4 /* Whitespace */],
   [false, /^\/\/[^\n]*/g, 7 /* Comment */],
   [true, /^(\+|\-)?[0-9]+/g, 5 /* Integer */],
-  [true, /^[a-gA-G](b#)*[0-9]*/g, 6 /* ChromaticKey */]
+  [true, /^[a-gA-G][b#]*[0-9]*/g, 6 /* ChromaticKey */]
 ]);
 var note_timing = (0, import_typescript_parsec.alt_sc)(
   (0, import_typescript_parsec.apply)((0, import_typescript_parsec.kleft)((0, import_typescript_parsec.tok)(5 /* Integer */), (0, import_typescript_parsec.str)(":")), (t) => Number(t.text)),

@@ -18,6 +18,10 @@ if (!isWorklet()) {
 
     const adsr = m.adsrgen(1, 0.2, 0.2, 0);
 
+    const adsrn =
+      (a: number, d: number, s: number, r: number) => (len: number) =>
+        adsr(a * len, d * len, s * len, r * len);
+
     const KERNSIZE = 100;
 
     // const w = createTrack(
@@ -33,38 +37,57 @@ if (!isWorklet()) {
     // );
     // const track = parseNotes("c4 2 2 1 2 2 2 1 0/4/7");
     // const track = parseNotes("c1 c2 c3 c4 c5 c6 c7 c8");
-    const track = parseNotes(`
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-    // (c2 c2)/(c3 c3 c3) 
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      (3:c5 3:c5 2:c5)/(c2 c2 c2 c2 c2 c2)
-      `);
 
-    const trackSpec = createTrackSpec(track, 120, (freq, duration) =>
-      // a
-      //   .sine(freq, 0.4)
-      //   .clip(0, duration)
-      //   .gain(adsr(duration * 0.1, duration * 0.2, duration * 0.5, duration))
-
+    const clap = (freq: number, duration: number) =>
       a
         .noise()
-        // .sine(freq)
-        // .convolve(a.boxcar(1 / freq))
         .convolve(a.lpf(freq * 2, 32))
         .gain(m.constant(400 / Math.log(freq) ** 3))
-        // .add(a.square(freq).gain(a.constant(0.1)))
         .clip(0, 0.05)
-        .gain(adsr(0, 0.005, 0.025, 0.05))
-    );
+        .gain(adsr(0, 0.005, 0.025, 0.05));
+
+    const melody = (freq: number, duration: number) => {
+      console.log("duration", duration);
+      return a
+        .sine(freq)
+        .gain(m.constant(0.5))
+        .add(a.square(freq * 0.5).gain(m.constant(0.2)))
+        .clip(0, duration)
+        .gain(adsrn(0.1, 0.3, 0.6, 1)(duration));
+    };
+
+    const track = parseNotes(`
+      4:(
+      c4 3 4  
+      c4 3 4  
+      c4 3 4  
+      c4 3 4  
+      c4 3 4  
+      c4
+      )/c2
+
+      4:(
+      b4 4 4
+      b4 4 4
+      b4 4 4
+      b4 4 4
+      b4 4 4
+      b4
+      )/b2
+
+      4:(
+      bb4 5 4
+      bb4 5 4
+      bb4 5 4
+      bb4 5 4
+      bb4 5 4
+      bb4
+      )/bb2
+      `);
+
+    console.log(track);
+
+    const trackSpec = createTrackSpec(track, 120, melody);
 
     const w = a.createTrack(trackSpec).preload();
 

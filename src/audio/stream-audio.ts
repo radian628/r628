@@ -106,6 +106,7 @@ export class AudioStream<Channels extends string> {
       const padStart = -Math.min(0, start);
 
       for (const ch of this.channels) {
+        console.log("eeeee", count);
         const o = new Float32Array(count);
         const i = range[ch];
 
@@ -137,7 +138,8 @@ export class AudioStream<Channels extends string> {
       this.channels,
       this.sampleRate,
       [this, gain],
-      (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k])
+      (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k]),
+      this.duration
     );
   }
 
@@ -423,10 +425,13 @@ function combineAudio<
     ...xs: { [K in keyof Audio]: Record<Channels, number> }
   ) => {
     [K in Channels]: number;
-  }
+  },
+  customDuration?: number
 ): AudioStream<Channels> {
   // derive duration and sample count from largest of all inputs
-  const duration = Math.max(...audio.map((a) => a.duration));
+  const duration = customDuration
+    ? customDuration
+    : Math.max(...audio.map((a) => a.duration));
   const length = Math.ceil(duration * sampleRate);
 
   // create stream

@@ -732,6 +732,7 @@ var AudioStream = class _AudioStream {
       const out = {};
       const padStart = -Math.min(0, start);
       for (const ch of this.channels) {
+        console.log("eeeee", count);
         const o = new Float32Array(count);
         const i = range2[ch];
         for (let idx = 0; idx < i.length; idx++) {
@@ -750,7 +751,8 @@ var AudioStream = class _AudioStream {
       this.channels,
       this.sampleRate,
       [this, gain],
-      (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k])
+      (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k]),
+      this.duration
     );
   }
   add(stream) {
@@ -931,8 +933,8 @@ function resample(audio, targetSampleRate) {
     (time, sample, ch) => ch
   );
 }
-function combineAudio(channels, sampleRate, audio, f) {
-  const duration = Math.max(...audio.map((a) => a.duration));
+function combineAudio(channels, sampleRate, audio, f, customDuration) {
+  const duration = customDuration ? customDuration : Math.max(...audio.map((a) => a.duration));
   const length = Math.ceil(duration * sampleRate);
   const stream = new AudioStream({
     channels,
