@@ -231,12 +231,26 @@ function generateUniformBufferInner<Spec extends Record<any, any>>(
 
 export function generateUniformBuffer<Spec extends Record<any, any>>(
   spec: Spec & { size: number },
-  values: ParseUniform<Spec>
+  values: ParseUniform<Spec>,
+  buffer?: ArrayBuffer,
+  byteOffset?: number
 ): ArrayBuffer {
-  const buf = new ArrayBuffer(spec.size);
-  const view = new DataView(buf);
+  const buf = buffer ?? new ArrayBuffer(spec.size);
+  const view = new DataView(buf, byteOffset);
   generateUniformBufferInner<Spec>(spec, values, view, 0);
   return buf;
+}
+
+export function getUniformBufferSize<
+  Spec extends Record<any, any>,
+  Group extends number,
+  Binding extends number,
+>(
+  spec: Spec,
+  group: Group,
+  binding: Binding
+): Spec["bindGroups"][Group][Binding]["type"]["size"] {
+  return spec.bindGroups[group][binding].type.size;
 }
 
 export function makeUniformBuffer<
@@ -247,7 +261,14 @@ export function makeUniformBuffer<
   spec: Spec,
   group: Group,
   binding: Binding,
-  data: ParseUniform<Spec["bindGroups"][Group][Binding]["type"]>
+  data: ParseUniform<Spec["bindGroups"][Group][Binding]["type"]>,
+  buffer?: ArrayBuffer,
+  byteOffset?: number
 ) {
-  return generateUniformBuffer(spec.bindGroups[group][binding].type, data);
+  return generateUniformBuffer(
+    spec.bindGroups[group][binding].type,
+    data,
+    buffer,
+    byteOffset
+  );
 }

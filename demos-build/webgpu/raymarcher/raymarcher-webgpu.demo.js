@@ -5286,14 +5286,19 @@ height: 100vh;
       );
     }
   }
-  function generateUniformBuffer(spec, values) {
-    const buf = new ArrayBuffer(spec.size);
-    const view = new DataView(buf);
+  function generateUniformBuffer(spec, values, buffer, byteOffset) {
+    const buf = buffer ?? new ArrayBuffer(spec.size);
+    const view = new DataView(buf, byteOffset);
     generateUniformBufferInner(spec, values, view, 0);
     return buf;
   }
-  function makeUniformBuffer(spec, group, binding, data) {
-    return generateUniformBuffer(spec.bindGroups[group][binding].type, data);
+  function makeUniformBuffer(spec, group, binding, data, buffer, byteOffset) {
+    return generateUniformBuffer(
+      spec.bindGroups[group][binding].type,
+      data,
+      buffer,
+      byteOffset
+    );
   }
 
   // wgsl:/mnt/c/Users/baker/Documents/GitHub/r628/demos-src/webgpu/raymarcher/blit-to-screen.wgsl

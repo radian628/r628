@@ -1738,6 +1738,15 @@ function rescale3(a, b) {
 function rescale4(a, b) {
   return scale4(normalize4(a), b);
 }
+function remap2(a, b, c, d, e) {
+  return add2(d, mul2(sub2(e, d), div2(sub2(a, b), sub2(c, b))));
+}
+function remap3(a, b, c, d, e) {
+  return add3(d, mul3(sub3(e, d), div3(sub3(a, b), sub3(c, b))));
+}
+function remap4(a, b, c, d, e) {
+  return add4(d, mul4(sub4(e, d), div4(sub4(a, b), sub4(c, b))));
+}
 function interp2(a, b, c, d) {
   return add2(b, mul2(sub2(c, b), componentwise2(a, d)));
 }
@@ -1873,6 +1882,9 @@ export {
   pointTo,
   polar2Cart,
   polarVec2Cart,
+  remap2,
+  remap3,
+  remap4,
   rescale2,
   rescale3,
   rescale4,

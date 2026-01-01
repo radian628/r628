@@ -1838,6 +1838,15 @@ export function rescale3(a: Vec3, b: number): Vec3 {
 export function rescale4(a: Vec4, b: number): Vec4 {
   return scale4(normalize4(a), b)
 }
+export function remap2(a: Vec2, b: Vec2, c: Vec2, d: Vec2, e: Vec2): Vec2 {
+  return add2(d, mul2(sub2(e, d), div2(sub2(a, b), sub2(c, b))))
+}
+export function remap3(a: Vec3, b: Vec3, c: Vec3, d: Vec3, e: Vec3): Vec3 {
+  return add3(d, mul3(sub3(e, d), div3(sub3(a, b), sub3(c, b))))
+}
+export function remap4(a: Vec4, b: Vec4, c: Vec4, d: Vec4, e: Vec4): Vec4 {
+  return add4(d, mul4(sub4(e, d), div4(sub4(a, b), sub4(c, b))))
+}
 export function interp2(
   a: Vec2,
   b: Vec2,

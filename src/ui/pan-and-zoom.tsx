@@ -25,10 +25,29 @@ export function panAndZoomCanvas2d(
   ctx.transform(...panAndZoomMatrix(rect, canvas.width, canvas.height));
 }
 
+export function TransformHTML(props: { children: ReactNode; coords: Rect }) {
+  const coords = props.coords;
+
+  const eref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const e = eref.current;
+    if (!e || !e.parentElement) return;
+
+    const rect = e.parentElement.getBoundingClientRect();
+
+    e.style.transformOrigin = "top left";
+    e.style.transform = `scale(${1 / rect.width}, ${1 / rect.height}) matrix(${panAndZoomMatrix(coords, rect.width, rect.height)})`;
+    e.style.position = "relative";
+  }, [props.coords]);
+
+  return <div ref={eref}>{props.children}</div>;
+}
+
 export function PanAndZoom(props: {
   children: ReactNode;
   coords: Rect;
-  setCoords: React.Dispatch<React.SetStateAction<Rect>>;
+  setCoords: (c: (coords: Rect) => Rect) => void;
   onUpdate?: () => void;
   scrollSensitivity?: number;
   scrollDecay?: number;

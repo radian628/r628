@@ -11,6 +11,7 @@ export type NumberFieldProps = {
   offset?: number;
   displayPrecision?: number;
   defaultIfNaN?: number;
+  jumpstartDragFromZero?: number;
 };
 
 function stringifyNumber(x: number): string {
@@ -42,6 +43,7 @@ export function NumberField(propsOpt: NumberFieldProps) {
     offset: 0,
     displayPrecision: 3,
     defaultIfNaN: 0,
+    jumpstartDragFromZero: 0,
     ...propsOpt,
   };
 
@@ -94,13 +96,18 @@ export function NumberField(propsOpt: NumberFieldProps) {
         });
       }}
       onMouseDown={async (e) => {
+        const elem = e.currentTarget;
         await e.currentTarget.requestPointerLock();
         let dragnum = value;
 
         const mousemoveListener = (e: MouseEvent) => {
           const x = e.movementX;
           if (props.scale === "log") {
-            dragnum = dragnum * (2 ** props.sensitivity) ** x;
+            if (dragnum === 0) {
+              dragnum = props.jumpstartDragFromZero * Math.sign(x);
+            } else {
+              dragnum = dragnum * (2 ** props.sensitivity) ** x;
+            }
           } else {
             dragnum += x * props.sensitivity;
           }

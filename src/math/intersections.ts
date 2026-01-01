@@ -59,6 +59,58 @@ export function lineIntersectLine(a: LineSegment, b: LineSegment) {
   );
 }
 
+export function lineSegmentIntersectLineSegment(
+  a: LineSegment,
+  b: LineSegment
+) {
+  const t2 = lineIntersectLine(a, b);
+  const t1 = lineIntersectLine(b, a);
+
+  if (t1 < 0 || t1 > 1) return;
+  if (t2 < 0 || t2 > 1) return;
+
+  return t2;
+}
+
+export function lineIntersectRect(l: LineSegment, rect: Rect) {
+  const topIntersect = lineSegmentIntersectLineSegment(
+    {
+      a: rect.a,
+      b: [rect.b[0], rect.a[1]],
+    },
+    l
+  );
+  const bottomIntersect = lineSegmentIntersectLineSegment(
+    {
+      a: [rect.a[0], rect.b[1]],
+      b: rect.b,
+    },
+    l
+  );
+  const leftIntersect = lineSegmentIntersectLineSegment(
+    {
+      a: rect.a,
+      b: [rect.a[0], rect.b[1]],
+    },
+    l
+  );
+  const rightIntersect = lineSegmentIntersectLineSegment(
+    {
+      a: [rect.b[0], rect.a[1]],
+      b: rect.b,
+    },
+    l
+  );
+
+  return [topIntersect, bottomIntersect, leftIntersect, rightIntersect].filter(
+    (i) => i && i >= 0 && i <= 1
+  );
+}
+
+export function lineIntersectRectClosest(l: LineSegment, rect: Rect) {
+  return Math.min(...lineIntersectRect(l, rect));
+}
+
 export function rayIntersectLine(ray: Ray, b: LineSegment) {
   return lineIntersectLine(
     {

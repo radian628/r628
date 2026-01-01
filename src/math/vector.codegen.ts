@@ -4,7 +4,7 @@ import * as path from "node:path";
 import { range, rangeFrom, stringRangeMapJoin } from "../range";
 import { cartesianProduct } from "../array-utils";
 
-const paramNames = "abcd";
+const paramNames = "abcde";
 
 const swizzleChars = "xyzw".split("");
 
@@ -280,6 +280,13 @@ ${cartesianProduct(
     [vec, num],
     vec,
     (i) => `scale${i}(normalize${i}(a), b)`
+  ) +
+  createFunctionVariantsFullBody(
+    "remap",
+    [vec, vec, vec, vec, vec],
+    vec,
+    (i) =>
+      `add${i}(d, mul${i}(sub${i}(e, d), div${i}(sub${i}(a, b), sub${i}(c, b))))`
   ) +
   createFunctionVariantsFullBody(
     "interp",

@@ -81,8 +81,28 @@ function getLinesAndCols(str) {
   out.push([line, col]);
   return out;
 }
+function delimitedSequenceRegex(start, end) {
+  return new RegExp(
+    RegExp.escape(start) + "[\\s\\S]*?" + RegExp.escape(end),
+    "g"
+  );
+}
+function makeDelimitedReplacements(str, replacements) {
+  for (const r of replacements) {
+    str = str.replaceAll(
+      typeof r.delimiter === "string" ? delimitedSequenceRegex(r.delimiter, r.delimiter) : (
+        // @ts-expect-error
+        delimitedSequenceRegex(r.start, r.end)
+      ),
+      r.replaceWith
+    );
+  }
+  return str;
+}
 export {
+  delimitedSequenceRegex,
   getLinesAndCols,
+  makeDelimitedReplacements,
   multiDelimit,
   randUnicode,
   smartAsyncReplaceAll

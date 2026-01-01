@@ -31,6 +31,7 @@ await esbuild.build({
   minify: false,
   bundle: true,
   format: "esm",
+  plugins: [rawQueryParamPlugin],
 });
 
 await esbuild.build({
@@ -41,6 +42,7 @@ await esbuild.build({
   platform: "node",
   external: ["esbuild"],
   format: "esm",
+  plugins: [rawQueryParamPlugin],
 });
 
 const reactDemos = await esbuild.build({
@@ -52,6 +54,7 @@ const reactDemos = await esbuild.build({
   write: false,
   loader: { ".tsx": "tsx" },
   jsx: "automatic",
+  plugins: [rawQueryParamPlugin],
 });
 
 for (let out of reactDemos.outputFiles) {

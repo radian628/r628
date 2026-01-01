@@ -1670,7 +1670,7 @@ var require_react_development = __commonJS({
         }
         throw thenable;
       }
-      function mapIntoArray(children, array, escapedPrefix, nameSoFar, callback) {
+      function mapIntoArray(children, array2, escapedPrefix, nameSoFar, callback) {
         var type = typeof children;
         if ("undefined" === type || "boolean" === type) children = null;
         var invokeCallback = false;
@@ -1691,7 +1691,7 @@ var require_react_development = __commonJS({
                 case REACT_LAZY_TYPE:
                   return invokeCallback = children._init, mapIntoArray(
                     invokeCallback(children._payload),
-                    array,
+                    array2,
                     escapedPrefix,
                     nameSoFar,
                     callback
@@ -1702,7 +1702,7 @@ var require_react_development = __commonJS({
           invokeCallback = children;
           callback = callback(invokeCallback);
           var childKey = "" === nameSoFar ? "." + getElementKey(invokeCallback, 0) : nameSoFar;
-          isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array, escapedPrefix, "", function(c) {
+          isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array2, escapedPrefix, "", function(c) {
             return c;
           })) : null != callback && (isValidElement(callback) && (null != callback.key && (invokeCallback && invokeCallback.key === callback.key || checkKeyStringCoercion(callback.key)), escapedPrefix = cloneAndReplaceKey(
             callback,
@@ -1710,7 +1710,7 @@ var require_react_development = __commonJS({
               userProvidedKeyEscapeRegex,
               "$&/"
             ) + "/") + childKey
-          ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array.push(callback));
+          ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array2.push(callback));
           return 1;
         }
         invokeCallback = 0;
@@ -1719,7 +1719,7 @@ var require_react_development = __commonJS({
           for (var i = 0; i < children.length; i++)
             nameSoFar = children[i], type = childKey + getElementKey(nameSoFar, i), invokeCallback += mapIntoArray(
               nameSoFar,
-              array,
+              array2,
               escapedPrefix,
               type,
               callback
@@ -1730,7 +1730,7 @@ var require_react_development = __commonJS({
           ), didWarnAboutMaps = true), children = i.call(children), i = 0; !(nameSoFar = children.next()).done; )
             nameSoFar = nameSoFar.value, type = childKey + getElementKey(nameSoFar, i++), invokeCallback += mapIntoArray(
               nameSoFar,
-              array,
+              array2,
               escapedPrefix,
               type,
               callback
@@ -1739,14 +1739,14 @@ var require_react_development = __commonJS({
           if ("function" === typeof children.then)
             return mapIntoArray(
               resolveThenable(children),
-              array,
+              array2,
               escapedPrefix,
               nameSoFar,
               callback
             );
-          array = String(children);
+          array2 = String(children);
           throw Error(
-            "Objects are not valid as a React child (found: " + ("[object Object]" === array ? "object with keys {" + Object.keys(children).join(", ") + "}" : array) + "). If you meant to render a collection of children, use an array instead."
+            "Objects are not valid as a React child (found: " + ("[object Object]" === array2 ? "object with keys {" + Object.keys(children).join(", ") + "}" : array2) + "). If you meant to render a collection of children, use an array instead."
           );
         }
         return invokeCallback;
@@ -2694,7 +2694,7 @@ var require_react_dom_development = __commonJS({
         return dispatcher;
       }
       "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-      var React7 = require_react(), Internals = {
+      var React9 = require_react(), Internals = {
         d: {
           f: noop,
           r: function() {
@@ -2712,7 +2712,7 @@ var require_react_dom_development = __commonJS({
         },
         p: 0,
         findDOMNode: null
-      }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React7.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React9.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       "function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error(
         "React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills"
       );
@@ -2970,11 +2970,11 @@ var require_react_dom_client_development = __commonJS({
       function noop$2() {
       }
       function setToSortedString(set) {
-        var array = [];
+        var array2 = [];
         set.forEach(function(value) {
-          array.push(value);
+          array2.push(value);
         });
-        return array.sort().join(", ");
+        return array2.sort().join(", ");
       }
       function createFiber(tag, pendingProps, key, mode) {
         return new FiberNode(tag, pendingProps, key, mode);
@@ -4254,7 +4254,7 @@ var require_react_dom_client_development = __commonJS({
         "number" === type && getActiveElement(node.ownerDocument) === node || node.defaultValue === "" + value || (node.defaultValue = "" + value);
       }
       function validateOptionProps(element, props) {
-        null == props.value && ("object" === typeof props.children && null !== props.children ? React7.Children.forEach(props.children, function(child) {
+        null == props.value && ("object" === typeof props.children && null !== props.children ? React9.Children.forEach(props.children, function(child) {
           null == child || "string" === typeof child || "number" === typeof child || "bigint" === typeof child || didWarnInvalidChild || (didWarnInvalidChild = true, console.error(
             "Cannot infer the option value of complex children. Pass a `value` prop or use a plain string as children to <option>."
           ));
@@ -7003,8 +7003,8 @@ var require_react_dom_client_development = __commonJS({
         if (null == memoCache) {
           var current2 = currentlyRenderingFiber.alternate;
           null !== current2 && (current2 = current2.updateQueue, null !== current2 && (current2 = current2.memoCache, null != current2 && (memoCache = {
-            data: current2.data.map(function(array) {
-              return array.slice();
+            data: current2.data.map(function(array2) {
+              return array2.slice();
             }),
             index: 0
           })));
@@ -17836,14 +17836,14 @@ var require_react_dom_client_development = __commonJS({
         ));
       }
       "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-      var Scheduler = require_scheduler(), React7 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_PROVIDER_TYPE = Symbol.for("react.provider"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
+      var Scheduler = require_scheduler(), React9 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_PROVIDER_TYPE = Symbol.for("react.provider"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
       Symbol.for("react.scope");
       var REACT_ACTIVITY_TYPE = Symbol.for("react.activity");
       Symbol.for("react.legacy_hidden");
       Symbol.for("react.tracing_marker");
       var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel");
       Symbol.for("react.view_transition");
-      var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React7.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
+      var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React9.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
         pending: false,
         data: null,
         method: null,
@@ -20565,7 +20565,7 @@ var require_react_dom_client_development = __commonJS({
         }
       };
       (function() {
-        var isomorphicReactPackageVersion = React7.version;
+        var isomorphicReactPackageVersion = React9.version;
         if ("19.1.1" !== isomorphicReactPackageVersion)
           throw Error(
             'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' + (isomorphicReactPackageVersion + "\n  - react-dom:  19.1.1\nLearn more: https://react.dev/warnings/version-mismatch")
@@ -20705,26 +20705,116 @@ var require_client = __commonJS({
   }
 });
 
+// src/fp.ts
+function variadify(fn, rightAssociative = false) {
+  if (rightAssociative) {
+    return (a, b, ...ts) => {
+      const arr = [a, b, ...ts];
+      let x2 = fn(arr.at(-2), arr.at(-1));
+      for (let i = arr.length - 3; i >= 0; i--) {
+        x2 = fn(arr[i], x2);
+      }
+      return x2;
+    };
+  }
+  return (a, b, ...ts) => {
+    let x2 = fn(a, b);
+    for (const t of ts) x2 = fn(x2, t);
+    return x2;
+  };
+}
+function curry(f, argc) {
+  if (argc === 0) {
+    return f();
+  }
+  if (argc === 1) {
+    return f;
+  }
+  return (arg) => {
+    return curry((...as) => f(arg, ...as), argc - 1);
+  };
+}
+function kurry(f, keys) {
+  keys = new Set(keys);
+  if (keys.size === 0) {
+    return f({});
+  }
+  return (p) => {
+    const newSet = keys.difference(new Set(Object.keys(p)));
+    return kurry((p2) => f({ ...p, ...p2 }), newSet);
+  };
+}
+function multicast(fs) {
+  return (...args) => fs.map((f) => f(...args));
+}
+
 // src/xray.ts
-var xray = (a) => xrayInner(a, (x2) => x2);
-var xrayInner = (a, set) => new Proxy(
+var xray = (a) => xrayInner(a, void 0, (x2) => x2);
+function xrayMulticast(xrs) {
+  return new Proxy(
+    {},
+    {
+      get(target, prop, receiver) {
+        const res = xrs.map((x2) => x2[prop]);
+        if (prop === "$en") {
+          return xrayMulticast(res);
+        }
+        if (prop === "$" || prop === "$s" || prop === "$ctx" || prop === "$e" || prop === "$ec" || prop === "$i" || prop === "$m" || prop === "$mx") {
+          return (...args) => xrayMulticast(multicast(res)(...args));
+        }
+        return res;
+      }
+    }
+  );
+}
+var xrayInner = (a, ctx, set) => new Proxy(
   {},
   {
     get(target, prop, receiver) {
       if (prop === "$v") {
         return set(a);
       } else if (prop === "$") {
+        return (x2) => xrayInner(a, ctx, () => set(x2));
       } else if (prop === "$s") {
+        return (cb2) => xrayInner(a, ctx, () => set(cb2(a, ctx)));
       } else if (prop === "$ctx") {
+        return (cb2) => xrayInner(a, cb2(a, ctx), set);
       }
       if (Array.isArray(a)) {
         if (prop === "$e") {
+          return xrayMulticast(a.map((e, i) => xrayInner(e, i, (x2) => x2)));
         } else if (prop === "$ec") {
+        } else if (prop === "$en") {
+          return xrayMulticast(
+            a.map((e, i) => xrayInner(e, [...ctx ?? [], i], (x2) => x2))
+          );
+        } else if (prop === "$i") {
+          return (p) => xrayInner(
+            a[p],
+            ctx,
+            (x2) => set(a.map((e, i) => i === p ? x2 : e))
+          );
         }
       } else if (typeof a === "object" && a) {
         if (prop === "$m") {
+          return (cb2) => xrayInner(
+            a,
+            ctx,
+            () => set({
+              ...a,
+              ...cb2(a, ctx)
+            })
+          );
         } else if (prop === "$mx") {
         } else {
+          return xrayInner(
+            a[prop],
+            ctx,
+            (x2) => set({
+              ...a,
+              [prop]: x2
+            })
+          );
         }
       }
     }
@@ -21357,6 +21447,24 @@ function getLinesAndCols(str2) {
   out.push([line, col]);
   return out;
 }
+function delimitedSequenceRegex(start, end) {
+  return new RegExp(
+    RegExp.escape(start) + "[\\s\\S]*?" + RegExp.escape(end),
+    "g"
+  );
+}
+function makeDelimitedReplacements(str2, replacements) {
+  for (const r of replacements) {
+    str2 = str2.replaceAll(
+      typeof r.delimiter === "string" ? delimitedSequenceRegex(r.delimiter, r.delimiter) : (
+        // @ts-expect-error
+        delimitedSequenceRegex(r.start, r.end)
+      ),
+      r.replaceWith
+    );
+  }
+  return str2;
+}
 
 // src/string-field.ts
 function stringField(src2) {
@@ -21392,8 +21500,8 @@ function rescaleClamped(x2, a1, b1, a2, b2) {
 function clamp(x2, lo, hi) {
   return Math.max(Math.min(x2, hi), lo);
 }
-function clampToArray(x2, array) {
-  return clamp(x2, 0, array.length - 1);
+function clampToArray(x2, array2) {
+  return clamp(x2, 0, array2.length - 1);
 }
 function getClamped(arr, i) {
   return arr[clampToArray(i, arr)];
@@ -23148,6 +23256,15 @@ function rescale3(a, b) {
 function rescale4(a, b) {
   return scale4(normalize4(a), b);
 }
+function remap2(a, b, c, d, e) {
+  return add2(d, mul2(sub2(e, d), div2(sub2(a, b), sub2(c, b))));
+}
+function remap3(a, b, c, d, e) {
+  return add3(d, mul3(sub3(e, d), div3(sub3(a, b), sub3(c, b))));
+}
+function remap4(a, b, c, d, e) {
+  return add4(d, mul4(sub4(e, d), div4(sub4(a, b), sub4(c, b))));
+}
 function interp2(a, b, c, d) {
   return add2(b, mul2(sub2(c, b), componentwise2(a, d)));
 }
@@ -24613,6 +24730,49 @@ function lineIntersectLine(a, b) {
   const dy = b.b[1];
   return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
 }
+function lineSegmentIntersectLineSegment(a, b) {
+  const t2 = lineIntersectLine(a, b);
+  const t1 = lineIntersectLine(b, a);
+  if (t1 < 0 || t1 > 1) return;
+  if (t2 < 0 || t2 > 1) return;
+  return t2;
+}
+function lineIntersectRect(l, rect) {
+  const topIntersect = lineSegmentIntersectLineSegment(
+    {
+      a: rect.a,
+      b: [rect.b[0], rect.a[1]]
+    },
+    l
+  );
+  const bottomIntersect = lineSegmentIntersectLineSegment(
+    {
+      a: [rect.a[0], rect.b[1]],
+      b: rect.b
+    },
+    l
+  );
+  const leftIntersect = lineSegmentIntersectLineSegment(
+    {
+      a: rect.a,
+      b: [rect.a[0], rect.b[1]]
+    },
+    l
+  );
+  const rightIntersect = lineSegmentIntersectLineSegment(
+    {
+      a: [rect.b[0], rect.a[1]],
+      b: rect.b
+    },
+    l
+  );
+  return [topIntersect, bottomIntersect, leftIntersect, rightIntersect].filter(
+    (i) => i && i >= 0 && i <= 1
+  );
+}
+function lineIntersectRectClosest(l, rect) {
+  return Math.min(...lineIntersectRect(l, rect));
+}
 function rayIntersectLine(ray, b) {
   return lineIntersectLine(
     {
@@ -24721,6 +24881,11 @@ var OneDimensionalSpatialHashTable = class {
   }
 };
 
+// src/math/round.ts
+function roundUp(factor, x2) {
+  return Math.ceil(x2 / factor) * factor;
+}
+
 // src/math/noise.ts
 function fract(x2) {
   return x2 - Math.floor(x2);
@@ -24736,7 +24901,7 @@ function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
   const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
   const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
   const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
-  const v4 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
+  const v42 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
   const o1 = sub2(p, fp);
   const o2 = sub2(o1, [1, 0]);
   const o3 = sub2(o1, [0, 1]);
@@ -24744,7 +24909,7 @@ function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
   const d1 = dot2(v1, o1);
   const d2 = dot2(v2, o2);
   const d3 = dot2(v3, o3);
-  const d4 = dot2(v4, o4);
+  const d4 = dot2(v42, o4);
   const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
   const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
   return lerp(smoothstep(p[1] - fp[1]), h1, h2);
@@ -24753,6 +24918,1404 @@ function boxMullerTransform(u) {
   const a = Math.sqrt(-2 * Math.log(u[0]));
   const b = 2 * Math.PI * u[1];
   return [a * Math.cos(b), a * Math.sin(b)];
+}
+
+// src/webgpu/converters.ts
+var TEXTURE_FORMAT_TO_WGSL_TYPE_LUT = {
+  r8unorm: "f32",
+  r8snorm: "f32",
+  r8uint: "u32",
+  r8sint: "i32",
+  r16unorm: "u32",
+  r16snorm: "i32",
+  r16uint: "u32",
+  r16sint: "i32",
+  r16float: "f32",
+  rg8unorm: "vec2f",
+  rg8snorm: "vec2f",
+  rg8uint: "vec2u",
+  rg8sint: "vec2i",
+  r32uint: "u32",
+  r32sint: "i32",
+  r32float: "f32",
+  rg16unorm: "vec2f",
+  rg16snorm: "vec2f",
+  rg16uint: "vec2u",
+  rg16sint: "vec2i",
+  rg16float: "vec2f",
+  rgba8unorm: "vec4f",
+  "rgba8unorm-srgb": "vec4f",
+  rgba8snorm: "vec4f",
+  rgba8uint: "vec4u",
+  rgba8sint: "vec4i",
+  bgra8unorm: "vec4f",
+  "bgra8unorm-srgb": "vec4f",
+  rgb9e5ufloat: "vec4f",
+  rgb10a2uint: "vec4u",
+  rgb10a2unorm: "vec4f",
+  rg11b10ufloat: "vec4f",
+  rg32uint: "vec2u",
+  rg32sint: "vec2i",
+  rg32float: "vec2f",
+  rgba16unorm: "vec4u",
+  rgba16snorm: "vec4i",
+  rgba16uint: "vec4u",
+  rgba16sint: "vec4i",
+  rgba16float: "vec4f",
+  rgba32uint: "vec4u",
+  rgba32sint: "vec4i",
+  rgba32float: "vec4f",
+  stencil8: "u32",
+  depth16unorm: "f32",
+  depth24plus: "f32",
+  "depth24plus-stencil8": "f32",
+  depth32float: "f32",
+  "depth32float-stencil8": "f32",
+  "bc1-rgba-unorm": "vec4f",
+  "bc1-rgba-unorm-srgb": "vec4f",
+  "bc2-rgba-unorm": "vec4f",
+  "bc2-rgba-unorm-srgb": "vec4f",
+  "bc3-rgba-unorm": "vec4f",
+  "bc3-rgba-unorm-srgb": "vec4f",
+  "bc4-r-unorm": "f32",
+  "bc4-r-snorm": "f32",
+  "bc5-rg-unorm": "vec2f",
+  "bc5-rg-snorm": "vec2f",
+  "bc6h-rgb-ufloat": "vec3f",
+  "bc6h-rgb-float": "vec3f",
+  "bc7-rgba-unorm": "vec4f",
+  "bc7-rgba-unorm-srgb": "vec4f",
+  "etc2-rgb8unorm": "vec3f",
+  "etc2-rgb8unorm-srgb": "vec3f",
+  "etc2-rgb8a1unorm": "vec4f",
+  "etc2-rgb8a1unorm-srgb": "vec4f",
+  "etc2-rgba8unorm": "vec4f",
+  "etc2-rgba8unorm-srgb": "vec4f",
+  "eac-r11unorm": "f32",
+  "eac-r11snorm": "f32",
+  "eac-rg11unorm": "vec2f",
+  "eac-rg11snorm": "vec2f",
+  "astc-4x4-unorm": "vec4f",
+  "astc-4x4-unorm-srgb": "vec4f",
+  "astc-5x4-unorm": "vec4f",
+  "astc-5x4-unorm-srgb": "vec4f",
+  "astc-5x5-unorm": "vec4f",
+  "astc-5x5-unorm-srgb": "vec4f",
+  "astc-6x5-unorm": "vec4f",
+  "astc-6x5-unorm-srgb": "vec4f",
+  "astc-6x6-unorm": "vec4f",
+  "astc-6x6-unorm-srgb": "vec4f",
+  "astc-8x5-unorm": "vec4f",
+  "astc-8x5-unorm-srgb": "vec4f",
+  "astc-8x6-unorm": "vec4f",
+  "astc-8x6-unorm-srgb": "vec4f",
+  "astc-8x8-unorm": "vec4f",
+  "astc-8x8-unorm-srgb": "vec4f",
+  "astc-10x5-unorm": "vec4f",
+  "astc-10x5-unorm-srgb": "vec4f",
+  "astc-10x6-unorm": "vec4f",
+  "astc-10x6-unorm-srgb": "vec4f",
+  "astc-10x8-unorm": "vec4f",
+  "astc-10x8-unorm-srgb": "vec4f",
+  "astc-10x10-unorm": "vec4f",
+  "astc-10x10-unorm-srgb": "vec4f",
+  "astc-12x10-unorm": "vec4f",
+  "astc-12x10-unorm-srgb": "vec4f",
+  "astc-12x12-unorm": "vec4f",
+  "astc-12x12-unorm-srgb": "vec4f"
+};
+function getCopyFootprintPerTexel(fmt, aspect = "all") {
+  if (aspect === "stencil-only") {
+    if (fmt === "depth24plus-stencil8" || fmt === "depth32float-stencil8") {
+      return 1;
+    }
+  } else if (aspect === "depth-only") {
+    if (fmt === "depth32float-stencil8") {
+      return 4;
+    }
+  }
+  return TEXEL_BLOCK_COPY_FOOTPRINTS[fmt];
+}
+var TEXEL_BLOCK_COPY_FOOTPRINTS = {
+  r8unorm: 1,
+  r8snorm: 1,
+  r8uint: 1,
+  r8sint: 1,
+  r16unorm: 2,
+  r16snorm: 2,
+  r16uint: 2,
+  r16sint: 2,
+  r16float: 2,
+  rg8unorm: 2,
+  rg8snorm: 2,
+  rg8uint: 2,
+  rg8sint: 2,
+  r32uint: 4,
+  r32sint: 4,
+  r32float: 4,
+  rg16unorm: 4,
+  rg16snorm: 4,
+  rg16uint: 4,
+  rg16sint: 4,
+  rg16float: 4,
+  rgba8unorm: 4,
+  "rgba8unorm-srgb": 4,
+  rgba8snorm: 4,
+  rgba8uint: 4,
+  rgba8sint: 4,
+  bgra8unorm: 4,
+  "bgra8unorm-srgb": 4,
+  rgb9e5ufloat: 4,
+  rgb10a2uint: 4,
+  rgb10a2unorm: 4,
+  rg11b10ufloat: 4,
+  rg32uint: 8,
+  rg32sint: 8,
+  rg32float: 8,
+  rgba16unorm: 8,
+  rgba16snorm: 8,
+  rgba16uint: 8,
+  rgba16sint: 8,
+  rgba16float: 8,
+  rgba32uint: 16,
+  rgba32sint: 16,
+  rgba32float: 16,
+  stencil8: 1,
+  depth16unorm: 2,
+  depth24plus: void 0,
+  "depth24plus-stencil8": void 0,
+  depth32float: void 0,
+  "depth32float-stencil8": void 0,
+  "bc1-rgba-unorm": 8,
+  "bc1-rgba-unorm-srgb": 8,
+  "bc2-rgba-unorm": 16,
+  "bc2-rgba-unorm-srgb": 16,
+  "bc3-rgba-unorm": 16,
+  "bc3-rgba-unorm-srgb": 16,
+  "bc4-r-unorm": 8,
+  "bc4-r-snorm": 8,
+  "bc5-rg-unorm": 16,
+  "bc5-rg-snorm": 16,
+  "bc6h-rgb-ufloat": 16,
+  "bc6h-rgb-float": 16,
+  "bc7-rgba-unorm": 16,
+  "bc7-rgba-unorm-srgb": 16,
+  "etc2-rgb8unorm": 8,
+  "etc2-rgb8unorm-srgb": 8,
+  "etc2-rgb8a1unorm": 8,
+  "etc2-rgb8a1unorm-srgb": 8,
+  "etc2-rgba8unorm": 16,
+  "etc2-rgba8unorm-srgb": 16,
+  "eac-r11unorm": 8,
+  "eac-r11snorm": 8,
+  "eac-rg11unorm": 16,
+  "eac-rg11snorm": 16,
+  "astc-4x4-unorm": 16,
+  "astc-4x4-unorm-srgb": 16,
+  "astc-5x4-unorm": 16,
+  "astc-5x4-unorm-srgb": 16,
+  "astc-5x5-unorm": 16,
+  "astc-5x5-unorm-srgb": 16,
+  "astc-6x5-unorm": 16,
+  "astc-6x5-unorm-srgb": 16,
+  "astc-6x6-unorm": 16,
+  "astc-6x6-unorm-srgb": 16,
+  "astc-8x5-unorm": 16,
+  "astc-8x5-unorm-srgb": 16,
+  "astc-8x6-unorm": 16,
+  "astc-8x6-unorm-srgb": 16,
+  "astc-8x8-unorm": 16,
+  "astc-8x8-unorm-srgb": 16,
+  "astc-10x5-unorm": 16,
+  "astc-10x5-unorm-srgb": 16,
+  "astc-10x6-unorm": 16,
+  "astc-10x6-unorm-srgb": 16,
+  "astc-10x8-unorm": 16,
+  "astc-10x8-unorm-srgb": 16,
+  "astc-10x10-unorm": 16,
+  "astc-10x10-unorm-srgb": 16,
+  "astc-12x10-unorm": 16,
+  "astc-12x10-unorm-srgb": 16,
+  "astc-12x12-unorm": 16,
+  "astc-12x12-unorm-srgb": 16
+};
+var SAMPLER_TYPE_TO_WGSL_TYPE = {
+  float: "f32",
+  uint: "u32",
+  sint: "i32",
+  depth: "f32"
+};
+var TEXTURE_DIMENSIONALITIES = {
+  texture_1d: "1d",
+  texture_storage_1d: "1d",
+  texture_2d: "2d",
+  texture_storage_2d: "2d",
+  texture_multisampled_2d: "2d",
+  texture_depth_2d: "2d",
+  texture_depth_multisampled_2d: "2d",
+  texture_2d_array: "2d-array",
+  texture_storage_2d_array: "2d-array",
+  texture_depth_2d_array: "2d-array",
+  texture_3d: "3d",
+  texture_storage_3d: "3d",
+  texture_cube: "cube",
+  texture_depth_cube: "cube",
+  texture_cube_array: "cube-array",
+  texture_depth_cube_array: "cube-array"
+};
+var WGSL_TYPE_SIZES = {
+  i32: 4,
+  u32: 4,
+  f32: 4,
+  f16: 2,
+  "atomic<u32>": 4,
+  "atomic<i32>": 4,
+  vec2i: 8,
+  vec2u: 8,
+  vec2f: 8,
+  vec2f16: 4,
+  vec3i: 12,
+  vec3u: 12,
+  vec3f: 12,
+  vec3f16: 6,
+  vec4i: 16,
+  vec4u: 16,
+  vec4f: 16,
+  vec4f16: 8,
+  mat2x2f: 16,
+  mat2x2f16: 8,
+  mat3x2f: 24,
+  mat3x2f16: 12,
+  mat4x2f: 32,
+  mat4x2f16: 16,
+  mat2x3f: 24,
+  mat2x3f16: 12,
+  mat3x3f: 48,
+  mat3x3f16: 24,
+  mat4x3f: 64,
+  mat4x3f16: 32,
+  mat2x4f: 32,
+  mat2x4f16: 16,
+  mat3x4f: 48,
+  mat3x4f16: 24,
+  mat4x4f: 64,
+  mat4x4f16: 32
+};
+var WGSL_TYPE_ALIGNMENTS = {
+  i32: 4,
+  u32: 4,
+  f32: 4,
+  f16: 2,
+  "atomic<u32>": 4,
+  "atomic<i32>": 4,
+  vec2i: 8,
+  vec2u: 8,
+  vec2f: 8,
+  vec2f16: 4,
+  vec3i: 16,
+  vec3u: 16,
+  vec3f: 16,
+  vec3f16: 8,
+  vec4i: 16,
+  vec4u: 16,
+  vec4f: 16,
+  vec4f16: 8,
+  mat2x2f: 8,
+  mat2x2f16: 4,
+  mat3x2f: 8,
+  mat3x2f16: 4,
+  mat4x2f: 8,
+  mat4x2f16: 4,
+  mat2x3f: 16,
+  mat2x3f16: 8,
+  mat3x3f: 16,
+  mat3x3f16: 8,
+  mat4x3f: 16,
+  mat4x3f16: 8,
+  mat2x4f: 16,
+  mat2x4f16: 8,
+  mat3x4f: 16,
+  mat3x4f16: 8,
+  mat4x4f: 16,
+  mat4x4f16: 8
+};
+var WGSL_TYPE_ELEMENT_COUNTS = {
+  i32: 1,
+  u32: 1,
+  f32: 1,
+  f16: 1,
+  "atomic<u32>": 1,
+  "atomic<i32>": 1,
+  vec2i: 2,
+  vec2u: 2,
+  vec2f: 2,
+  vec2f16: 2,
+  vec3i: 3,
+  vec3u: 3,
+  vec3f: 3,
+  vec3f16: 3,
+  vec4i: 4,
+  vec4u: 4,
+  vec4f: 4,
+  vec4f16: 4,
+  mat2x2f: 4,
+  mat2x2f16: 4,
+  mat3x2f: 6,
+  mat3x2f16: 6,
+  mat4x2f: 8,
+  mat4x2f16: 8,
+  mat2x3f: 6,
+  mat2x3f16: 6,
+  mat3x3f: 9,
+  mat3x3f16: 9,
+  mat4x3f: 12,
+  mat4x3f16: 12,
+  mat2x4f: 8,
+  mat2x4f16: 8,
+  mat3x4f: 12,
+  mat3x4f16: 12,
+  mat4x4f: 16,
+  mat4x4f16: 16
+};
+var WGSL_TYPE_DATATYPES = {
+  i32: "i32",
+  u32: "u32",
+  f32: "f32",
+  f16: "f16",
+  "atomic<u32>": "u32",
+  "atomic<i32>": "i32",
+  vec2i: "i32",
+  vec2u: "u32",
+  vec2f: "f32",
+  vec2f16: "f16",
+  vec3i: "i32",
+  vec3u: "u32",
+  vec3f: "f32",
+  vec3f16: "f16",
+  vec4i: "i32",
+  vec4u: "u32",
+  vec4f: "f32",
+  vec4f16: "f16",
+  mat2x2f: "f32",
+  mat2x2f16: "f16",
+  mat3x2f: "f32",
+  mat3x2f16: "f16",
+  mat4x2f: "f32",
+  mat4x2f16: "f16",
+  mat2x3f: "f32",
+  mat2x3f16: "f16",
+  mat3x3f: "f32",
+  mat3x3f16: "f16",
+  mat4x3f: "f32",
+  mat4x3f16: "f16",
+  mat2x4f: "f32",
+  mat2x4f16: "f16",
+  mat3x4f: "f32",
+  mat3x4f16: "f16",
+  mat4x4f: "f32",
+  mat4x4f16: "f16"
+};
+var WGSL_BASE_TYPE_TO_SAMPLER_TYPE = {
+  i32: "sint",
+  u32: "uint",
+  f32: "float",
+  f16: "float"
+};
+
+// src/webgpu/wgsl-struct-layout-generator.ts
+function struct(name, members) {
+  return {
+    type: "struct",
+    name,
+    // @ts-expect-error
+    members: Object.entries(members).map(([k, v]) => [
+      k,
+      typeof v === "string" ? { type: { type: v } } : { type: v }
+    ])
+  };
+}
+function array(count, member) {
+  return {
+    type: "array",
+    count,
+    // @ts-expect-error
+    member: typeof member === "string" ? { type: member } : member
+  };
+}
+function primitive(type) {
+  return { type };
+}
+function getAllStructs(specs) {
+  const ret = [];
+  function r(spec) {
+    if (spec.type === "struct") {
+      ret.push(spec);
+      for (const [n, m] of Array.isArray(spec.members) ? spec.members : Object.entries(spec.members)) {
+        r(m.type);
+      }
+    } else if (spec.type === "array") {
+      r(spec.member);
+    }
+  }
+  for (const s of specs) r(s);
+  return ret;
+}
+function makeCodeForType(type) {
+  if (type.type === "struct") return type.name;
+  if (type.type === "array")
+    return `array<${makeCodeForType(type.member)}${type.count ? ", " + type.count : ""}>`;
+  return type.type;
+}
+function structsCode(spec) {
+  let out = "";
+  const allTypesToDefine = getAllStructs(spec);
+  for (const t of allTypesToDefine) {
+    out += `struct ${t.name} {
+  ${(Array.isArray(t.members) ? t.members : Object.entries(t.members)).map((m) => `${m[0]}: ${makeCodeForType(m[1].type)},`).join("\n  ")}
+}`;
+  }
+  return out;
+}
+function generateLayouts(specs) {
+  const clone = structuredClone(specs);
+  const determineIndividualLayoutSizeAndAlignment = memo(
+    (spec) => {
+      if (spec.type === "struct") {
+        let currOffset = 0;
+        for (const [memberName, member] of spec.members) {
+          determineIndividualLayoutSizeAndAlignment(member.type);
+          member.offset = currOffset;
+          currOffset += roundUp(member.type.align, member.type.size);
+        }
+        const lastMember = spec.members.at(-1)[1];
+        const justPastLastMember = lastMember.offset + lastMember.type.size;
+        spec.align = Math.max(...spec.members.map((m) => m[1].type.align));
+        spec.size = roundUp(spec.align, justPastLastMember);
+      } else if (spec.type === "array") {
+        determineIndividualLayoutSizeAndAlignment(spec.member);
+        spec.size = spec.count * roundUp(spec.member.align, spec.member.size);
+        spec.align = spec.member.align;
+      } else {
+        spec.size = WGSL_TYPE_SIZES[spec.type];
+        spec.align = WGSL_TYPE_ALIGNMENTS[spec.type];
+      }
+    }
+  );
+  for (const e of clone) {
+    determineIndividualLayoutSizeAndAlignment(e);
+  }
+  return clone;
+}
+function wgslDataTypeToDataViewSetter(dt) {
+  return {
+    i32: "setInt32",
+    u32: "setUint32",
+    f32: "setFloat32",
+    f16: "setFloat16"
+  }[dt];
+}
+function wgslDataTypeToDataViewGetter(dt) {
+  return {
+    i32: "getInt32",
+    u32: "getUint32",
+    f32: "getFloat32",
+    f16: "getFloat16"
+  }[dt];
+}
+function createLayoutGenerator(spec) {
+  function createSetters(spec2, baseOffset, arrayNestingLevel, extraOffsets, accessor) {
+    if (spec2.type === "struct") {
+      return spec2.members.map(
+        ([name, member]) => createSetters(
+          member.type,
+          baseOffset + member.offset,
+          arrayNestingLevel,
+          extraOffsets,
+          accessor + `.${name}`
+        )
+      ).join("\n");
+    } else if (spec2.type === "array") {
+      const iname = `i${arrayNestingLevel}`;
+      const elemSize = roundUp(spec2.member.align, spec2.member.size);
+      return `for (let ${iname} = 0; ${iname} < ${spec2.count}; ${iname}++) {
+  ${createSetters(spec2.member, baseOffset, arrayNestingLevel + 1, [...extraOffsets, `${iname} * ${elemSize}`], accessor + `[${iname}]`)} 
+}`;
+    } else {
+      const iname = `i${arrayNestingLevel}`;
+      const primitiveCount = WGSL_TYPE_ELEMENT_COUNTS[spec2.type];
+      return `for (let ${iname} = 0; ${iname} < ${WGSL_TYPE_ELEMENT_COUNTS[spec2.type]}; ${iname}++) {
+  dst.${wgslDataTypeToDataViewSetter(WGSL_TYPE_DATATYPES[spec2.type])}(
+    ${baseOffset} + ${extraOffsets.join(" + ")} + ${iname} * ${WGSL_TYPE_SIZES[WGSL_TYPE_DATATYPES[spec2.type]]},
+    ${primitiveCount > 1 ? accessor + `[${iname}]` : accessor},
+    true
+  );
+}`;
+    }
+  }
+  const fnbody = createSetters(spec, 0, 0, [], "src");
+  return new Function("dst", "src", fnbody);
+}
+function readWgslLayout(spec, view, offset = 0) {
+  if (spec.type === "struct") {
+    return Object.fromEntries(
+      spec.members.map(([name, value]) => [
+        name,
+        readWgslLayout(value.type, view, offset + value.offset)
+      ])
+    );
+  } else if (spec.type === "array") {
+    const elemSize = roundUp(spec.member.align, spec.member.size);
+    return range(spec.count).map(
+      (i) => readWgslLayout(spec.member, view, offset + i * elemSize)
+    );
+  } else {
+    const count = WGSL_TYPE_ELEMENT_COUNTS[spec.type];
+    const elemType = WGSL_TYPE_DATATYPES[spec.type];
+    const getter = wgslDataTypeToDataViewGetter(elemType);
+    const elemSize = WGSL_TYPE_SIZES[elemType];
+    let arr = [];
+    for (let i = 0; i < count; i++) {
+      arr.push(view[getter](offset + i * elemSize, true));
+    }
+    return count === 1 ? arr[0] : arr;
+  }
+}
+function createWgslSerializers(...ss) {
+  const layouts = generateLayouts(ss);
+  const gens = layouts.map((l) => ({
+    dataLayout: l,
+    gen: createLayoutGenerator(l)
+  }));
+  return {
+    code: structsCode(layouts),
+    generators: gens
+  };
+}
+
+// src/webgpu/wgsl-snippets.ts
+var WgslSnippets = {
+  unitQuadSigned: {
+    src: `const UNIT_QUAD_SIGNED = array(
+    vec2( 1.0,  1.0),
+    vec2( 1.0, -1.0),
+    vec2(-1.0, -1.0),
+    vec2( 1.0,  1.0),
+    vec2(-1.0, -1.0),
+    vec2(-1.0,  1.0),
+)`
+  },
+  unitQuadUnsigned: {
+    src: `const UNIT_QUAD_UNSIGNED = array(
+    vec2(1.0, 0.0),
+    vec2(1.0, 1.0),
+    vec2(0.0, 1.0),
+    vec2(1.0, 0.0),
+    vec2(0.0, 1.0),
+)`
+  },
+  logistic: {
+    src: `fn logistic(x: f32) -> f32 {
+  return 1.0 / (1.0 + exp(-x)); 
+}`
+  },
+  DITHER256_THRESHOLDS: {
+    src: `array<f32, 256>(
+  0,
+  128,
+  32,
+  160,
+  8,
+  136,
+  40,
+  168,
+  2,
+  130,
+  34,
+  162,
+  10,
+  138,
+  42,
+  170,
+  192,
+  64,
+  224,
+  96,
+  200,
+  72,
+  232,
+  104,
+  194,
+  66,
+  226,
+  98,
+  202,
+  74,
+  234,
+  106,
+  48,
+  176,
+  16,
+  144,
+  56,
+  184,
+  24,
+  152,
+  50,
+  178,
+  18,
+  146,
+  58,
+  186,
+  26,
+  154,
+  240,
+  112,
+  208,
+  80,
+  248,
+  120,
+  216,
+  88,
+  242,
+  114,
+  210,
+  82,
+  250,
+  122,
+  218,
+  90,
+  12,
+  140,
+  44,
+  172,
+  4,
+  132,
+  36,
+  164,
+  14,
+  142,
+  46,
+  174,
+  6,
+  134,
+  38,
+  166,
+  204,
+  76,
+  236,
+  108,
+  196,
+  68,
+  228,
+  100,
+  206,
+  78,
+  238,
+  110,
+  198,
+  70,
+  230,
+  102,
+  60,
+  188,
+  28,
+  156,
+  52,
+  180,
+  20,
+  148,
+  62,
+  190,
+  30,
+  158,
+  54,
+  182,
+  22,
+  150,
+  252,
+  124,
+  220,
+  92,
+  244,
+  116,
+  212,
+  84,
+  254,
+  126,
+  222,
+  94,
+  246,
+  118,
+  214,
+  86,
+  3,
+  131,
+  35,
+  163,
+  11,
+  139,
+  43,
+  171,
+  1,
+  129,
+  33,
+  161,
+  9,
+  137,
+  41,
+  169,
+  195,
+  67,
+  227,
+  99,
+  203,
+  75,
+  235,
+  107,
+  193,
+  65,
+  225,
+  97,
+  201,
+  73,
+  233,
+  105,
+  51,
+  179,
+  19,
+  147,
+  59,
+  187,
+  27,
+  155,
+  49,
+  177,
+  17,
+  145,
+  57,
+  185,
+  25,
+  153,
+  243,
+  115,
+  211,
+  83,
+  251,
+  123,
+  219,
+  91,
+  241,
+  113,
+  209,
+  81,
+  249,
+  121,
+  217,
+  89,
+  15,
+  143,
+  47,
+  175,
+  7,
+  135,
+  39,
+  167,
+  13,
+  141,
+  45,
+  173,
+  5,
+  133,
+  37,
+  165,
+  207,
+  79,
+  239,
+  111,
+  199,
+  71,
+  231,
+  103,
+  205,
+  77,
+  237,
+  109,
+  197,
+  69,
+  229,
+  101,
+  63,
+  191,
+  31,
+  159,
+  55,
+  183,
+  23,
+  151,
+  61,
+  189,
+  29,
+  157,
+  53,
+  181,
+  21,
+  149,
+  255,
+  127,
+  223,
+  95,
+  247,
+  119,
+  215,
+  87,
+  253,
+  125,
+  221,
+  93,
+  245,
+  117,
+  213,
+  85
+)}`
+  },
+  dither256: {
+    src: `fn dither256(factor: f32, coord: vec2i) -> bool {
+  let x = coord.x % 16;
+  let y = coord.y % 16;
+  let threshold = DITHER256_THRESHOLDS[y * 16 + x] / 256.0;
+  return factor > threshold ;
+}`,
+    deps: ["DITHER256_THRESHOLDS"]
+  },
+  // thank you https://gist.github.com/munrocket/236ed5ba7e409b8bdf1ff6eca5dcdc39
+  hash: {
+    src: `// https://www.pcg-random.org/
+fn hash11(n: u32) -> u32 {
+    var h = n * 747796405u + 2891336453u;
+    h = ((h >> ((h >> 28u) + 4u)) ^ h) * 277803737u;
+    return (h >> 22u) ^ h;
+}
+
+fn hash22(p: vec2u) -> vec2u {
+    var v = p * 1664525u + 1013904223u;
+    v.x += v.y * 1664525u; v.y += v.x * 1664525u;
+    v ^= v >> vec2u(16u);
+    v.x += v.y * 1664525u; v.y += v.x * 1664525u;
+    v ^= v >> vec2u(16u);
+    return v;
+}
+
+// http://www.jcgt.org/published/0009/03/02/
+fn hash33(p: vec3u) -> vec3u {
+    var v = p * 1664525u + 1013904223u;
+    v.x += v.y*v.z; v.y += v.z*v.x; v.z += v.x*v.y;
+    v ^= v >> vec3u(16u);
+    v.x += v.y*v.z; v.y += v.z*v.x; v.z += v.x*v.y;
+    return v;
+}
+
+// http://www.jcgt.org/published/0009/03/02/
+fn hash44(p: vec4u) -> vec4u {
+    var v = p * 1664525u + 1013904223u;
+    v.x += v.y*v.w; v.y += v.z*v.x; v.z += v.x*v.y; v.w += v.y*v.z;
+    v ^= v >> vec4u(16u);
+    v.x += v.y*v.w; v.y += v.z*v.x; v.z += v.x*v.y; v.w += v.y*v.z;
+    return v;
+}`
+  },
+  rand: {
+    src: `fn rand11(f: f32) -> f32 { return f32(hash11(bitcast<u32>(f))) / f32(0xffffffff); }
+fn rand22(f: vec2f) -> vec2f { return vec2f(hash22(bitcast<vec2u>(f))) / f32(0xffffffff); }
+fn rand33(f: vec3f) -> vec3f { return vec3f(hash33(bitcast<vec3u>(f))) / f32(0xffffffff); }
+fn rand44(f: vec4f) -> vec4f { return vec4f(hash44(bitcast<vec4u>(f))) / f32(0xffffffff); }`,
+    deps: ["hash"]
+  },
+  valueNoise: {
+    src: `
+   // WTFPL License
+fn noise(p: f32) -> f32 {
+    let fl = floor(p);
+    return mix(rand11(fl), rand11(fl + 1.), fract(p));
+}
+    
+// WTFPL License
+fn noise2(n: vec2f) -> f32 {
+    let d = vec2f(0., 1.);
+    let b = floor(n);
+    let f = smoothStep(vec2f(0.), vec2f(1.), fract(n));
+    return mix(mix(rand22(b), rand22(b + d.yx), f.x), mix(rand22(b + d.xy), rand22(b + d.yy), f.x), f.y);
+}
+
+// MIT License. \xA9 Stefan Gustavson, Munrocket
+//
+fn mod289(x: vec4f) -> vec4f { return x - floor(x * (1. / 289.)) * 289.; }
+fn perm4(x: vec4f) -> vec4f { return mod289(((x * 34.) + 1.) * x); }
+
+fn noise3(p: vec3f) -> f32 {
+    let a = floor(p);
+    var d: vec3f = p - a;
+    d = d * d * (3. - 2. * d);
+
+    let b = a.xxyy + vec4f(0., 1., 0., 1.);
+    let k1 = perm4(b.xyxy);
+    let k2 = perm4(k1.xyxy + b.zzww);
+
+    let c = k2 + a.zzzz;
+    let k3 = perm4(c);
+    let k4 = perm4(c + 1.);
+
+    let o1 = fract(k3 * (1. / 41.));
+    let o2 = fract(k4 * (1. / 41.));
+
+    let o3 = o2 * d.z + o1 * (1. - d.z);
+    let o4 = o3.yw * d.x + o3.xz * (1. - d.x);
+
+    return o4.y * d.y + o4.x * (1. - d.y);
+}
+    `,
+    deps: ["rand"]
+  },
+  permute4: {
+    src: `
+fn permute4(x: vec4f) -> vec4f { return ((x * 34. + 1.) * x) % vec4f(289.); }
+    `
+  },
+  // note: Operator % has changed, probably current code with it need a fix
+  perlinNoise: {
+    src: `
+   // MIT License. \xA9 Stefan Gustavson, Munrocket
+fn fade2(t: vec2f) -> vec2f { return t * t * t * (t * (t * 6. - 15.) + 10.); }
+
+fn perlinNoise2(P: vec2f) -> f32 {
+    var Pi: vec4f = floor(P.xyxy) + vec4f(0., 0., 1., 1.);
+    let Pf = fract(P.xyxy) - vec4f(0., 0., 1., 1.);
+    Pi = Pi % vec4f(289.); // To avoid truncation effects in permutation
+    let ix = Pi.xzxz;
+    let iy = Pi.yyww;
+    let fx = Pf.xzxz;
+    let fy = Pf.yyww;
+    let i = permute4(permute4(ix) + iy);
+    var gx: vec4f = 2. * fract(i * 0.0243902439) - 1.; // 1/41 = 0.024...
+    let gy = abs(gx) - 0.5;
+    let tx = floor(gx + 0.5);
+    gx = gx - tx;
+    var g00: vec2f = vec2f(gx.x, gy.x);
+    var g10: vec2f = vec2f(gx.y, gy.y);
+    var g01: vec2f = vec2f(gx.z, gy.z);
+    var g11: vec2f = vec2f(gx.w, gy.w);
+    let norm = 1.79284291400159 - 0.85373472095314 *
+        vec4f(dot(g00, g00), dot(g01, g01), dot(g10, g10), dot(g11, g11));
+    g00 = g00 * norm.x;
+    g01 = g01 * norm.y;
+    g10 = g10 * norm.z;
+    g11 = g11 * norm.w;
+    let n00 = dot(g00, vec2f(fx.x, fy.x));
+    let n10 = dot(g10, vec2f(fx.y, fy.y));
+    let n01 = dot(g01, vec2f(fx.z, fy.z));
+    let n11 = dot(g11, vec2f(fx.w, fy.w));
+    let fade_xy = fade2(Pf.xy);
+    let n_x = mix(vec2f(n00, n01), vec2f(n10, n11), vec2f(fade_xy.x));
+    let n_xy = mix(n_x.x, n_x.y, fade_xy.y);
+    return 2.3 * n_xy;
+}
+    
+// MIT License. \xA9 Stefan Gustavson, Munrocket
+fn taylorInvSqrt4(r: vec4f) -> vec4f { return 1.79284291400159 - 0.85373472095314 * r; }
+fn fade3(t: vec3f) -> vec3f { return t * t * t * (t * (t * 6. - 15.) + 10.); }
+
+fn perlinNoise3(P: vec3f) -> f32 {
+    var Pi0 : vec3f = floor(P); // Integer part for indexing
+    var Pi1 : vec3f = Pi0 + vec3f(1.); // Integer part + 1
+    Pi0 = Pi0 % vec3f(289.);
+    Pi1 = Pi1 % vec3f(289.);
+    let Pf0 = fract(P); // Fractional part for interpolation
+    let Pf1 = Pf0 - vec3f(1.); // Fractional part - 1.
+    let ix = vec4f(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+    let iy = vec4f(Pi0.yy, Pi1.yy);
+    let iz0 = Pi0.zzzz;
+    let iz1 = Pi1.zzzz;
+
+    let ixy = permute4(permute4(ix) + iy);
+    let ixy0 = permute4(ixy + iz0);
+    let ixy1 = permute4(ixy + iz1);
+
+    var gx0: vec4f = ixy0 / 7.;
+    var gy0: vec4f = fract(floor(gx0) / 7.) - 0.5;
+    gx0 = fract(gx0);
+    var gz0: vec4f = vec4f(0.5) - abs(gx0) - abs(gy0);
+    var sz0: vec4f = step(gz0, vec4f(0.));
+    gx0 = gx0 + sz0 * (step(vec4f(0.), gx0) - 0.5);
+    gy0 = gy0 + sz0 * (step(vec4f(0.), gy0) - 0.5);
+
+    var gx1: vec4f = ixy1 / 7.;
+    var gy1: vec4f = fract(floor(gx1) / 7.) - 0.5;
+    gx1 = fract(gx1);
+    var gz1: vec4f = vec4f(0.5) - abs(gx1) - abs(gy1);
+    var sz1: vec4f = step(gz1, vec4f(0.));
+    gx1 = gx1 - sz1 * (step(vec4f(0.), gx1) - 0.5);
+    gy1 = gy1 - sz1 * (step(vec4f(0.), gy1) - 0.5);
+
+    var g000: vec3f = vec3f(gx0.x, gy0.x, gz0.x);
+    var g100: vec3f = vec3f(gx0.y, gy0.y, gz0.y);
+    var g010: vec3f = vec3f(gx0.z, gy0.z, gz0.z);
+    var g110: vec3f = vec3f(gx0.w, gy0.w, gz0.w);
+    var g001: vec3f = vec3f(gx1.x, gy1.x, gz1.x);
+    var g101: vec3f = vec3f(gx1.y, gy1.y, gz1.y);
+    var g011: vec3f = vec3f(gx1.z, gy1.z, gz1.z);
+    var g111: vec3f = vec3f(gx1.w, gy1.w, gz1.w);
+
+    let norm0 = taylorInvSqrt4(
+        vec4f(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
+    g000 = g000 * norm0.x;
+    g010 = g010 * norm0.y;
+    g100 = g100 * norm0.z;
+    g110 = g110 * norm0.w;
+    let norm1 = taylorInvSqrt4(
+        vec4f(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
+    g001 = g001 * norm1.x;
+    g011 = g011 * norm1.y;
+    g101 = g101 * norm1.z;
+    g111 = g111 * norm1.w;
+
+    let n000 = dot(g000, Pf0);
+    let n100 = dot(g100, vec3f(Pf1.x, Pf0.yz));
+    let n010 = dot(g010, vec3f(Pf0.x, Pf1.y, Pf0.z));
+    let n110 = dot(g110, vec3f(Pf1.xy, Pf0.z));
+    let n001 = dot(g001, vec3f(Pf0.xy, Pf1.z));
+    let n101 = dot(g101, vec3f(Pf1.x, Pf0.y, Pf1.z));
+    let n011 = dot(g011, vec3f(Pf0.x, Pf1.yz));
+    let n111 = dot(g111, Pf1);
+
+    var fade_xyz: vec3f = fade3(Pf0);
+    let temp = vec4f(f32(fade_xyz.z)); // simplify after chrome bug fix
+    let n_z = mix(vec4f(n000, n100, n010, n110), vec4f(n001, n101, n011, n111), temp);
+    let n_yz = mix(n_z.xy, n_z.zw, vec2f(f32(fade_xyz.y))); // simplify after chrome bug fix
+    let n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
+    return 2.2 * n_xyz;
+}
+    `,
+    deps: ["rand", "permute4"]
+  },
+  rescale: {
+    src: ["f32", "vec2f", "vec3f", "vec4f"].map(
+      (v, i) => `
+      fn rescale${i}(x: ${v}, a1: ${v}, b1: ${v}, a2: ${v}, b2: ${v}) -> ${v} {
+        let temp = (x - a1) / (b1 - a1);
+        return mix(a2, b2, temp);
+      } 
+    `
+    ).join("\n\n")
+  }
+};
+function useWgslSnippetsRaw(ss) {
+  return "\n" + ss.map((s) => `// IMPORTED_SNIPPET: ${s}
+${WgslSnippets[s].src}`).join("\n\n");
+}
+function snippetWithDependencies(sn, deps = /* @__PURE__ */ new Set()) {
+  deps.add(sn);
+  for (const d of WgslSnippets[sn]?.deps ?? []) {
+    snippetWithDependencies(d, deps);
+  }
+  return deps;
+}
+function useWgslSnippets(str2) {
+  const snippetNames = str2.split(/\s+/g);
+  const withdeps = new Set(
+    snippetNames.flatMap((s) => [...snippetWithDependencies(s)])
+  );
+  return useWgslSnippetsRaw([...withdeps]);
+}
+
+// raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/simple-filter.wgsl?raw
+var simple_filter_default = "/*TEXTURES*/\r\n\r\n/*TEXTURES*/\r\n\r\n\r\n/*GLOBALS*/\r\n\r\n/*GLOBALS*/\r\n\r\nstruct FragInput {\r\n  @builtin(position) position : vec4f,\r\n  @location(0) uv : vec2f,\r\n}\r\n\r\n@vertex\r\nfn VSMain(@builtin(vertex_index) vertexIndex: u32) -> FragInput {\r\n  var output: FragInput;\r\n\r\n  output.position = vec4(array(\r\n    vec2( 1.0,  1.0),\r\n    vec2( 1.0, -1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2( 1.0,  1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2(-1.0,  1.0),\r\n  )[vertexIndex], 0.5, 1.0);\r\n\r\n  output.uv = array(\r\n    vec2(1.0, 0.0),\r\n    vec2(1.0, 1.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(1.0, 0.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(0.0, 0.0),\r\n  )[vertexIndex];\r\n\r\n  return output;\r\n}\r\n\r\nstruct Output {\r\n/*OUTPUT_STRUCT*/\r\n\r\n/*OUTPUT_STRUCT*/\r\n}\r\n\r\n@fragment\r\nfn FSMain(@location(0) uv : vec2f) -> Output  {\r\n  /*FRAGMENT_BODY*/\r\n\r\n  /*FRAGMENT_BODY*/\r\n}";
+
+// src/webgpu/simple-filter.ts
+function createSimpleFilterShader(params) {
+  return makeDelimitedReplacements(simple_filter_default, [
+    {
+      delimiter: "/*TEXTURES*/",
+      replaceWith: params.textures
+    },
+    {
+      delimiter: "/*GLOBALS*/",
+      replaceWith: params.globals
+    },
+    {
+      delimiter: "/*OUTPUT_STRUCT*/",
+      replaceWith: params.outputStruct
+    },
+    {
+      delimiter: "/*FRAGMENT_BODY*/",
+      replaceWith: params.fragmentBody
+    }
+  ]);
+}
+function createSimpleFilterPipeline(device, spec) {
+  let fragmentBody = "";
+  let bindings = "";
+  let bindingIndex = 0;
+  const inputEntries = Object.entries(spec.inputs);
+  const samplers = [];
+  let hasInputs = inputEntries.length > 0;
+  if (hasInputs) {
+    for (const s of spec.samplers ?? [{}]) {
+      bindings += `@group(0) @binding(${bindingIndex})
+var sampler${bindingIndex}: sampler;
+`;
+      samplers.push(device.createSampler(s));
+      bindingIndex++;
+    }
+  }
+  bindingIndex = 0;
+  const nameToInputMap = /* @__PURE__ */ new Map();
+  const nameToOutputMap = /* @__PURE__ */ new Map();
+  let uniformBindGroupIndex = hasInputs ? 2 : 0;
+  for (const [name, value] of inputEntries) {
+    bindings += `@group(1) @binding(${bindingIndex}) 
+var tex_${name}: ${value.dimensionality ?? "texture_2d"}<${value.type ?? "f32"}>;`;
+    nameToInputMap.set(name, bindingIndex);
+    fragmentBody += !value.dimensionality ? `  var ${name} = textureSample(tex_${name}, sampler${value.sampleWith ?? 0}, uv);
+` : "";
+    bindingIndex++;
+  }
+  let outputStruct = "";
+  let outputBindingIndex = 0;
+  for (const [name, value] of Object.entries(spec.outputs)) {
+    outputStruct += `  @location(${outputBindingIndex}) ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]},
+`;
+    nameToOutputMap.set(name, outputBindingIndex);
+    fragmentBody += `  var ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]};
+`;
+    outputBindingIndex++;
+  }
+  fragmentBody += spec.source;
+  fragmentBody += `
+  var OUTPUT: Output;
+`;
+  const outputsEntries = Object.entries(spec.outputs);
+  for (const [name, value] of outputsEntries) {
+    fragmentBody += `  OUTPUT.${name} = ${name};
+`;
+  }
+  fragmentBody += "return OUTPUT;";
+  let globals = "";
+  globals += spec.globals ?? "";
+  if (spec.uniforms) {
+    globals += `@group(${uniformBindGroupIndex}) @binding(0) var<uniform> params : Params;
+struct Params {
+`;
+    for (const [uniformName, uniformType] of Object.entries(
+      spec.uniforms ?? {}
+    )) {
+      globals += `  ${uniformName}: ${uniformType},
+`;
+    }
+    globals += "}";
+  }
+  const shaderSource = createSimpleFilterShader({
+    textures: bindings,
+    globals,
+    outputStruct,
+    fragmentBody
+  });
+  const [uniformLayouts] = spec.uniforms ? (
+    // @ts-expect-error
+    generateLayouts([struct("Params", spec.uniforms)])
+  ) : void 0;
+  const uniformGenerator = createLayoutGenerator(uniformLayouts);
+  const module = device.createShaderModule({
+    code: shaderSource
+  });
+  const pipeline = device.createRenderPipeline({
+    layout: "auto",
+    vertex: { module },
+    fragment: {
+      module,
+      targets: outputsEntries.map(([name, value]) => ({
+        format: value
+      }))
+    }
+  });
+  const samplerBindGroup = hasInputs ? device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(0),
+    entries: samplers.map((s, i) => ({
+      resource: s,
+      binding: i
+    }))
+  }) : void 0;
+  return {
+    pipeline,
+    makeUniformBuffer() {
+      const buffer = device.createBuffer({
+        size: 1024,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
+      });
+      const bindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
+        entries: [
+          {
+            resource: buffer,
+            binding: 0
+          }
+        ]
+      });
+      const ret = {
+        buffer,
+        bindGroup,
+        setBuffer(values) {
+          const buf = new ArrayBuffer(uniformLayouts.size);
+          uniformGenerator(new DataView(buf), values);
+          device.queue.writeBuffer(buffer, 0, buf);
+          return ret;
+        }
+      };
+      return ret;
+    },
+    withInputs(inputs) {
+      const inputTextureBindGroup = hasInputs ? device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(1),
+        entries: inputEntries.map(([name, value], i) => ({
+          resource: inputs[name],
+          binding: i
+        }))
+      }) : void 0;
+      return {
+        withUniforms: (uniforms) => {
+          function record(bundleEncoder) {
+            bundleEncoder.setPipeline(pipeline);
+            if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
+            if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
+            if (uniforms)
+              bundleEncoder.setBindGroup(
+                uniformBindGroupIndex,
+                uniforms.bindGroup
+              );
+            bundleEncoder.draw(6);
+          }
+          const defaultBundleEncoder = device.createRenderBundleEncoder({
+            colorFormats: outputsEntries.map((o) => o[1])
+          });
+          record(defaultBundleEncoder);
+          const bundle = defaultBundleEncoder.finish();
+          return {
+            run: (encoder, outputs) => {
+              const pass = encoder.beginRenderPass({
+                colorAttachments: outputsEntries.map(
+                  ([name, value]) => outputs[name] instanceof GPUTextureView ? {
+                    view: outputs[name],
+                    clearValue: [0, 0, 0, 1],
+                    loadOp: "clear",
+                    storeOp: "store"
+                  } : outputs[name]
+                )
+              });
+              pass.executeBundles([bundle]);
+              pass.end();
+            },
+            bundle,
+            runWithRenderPass: (pass) => {
+              pass.executeBundles([bundle]);
+            },
+            record
+          };
+        }
+      };
+    }
+  };
+}
+
+// src/webgpu/readpixels.ts
+function readPixelsSizeReq(params) {
+  let { format, subregion } = params;
+  const copyFootprintPerTexel = getCopyFootprintPerTexel(format);
+  const area = sub3(subregion[1], subregion[0]);
+  return roundUp(256, copyFootprintPerTexel * area[0]) * area[1] * area[2];
+}
+async function readPixels(params) {
+  let { device, tex, buf, subregion, mipLevel, aspect, offsetInBuffer } = params;
+  const copyFootprintPerTexel = getCopyFootprintPerTexel(params.tex.format);
+  if (!subregion) {
+    subregion = [
+      [0, 0, 0],
+      [tex.width, tex.height, tex.depthOrArrayLayers]
+    ];
+  }
+  const enc = device.createCommandEncoder();
+  const area = sub3(subregion[1], subregion[0]);
+  const bytesPerRow = roundUp(256, copyFootprintPerTexel * area[0]);
+  const rowsPerImage = area[1];
+  enc.copyTextureToBuffer(
+    {
+      texture: tex,
+      mipLevel,
+      aspect,
+      origin: subregion[0]
+    },
+    {
+      buffer: buf,
+      offset: offsetInBuffer,
+      bytesPerRow,
+      rowsPerImage
+    },
+    area
+  );
+  device.queue.submit([enc.finish()]);
+  await device.queue.onSubmittedWorkDone();
+  await buf.mapAsync(GPUMapMode.READ);
+  const range2 = buf.getMappedRange();
+  return {
+    range: range2,
+    bytesPerRow,
+    rowsPerImage
+  };
+}
+async function readPixelsToCpuBuffer(params) {
+  const { tex } = params;
+  const size = readPixelsSizeReq({
+    format: tex.format,
+    subregion: params.subregion ?? [
+      [0, 0, 0],
+      [tex.width, tex.height, tex.depthOrArrayLayers]
+    ]
+  });
+  const cpuBuffer = params.cpuBuffer ?? new ArrayBuffer(size);
+  const mappedBuffer = await readPixels(params);
+  const mappedBufferContents = new Uint8Array(mappedBuffer.range);
+  const cpuBufferContents = new Uint8Array(cpuBuffer);
+  for (let i = 0; i < mappedBufferContents.length; i++) {
+    cpuBufferContents[i] = mappedBufferContents[i];
+  }
+  params.buf.unmap();
+  return {
+    cpuBuffer,
+    bytesPerRow: mappedBuffer.bytesPerRow,
+    rowsPerImage: mappedBuffer.rowsPerImage,
+    size
+  };
+}
+
+// src/webgpu/math.ts
+function perspectiveWebgpu(fieldOfViewInRadians, aspectRatio, near, far) {
+  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
+  const rangeInv = 1 / (near - far);
+  return [
+    f / aspectRatio,
+    0,
+    0,
+    0,
+    0,
+    f,
+    0,
+    0,
+    0,
+    0,
+    far * rangeInv,
+    -1,
+    0,
+    0,
+    near * far * rangeInv,
+    0
+  ];
 }
 
 // src/webgpu/bind-group-generator.ts
@@ -24836,14 +26399,429 @@ function generateUniformBufferInner(spec, values, view, offset) {
     );
   }
 }
-function generateUniformBuffer(spec, values) {
-  const buf = new ArrayBuffer(spec.size);
-  const view = new DataView(buf);
+function generateUniformBuffer(spec, values, buffer, byteOffset) {
+  const buf = buffer ?? new ArrayBuffer(spec.size);
+  const view = new DataView(buf, byteOffset);
   generateUniformBufferInner(spec, values, view, 0);
   return buf;
 }
-function makeUniformBuffer(spec, group, binding, data) {
-  return generateUniformBuffer(spec.bindGroups[group][binding].type, data);
+function getUniformBufferSize(spec, group, binding) {
+  return spec.bindGroups[group][binding].type.size;
+}
+function makeUniformBuffer(spec, group, binding, data, buffer, byteOffset) {
+  return generateUniformBuffer(
+    spec.bindGroups[group][binding].type,
+    data,
+    buffer,
+    byteOffset
+  );
+}
+
+// src/webgl/shader.ts
+function source2shader(gl, type, source) {
+  const shader = gl.createShader(
+    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
+  );
+  if (!shader) return err(void 0);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
+    return err(void 0);
+  }
+  return ok(shader);
+}
+function shaders2program(gl, v, f) {
+  const program = gl.createProgram();
+  gl.attachShader(program, v);
+  gl.attachShader(program, f);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+    return err(void 0);
+  }
+  return ok(program);
+}
+function sources2program(gl, vs, fs) {
+  const v = source2shader(gl, "v", vs);
+  const f = source2shader(gl, "f", fs);
+  if (!v.ok || !f.ok) return err(void 0);
+  return shaders2program(gl, v.data, f.data);
+}
+function fullscreenQuadBuffer(gl) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      -1,
+      -1,
+      1,
+      -1,
+      -1,
+      1,
+      1,
+      1,
+      -1,
+      1,
+      1,
+      -1
+    ]),
+    gl.STATIC_DRAW
+  );
+  return ok(buffer);
+}
+function glRenderToQuad(options) {
+  const canvas = document.createElement("canvas");
+  canvas.width = options.width;
+  canvas.height = options.height;
+  const gl = canvas.getContext(options.version ?? "webgl2");
+  gl.viewport(0, 0, options.width, options.height);
+  if (!gl) return err(void 0);
+  const buf = fullscreenQuadBuffer(gl);
+  const prog = sources2program(
+    gl,
+    `#version 300 es
+precision highp float;
+
+in vec2 in_vpos;
+out vec2 pos;
+
+void main() {
+  pos = in_vpos * 0.5 + 0.5;
+  gl_Position = vec4(in_vpos, 0.5, 1.0);
+}`,
+    (options.noheader ? "" : `#version 300 es
+precision highp float;
+in vec2 pos;
+out vec4 col;
+`) + (options.noAutoUniforms ? "" : [
+      [options.uniforms, "", "float"],
+      [options.intUniforms, "i", "int"],
+      [options.uintUniforms, "u", "uint"]
+    ].map(
+      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
+        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
+      }).join("\n")
+    ).join("\n")) + options.fragsource
+  );
+  if (!prog.data) return err(void 0);
+  gl.useProgram(prog.data);
+  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
+  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(attrloc);
+  for (const [uniforms, type] of [
+    [options.uniforms, "i"],
+    [options.intUniforms, "i"],
+    [options.uintUniforms, "ui"]
+  ]) {
+    for (const [k, v] of Object.entries(uniforms ?? {})) {
+      const v2 = Array.isArray(v) ? v : [v];
+      gl[`uniform${v2.length}${type}v`](
+        gl.getUniformLocation(prog.data, k),
+        v2
+      );
+    }
+  }
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  return ok(canvas);
+}
+
+// src/webgl/scene.ts
+function applyUniform(gl, prog, name, spec) {
+  const [t, d] = spec;
+  const l = gl.getUniformLocation(prog, name);
+  if (l === null) {
+    throw new Error(
+      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
+    );
+  }
+  if (t === "float") gl.uniform1f(l, d);
+  if (t === "vec2") gl.uniform2f(l, ...d);
+  if (t === "vec3") gl.uniform3f(l, ...d);
+  if (t === "vec4") gl.uniform4f(l, ...d);
+  if (t === "int") gl.uniform1i(l, d);
+  if (t === "ivec2") gl.uniform2i(l, ...d);
+  if (t === "ivec3") gl.uniform3i(l, ...d);
+  if (t === "ivec4") gl.uniform4i(l, ...d);
+  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
+  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
+  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
+  if (t === "float[]") gl.uniform1fv(l, d);
+  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
+  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
+  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
+  if (t === "int[]") gl.uniform1iv(l, d);
+  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
+  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
+  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
+  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
+  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
+  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
+}
+function applyUniforms(gl, prog, uniforms) {
+  for (const [k, v] of Object.entries(uniforms)) {
+    applyUniform(gl, prog, k, v);
+  }
+}
+function createScene(sceneSpec) {
+  const gl = sceneSpec.gl;
+  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
+  let sceneUniforms = sceneSpec.uniforms ?? {};
+  return {
+    uniforms() {
+      return sceneUniforms;
+    },
+    resetUniforms(u) {
+      sceneUniforms = u;
+    },
+    updateUniforms(u) {
+      sceneUniforms = { ...sceneUniforms, ...u };
+    },
+    addObject3D(spec) {
+      let objectUniforms = spec.uniforms ?? {};
+      return {
+        gl() {
+          return gl;
+        },
+        draw() {
+          gl.useProgram(spec.program);
+          spec.buffer.setLayout(spec.program);
+          applyUniforms(
+            gl,
+            spec.program,
+            combineUniforms(sceneUniforms, objectUniforms)
+          );
+          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
+        },
+        uniforms() {
+          return objectUniforms;
+        },
+        resetUniforms(u) {
+          objectUniforms = u;
+        },
+        updateUniforms(u) {
+          objectUniforms = { ...objectUniforms, ...u };
+        }
+      };
+    }
+  };
+}
+
+// src/webgl/mesh.ts
+function parametric2D(x2, y2, attr, getPoint) {
+  const data = [];
+  for (let j = 0; j < y2; j++) {
+    for (let i = 0; i < x2; i++) {
+      const a = getPoint(i, j);
+      const b = getPoint(i + 1, j);
+      const c = getPoint(i, j + 1);
+      const d = getPoint(i + 1, j + 1);
+      data.push({ [attr]: a });
+      data.push({ [attr]: c });
+      data.push({ [attr]: b });
+      data.push({ [attr]: c });
+      data.push({ [attr]: d });
+      data.push({ [attr]: b });
+    }
+  }
+  return data;
+}
+function uvSphere(x2, y2, rad, attr) {
+  return parametric2D(x2, y2, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
+    let px = Math.cos(a) * Math.cos(b) * rad;
+    let pz = Math.sin(a) * Math.cos(b) * rad;
+    let py = Math.sin(b) * rad;
+    return [px, py, pz];
+  });
+}
+function ring(x2, rad, height, attr) {
+  return parametric2D(x2, 1, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const px = Math.cos(a) * rad;
+    const pz = Math.sin(a) * rad;
+    const py = j === 1 ? height / 2 : -height / 2;
+    return [px, py, pz];
+  });
+}
+function torus(x2, y2, R, r, attr) {
+  return parametric2D(x2, y2, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const b = (j + y2) % y2 / y2 * Math.PI * 2;
+    let px = Math.cos(a);
+    let pz = Math.sin(a);
+    let py = Math.sin(b) * r;
+    px *= R + Math.cos(b) * r;
+    pz *= R + Math.cos(b) * r;
+    return [px, py, pz];
+  });
+}
+function move(mesh, attr, offset) {
+  return mesh.map((m) => ({
+    ...m,
+    [attr]: m[attr].map((e, i) => e + offset[i])
+  }));
+}
+function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
+  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
+  const rangeInv = 1 / (near - far);
+  return [
+    f / aspectRatio,
+    0,
+    0,
+    0,
+    0,
+    f,
+    0,
+    0,
+    0,
+    0,
+    (near + far) * rangeInv,
+    -1,
+    0,
+    0,
+    near * far * rangeInv * 2,
+    0
+  ];
+}
+function ortho(left, right, top, bottom, near, far) {
+  return [
+    2 / (right - left),
+    0,
+    0,
+    -(right + left) / (right - left),
+    0,
+    2 / (top - bottom),
+    0,
+    -(top + bottom) / (top - bottom),
+    0,
+    0,
+    -2 / (far - near),
+    -(far + near) / (far - near),
+    0,
+    0,
+    0,
+    1
+  ];
+}
+function normalize(v) {
+  const len = Math.hypot(...v);
+  return scale3(v, 1 / len);
+}
+function rodrigues(v, k, theta) {
+  k = normalize(k);
+  return add3(
+    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+  );
+}
+function rotate(axis, angle) {
+  return [
+    ...rodrigues([1, 0, 0], axis, angle),
+    0,
+    ...rodrigues([0, 1, 0], axis, angle),
+    0,
+    ...rodrigues([0, 0, 1], axis, angle),
+    0,
+    0,
+    0,
+    0,
+    1
+  ];
+}
+function scale(axes) {
+  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
+}
+function translate(v) {
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
+}
+
+// src/webgl/buffer.ts
+function getDatatypeSize(gl, datatype) {
+  return {
+    [gl.BYTE]: 1,
+    [gl.SHORT]: 2,
+    [gl.UNSIGNED_BYTE]: 1,
+    [gl.UNSIGNED_SHORT]: 2,
+    [gl.FLOAT]: 4,
+    [gl.HALF_FLOAT]: 2,
+    [gl.INT]: 4,
+    [gl.UNSIGNED_INT]: 4,
+    [gl.INT_2_10_10_10_REV]: 4,
+    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
+  }[datatype];
+}
+function createBufferWithLayout(gl, layout, data) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  const layoutEntries = Object.entries(layout);
+  let stride = 0;
+  const offsets = /* @__PURE__ */ new Map();
+  for (const [name, attrs] of layoutEntries) {
+    offsets.set(name, stride);
+    stride += attrs.size * getDatatypeSize(gl, attrs.type);
+  }
+  const arraybuf = new ArrayBuffer(stride * data.length);
+  const rawdata = new DataView(arraybuf);
+  let i = 0;
+  for (const d of data) {
+    for (const [name, attrs] of layoutEntries) {
+      for (let j = 0; j < attrs.size; j++) {
+        const val = d[name][j];
+        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
+        if (attrs.type === gl.BYTE) {
+          rawdata.setInt8(pos, val);
+        } else if (attrs.type === gl.UNSIGNED_BYTE) {
+          rawdata.setUint8(pos, val);
+        } else if (attrs.type === gl.FLOAT) {
+          rawdata.setFloat32(pos, val, true);
+        } else if (attrs.type === gl.SHORT) {
+          rawdata.setInt16(pos, val, true);
+        } else if (attrs.type === gl.UNSIGNED_SHORT) {
+          rawdata.setUint16(pos, val, true);
+        }
+      }
+    }
+    i++;
+  }
+  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
+  return {
+    vertexCount: data.length,
+    buffer,
+    setLayout(prog) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      for (const [name, attrs] of layoutEntries) {
+        const loc = gl.getAttribLocation(prog, name);
+        if (attrs.isInt) {
+          gl.vertexAttribIPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            stride,
+            offsets.get(name)
+          );
+        } else {
+          gl.vertexAttribPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            attrs.normalized ?? false,
+            stride,
+            offsets.get(name)
+          );
+        }
+        gl.enableVertexAttribArray(loc);
+      }
+    },
+    bindArray(gl2) {
+      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
+    },
+    bindIndex(gl2) {
+      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
+    }
+  };
 }
 
 // src/audio/stream-audio.ts
@@ -25577,11 +27555,11 @@ function checkInputLength(actual, expected) {
   }
 }
 function createArray(len) {
-  const array = [];
+  const array2 = [];
   for (var i = 0; i < len; i++) {
-    array.push(0);
+    array2.push(0);
   }
-  return array;
+  return array2;
 }
 
 // node_modules/ml-convolution/src/fftConvolution.js
@@ -28984,475 +30962,235 @@ function bezierPreview(beziers, size) {
   return c;
 }
 
-// src/webgl/shader.ts
-function source2shader(gl, type, source) {
-  const shader = gl.createShader(
-    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
-  );
-  if (!shader) return err(void 0);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader));
-    return err(void 0);
-  }
-  return ok(shader);
-}
-function shaders2program(gl, v, f) {
-  const program = gl.createProgram();
-  gl.attachShader(program, v);
-  gl.attachShader(program, f);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(program));
-    return err(void 0);
-  }
-  return ok(program);
-}
-function sources2program(gl, vs, fs) {
-  const v = source2shader(gl, "v", vs);
-  const f = source2shader(gl, "f", fs);
-  if (!v.ok || !f.ok) return err(void 0);
-  return shaders2program(gl, v.data, f.data);
-}
-function fullscreenQuadBuffer(gl) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      -1,
-      -1,
-      1,
-      -1,
-      -1,
-      1,
-      1,
-      1,
-      -1,
-      1,
-      1,
-      -1
-    ]),
-    gl.STATIC_DRAW
-  );
-  return ok(buffer);
-}
-function glRenderToQuad(options) {
-  const canvas = document.createElement("canvas");
-  canvas.width = options.width;
-  canvas.height = options.height;
-  const gl = canvas.getContext(options.version ?? "webgl2");
-  gl.viewport(0, 0, options.width, options.height);
-  if (!gl) return err(void 0);
-  const buf = fullscreenQuadBuffer(gl);
-  const prog = sources2program(
-    gl,
-    `#version 300 es
-precision highp float;
+// src/webgpu/gpudoc/ui.tsx
+var import_react4 = __toESM(require_react());
+var import_client = __toESM(require_client());
 
-in vec2 in_vpos;
-out vec2 pos;
+// src/webgpu/gpudoc/display-texture.ts
+function create2dShaderFormat(device, samplerType, outputFormat) {
+  console.log("creating new pipeline", samplerType, outputFormat);
+  return createSimpleFilterPipeline(device, {
+    inputs: {
+      input: {
+        type: SAMPLER_TYPE_TO_WGSL_TYPE[samplerType],
+        dimensionality: samplerType === "depth" ? "texture_depth_2d" : "texture_2d"
+      }
+    },
+    outputs: {
+      dst: outputFormat
+    },
+    uniforms: {
+      cornerA: "vec2f",
+      cornerB: "vec2f",
+      blackEquiv: "vec4f",
+      whiteEquiv: "vec4f"
+    },
+    source: `
+let uv2 = mix(params.cornerA, params.cornerB, uv);
 
-void main() {
-  pos = in_vpos * 0.5 + 0.5;
-  gl_Position = vec4(in_vpos, 0.5, 1.0);
-}`,
-    (options.noheader ? "" : `#version 300 es
-precision highp float;
-in vec2 pos;
-out vec4 col;
-`) + (options.noAutoUniforms ? "" : [
-      [options.uniforms, "", "float"],
-      [options.intUniforms, "i", "int"],
-      [options.uintUniforms, "u", "uint"]
-    ].map(
-      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
-        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
-      }).join("\n")
-    ).join("\n")) + options.fragsource
+let pixel = vec4f(textureSample(tex_input, sampler0, uv2));
+
+dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
+    `
+  });
+}
+function textureDisplayer(device) {
+  const getDisplayerPipeline = memo(
+    (samplerType, outputFormat) => create2dShaderFormat(device, samplerType, outputFormat)
   );
-  if (!prog.data) return err(void 0);
-  gl.useProgram(prog.data);
-  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
-  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(attrloc);
-  for (const [uniforms, type] of [
-    [options.uniforms, "i"],
-    [options.intUniforms, "i"],
-    [options.uintUniforms, "ui"]
-  ]) {
-    for (const [k, v] of Object.entries(uniforms ?? {})) {
-      const v2 = Array.isArray(v) ? v : [v];
-      gl[`uniform${v2.length}${type}v`](
-        gl.getUniformLocation(prog.data, k),
-        v2
-      );
-    }
-  }
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-  return ok(canvas);
-}
-
-// src/webgl/scene.ts
-function applyUniform(gl, prog, name, spec) {
-  const [t, d] = spec;
-  const l = gl.getUniformLocation(prog, name);
-  if (l === null) {
-    throw new Error(
-      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
-    );
-  }
-  if (t === "float") gl.uniform1f(l, d);
-  if (t === "vec2") gl.uniform2f(l, ...d);
-  if (t === "vec3") gl.uniform3f(l, ...d);
-  if (t === "vec4") gl.uniform4f(l, ...d);
-  if (t === "int") gl.uniform1i(l, d);
-  if (t === "ivec2") gl.uniform2i(l, ...d);
-  if (t === "ivec3") gl.uniform3i(l, ...d);
-  if (t === "ivec4") gl.uniform4i(l, ...d);
-  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
-  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
-  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
-  if (t === "float[]") gl.uniform1fv(l, d);
-  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
-  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
-  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
-  if (t === "int[]") gl.uniform1iv(l, d);
-  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
-  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
-  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
-  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
-  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
-  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
-}
-function applyUniforms(gl, prog, uniforms) {
-  for (const [k, v] of Object.entries(uniforms)) {
-    applyUniform(gl, prog, k, v);
-  }
-}
-function createScene(sceneSpec) {
-  const gl = sceneSpec.gl;
-  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
-  let sceneUniforms = sceneSpec.uniforms ?? {};
   return {
-    uniforms() {
-      return sceneUniforms;
-    },
-    resetUniforms(u) {
-      sceneUniforms = u;
-    },
-    updateUniforms(u) {
-      sceneUniforms = { ...sceneUniforms, ...u };
-    },
-    addObject3D(spec) {
-      let objectUniforms = spec.uniforms ?? {};
-      return {
-        gl() {
-          return gl;
-        },
-        draw() {
-          gl.useProgram(spec.program);
-          spec.buffer.setLayout(spec.program);
-          applyUniforms(
-            gl,
-            spec.program,
-            combineUniforms(sceneUniforms, objectUniforms)
-          );
-          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
-        },
-        uniforms() {
-          return objectUniforms;
-        },
-        resetUniforms(u) {
-          objectUniforms = u;
-        },
-        updateUniforms(u) {
-          objectUniforms = { ...objectUniforms, ...u };
-        }
-      };
+    displayTexture2d(src2, dst, encoder) {
+      const pipeline = getDisplayerPipeline(src2.samplerType, dst.format);
+      const uniforms = pipeline.makeUniformBuffer().setBuffer({
+        cornerA: src2.cornerA,
+        cornerB: src2.cornerB,
+        blackEquiv: src2.blackEquiv,
+        whiteEquiv: src2.whiteEquiv
+      });
+      pipeline.withInputs({
+        input: src2.tex
+      }).withUniforms(uniforms).run(encoder, {
+        dst: dst.tex
+      });
     }
   };
 }
 
-// src/webgl/mesh.ts
-function parametric2D(x2, y2, attr, getPoint) {
-  const data = [];
-  for (let j = 0; j < y2; j++) {
-    for (let i = 0; i < x2; i++) {
-      const a = getPoint(i, j);
-      const b = getPoint(i + 1, j);
-      const c = getPoint(i, j + 1);
-      const d = getPoint(i + 1, j + 1);
-      data.push({ [attr]: a });
-      data.push({ [attr]: c });
-      data.push({ [attr]: b });
-      data.push({ [attr]: c });
-      data.push({ [attr]: d });
-      data.push({ [attr]: b });
-    }
-  }
-  return data;
+// raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/gpudoc/gpudoc.css?raw
+var gpudoc_default = ':root {\r\n  --default-padding: 1rem;\r\n  --default-border: 1px solid #999;\r\n  --input-color: #000;\r\n  --red: #f66;\r\n  --green: #4f4;\r\n  --blue: #aaf;\r\n  --alpha: #bbb;\r\n}\r\n\r\n.gpudoc {\r\n  width: 100vw;\r\n  height: 100vh;\r\n  position: absolute;\r\n  top: 0;\r\n  left: 0;\r\n  z-index: 9999;\r\n  background-color: #121212;\r\n  color: white;\r\n  font-family: sans-serif;\r\n  border-right: var(--default-border);\r\n  display: grid;\r\n  grid-template-areas:\r\n    "tab-bar"\r\n    "tab";\r\n  grid-template-rows: max-content 1fr;\r\n  box-sizing: border-box;\r\n}\r\n\r\n.tex-thumbs {\r\n  display: grid;\r\n  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\r\n  list-style: none;\r\n}\r\n\r\n.tex-thumbs li {\r\n  display: flex;\r\n  align-items: center;\r\n  flex-direction: column;\r\n  max-width: 350px;\r\n  padding: var(--default-padding);\r\n}\r\n\r\n.tex-thumbs .name {\r\n  font-weight: bold;\r\n  margin-bottom: var(--default-padding);\r\n}\r\n\r\n.tex-thumbs .canvas,\r\n.tex-thumbs canvas {\r\n  width: 100%;\r\n}\r\n\r\n.tab-bar {\r\n  font-size: 0.9em;\r\n  padding: 0;\r\n  margin: 0;\r\n  display: flex;\r\n  flex-wrap: wrap;\r\n  border-bottom: var(--default-border);\r\n  list-style: none;\r\n  grid-area: tab-bar;\r\n}\r\n\r\n.tab-bar li {\r\n  padding: calc(var(--default-padding) * 0.5);\r\n  border-right: var(--default-border);\r\n}\r\n\r\n.tab-bar li.selected {\r\n  background-color: #333;\r\n}\r\n\r\n.gpudoc .tab {\r\n  grid-area: tab;\r\n  height: 100%;\r\n}\r\n\r\n.tex-inspector {\r\n  height: 100%;\r\n  display: grid;\r\n  grid-template-areas: "canvas ui";\r\n}\r\n\r\n.tex-inspector > div:has(canvas) {\r\n  height: 100%;\r\n  grid-area: canvas;\r\n  position: relative;\r\n  overflow: hidden;\r\n}\r\n\r\n.tex-inspector canvas {\r\n  height: 100%;\r\n  width: 100%;\r\n}\r\n\r\n.tex-inspector .ui {\r\n  grid-area: ui;\r\n}\r\n\r\n.color-sliders {\r\n  display: grid;\r\n  grid-template-areas:\r\n    "darklabel lightlabel"\r\n    "dark light";\r\n}\r\n\r\n.color-sliders .dark,\r\n.color-sliders .light {\r\n  display: flex;\r\n  flex-direction: column;\r\n}\r\n\r\n.dark-label {\r\n  grid-area: darklabel;\r\n}\r\n.light-label {\r\n  grid-area: lightlabel;\r\n}\r\n\r\n.color-sliders .dark {\r\n  grid-area: dark;\r\n}\r\n.color-sliders .light {\r\n  grid-area: light;\r\n}\r\n\r\n.color-sliders input {\r\n  border: var(--default-border);\r\n  background-color: var(--input-color);\r\n  width: 4rem;\r\n}\r\n\r\n.color-sliders input:nth-child(1) {\r\n  color: var(--red);\r\n}\r\n.color-sliders input:nth-child(2) {\r\n  color: var(--green);\r\n}\r\n.color-sliders input:nth-child(3) {\r\n  color: var(--blue);\r\n}\r\n.color-sliders input:nth-child(4) {\r\n  color: var(--alpha);\r\n}\r\n\r\n.texel-inspector-window {\r\n  border: var(--default-border);\r\n  background-color: #121212;\r\n}\r\n\r\n.texel-marker {\r\n  border-radius: 3px;\r\n  border: 1px solid black;\r\n  outline: 1px solid white;\r\n}\r\n\r\n.line-segment {\r\n  border-radius: 3px;\r\n  border: 1px solid white;\r\n  background-color: black;\r\n}\r\n\r\n.texel-dragger {\r\n  width: 20px;\r\n  height: 20px;\r\n  transform: translate(-10px, -10px);\r\n  border-radius: 10px;\r\n  background-color: #0003;\r\n  border: 1px solid #fff8;\r\n}\r\n\r\n.dragger {\r\n  cursor: grab;\r\n}\r\n\r\n.texel-components {\r\n  display: grid;\r\n  grid-template-columns: repeat(4, 1fr);\r\n}\r\n\r\n.red {\r\n  color: var(--red);\r\n}\r\n.green {\r\n  color: var(--green);\r\n}\r\n.blue {\r\n  color: var(--blue);\r\n}\r\n.alpha {\r\n  color: var(--alpha);\r\n}\r\n';
+
+// node_modules/uuid/dist/stringify.js
+var byteToHex = [];
+for (let i = 0; i < 256; ++i) {
+  byteToHex.push((i + 256).toString(16).slice(1));
 }
-function uvSphere(x2, y2, rad, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
-    let px = Math.cos(a) * Math.cos(b) * rad;
-    let pz = Math.sin(a) * Math.cos(b) * rad;
-    let py = Math.sin(b) * rad;
-    return [px, py, pz];
-  });
-}
-function ring(x2, rad, height, attr) {
-  return parametric2D(x2, 1, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const px = Math.cos(a) * rad;
-    const pz = Math.sin(a) * rad;
-    const py = j === 1 ? height / 2 : -height / 2;
-    return [px, py, pz];
-  });
-}
-function torus(x2, y2, R, r, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI * 2;
-    let px = Math.cos(a);
-    let pz = Math.sin(a);
-    let py = Math.sin(b) * r;
-    px *= R + Math.cos(b) * r;
-    pz *= R + Math.cos(b) * r;
-    return [px, py, pz];
-  });
-}
-function move(mesh, attr, offset) {
-  return mesh.map((m) => ({
-    ...m,
-    [attr]: m[attr].map((e, i) => e + offset[i])
-  }));
-}
-function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
-  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
-  const rangeInv = 1 / (near - far);
-  return [
-    f / aspectRatio,
-    0,
-    0,
-    0,
-    0,
-    f,
-    0,
-    0,
-    0,
-    0,
-    (near + far) * rangeInv,
-    -1,
-    0,
-    0,
-    near * far * rangeInv * 2,
-    0
-  ];
-}
-function ortho(left, right, top, bottom, near, far) {
-  return [
-    2 / (right - left),
-    0,
-    0,
-    -(right + left) / (right - left),
-    0,
-    2 / (top - bottom),
-    0,
-    -(top + bottom) / (top - bottom),
-    0,
-    0,
-    -2 / (far - near),
-    -(far + near) / (far - near),
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function normalize(v) {
-  const len = Math.hypot(...v);
-  return scale3(v, 1 / len);
-}
-function rodrigues(v, k, theta) {
-  k = normalize(k);
-  return add3(
-    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-  );
-}
-function rotate(axis, angle) {
-  return [
-    ...rodrigues([1, 0, 0], axis, angle),
-    0,
-    ...rodrigues([0, 1, 0], axis, angle),
-    0,
-    ...rodrigues([0, 0, 1], axis, angle),
-    0,
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function scale(axes) {
-  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
-}
-function translate(v) {
-  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
+function unsafeStringify(arr, offset = 0) {
+  return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
 }
 
-// src/webgl/buffer.ts
-function getDatatypeSize(gl, datatype) {
-  return {
-    [gl.BYTE]: 1,
-    [gl.SHORT]: 2,
-    [gl.UNSIGNED_BYTE]: 1,
-    [gl.UNSIGNED_SHORT]: 2,
-    [gl.FLOAT]: 4,
-    [gl.HALF_FLOAT]: 2,
-    [gl.INT]: 4,
-    [gl.UNSIGNED_INT]: 4,
-    [gl.INT_2_10_10_10_REV]: 4,
-    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
-  }[datatype];
-}
-function createBufferWithLayout(gl, layout, data) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  const layoutEntries = Object.entries(layout);
-  let stride = 0;
-  const offsets = /* @__PURE__ */ new Map();
-  for (const [name, attrs] of layoutEntries) {
-    offsets.set(name, stride);
-    stride += attrs.size * getDatatypeSize(gl, attrs.type);
-  }
-  const arraybuf = new ArrayBuffer(stride * data.length);
-  const rawdata = new DataView(arraybuf);
-  let i = 0;
-  for (const d of data) {
-    for (const [name, attrs] of layoutEntries) {
-      for (let j = 0; j < attrs.size; j++) {
-        const val = d[name][j];
-        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
-        if (attrs.type === gl.BYTE) {
-          rawdata.setInt8(pos, val);
-        } else if (attrs.type === gl.UNSIGNED_BYTE) {
-          rawdata.setUint8(pos, val);
-        } else if (attrs.type === gl.FLOAT) {
-          rawdata.setFloat32(pos, val, true);
-        } else if (attrs.type === gl.SHORT) {
-          rawdata.setInt16(pos, val, true);
-        } else if (attrs.type === gl.UNSIGNED_SHORT) {
-          rawdata.setUint16(pos, val, true);
-        }
-      }
+// node_modules/uuid/dist/rng.js
+var getRandomValues;
+var rnds8 = new Uint8Array(16);
+function rng() {
+  if (!getRandomValues) {
+    if (typeof crypto === "undefined" || !crypto.getRandomValues) {
+      throw new Error("crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported");
     }
-    i++;
+    getRandomValues = crypto.getRandomValues.bind(crypto);
   }
-  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
-  return {
-    vertexCount: data.length,
-    buffer,
-    setLayout(prog) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      for (const [name, attrs] of layoutEntries) {
-        const loc = gl.getAttribLocation(prog, name);
-        if (attrs.isInt) {
-          gl.vertexAttribIPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            stride,
-            offsets.get(name)
-          );
-        } else {
-          gl.vertexAttribPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            attrs.normalized ?? false,
-            stride,
-            offsets.get(name)
-          );
-        }
-        gl.enableVertexAttribArray(loc);
-      }
-    },
-    bindArray(gl2) {
-      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
-    },
-    bindIndex(gl2) {
-      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
-    }
-  };
+  return getRandomValues(rnds8);
 }
 
-// src/ui/upload-image.tsx
-var pretendThisIsAModule = {};
+// node_modules/uuid/dist/native.js
+var randomUUID = typeof crypto !== "undefined" && crypto.randomUUID && crypto.randomUUID.bind(crypto);
+var native_default = { randomUUID };
 
-// src/ui/react-string-field.tsx
+// node_modules/uuid/dist/v4.js
+function _v4(options, buf, offset) {
+  options = options || {};
+  const rnds = options.random ?? options.rng?.() ?? rng();
+  if (rnds.length < 16) {
+    throw new Error("Random bytes length must be >= 16");
+  }
+  rnds[6] = rnds[6] & 15 | 64;
+  rnds[8] = rnds[8] & 63 | 128;
+  if (buf) {
+    offset = offset || 0;
+    if (offset < 0 || offset + 16 > buf.length) {
+      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+    }
+    for (let i = 0; i < 16; ++i) {
+      buf[offset + i] = rnds[i];
+    }
+    return buf;
+  }
+  return unsafeStringify(rnds);
+}
+function v4(options, buf, offset) {
+  if (native_default.randomUUID && !buf && !options) {
+    return native_default.randomUUID();
+  }
+  return _v4(options, buf, offset);
+}
+var v4_default = v4;
+
+// src/ui/pan-and-zoom.tsx
 var import_react = __toESM(require_react());
-function StringField(props) {
-  if (props.isTextarea) {
-    return /* @__PURE__ */ import_react.default.createElement(
-      "textarea",
-      {
-        value: props.value,
-        onInput: (e) => {
-          props.setValue(e.currentTarget.value);
-        }
+function panAndZoomMatrix(rect, containerWidth, containerHeight) {
+  const scaleX = 1 / (rect.b[0] - rect.a[0]) * containerWidth;
+  const scaleY = 1 / (rect.b[1] - rect.a[1]) * containerHeight;
+  const translateX = -rect.a[0] * scaleX;
+  const translateY = -rect.a[1] * scaleY;
+  return [scaleX, 0, 0, scaleY, translateX, translateY];
+}
+function panAndZoomCanvas2d(canvas, ctx, rect) {
+  ctx.transform(...panAndZoomMatrix(rect, canvas.width, canvas.height));
+}
+function TransformHTML(props) {
+  const coords = props.coords;
+  const eref = (0, import_react.useRef)(null);
+  (0, import_react.useEffect)(() => {
+    const e = eref.current;
+    if (!e || !e.parentElement) return;
+    const rect = e.parentElement.getBoundingClientRect();
+    e.style.transformOrigin = "top left";
+    e.style.transform = `scale(${1 / rect.width}, ${1 / rect.height}) matrix(${panAndZoomMatrix(coords, rect.width, rect.height)})`;
+    e.style.position = "relative";
+  }, [props.coords]);
+  return /* @__PURE__ */ import_react.default.createElement("div", { ref: eref }, props.children);
+}
+function PanAndZoom(props) {
+  const scrollSensitivity = props.scrollSensitivity ?? 1;
+  const scrollDecay = props.scrollDecay ?? 0.01;
+  const scrollSnapToZero = props.scrollSnapToZero ?? 1e-3;
+  const scrollVel = (0, import_react.useRef)(0);
+  const mouseDown = (0, import_react.useRef)(false);
+  const normalizedMousePos = (0, import_react.useRef)({ x: 0, y: 0 });
+  (0, import_react.useEffect)(() => {
+    let stopped = false;
+    let lastTime = performance.now();
+    const cb2 = (time) => {
+      if (stopped) return;
+      const deltaTime = time - lastTime;
+      lastTime = time;
+      scrollVel.current *= Math.pow(scrollDecay, deltaTime / 1e3);
+      if (Math.abs(scrollVel.current) > scrollSnapToZero) {
+        props.setCoords((c) => {
+          const targetOriginX = lerp(
+            normalizedMousePos.current.x,
+            c.a[0],
+            c.b[0]
+          );
+          const targetOriginY = lerp(
+            normalizedMousePos.current.y,
+            c.a[1],
+            c.b[1]
+          );
+          const scrollAmount = scrollVel.current * deltaTime / 1e3;
+          return {
+            a: [
+              lerp(scrollAmount, c.a[0], targetOriginX),
+              lerp(scrollAmount, c.a[1], targetOriginY)
+            ],
+            b: [
+              lerp(scrollAmount, c.b[0], targetOriginX),
+              lerp(scrollAmount, c.b[1], targetOriginY)
+            ]
+          };
+        });
+        props.onUpdate?.();
       }
-    );
-  }
+      requestAnimationFrame(cb2);
+    };
+    requestAnimationFrame(cb2);
+    return () => {
+      stopped = true;
+    };
+  }, []);
+  const divref = (0, import_react.useRef)(null);
   return /* @__PURE__ */ import_react.default.createElement(
-    "input",
+    "div",
     {
-      value: props.value,
-      onInput: (e) => {
-        props.setValue(e.currentTarget.value);
+      style: {
+        width: "fit-content",
+        display: "flex"
+      },
+      ref: divref,
+      onWheel: (e) => {
+        e.preventDefault();
+        scrollVel.current += Math.sign(e.deltaY) * scrollSensitivity * (props.swapScroll ? -1 : 1);
+      },
+      onMouseDown: (e) => {
+        mouseDown.current = true;
+      },
+      onMouseUp: (e) => {
+        mouseDown.current = false;
+      },
+      onMouseMove: (e) => {
+        const rect = divref.current?.getBoundingClientRect();
+        if (!rect) return;
+        normalizedMousePos.current = {
+          x: rescale(e.nativeEvent.offsetX, 0, rect.width, 0, 1),
+          y: rescale(e.nativeEvent.offsetY, 0, rect.height, 0, 1)
+        };
+        if (!mouseDown.current) return;
+        props.setCoords((c) => {
+          const dx = -rescale(e.movementX, 0, rect.width, 0, c.b[0] - c.a[0]);
+          const dy = -rescale(e.movementY, 0, rect.height, 0, c.b[1] - c.a[1]);
+          return {
+            a: [c.a[0] + dx, c.a[1] + dy],
+            b: [c.b[0] + dx, c.b[1] + dy]
+          };
+        });
+        props.onUpdate?.();
       }
-    }
+    },
+    props.children
   );
-}
-
-// src/ui/react-object-field.tsx
-var import_react2 = __toESM(require_react());
-function objectFieldDataToNativeObject(t) {
-  return Object.fromEntries(Object.entries(t).map(([k, v]) => [k, v.value]));
-}
-function ObjectField(props) {
-  return /* @__PURE__ */ import_react2.default.createElement("ul", null, Object.entries(props.value).map(([k, v]) => {
-    const Comp = props.components[v.ui];
-    return /* @__PURE__ */ import_react2.default.createElement("li", { key: k }, v.label ? /* @__PURE__ */ import_react2.default.createElement("label", null, v.label) : /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null), /* @__PURE__ */ import_react2.default.createElement(
-      Comp,
-      {
-        value: v.value,
-        setValue: (val) => {
-          props.setValue({
-            ...props.value,
-            [k]: {
-              ...props.value[k],
-              value: val
-            }
-          });
-        },
-        ...v.props
-      }
-    ), v.description ? /* @__PURE__ */ import_react2.default.createElement("div", null, v.description) : /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null));
-  }));
-}
-function useObjectFieldLayout() {
-  return function(t) {
-    return (0, import_react2.useState)(t);
-  };
 }
 
 // src/ui/react-number-field.tsx
-var import_react3 = __toESM(require_react());
+var import_react2 = __toESM(require_react());
 function stringifyNumber(x2) {
   return x2.toLocaleString("fullwide", {
     useGrouping: false,
@@ -29474,11 +31212,12 @@ function NumberField(propsOpt) {
     offset: 0,
     displayPrecision: 3,
     defaultIfNaN: 0,
+    jumpstartDragFromZero: 0,
     ...propsOpt
   };
   const value = isNaN(props.value) ? props.defaultIfNaN : props.value;
-  const [valueTemp, _setValueTemp] = (0, import_react3.useState)(stringifyNumber(value));
-  const lastNumberRef = (0, import_react3.useRef)(value);
+  const [valueTemp, _setValueTemp] = (0, import_react2.useState)(stringifyNumber(value));
+  const lastNumberRef = (0, import_react2.useRef)(value);
   function constrain(n) {
     return roundAndClamp(n, props.min, props.max, props.step, props.offset);
   }
@@ -29500,13 +31239,13 @@ function NumberField(propsOpt) {
       forceConstrain
     );
   }
-  (0, import_react3.useEffect)(() => {
+  (0, import_react2.useEffect)(() => {
     if (lastNumberRef.current !== value) {
       lastNumberRef.current = value;
       _setValueTemp(stringifyNumber(value));
     }
   }, [value]);
-  return /* @__PURE__ */ import_react3.default.createElement(
+  return /* @__PURE__ */ import_react2.default.createElement(
     "input",
     {
       value: valueTemp,
@@ -29519,12 +31258,17 @@ function NumberField(propsOpt) {
         });
       },
       onMouseDown: async (e) => {
+        const elem = e.currentTarget;
         await e.currentTarget.requestPointerLock();
         let dragnum = value;
         const mousemoveListener = (e2) => {
           const x2 = e2.movementX;
           if (props.scale === "log") {
-            dragnum = dragnum * (2 ** props.sensitivity) ** x2;
+            if (dragnum === 0) {
+              dragnum = props.jumpstartDragFromZero * Math.sign(x2);
+            } else {
+              dragnum = dragnum * (2 ** props.sensitivity) ** x2;
+            }
           } else {
             dragnum += x2 * props.sensitivity;
           }
@@ -29542,13 +31286,638 @@ function NumberField(propsOpt) {
   );
 }
 
-// src/ui/react-infinite-scroll.tsx
-var import_react4 = __toESM(require_react());
-function useAsyncSequence(callback, init, dependencies) {
-  const [seq2, setSeq] = (0, import_react4.useState)(init);
-  const batchIndex = (0, import_react4.useRef)(0);
-  const isRunning = (0, import_react4.useRef)(true);
+// src/ui/react-draggable-window.tsx
+var import_react3 = __toESM(require_react());
+var DraggableWindowContext = (0, import_react3.createContext)(void 0);
+function useParentDims(getParent) {
+  const [parentDims, setParentDims] = (0, import_react3.useState)([1, 1]);
+  const elemRef = (0, import_react3.useRef)(null);
+  function updateParentDims() {
+    if (!elemRef.current) return;
+    const parent = getParent(elemRef.current);
+    if (!parent) return;
+    const rect = parent.getBoundingClientRect();
+    setParentDims([rect.width, rect.height]);
+  }
+  (0, import_react3.useEffect)(() => {
+    if (!elemRef.current) return;
+    const parent = getParent(elemRef.current);
+    if (!parent) return;
+    updateParentDims();
+  }, []);
+  (0, import_react3.useEffect)(() => {
+    if (!elemRef.current) return;
+    const parent = getParent(elemRef.current);
+    if (!parent) return;
+    const observer = new ResizeObserver(() => {
+      updateParentDims();
+    });
+    observer.observe(parent);
+    return () => {
+      observer.disconnect();
+    };
+  });
+  return [elemRef, parentDims];
+}
+function DraggableWindow(props) {
+  const transformedX = rescale(
+    props.pos[0],
+    props.transform.a[0],
+    props.transform.b[0],
+    0,
+    100
+  );
+  const transformedY = rescale(
+    props.pos[1],
+    props.transform.a[1],
+    props.transform.b[1],
+    0,
+    100
+  );
+  const [elemRef, parentDims] = useParentDims((e) => e.parentElement);
+  return /* @__PURE__ */ import_react3.default.createElement(
+    DraggableWindowContext.Provider,
+    {
+      value: {
+        pos: props.pos,
+        setPos: props.setPos,
+        currentScaleFactors: div2(
+          sub2(props.transform.b, props.transform.a),
+          parentDims
+          // [100, 100]
+        )
+      }
+    },
+    /* @__PURE__ */ import_react3.default.createElement(
+      "div",
+      {
+        ref: elemRef,
+        className: "draggable-window",
+        style: {
+          position: "absolute",
+          top: `${transformedY}%`,
+          left: `${transformedX}%`
+        }
+      },
+      props.children
+    )
+  );
+}
+function LineSeg(props) {
+  const [elemRef, parentDims] = useParentDims((e) => e.parentElement);
+  const remappedEndpointA = remap2(
+    props.endpoints.a,
+    props.transform.a,
+    props.transform.b,
+    [0, 0],
+    parentDims
+  );
+  const remappedEndpointB = remap2(
+    props.endpoints.b,
+    props.transform.a,
+    props.transform.b,
+    [0, 0],
+    parentDims
+  );
+  const [dist, dir] = cart2Polar(sub2(remappedEndpointB, remappedEndpointA));
+  return /* @__PURE__ */ import_react3.default.createElement(
+    "div",
+    {
+      ref: elemRef,
+      className: "line-segment",
+      style: {
+        position: "absolute",
+        transformOrigin: "top left",
+        height: "1px",
+        width: `${dist}px`,
+        transform: `rotate(${dir}rad)`,
+        left: `${remappedEndpointA[0]}px`,
+        top: `${remappedEndpointA[1]}px`
+      }
+    }
+  );
+}
+function Dragger(props) {
+  const { pos, setPos, currentScaleFactors } = (0, import_react3.useContext)(
+    DraggableWindowContext
+  );
+  const elemRef = (0, import_react3.useRef)(null);
+  const [isHeld, setIsHeld] = (0, import_react3.useState)(false);
+  const tempPosRef = (0, import_react3.useRef)([0, 0]);
+  (0, import_react3.useEffect)(() => {
+    if (!isHeld) return;
+    const elem = elemRef.current;
+    if (!elem) return;
+    const mousemove = (evt) => {
+      tempPosRef.current = add2(
+        tempPosRef.current,
+        mul2([evt.movementX, evt.movementY], currentScaleFactors)
+      );
+      setPos(tempPosRef.current);
+      evt.stopPropagation();
+    };
+    document.addEventListener("mousemove", mousemove);
+    return () => {
+      document.removeEventListener("mousemove", mousemove);
+    };
+  }, [isHeld]);
+  (0, import_react3.useEffect)(() => {
+    const elem = elemRef.current;
+    if (!elem) return;
+    const mouseup = (evt) => {
+      setIsHeld(false);
+      elem.style.userSelect = "";
+    };
+    const mousedown = (evt) => {
+      setIsHeld(true);
+      tempPosRef.current = pos;
+      elem.style.userSelect = "none";
+      evt.stopPropagation();
+    };
+    elem.addEventListener("mousedown", mousedown);
+    document.addEventListener("mouseup", mouseup);
+    return () => {
+      elem.removeEventListener("mousedown", mousedown);
+      document.removeEventListener("mouseup", mouseup);
+    };
+  }, [pos, currentScaleFactors]);
+  return /* @__PURE__ */ import_react3.default.createElement("div", { className: "dragger", ref: elemRef }, props.children);
+}
+
+// src/webgpu/gpudoc/ui.tsx
+var GPUDocContext = (0, import_react4.createContext)(void 0);
+function gpuDebugWindow(params) {
+  const d = document.createElement("div");
+  const root = (0, import_client.createRoot)(d).render(
+    /* @__PURE__ */ import_react4.default.createElement(
+      GpudocDebugWindow,
+      {
+        device: params.device,
+        textures: params.textures,
+        buffers: params.buffers
+      }
+    )
+  );
+  return d;
+}
+function GpudocDebugWindow(props) {
+  const displayer = (0, import_react4.useMemo)(
+    () => textureDisplayer(props.device),
+    [props.device]
+  );
+  const [tabs, setTabs] = (0, import_react4.useState)([
+    {
+      type: "search-texture",
+      search: "",
+      id: v4_default()
+    }
+  ]);
+  const [currentTabIndex, setCurrentTabIndex] = (0, import_react4.useState)(0);
+  const currentTab = tabs[currentTabIndex];
+  return /* @__PURE__ */ import_react4.default.createElement(
+    GPUDocContext.Provider,
+    {
+      value: {
+        displayer,
+        device: props.device,
+        tabs,
+        currentTabIndex,
+        setCurrentTabIndex,
+        setTabs,
+        textures: props.textures,
+        buffers: props.buffers
+      }
+    },
+    /* @__PURE__ */ import_react4.default.createElement("style", null, gpudoc_default),
+    /* @__PURE__ */ import_react4.default.createElement("div", { className: "gpudoc" }, /* @__PURE__ */ import_react4.default.createElement(GpudocTabBar, null), /* @__PURE__ */ import_react4.default.createElement("div", { className: "tab" }, /* @__PURE__ */ import_react4.default.createElement(
+      GpudocTab,
+      {
+        tab: currentTab,
+        setTab: (newtab) => setTabs(
+          (oldtabs) => oldtabs.map((t, i) => i === currentTabIndex ? newtab(t) : t)
+        )
+      }
+    )))
+  );
+}
+function GpudocTab(props) {
+  const tab = props.tab;
+  const { textures, tabs } = useGpudoc();
+  if (tab.type === "search-texture") {
+    return /* @__PURE__ */ import_react4.default.createElement("ul", { className: "tex-thumbs" }, [...textures].map((t) => /* @__PURE__ */ import_react4.default.createElement(TextureThumbnail, { tex: t.tex, key: t.id })));
+  } else {
+    return /* @__PURE__ */ import_react4.default.createElement(
+      "div",
+      {
+        className: "tex-inspector",
+        ref: (elem) => {
+          const listener = (e) => {
+            e.preventDefault();
+          };
+          elem.addEventListener("wheel", listener);
+          return () => {
+            elem.removeEventListener("wheel", listener);
+          };
+        }
+      },
+      /* @__PURE__ */ import_react4.default.createElement("div", { className: "ui" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "color-sliders" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "dark-label" }, "Dark"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "light-label" }, "Light"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "dark" }, range(4).map((i) => /* @__PURE__ */ import_react4.default.createElement(
+        NumberField,
+        {
+          key: i,
+          value: tab.dark[i],
+          setValue: (v) => props.setTab(
+            (oldtab) => xray(oldtab).dark.$i(i).$(v).$v
+          ),
+          jumpstartDragFromZero: 0.01
+        }
+      ))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "light" }, range(4).map((i) => /* @__PURE__ */ import_react4.default.createElement(
+        NumberField,
+        {
+          key: i,
+          value: tab.light[i],
+          setValue: (v) => props.setTab(
+            (oldtab) => xray(oldtab).light.$i(i).$(v).$v
+          ),
+          jumpstartDragFromZero: 0.01
+        }
+      ))))),
+      /* @__PURE__ */ import_react4.default.createElement(
+        PanAndZoom,
+        {
+          coords: tab.coords,
+          setCoords: (coords) => {
+            props.setTab((oldtab) => ({
+              ...oldtab,
+              // @ts-expect-error
+              coords: coords(oldtab.coords)
+            }));
+          }
+        },
+        tab.texelInspectorWindows.map((t, i) => /* @__PURE__ */ import_react4.default.createElement(
+          TexelInspectorWindow,
+          {
+            tab,
+            key: t.id,
+            win: t,
+            setWin: (w2) => props.setTab(
+              (oldtab) => xray(oldtab).texelInspectorWindows.$i(i).$(w2).$v
+            )
+          }
+        )),
+        /* @__PURE__ */ import_react4.default.createElement(
+          TextureCanvas,
+          {
+            tex: tab.tex,
+            useCalculatedSize: true,
+            cornerA: tab.coords.a,
+            cornerB: tab.coords.b,
+            dark: tab.dark,
+            light: tab.light
+          }
+        )
+      )
+    );
+  }
+}
+function TexelInspectorWindow(props) {
+  const { win, tab } = props;
+  const { device } = useGpudoc();
+  const texelCoords = [
+    clamp(Math.floor(win.samplePos[0] * tab.tex.width), 0, tab.tex.width - 1),
+    clamp(Math.floor(win.samplePos[1] * tab.tex.height), 0, tab.tex.height - 1),
+    clamp(win.layer, 0, tab.tex.depthOrArrayLayers - 1)
+  ];
+  const roundedSamplePos = [
+    texelCoords[0] / tab.tex.width,
+    texelCoords[1] / tab.tex.height
+  ];
+  const texelMarkerX = rescale(
+    roundedSamplePos[0],
+    tab.coords.a[0],
+    tab.coords.b[0],
+    0,
+    100
+  );
+  const texelMarkerY = rescale(
+    roundedSamplePos[1],
+    tab.coords.a[1],
+    tab.coords.b[1],
+    0,
+    100
+  );
+  const area = sub2(tab.coords.b, tab.coords.a);
+  const lineseg = {
+    b: [
+      roundedSamplePos[0] + 0.5 / tab.tex.width,
+      roundedSamplePos[1] + 0.5 / tab.tex.height
+    ],
+    a: win.pos
+  };
+  const segEndpointA = sampleLineSegment(
+    lineseg,
+    lineIntersectRectClosest(lineseg, {
+      a: roundedSamplePos,
+      b: [
+        roundedSamplePos[0] + 1 / tab.tex.width,
+        roundedSamplePos[1] + 1 / tab.tex.height
+      ]
+    })
+  );
+  const [pixel, setPixel] = (0, import_react4.useState)([0, 0, 0, 0]);
   (0, import_react4.useEffect)(() => {
+    (async () => {
+      const tempBuf = device.createBuffer({
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        size: 16
+      });
+      const b = await readPixelsToCpuBuffer({
+        tex: tab.tex,
+        aspect: "all",
+        buf: tempBuf,
+        subregion: [texelCoords, add3(texelCoords, [1, 1, 1])],
+        device
+      });
+      const ui8a = new Uint8Array(b.cpuBuffer);
+      setPixel([ui8a[0], ui8a[1], ui8a[2], ui8a[3]]);
+    })();
+  }, [win.samplePos]);
+  return /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement(
+    "div",
+    {
+      className: "texel-marker",
+      style: {
+        position: "absolute",
+        left: `${texelMarkerX}%`,
+        top: `${texelMarkerY}%`,
+        width: `${100 / area[0] / tab.tex.width}%`,
+        height: `${100 / area[1] / tab.tex.height}%`
+      }
+    }
+  ), /* @__PURE__ */ import_react4.default.createElement(
+    LineSeg,
+    {
+      transform: props.tab.coords,
+      endpoints: {
+        a: segEndpointA,
+        b: win.pos
+      }
+    }
+  ), /* @__PURE__ */ import_react4.default.createElement(
+    DraggableWindow,
+    {
+      transform: props.tab.coords,
+      pos: win.samplePos,
+      setPos: (p) => props.setWin(xray(win).samplePos.$(p).$v)
+    },
+    /* @__PURE__ */ import_react4.default.createElement(Dragger, null, /* @__PURE__ */ import_react4.default.createElement("div", { className: "texel-dragger" }))
+  ), /* @__PURE__ */ import_react4.default.createElement(
+    DraggableWindow,
+    {
+      transform: props.tab.coords,
+      pos: win.pos,
+      setPos: (p) => props.setWin(xray(win).pos.$(p).$v)
+    },
+    /* @__PURE__ */ import_react4.default.createElement("div", { className: "texel-inspector-window" }, /* @__PURE__ */ import_react4.default.createElement(Dragger, null, "Texel (", texelCoords[0], ", ", texelCoords[1], ")"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "texel-components" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "red" }, pixel[0]), /* @__PURE__ */ import_react4.default.createElement("div", { className: "green" }, pixel[1]), /* @__PURE__ */ import_react4.default.createElement("div", { className: "blue" }, pixel[2]), /* @__PURE__ */ import_react4.default.createElement("div", { className: "alpha" }, pixel[3])))
+  ));
+}
+function GpudocTabBar() {
+  const { tabs, currentTabIndex, setCurrentTabIndex, setTabs } = useGpudoc();
+  return /* @__PURE__ */ import_react4.default.createElement("ul", { className: "tab-bar" }, tabs.map((t, i) => /* @__PURE__ */ import_react4.default.createElement(
+    "li",
+    {
+      onClick: () => {
+        setCurrentTabIndex(i);
+      },
+      key: t.id,
+      className: currentTabIndex === i ? "selected" : ""
+    },
+    /* @__PURE__ */ import_react4.default.createElement(GpudocTabThumbDisplay, { tab: t })
+  )));
+}
+function GpudocTabThumbDisplay(props) {
+  const tab = props.tab;
+  if (tab.type === "search-texture") {
+    return /* @__PURE__ */ import_react4.default.createElement("div", null, "Search Texture");
+  } else {
+    return /* @__PURE__ */ import_react4.default.createElement("div", null, "Texture: ", tab.tex.label);
+  }
+}
+function TextureThumbnail(props) {
+  const { tabs, setTabs, setCurrentTabIndex } = useGpudoc();
+  return /* @__PURE__ */ import_react4.default.createElement(
+    "li",
+    {
+      onClick: () => {
+        setTabs([
+          ...tabs,
+          {
+            type: "inspect-texture",
+            tex: props.tex,
+            id: v4_default(),
+            coords: { a: [0, 0], b: [1, 1] },
+            dark: [0, 0, 0, 0],
+            light: [1, 1, 1, 1],
+            texelInspectorWindows: [
+              {
+                samplePos: [0.5, 0.5],
+                layer: 0,
+                pos: [0.5, 0.5],
+                id: v4_default()
+              }
+            ]
+          }
+        ]);
+        setCurrentTabIndex(tabs.length);
+      }
+    },
+    /* @__PURE__ */ import_react4.default.createElement("div", { className: "name" }, props.tex.label),
+    /* @__PURE__ */ import_react4.default.createElement("div", { className: "canvas" }, /* @__PURE__ */ import_react4.default.createElement(TextureCanvas, { tex: props.tex }))
+  );
+}
+function useGpudoc() {
+  return (0, import_react4.useContext)(GPUDocContext);
+}
+function setCanvasDims(canvas, dims) {
+  const [width, height] = [Math.round(dims[0]), Math.round(dims[1])];
+  if (width !== canvas.width) canvas.width = width;
+  if (height !== canvas.height) canvas.height = height;
+}
+function TextureCanvas(props) {
+  const canvasRef = (0, import_react4.useRef)(null);
+  const { displayer, device } = useGpudoc();
+  (0, import_react4.useEffect)(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+    const ctx = canvas.getContext("webgpu");
+    ctx.configure({
+      device,
+      format: canvasFormat
+    });
+  }, [device]);
+  function rerender() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+    const ctx = canvas.getContext("webgpu");
+    const encoder = device.createCommandEncoder();
+    const textureWgslType = TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[props.tex.format];
+    const wgslBaseType = WGSL_TYPE_DATATYPES[textureWgslType];
+    const samplerType = WGSL_BASE_TYPE_TO_SAMPLER_TYPE[wgslBaseType];
+    displayer.displayTexture2d(
+      {
+        tex: props.tex.createView(),
+        samplerType,
+        cornerA: props.cornerA ?? [0, 0],
+        cornerB: props.cornerB ?? [1, 1],
+        blackEquiv: props.dark ?? [0, 0, 0, 0],
+        whiteEquiv: props.light ?? [1, 1, 1, 1]
+      },
+      {
+        tex: ctx.getCurrentTexture().createView(),
+        format: canvasFormat
+      },
+      encoder
+    );
+    device.queue.submit([encoder.finish()]);
+  }
+  (0, import_react4.useEffect)(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const tex = props.tex;
+    const dims = [tex.width, tex.height, tex.depthOrArrayLayers];
+    if (!props.useCalculatedSize) {
+      if (props.canvasDims) {
+        setCanvasDims(canvas, props.canvasDims);
+      } else {
+        setCanvasDims(canvas, dims);
+      }
+    }
+    rerender();
+  }, [
+    props.tex,
+    device,
+    props.canvasDims,
+    props.cornerA,
+    props.cornerB,
+    props.dark,
+    props.light
+  ]);
+  (0, import_react4.useEffect)(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !props.useCalculatedSize) return;
+    const observer = new ResizeObserver(() => {
+      const rect = canvas.getBoundingClientRect();
+      setCanvasDims(canvas, [
+        rect.width * window.devicePixelRatio,
+        rect.height * window.devicePixelRatio
+      ]);
+      rerender();
+    });
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, [props.useCalculatedSize]);
+  return /* @__PURE__ */ import_react4.default.createElement("canvas", { ref: canvasRef });
+}
+
+// src/webgpu/gpudoc/gpudoc.ts
+function hookGPUDevice(device, passthrough = false) {
+  if (passthrough) return device;
+  const textures = /* @__PURE__ */ new Set();
+  const buffers = /* @__PURE__ */ new Set();
+  let texId = 0;
+  let bufId = 0;
+  const oldCreateTexture = device.createTexture.bind(device);
+  device.createTexture = (descriptor) => {
+    const desc2 = { ...descriptor };
+    desc2.usage |= GPUTextureUsage.COPY_SRC;
+    const tex = oldCreateTexture(desc2);
+    textures.add({ tex, id: texId++ });
+    return tex;
+  };
+  device.getDebugView = () => {
+    return gpuDebugWindow({ textures, buffers, device });
+  };
+  return device;
+}
+
+// src/ui/use-latest.tsx
+var import_react5 = __toESM(require_react());
+function useLatest(t) {
+  const tref = (0, import_react5.useRef)(t);
+  (0, import_react5.useEffect)(() => {
+    tref.current = t;
+  }, [t]);
+  return tref;
+}
+
+// src/ui/upload-image.tsx
+var pretendThisIsAModule = {};
+
+// src/ui/react-string-field.tsx
+var import_react6 = __toESM(require_react());
+function StringField(props) {
+  if (props.isTextarea) {
+    return /* @__PURE__ */ import_react6.default.createElement(
+      "textarea",
+      {
+        value: props.value,
+        onInput: (e) => {
+          props.setValue(e.currentTarget.value);
+        }
+      }
+    );
+  }
+  return /* @__PURE__ */ import_react6.default.createElement(
+    "input",
+    {
+      value: props.value,
+      onInput: (e) => {
+        props.setValue(e.currentTarget.value);
+      }
+    }
+  );
+}
+
+// src/ui/react-object-field.tsx
+var import_react7 = __toESM(require_react());
+function objectFieldDataToNativeObject(t) {
+  return Object.fromEntries(Object.entries(t).map(([k, v]) => [k, v.value]));
+}
+function ObjectField(props) {
+  return /* @__PURE__ */ import_react7.default.createElement("ul", null, Object.entries(props.value).map(([k, v]) => {
+    const Comp = props.components[v.ui];
+    return /* @__PURE__ */ import_react7.default.createElement("li", { key: k }, v.label ? /* @__PURE__ */ import_react7.default.createElement("label", null, v.label) : /* @__PURE__ */ import_react7.default.createElement(import_react7.default.Fragment, null), /* @__PURE__ */ import_react7.default.createElement(
+      Comp,
+      {
+        value: v.value,
+        setValue: (val) => {
+          props.setValue({
+            ...props.value,
+            [k]: {
+              ...props.value[k],
+              value: val
+            }
+          });
+        },
+        ...v.props
+      }
+    ), v.description ? /* @__PURE__ */ import_react7.default.createElement("div", null, v.description) : /* @__PURE__ */ import_react7.default.createElement(import_react7.default.Fragment, null));
+  }));
+}
+function useObjectFieldLayout() {
+  return function(t) {
+    return (0, import_react7.useState)(t);
+  };
+}
+
+// src/ui/react-infinite-scroll.tsx
+var import_react8 = __toESM(require_react());
+function useAsyncSequence(callback, init, dependencies) {
+  const [seq2, setSeq] = (0, import_react8.useState)(init);
+  const batchIndex = (0, import_react8.useRef)(0);
+  const isRunning = (0, import_react8.useRef)(true);
+  (0, import_react8.useEffect)(() => {
     let isLoopCurrent = true;
     batchIndex.current += 1;
     const thisBatch = batchIndex.current;
@@ -29606,7 +31975,7 @@ function useInfiniteScroll(props) {
     index: itemsLoaded.seq.index,
     done: itemsLoaded.seq.done,
     ScrollDetector: () => {
-      return /* @__PURE__ */ import_react4.default.createElement(
+      return /* @__PURE__ */ import_react8.default.createElement(
         "div",
         {
           ref: (e) => {
@@ -29631,13 +32000,13 @@ function useInfiniteScroll(props) {
 }
 
 // src/ui/progress-bar.tsx
-var import_react5 = __toESM(require_react());
-var import_client = __toESM(require_client());
+var import_react9 = __toESM(require_react());
+var import_client2 = __toESM(require_client());
 function ProgressBar(props) {
   const { tasks } = props;
-  const [currTaskIndex, setCurrTaskIndex] = (0, import_react5.useState)(0);
-  const [caption, setCaption] = (0, import_react5.useState)("Progress");
-  (0, import_react5.useEffect)(() => {
+  const [currTaskIndex, setCurrTaskIndex] = (0, import_react9.useState)(0);
+  const [caption, setCaption] = (0, import_react9.useState)("Progress");
+  (0, import_react9.useEffect)(() => {
     const currTask = tasks.at(currTaskIndex);
     if (currTask !== void 0) {
       if (typeof currTask == "string") {
@@ -29650,7 +32019,7 @@ function ProgressBar(props) {
       }
     }
   }, [currTaskIndex]);
-  return /* @__PURE__ */ import_react5.default.createElement("div", null, /* @__PURE__ */ import_react5.default.createElement("div", { style: { fontSize: "48px" } }, caption), /* @__PURE__ */ import_react5.default.createElement(
+  return /* @__PURE__ */ import_react9.default.createElement("div", null, /* @__PURE__ */ import_react9.default.createElement("div", { style: { fontSize: "48px" } }, caption), /* @__PURE__ */ import_react9.default.createElement(
     "div",
     {
       style: {
@@ -29659,7 +32028,7 @@ function ProgressBar(props) {
         border: "1px solid black"
       }
     },
-    /* @__PURE__ */ import_react5.default.createElement(
+    /* @__PURE__ */ import_react9.default.createElement(
       "div",
       {
         style: {
@@ -29675,8 +32044,8 @@ function simpleProgressBar(tasks) {
   return new Promise((resolve, reject) => {
     const progressBarContainer = document.createElement("div");
     document.body.appendChild(progressBarContainer);
-    (0, import_client.createRoot)(progressBarContainer).render(
-      /* @__PURE__ */ import_react5.default.createElement(
+    (0, import_client2.createRoot)(progressBarContainer).render(
+      /* @__PURE__ */ import_react9.default.createElement(
         ProgressBar,
         {
           tasks: [...tasks, "Finished!", async () => resolve()]
@@ -29685,119 +32054,31 @@ function simpleProgressBar(tasks) {
     );
   });
 }
-
-// src/ui/pan-and-zoom.tsx
-var import_react6 = __toESM(require_react());
-function panAndZoomMatrix(rect, containerWidth, containerHeight) {
-  const scaleX = 1 / (rect.b[0] - rect.a[0]) * containerWidth;
-  const scaleY = 1 / (rect.b[1] - rect.a[1]) * containerHeight;
-  const translateX = -rect.a[0] * scaleX;
-  const translateY = -rect.a[1] * scaleY;
-  return [scaleX, 0, 0, scaleY, translateX, translateY];
-}
-function panAndZoomCanvas2d(canvas, ctx, rect) {
-  ctx.transform(...panAndZoomMatrix(rect, canvas.width, canvas.height));
-}
-function PanAndZoom(props) {
-  const scrollSensitivity = props.scrollSensitivity ?? 1;
-  const scrollDecay = props.scrollDecay ?? 0.01;
-  const scrollSnapToZero = props.scrollSnapToZero ?? 1e-3;
-  const scrollVel = (0, import_react6.useRef)(0);
-  const mouseDown = (0, import_react6.useRef)(false);
-  const normalizedMousePos = (0, import_react6.useRef)({ x: 0, y: 0 });
-  (0, import_react6.useEffect)(() => {
-    let stopped = false;
-    let lastTime = performance.now();
-    const cb2 = (time) => {
-      if (stopped) return;
-      const deltaTime = time - lastTime;
-      lastTime = time;
-      scrollVel.current *= Math.pow(scrollDecay, deltaTime / 1e3);
-      if (Math.abs(scrollVel.current) > scrollSnapToZero) {
-        props.setCoords((c) => {
-          const targetOriginX = lerp(
-            normalizedMousePos.current.x,
-            c.a[0],
-            c.b[0]
-          );
-          const targetOriginY = lerp(
-            normalizedMousePos.current.y,
-            c.a[1],
-            c.b[1]
-          );
-          const scrollAmount = scrollVel.current * deltaTime / 1e3;
-          return {
-            a: [
-              lerp(scrollAmount, c.a[0], targetOriginX),
-              lerp(scrollAmount, c.a[1], targetOriginY)
-            ],
-            b: [
-              lerp(scrollAmount, c.b[0], targetOriginX),
-              lerp(scrollAmount, c.b[1], targetOriginY)
-            ]
-          };
-        });
-        props.onUpdate?.();
-      }
-      requestAnimationFrame(cb2);
-    };
-    requestAnimationFrame(cb2);
-    return () => {
-      stopped = true;
-    };
-  }, []);
-  const divref = (0, import_react6.useRef)(null);
-  return /* @__PURE__ */ import_react6.default.createElement(
-    "div",
-    {
-      style: {
-        width: "fit-content",
-        display: "flex"
-      },
-      ref: divref,
-      onWheel: (e) => {
-        e.preventDefault();
-        scrollVel.current += Math.sign(e.deltaY) * scrollSensitivity * (props.swapScroll ? -1 : 1);
-      },
-      onMouseDown: (e) => {
-        mouseDown.current = true;
-      },
-      onMouseUp: (e) => {
-        mouseDown.current = false;
-      },
-      onMouseMove: (e) => {
-        const rect = divref.current?.getBoundingClientRect();
-        if (!rect) return;
-        normalizedMousePos.current = {
-          x: rescale(e.nativeEvent.offsetX, 0, rect.width, 0, 1),
-          y: rescale(e.nativeEvent.offsetY, 0, rect.height, 0, 1)
-        };
-        if (!mouseDown.current) return;
-        props.setCoords((c) => {
-          const dx = -rescale(e.movementX, 0, rect.width, 0, c.b[0] - c.a[0]);
-          const dy = -rescale(e.movementY, 0, rect.height, 0, c.b[1] - c.a[1]);
-          return {
-            a: [c.a[0] + dx, c.a[1] + dy],
-            b: [c.b[0] + dx, c.b[1] + dy]
-          };
-        });
-        props.onUpdate?.();
-      }
-    },
-    props.children
-  );
-}
 export {
   ALL,
   ArrayMap,
   AudioBuilder,
   AudioStream,
+  DraggableWindow,
+  Dragger,
+  LineSeg,
   NumberField,
   ObjectField,
   OneDimensionalSpatialHashTable,
   PanAndZoom,
   ProgressBar,
+  SAMPLER_TYPE_TO_WGSL_TYPE,
   StringField,
+  TEXEL_BLOCK_COPY_FOOTPRINTS,
+  TEXTURE_DIMENSIONALITIES,
+  TEXTURE_FORMAT_TO_WGSL_TYPE_LUT,
+  TransformHTML,
+  WGSL_BASE_TYPE_TO_SAMPLER_TYPE,
+  WGSL_TYPE_ALIGNMENTS,
+  WGSL_TYPE_DATATYPES,
+  WGSL_TYPE_ELEMENT_COUNTS,
+  WGSL_TYPE_SIZES,
+  WgslSnippets,
   add,
   add2,
   add3,
@@ -29810,6 +32091,7 @@ export {
   applyUniforms,
   argmax,
   argmin,
+  array,
   arrayToMapKeys,
   arrayToMapValues,
   arrayToObjKeys,
@@ -29840,20 +32122,25 @@ export {
   createEvalbox,
   createGraph,
   createGraphFromData,
+  createLayoutGenerator,
   createLookupOptimizedSHTGenerator,
   createRoundRobinThread,
   createRoundRobinThreadpool,
   createScene,
   createSignal,
+  createSimpleFilterPipeline,
   createTrack,
   createTrackSpec,
   createTrackSpecForNote,
   createTrackSpecForNoteSequence,
+  createWgslSerializers,
   createWorkerReceiver,
   createWorkerWithInterface,
   cross,
+  curry,
   debounce,
   deleteEdge,
+  delimitedSequenceRegex,
   displayAudio,
   displayAudioSamples,
   distance2,
@@ -29875,11 +32162,13 @@ export {
   err,
   findEndpoint,
   fullscreenQuadBuffer,
+  generateLayouts,
   generateUniformBuffer,
   get,
   getBeatCount,
   getClamped,
   getConnectedComponents,
+  getCopyFootprintPerTexel,
   getDepthFirstTraversalOrder,
   getEqualAngularDivisionsOfLineSegment,
   getLinesAndCols,
@@ -29887,11 +32176,14 @@ export {
   getOgg,
   getPerformanceStatistics,
   getSmallestAngleDifference,
+  getUniformBufferSize,
   glRenderToQuad,
+  gpuDebugWindow,
   gradient2,
   graph2json,
   graphAudio,
   groupBy,
+  hookGPUDevice,
   id,
   inCircle,
   inMainThread,
@@ -29908,6 +32200,7 @@ export {
   isWorklet,
   islandsToSvg,
   json2graph,
+  kurry,
   lazy,
   length2,
   length3,
@@ -29916,10 +32209,14 @@ export {
   lensInner,
   lerp,
   lineIntersectLine,
+  lineIntersectRect,
+  lineIntersectRectClosest,
+  lineSegmentIntersectLineSegment,
   listenForNoSelector,
   listenForSelector,
   loadImg,
   lookupQuadtree,
+  makeDelimitedReplacements,
   makeDitherKernel,
   makeQuadtree,
   makeUniformBuffer,
@@ -30004,6 +32301,7 @@ export {
   mulVec4ByVec3,
   mulVec4ByVec4,
   multiDelimit,
+  multicast,
   neg2,
   neg3,
   neg4,
@@ -30026,6 +32324,7 @@ export {
   perlin2d,
   permute,
   perspective,
+  perspectiveWebgpu,
   pickrand,
   play,
   playStereo,
@@ -30034,6 +32333,7 @@ export {
   polarVec2Cart,
   powerSet,
   pretendThisIsAModule,
+  primitive,
   quadraticCurveToPath,
   quadraticCurveToSvgPath,
   rand,
@@ -30042,9 +32342,16 @@ export {
   rangeFrom,
   rangeIntersects,
   rayIntersectLine,
+  readPixels,
+  readPixelsSizeReq,
+  readPixelsToCpuBuffer,
+  readWgslLayout,
   rectIntersects,
   regexMatch,
   registerStorageItem,
+  remap2,
+  remap3,
+  remap4,
   resample2 as resample,
   rescale,
   rescale2,
@@ -30054,6 +32361,7 @@ export {
   ring,
   rodrigues,
   rotate,
+  roundUp,
   sampleLineSegment,
   saw,
   scale,
@@ -30089,6 +32397,7 @@ export {
   stringField,
   stringMapJoin,
   stringRangeMapJoin,
+  struct,
   sub2,
   sub3,
   sub4,
@@ -30102,6 +32411,7 @@ export {
   sum4,
   table,
   tableWithData,
+  textureDisplayer,
   throttle,
   torus,
   translate,
@@ -30110,9 +32420,13 @@ export {
   unlerp,
   useAsyncSequence,
   useInfiniteScroll,
+  useLatest,
   useObjectFieldLayout,
+  useParentDims,
+  useWgslSnippets,
   uvSphere,
   variableDistancePointsOnCurve,
+  variadify,
   w,
   wait,
   waitForCond,

@@ -1004,6 +1004,19 @@ function panAndZoomMatrix(rect, containerWidth, containerHeight) {
 function panAndZoomCanvas2d(canvas, ctx, rect) {
   ctx.transform(...panAndZoomMatrix(rect, canvas.width, canvas.height));
 }
+function TransformHTML(props) {
+  const coords = props.coords;
+  const eref = (0, import_react.useRef)(null);
+  (0, import_react.useEffect)(() => {
+    const e = eref.current;
+    if (!e || !e.parentElement) return;
+    const rect = e.parentElement.getBoundingClientRect();
+    e.style.transformOrigin = "top left";
+    e.style.transform = `scale(${1 / rect.width}, ${1 / rect.height}) matrix(${panAndZoomMatrix(coords, rect.width, rect.height)})`;
+    e.style.position = "relative";
+  }, [props.coords]);
+  return /* @__PURE__ */ import_react.default.createElement("div", { ref: eref }, props.children);
+}
 function PanAndZoom(props) {
   const scrollSensitivity = props.scrollSensitivity ?? 1;
   const scrollDecay = props.scrollDecay ?? 0.01;
@@ -1095,6 +1108,7 @@ function PanAndZoom(props) {
 }
 export {
   PanAndZoom,
+  TransformHTML,
   panAndZoomCanvas2d,
   panAndZoomMatrix
 };

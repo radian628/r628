@@ -1,0 +1,193 @@
+:root {
+  --default-padding: 1rem;
+  --default-border: 1px solid #999;
+  --input-color: #000;
+  --red: #f66;
+  --green: #4f4;
+  --blue: #aaf;
+  --alpha: #bbb;
+}
+
+.gpudoc {
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  background-color: #121212;
+  color: white;
+  font-family: sans-serif;
+  border-right: var(--default-border);
+  display: grid;
+  grid-template-areas:
+    "tab-bar"
+    "tab";
+  grid-template-rows: max-content 1fr;
+  box-sizing: border-box;
+}
+
+.tex-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  list-style: none;
+}
+
+.tex-thumbs li {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  max-width: 350px;
+  padding: var(--default-padding);
+}
+
+.tex-thumbs .name {
+  font-weight: bold;
+  margin-bottom: var(--default-padding);
+}
+
+.tex-thumbs .canvas,
+.tex-thumbs canvas {
+  width: 100%;
+}
+
+.tab-bar {
+  font-size: 0.9em;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: var(--default-border);
+  list-style: none;
+  grid-area: tab-bar;
+}
+
+.tab-bar li {
+  padding: calc(var(--default-padding) * 0.5);
+  border-right: var(--default-border);
+}
+
+.tab-bar li.selected {
+  background-color: #333;
+}
+
+.gpudoc .tab {
+  grid-area: tab;
+  height: 100%;
+}
+
+.tex-inspector {
+  height: 100%;
+  display: grid;
+  grid-template-areas: "canvas ui";
+}
+
+.tex-inspector > div:has(canvas) {
+  height: 100%;
+  grid-area: canvas;
+  position: relative;
+  overflow: hidden;
+}
+
+.tex-inspector canvas {
+  height: 100%;
+  width: 100%;
+}
+
+.tex-inspector .ui {
+  grid-area: ui;
+}
+
+.color-sliders {
+  display: grid;
+  grid-template-areas:
+    "darklabel lightlabel"
+    "dark light";
+}
+
+.color-sliders .dark,
+.color-sliders .light {
+  display: flex;
+  flex-direction: column;
+}
+
+.dark-label {
+  grid-area: darklabel;
+}
+.light-label {
+  grid-area: lightlabel;
+}
+
+.color-sliders .dark {
+  grid-area: dark;
+}
+.color-sliders .light {
+  grid-area: light;
+}
+
+.color-sliders input {
+  border: var(--default-border);
+  background-color: var(--input-color);
+  width: 4rem;
+}
+
+.color-sliders input:nth-child(1) {
+  color: var(--red);
+}
+.color-sliders input:nth-child(2) {
+  color: var(--green);
+}
+.color-sliders input:nth-child(3) {
+  color: var(--blue);
+}
+.color-sliders input:nth-child(4) {
+  color: var(--alpha);
+}
+
+.texel-inspector-window {
+  border: var(--default-border);
+  background-color: #121212;
+}
+
+.texel-marker {
+  border-radius: 3px;
+  border: 1px solid black;
+  outline: 1px solid white;
+}
+
+.line-segment {
+  border-radius: 3px;
+  border: 1px solid white;
+  background-color: black;
+}
+
+.texel-dragger {
+  width: 20px;
+  height: 20px;
+  transform: translate(-10px, -10px);
+  border-radius: 10px;
+  background-color: #0003;
+  border: 1px solid #fff8;
+}
+
+.dragger {
+  cursor: grab;
+}
+
+.texel-components {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.red {
+  color: var(--red);
+}
+.green {
+  color: var(--green);
+}
+.blue {
+  color: var(--blue);
+}
+.alpha {
+  color: var(--alpha);
+}

@@ -1002,6 +1002,7 @@ function NumberField(propsOpt) {
     offset: 0,
     displayPrecision: 3,
     defaultIfNaN: 0,
+    jumpstartDragFromZero: 0,
     ...propsOpt
   };
   const value = isNaN(props.value) ? props.defaultIfNaN : props.value;
@@ -1047,12 +1048,17 @@ function NumberField(propsOpt) {
         });
       },
       onMouseDown: async (e) => {
+        const elem = e.currentTarget;
         await e.currentTarget.requestPointerLock();
         let dragnum = value;
         const mousemoveListener = (e2) => {
           const x = e2.movementX;
           if (props.scale === "log") {
-            dragnum = dragnum * (2 ** props.sensitivity) ** x;
+            if (dragnum === 0) {
+              dragnum = props.jumpstartDragFromZero * Math.sign(x);
+            } else {
+              dragnum = dragnum * (2 ** props.sensitivity) ** x;
+            }
           } else {
             dragnum += x * props.sensitivity;
           }
