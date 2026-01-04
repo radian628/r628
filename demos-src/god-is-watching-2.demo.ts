@@ -86,7 +86,8 @@ function pointDrawer(
       // ctx.arc(x, y, 15, 0, Math.PI * 2);
       // ctx.stroke();
       // ctx.fillRect(Math.floor(x) - 1, Math.floor(y), 3, 1);
-      ctx.fillRect(Math.floor(x), Math.floor(y) - 5, 1, 11);
+      // ctx.fillRect(Math.floor(x), Math.floor(y) - 5, 1, 11);
+      ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1);
       // ctx.fillRect(Math.floor(x) - 1, Math.floor(y), 3, 1);
     },
   };

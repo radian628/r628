@@ -304,6 +304,96 @@ struct Params {\n`;
         : undefined;
 
       return {
+        withDedicatedUniformBuffer(existingBufferInfo?: {
+          buffer: GPUBuffer;
+          offset?: number;
+        }) {
+          const uniformBuffer =
+            existingBufferInfo?.buffer ??
+            device.createBuffer({
+              size: uniformLayouts.size,
+              usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+            });
+
+          const uniformBufferOffset = existingBufferInfo?.offset ?? 0;
+
+          const uniformBindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
+            entries: [
+              {
+                binding: 0,
+                resource: uniformBuffer,
+              },
+            ],
+          });
+
+          function record(bundleEncoder: GPURenderBundleEncoder) {
+            bundleEncoder.setPipeline(pipeline);
+
+            if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
+
+            if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
+
+            bundleEncoder.setBindGroup(uniformBindGroupIndex, uniformBindGroup);
+
+            bundleEncoder.draw(6);
+          }
+
+          const defaultBundleEncoder = device.createRenderBundleEncoder({
+            colorFormats: outputsEntries.map((o) => o[1]),
+          });
+
+          record(defaultBundleEncoder);
+
+          const bundle = defaultBundleEncoder.finish();
+
+          return {
+            run: (
+              encoder: GPUCommandEncoder,
+              outputs: {
+                [K in keyof Outputs]:
+                  | GPUTextureView
+                  | GPURenderPassColorAttachment;
+              }
+            ) => {
+              const pass = encoder.beginRenderPass({
+                colorAttachments: outputsEntries.map(([name, value]) =>
+                  outputs[name] instanceof GPUTextureView
+                    ? {
+                        view: outputs[name],
+                        clearValue: [0, 0, 0, 1],
+                        loadOp: "clear",
+                        storeOp: "store",
+                      }
+                    : outputs[name]
+                ),
+              });
+
+              pass.executeBundles([bundle]);
+
+              pass.end();
+            },
+
+            bundle,
+
+            runWithRenderPass: (pass: GPURenderPassEncoder) => {
+              pass.executeBundles([bundle]);
+            },
+
+            record: record,
+
+            setUniforms(
+              values: WGSLStructValues<
+                GenerateWGSLStructFromCompactRepr<"Params", Uniforms>
+              >
+            ) {
+              const buf = new ArrayBuffer(uniformLayouts.size);
+              uniformGenerator(new DataView(buf), values);
+              device.queue.writeBuffer(uniformBuffer, uniformBufferOffset, buf);
+            },
+          };
+        },
+
         withUniforms: (
           uniforms: keyof Uniforms extends never
             ? undefined

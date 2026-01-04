@@ -810,7 +810,7 @@
       },
       pointUnscaled(pos) {
         const [x, y] = pos;
-        ctx.fillRect(Math.floor(x), Math.floor(y) - 5, 1, 11);
+        ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1);
       }
     };
   }

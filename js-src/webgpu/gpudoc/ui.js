@@ -21207,6 +21207,49 @@ var WGSL_BASE_TYPE_TO_SAMPLER_TYPE = {
   f32: "float",
   f16: "float"
 };
+var VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR = {
+  uint8: Uint8Array,
+  uint8x2: Uint8Array,
+  uint8x4: Uint8Array,
+  sint8: Int8Array,
+  sint8x2: Int8Array,
+  sint8x4: Int8Array,
+  unorm8: Uint8Array,
+  unorm8x2: Uint8Array,
+  unorm8x4: Uint8Array,
+  snorm8: Int8Array,
+  snorm8x2: Int8Array,
+  snorm8x4: Int8Array,
+  uint16: Uint16Array,
+  uint16x2: Uint16Array,
+  uint16x4: Uint16Array,
+  sint16: Int16Array,
+  sint16x2: Int16Array,
+  sint16x4: Int16Array,
+  unorm16: Uint16Array,
+  unorm16x2: Uint16Array,
+  unorm16x4: Uint16Array,
+  snorm16: Int16Array,
+  snorm16x2: Int16Array,
+  snorm16x4: Int16Array,
+  float16: Float16Array,
+  float16x2: Float16Array,
+  float16x4: Float16Array,
+  float32: Float32Array,
+  float32x2: Float32Array,
+  float32x3: Float32Array,
+  float32x4: Float32Array,
+  uint32: Uint32Array,
+  uint32x2: Uint32Array,
+  uint32x3: Uint32Array,
+  uint32x4: Uint32Array,
+  sint32: Int32Array,
+  sint32x2: Int32Array,
+  sint32x3: Int32Array,
+  sint32x4: Int32Array,
+  "unorm10-10-10-2": Uint8Array,
+  "unorm8x4-bgra": Uint8Array
+};
 
 // src/stringutils.ts
 function delimitedSequenceRegex(start, end) {
@@ -21753,11 +21796,6 @@ var OneDimensionalSpatialHashTable = class {
   }
 };
 
-// src/math/round.ts
-function roundUp(factor, x) {
-  return Math.ceil(x / factor) * factor;
-}
-
 // src/webgpu/wgsl-snippets.ts
 var WgslSnippets = {
   unitQuadSigned: {
@@ -22273,6 +22311,11 @@ fn perlinNoise3(P: vec3f) -> f32 {
     ).join("\n\n")
   }
 };
+
+// src/math/round.ts
+function roundUp(factor, x) {
+  return Math.ceil(x / factor) * factor;
+}
 
 // src/webgpu/readpixels.ts
 function readPixelsSizeReq(params) {
@@ -23565,6 +23608,60 @@ struct Params {
         }))
       }) : void 0;
       return {
+        withDedicatedUniformBuffer(existingBufferInfo) {
+          const uniformBuffer = existingBufferInfo?.buffer ?? device.createBuffer({
+            size: uniformLayouts.size,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
+          });
+          const uniformBufferOffset = existingBufferInfo?.offset ?? 0;
+          const uniformBindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
+            entries: [
+              {
+                binding: 0,
+                resource: uniformBuffer
+              }
+            ]
+          });
+          function record(bundleEncoder) {
+            bundleEncoder.setPipeline(pipeline);
+            if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
+            if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
+            bundleEncoder.setBindGroup(uniformBindGroupIndex, uniformBindGroup);
+            bundleEncoder.draw(6);
+          }
+          const defaultBundleEncoder = device.createRenderBundleEncoder({
+            colorFormats: outputsEntries.map((o) => o[1])
+          });
+          record(defaultBundleEncoder);
+          const bundle = defaultBundleEncoder.finish();
+          return {
+            run: (encoder, outputs) => {
+              const pass = encoder.beginRenderPass({
+                colorAttachments: outputsEntries.map(
+                  ([name, value]) => outputs[name] instanceof GPUTextureView ? {
+                    view: outputs[name],
+                    clearValue: [0, 0, 0, 1],
+                    loadOp: "clear",
+                    storeOp: "store"
+                  } : outputs[name]
+                )
+              });
+              pass.executeBundles([bundle]);
+              pass.end();
+            },
+            bundle,
+            runWithRenderPass: (pass) => {
+              pass.executeBundles([bundle]);
+            },
+            record,
+            setUniforms(values) {
+              const buf = new ArrayBuffer(uniformLayouts.size);
+              uniformGenerator(new DataView(buf), values);
+              device.queue.writeBuffer(uniformBuffer, uniformBufferOffset, buf);
+            }
+          };
+        },
         withUniforms: (uniforms) => {
           function record(bundleEncoder) {
             bundleEncoder.setPipeline(pipeline);

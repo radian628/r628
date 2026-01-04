@@ -83,14 +83,17 @@ if (escaped) {
 
   const encoder = device.createCommandEncoder();
 
-  mandelbrotPipeline
+  const pipelineInstance = mandelbrotPipeline
     .withInputs({})
-    .withUniforms(
-      mandelbrotPipeline
-        .makeUniformBuffer()
-        .setBuffer({ corner1: [-2, -2], corner2: [2, 2], iters: 64 })
-    )
-    .run(encoder, { color: tex.createView() });
+    .withDedicatedUniformBuffer();
+
+  pipelineInstance.setUniforms({
+    corner1: [-2, -2],
+    corner2: [2, 2],
+    iters: 64,
+  });
+
+  pipelineInstance.run(encoder, { color: tex.createView() });
 
   const displayer = textureDisplayer(device);
   displayer.displayTexture2d(

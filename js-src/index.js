@@ -24886,40 +24886,6 @@ function roundUp(factor, x2) {
   return Math.ceil(x2 / factor) * factor;
 }
 
-// src/math/noise.ts
-function fract(x2) {
-  return x2 - Math.floor(x2);
-}
-function simpleRandVec2ToFloat(co) {
-  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
-}
-function simpleRandVec2ToVec2(co) {
-  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
-}
-function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
-  const fp = [Math.floor(p[0]), Math.floor(p[1])];
-  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
-  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
-  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
-  const v42 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
-  const o1 = sub2(p, fp);
-  const o2 = sub2(o1, [1, 0]);
-  const o3 = sub2(o1, [0, 1]);
-  const o4 = sub2(o1, [1, 1]);
-  const d1 = dot2(v1, o1);
-  const d2 = dot2(v2, o2);
-  const d3 = dot2(v3, o3);
-  const d4 = dot2(v42, o4);
-  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
-  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
-  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
-}
-function boxMullerTransform(u) {
-  const a = Math.sqrt(-2 * Math.log(u[0]));
-  const b = 2 * Math.PI * u[1];
-  return [a * Math.cos(b), a * Math.sin(b)];
-}
-
 // src/webgpu/converters.ts
 var TEXTURE_FORMAT_TO_WGSL_TYPE_LUT = {
   r8unorm: "f32",
@@ -25321,6 +25287,209 @@ var WGSL_BASE_TYPE_TO_SAMPLER_TYPE = {
   f32: "float",
   f16: "float"
 };
+var VERTEX_FORMAT_TO_ELEMENT_SIZE = {
+  uint8: 1,
+  uint8x2: 1,
+  uint8x4: 1,
+  sint8: 1,
+  sint8x2: 1,
+  sint8x4: 1,
+  unorm8: 1,
+  unorm8x2: 1,
+  unorm8x4: 1,
+  snorm8: 1,
+  snorm8x2: 1,
+  snorm8x4: 1,
+  uint16: 2,
+  uint16x2: 2,
+  uint16x4: 2,
+  sint16: 2,
+  sint16x2: 2,
+  sint16x4: 2,
+  unorm16: 2,
+  unorm16x2: 2,
+  unorm16x4: 2,
+  snorm16: 2,
+  snorm16x2: 2,
+  snorm16x4: 2,
+  float16: 2,
+  float16x2: 2,
+  float16x4: 2,
+  float32: 4,
+  float32x2: 4,
+  float32x3: 4,
+  float32x4: 4,
+  uint32: 4,
+  uint32x2: 4,
+  uint32x3: 4,
+  uint32x4: 4,
+  sint32: 4,
+  sint32x2: 4,
+  sint32x3: 4,
+  sint32x4: 4,
+  "unorm10-10-10-2": 1,
+  "unorm8x4-bgra": 1
+};
+var VERTEX_FORMAT_TO_ELEMENT_COUNT = {
+  uint8: 1,
+  uint8x2: 2,
+  uint8x4: 4,
+  sint8: 1,
+  sint8x2: 2,
+  sint8x4: 4,
+  unorm8: 1,
+  unorm8x2: 2,
+  unorm8x4: 4,
+  snorm8: 1,
+  snorm8x2: 2,
+  snorm8x4: 4,
+  uint16: 1,
+  uint16x2: 2,
+  uint16x4: 4,
+  sint16: 1,
+  sint16x2: 2,
+  sint16x4: 4,
+  unorm16: 1,
+  unorm16x2: 2,
+  unorm16x4: 4,
+  snorm16: 1,
+  snorm16x2: 2,
+  snorm16x4: 4,
+  float16: 1,
+  float16x2: 2,
+  float16x4: 4,
+  float32: 1,
+  float32x2: 2,
+  float32x3: 3,
+  float32x4: 4,
+  uint32: 1,
+  uint32x2: 2,
+  uint32x3: 3,
+  uint32x4: 4,
+  sint32: 1,
+  sint32x2: 2,
+  sint32x3: 3,
+  sint32x4: 4,
+  "unorm10-10-10-2": 4,
+  "unorm8x4-bgra": 4
+};
+var VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR = {
+  uint8: Uint8Array,
+  uint8x2: Uint8Array,
+  uint8x4: Uint8Array,
+  sint8: Int8Array,
+  sint8x2: Int8Array,
+  sint8x4: Int8Array,
+  unorm8: Uint8Array,
+  unorm8x2: Uint8Array,
+  unorm8x4: Uint8Array,
+  snorm8: Int8Array,
+  snorm8x2: Int8Array,
+  snorm8x4: Int8Array,
+  uint16: Uint16Array,
+  uint16x2: Uint16Array,
+  uint16x4: Uint16Array,
+  sint16: Int16Array,
+  sint16x2: Int16Array,
+  sint16x4: Int16Array,
+  unorm16: Uint16Array,
+  unorm16x2: Uint16Array,
+  unorm16x4: Uint16Array,
+  snorm16: Int16Array,
+  snorm16x2: Int16Array,
+  snorm16x4: Int16Array,
+  float16: Float16Array,
+  float16x2: Float16Array,
+  float16x4: Float16Array,
+  float32: Float32Array,
+  float32x2: Float32Array,
+  float32x3: Float32Array,
+  float32x4: Float32Array,
+  uint32: Uint32Array,
+  uint32x2: Uint32Array,
+  uint32x3: Uint32Array,
+  uint32x4: Uint32Array,
+  sint32: Int32Array,
+  sint32x2: Int32Array,
+  sint32x3: Int32Array,
+  sint32x4: Int32Array,
+  "unorm10-10-10-2": Uint8Array,
+  "unorm8x4-bgra": Uint8Array
+};
+var VERTEX_FORMAT_TO_WGSL_BASE_TYPE = {
+  uint8: "u32",
+  uint8x2: "u32",
+  uint8x4: "u32",
+  sint8: "i32",
+  sint8x2: "i32",
+  sint8x4: "i32",
+  unorm8: "f32",
+  unorm8x2: "f32",
+  unorm8x4: "f32",
+  snorm8: "f32",
+  snorm8x2: "f32",
+  snorm8x4: "f32",
+  uint16: "u32",
+  uint16x2: "u32",
+  uint16x4: "u32",
+  sint16: "i32",
+  sint16x2: "i32",
+  sint16x4: "i32",
+  unorm16: "f32",
+  unorm16x2: "f32",
+  unorm16x4: "f32",
+  snorm16: "f32",
+  snorm16x2: "f32",
+  snorm16x4: "f32",
+  float16: "f32",
+  float16x2: "f32",
+  float16x4: "f32",
+  float32: "f32",
+  float32x2: "f32",
+  float32x3: "f32",
+  float32x4: "f32",
+  uint32: "u32",
+  uint32x2: "u32",
+  uint32x3: "u32",
+  uint32x4: "u32",
+  sint32: "i32",
+  sint32x2: "i32",
+  sint32x3: "i32",
+  sint32x4: "i32",
+  "unorm10-10-10-2": "f32",
+  "unorm8x4-bgra": "f32"
+};
+var WGSL_DATA_TYPES = {
+  f32: {
+    1: "f32",
+    2: "vec2f",
+    3: "vec3f",
+    4: "vec4f"
+  },
+  f16: {
+    1: "f16",
+    2: "vec2f16",
+    3: "vec3f16",
+    4: "vec4f16"
+  },
+  u32: {
+    1: "u32",
+    2: "vec2u",
+    3: "vec3u",
+    4: "vec4u"
+  },
+  i32: {
+    1: "i32",
+    2: "vec2i",
+    3: "vec3i",
+    4: "vec4i"
+  }
+};
+function vertexFormatStride(vformat) {
+  const elems = VERTEX_FORMAT_TO_ELEMENT_COUNT[vformat];
+  const sizePerElem = VERTEX_FORMAT_TO_ELEMENT_SIZE[vformat];
+  return elems * sizePerElem;
+}
 
 // src/webgpu/wgsl-struct-layout-generator.ts
 function struct(name, members) {
@@ -26180,6 +26349,60 @@ struct Params {
         }))
       }) : void 0;
       return {
+        withDedicatedUniformBuffer(existingBufferInfo) {
+          const uniformBuffer = existingBufferInfo?.buffer ?? device.createBuffer({
+            size: uniformLayouts.size,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
+          });
+          const uniformBufferOffset = existingBufferInfo?.offset ?? 0;
+          const uniformBindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
+            entries: [
+              {
+                binding: 0,
+                resource: uniformBuffer
+              }
+            ]
+          });
+          function record(bundleEncoder) {
+            bundleEncoder.setPipeline(pipeline);
+            if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
+            if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
+            bundleEncoder.setBindGroup(uniformBindGroupIndex, uniformBindGroup);
+            bundleEncoder.draw(6);
+          }
+          const defaultBundleEncoder = device.createRenderBundleEncoder({
+            colorFormats: outputsEntries.map((o) => o[1])
+          });
+          record(defaultBundleEncoder);
+          const bundle = defaultBundleEncoder.finish();
+          return {
+            run: (encoder, outputs) => {
+              const pass = encoder.beginRenderPass({
+                colorAttachments: outputsEntries.map(
+                  ([name, value]) => outputs[name] instanceof GPUTextureView ? {
+                    view: outputs[name],
+                    clearValue: [0, 0, 0, 1],
+                    loadOp: "clear",
+                    storeOp: "store"
+                  } : outputs[name]
+                )
+              });
+              pass.executeBundles([bundle]);
+              pass.end();
+            },
+            bundle,
+            runWithRenderPass: (pass) => {
+              pass.executeBundles([bundle]);
+            },
+            record,
+            setUniforms(values) {
+              const buf = new ArrayBuffer(uniformLayouts.size);
+              uniformGenerator(new DataView(buf), values);
+              device.queue.writeBuffer(uniformBuffer, uniformBufferOffset, buf);
+            }
+          };
+        },
         withUniforms: (uniforms) => {
           function record(bundleEncoder) {
             bundleEncoder.setPipeline(pipeline);
@@ -26291,6 +26514,50 @@ async function readPixelsToCpuBuffer(params) {
     bytesPerRow: mappedBuffer.bytesPerRow,
     rowsPerImage: mappedBuffer.rowsPerImage,
     size
+  };
+}
+
+// src/webgpu/partial-pipelines.ts
+function wrapDevice(device) {
+  return {
+    vertexBuffer(...types) {
+      let size = 0;
+      let attributes = [];
+      for (const [name, format] of types) {
+        const stride = vertexFormatStride(format);
+        attributes.push({
+          format,
+          name,
+          offset: size
+        });
+        size += stride;
+      }
+      return {
+        type: "vertex-buffer",
+        arrayStride: size,
+        // @ts-expect-error
+        attributes
+      };
+    },
+    bindGroup(...entries) {
+      return {
+        entries
+      };
+    },
+    texture(name) {
+      return {
+        name,
+        type: "texture"
+      };
+    },
+    shader(code, stages = ["vertex", "fragment"]) {
+      const module = device.createShaderModule({
+        code
+      });
+      return { module, stages };
+    },
+    pipeline(params) {
+    }
   };
 }
 
@@ -26822,6 +27089,243 @@ function createBufferWithLayout(gl, layout, data) {
       gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
     }
   };
+}
+
+// src/curve/quadratic-curve-to-svg.ts
+function quadraticCurveToPath(curve, sigfigs, offset) {
+  let startPoint = curve[0].a;
+  const str2 = (n) => n.toPrecision(sigfigs);
+  let output = `M ${str2(startPoint[0] + offset[0])} ${str2(
+    startPoint[1] + offset[1]
+  )}`;
+  let prevpoint = startPoint;
+  for (const b of curve) {
+    output += `q ${str2(b.b[0] - prevpoint[0])} ${str2(
+      b.b[1] - prevpoint[1]
+    )},${str2(b.c[0] - prevpoint[0])} ${str2(b.c[1] - prevpoint[1])}`;
+    prevpoint = b.c;
+  }
+  return output;
+}
+function quadraticCurveToSvgPath(curve, offset, color, sigfigs) {
+  const pathd = quadraticCurveToPath(curve, sigfigs, offset);
+  return `<path d="${pathd}" stroke="${color}" />`;
+}
+function islandsToSvg(width, height, islands, sigfigs) {
+  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${islands.map(
+    (i) => quadraticCurveToSvgPath(i.curve, i.topLeftInImage, i.color, sigfigs)
+  ).join("")}</svg>`;
+}
+
+// src/curve/points-on-curve.ts
+function equidistantPointsOnCurve(curve, interval) {
+  if (curve.length === 0) return [];
+  const outPoints = [curve[0]];
+  let accumDist = 0;
+  for (let i = 0; i < curve.length - 1; i++) {
+    const prevPoint = curve[i];
+    const currPoint = curve[i + 1];
+    const currLineDist = distance2(prevPoint, currPoint);
+    const initLength = interval - accumDist % interval;
+    accumDist += currLineDist;
+    const newPointCount = Math.floor(accumDist / interval);
+    for (let j = 0; j < newPointCount; j++) {
+      let distAcross = initLength + j * interval;
+      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
+    }
+    accumDist -= newPointCount * interval;
+  }
+  return outPoints;
+}
+function variableDistancePointsOnCurve(curve, nextDistance) {
+  if (curve.length === 0) return [];
+  const outPoints = [curve[0]];
+  let interval = nextDistance(curve[0]);
+  let accumDist = 0;
+  for (let i = 0; i < curve.length - 1; i++) {
+    const prevPoint = curve[i];
+    const currPoint = curve[i + 1];
+    const currLineDist = distance2(prevPoint, currPoint);
+    const initLength = interval - accumDist % interval;
+    accumDist += currLineDist;
+    const newPointCount = Math.floor(accumDist / interval);
+    let distAcross = initLength;
+    while (accumDist > interval) {
+      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
+      accumDist -= interval;
+      interval = nextDistance(outPoints.at(-1));
+      distAcross += interval;
+    }
+  }
+  return outPoints;
+}
+
+// src/curve/bezierify.ts
+function dotself2(x2) {
+  return dot2(x2, x2);
+}
+function clamp3(v, lo, hi) {
+  return [clamp(v[0], lo, hi), clamp(v[1], lo, hi), clamp(v[2], lo, hi)];
+}
+function sign2(a) {
+  return [Math.sign(a[0]), Math.sign(a[1])];
+}
+function abs2(a) {
+  return [Math.abs(a[0]), Math.abs(a[1])];
+}
+function pow2(a, b) {
+  return [Math.pow(a[0], b[0]), Math.pow(a[1], b[1])];
+}
+function sdBezier(pos, A, B, C) {
+  const a = sub2(B, A);
+  const b = add2(sub2(A, scale2(B, 2)), C);
+  const c = scale2(a, 2);
+  const d = sub2(A, pos);
+  const kk = 1 / dot2(b, b);
+  const kx = kk * dot2(a, b);
+  const ky = kk * (2 * dot2(a, a) + dot2(d, b)) / 3;
+  const kz = kk * dot2(d, a);
+  let res = 0;
+  const p = ky - kx * kx;
+  const p3 = p * p * p;
+  const q = kx * (2 * kx * kx - 3 * ky) + kz;
+  let h = q * q + 4 * p3;
+  if (h >= 0) {
+    h = Math.sqrt(h);
+    const x2 = scale2(sub2([h, -h], [q, q]), 1 / 2);
+    const uv = mul2(sign2(x2), pow2(abs2(x2), [1 / 3, 1 / 3]));
+    const t = clamp(uv[0] + uv[1] - kx, 0, 1);
+    res = dotself2(add2(d, scale2(add2(c, scale2(b, t)), t)));
+  } else {
+    const z2 = Math.sqrt(-p);
+    const v = Math.acos(q / (p * z2 * 2)) / 3;
+    const m = Math.cos(v);
+    const n = Math.sin(v) * 1.732050808;
+    const t = clamp3(
+      sub3(scale3([m + m, -n - m, n - m], z2), [kx, kx, kx]),
+      0,
+      1
+    );
+    res = Math.min(
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[0])), t[0]))),
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[1])), t[1])))
+    );
+    res = Math.min(
+      res,
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[2])), t[2])))
+    );
+  }
+  return Math.sqrt(res);
+}
+function gradient2(fn, pos, diff) {
+  const a = fn(pos);
+  const b = fn(add2(pos, [diff, 0]));
+  const c = fn(add2(pos, [0, diff]));
+  return [(a - b) / diff, (a - c) / diff];
+}
+function bezierifyFixedCount(path, count, learningRate, gradientDescentIters) {
+  const beziers = [];
+  for (let i = 0; i < count; i++) {
+    const startIndex = Math.floor(i / count * (path.length - 1));
+    const endIndex = Math.floor((i + 1) / count * (path.length - 1));
+    beziers.push(
+      generateBezierApproximation(
+        path,
+        startIndex,
+        endIndex,
+        learningRate,
+        gradientDescentIters
+      ).bezier
+    );
+  }
+  return beziers;
+}
+function bezierAdaptive(path, maxError, learningRate, gradientDescentIters) {
+  return bezierAdaptiveInner(
+    path,
+    maxError,
+    0,
+    path.length - 1,
+    learningRate,
+    gradientDescentIters
+  );
+}
+function bezierAdaptiveInner(path, maxError, startIndex, endIndex, learningRate, gradientDescentIters) {
+  const approx = generateBezierApproximation(
+    path,
+    startIndex,
+    endIndex,
+    learningRate,
+    gradientDescentIters
+  );
+  if (approx.error <= maxError || endIndex - startIndex < 3)
+    return [approx.bezier];
+  const mid = Math.floor((startIndex + endIndex) / 2);
+  return [
+    ...bezierAdaptiveInner(
+      path,
+      maxError,
+      startIndex,
+      mid,
+      learningRate,
+      gradientDescentIters
+    ),
+    ...bezierAdaptiveInner(
+      path,
+      maxError,
+      mid,
+      endIndex,
+      learningRate,
+      gradientDescentIters
+    )
+  ];
+}
+function generateBezierApproximation(path, startIndex, endIndex, learningRate, gradientDescentIters) {
+  const start = path[startIndex];
+  const end = path[endIndex];
+  let controlPoint = add2(
+    scale2(add2(path[startIndex], path[endIndex]), 0.5),
+    [1e-4, 1e-4]
+  );
+  const getError = (v) => {
+    let error = 0;
+    let count = 0;
+    for (let i = startIndex + 1; i < endIndex; i++) {
+      error += sdBezier(path[i], start, v, end) ** 2;
+      count++;
+    }
+    return error / count;
+  };
+  for (let i = 0; i < gradientDescentIters; i++) {
+    const gradient = gradient2(getError, controlPoint, 1e-3);
+    if (isNaN(gradient[0]) || isNaN(gradient[1])) {
+      continue;
+    }
+    controlPoint = add2(controlPoint, scale2(gradient, learningRate));
+  }
+  return {
+    bezier: { a: start, b: controlPoint, c: end },
+    error: getError(controlPoint)
+  };
+}
+function bezierPreview(beziers, size) {
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d");
+  const points = beziers.flatMap((e) => [e.a, e.b, e.c]);
+  c.width = Math.max(...points.map((b) => b[0])) * size + size;
+  c.height = Math.max(...points.map((b) => b[1])) * size + size;
+  ctx?.beginPath();
+  for (const p of beziers) {
+    ctx.moveTo(p.a[0] * size, p.a[1] * size);
+    ctx.quadraticCurveTo(
+      p.b[0] * size,
+      p.b[1] * size,
+      p.c[0] * size,
+      p.c[1] * size
+    );
+  }
+  ctx.stroke();
+  return c;
 }
 
 // src/audio/stream-audio.ts
@@ -30725,241 +31229,38 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
-// src/curve/quadratic-curve-to-svg.ts
-function quadraticCurveToPath(curve, sigfigs, offset) {
-  let startPoint = curve[0].a;
-  const str2 = (n) => n.toPrecision(sigfigs);
-  let output = `M ${str2(startPoint[0] + offset[0])} ${str2(
-    startPoint[1] + offset[1]
-  )}`;
-  let prevpoint = startPoint;
-  for (const b of curve) {
-    output += `q ${str2(b.b[0] - prevpoint[0])} ${str2(
-      b.b[1] - prevpoint[1]
-    )},${str2(b.c[0] - prevpoint[0])} ${str2(b.c[1] - prevpoint[1])}`;
-    prevpoint = b.c;
-  }
-  return output;
+// src/math/noise.ts
+function fract(x2) {
+  return x2 - Math.floor(x2);
 }
-function quadraticCurveToSvgPath(curve, offset, color, sigfigs) {
-  const pathd = quadraticCurveToPath(curve, sigfigs, offset);
-  return `<path d="${pathd}" stroke="${color}" />`;
+function simpleRandVec2ToFloat(co) {
+  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
 }
-function islandsToSvg(width, height, islands, sigfigs) {
-  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${islands.map(
-    (i) => quadraticCurveToSvgPath(i.curve, i.topLeftInImage, i.color, sigfigs)
-  ).join("")}</svg>`;
+function simpleRandVec2ToVec2(co) {
+  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
 }
-
-// src/curve/points-on-curve.ts
-function equidistantPointsOnCurve(curve, interval) {
-  if (curve.length === 0) return [];
-  const outPoints = [curve[0]];
-  let accumDist = 0;
-  for (let i = 0; i < curve.length - 1; i++) {
-    const prevPoint = curve[i];
-    const currPoint = curve[i + 1];
-    const currLineDist = distance2(prevPoint, currPoint);
-    const initLength = interval - accumDist % interval;
-    accumDist += currLineDist;
-    const newPointCount = Math.floor(accumDist / interval);
-    for (let j = 0; j < newPointCount; j++) {
-      let distAcross = initLength + j * interval;
-      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
-    }
-    accumDist -= newPointCount * interval;
-  }
-  return outPoints;
+function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
+  const fp = [Math.floor(p[0]), Math.floor(p[1])];
+  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
+  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
+  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
+  const v42 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
+  const o1 = sub2(p, fp);
+  const o2 = sub2(o1, [1, 0]);
+  const o3 = sub2(o1, [0, 1]);
+  const o4 = sub2(o1, [1, 1]);
+  const d1 = dot2(v1, o1);
+  const d2 = dot2(v2, o2);
+  const d3 = dot2(v3, o3);
+  const d4 = dot2(v42, o4);
+  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
+  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
+  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
 }
-function variableDistancePointsOnCurve(curve, nextDistance) {
-  if (curve.length === 0) return [];
-  const outPoints = [curve[0]];
-  let interval = nextDistance(curve[0]);
-  let accumDist = 0;
-  for (let i = 0; i < curve.length - 1; i++) {
-    const prevPoint = curve[i];
-    const currPoint = curve[i + 1];
-    const currLineDist = distance2(prevPoint, currPoint);
-    const initLength = interval - accumDist % interval;
-    accumDist += currLineDist;
-    const newPointCount = Math.floor(accumDist / interval);
-    let distAcross = initLength;
-    while (accumDist > interval) {
-      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
-      accumDist -= interval;
-      interval = nextDistance(outPoints.at(-1));
-      distAcross += interval;
-    }
-  }
-  return outPoints;
-}
-
-// src/curve/bezierify.ts
-function dotself2(x2) {
-  return dot2(x2, x2);
-}
-function clamp3(v, lo, hi) {
-  return [clamp(v[0], lo, hi), clamp(v[1], lo, hi), clamp(v[2], lo, hi)];
-}
-function sign2(a) {
-  return [Math.sign(a[0]), Math.sign(a[1])];
-}
-function abs2(a) {
-  return [Math.abs(a[0]), Math.abs(a[1])];
-}
-function pow2(a, b) {
-  return [Math.pow(a[0], b[0]), Math.pow(a[1], b[1])];
-}
-function sdBezier(pos, A, B, C) {
-  const a = sub2(B, A);
-  const b = add2(sub2(A, scale2(B, 2)), C);
-  const c = scale2(a, 2);
-  const d = sub2(A, pos);
-  const kk = 1 / dot2(b, b);
-  const kx = kk * dot2(a, b);
-  const ky = kk * (2 * dot2(a, a) + dot2(d, b)) / 3;
-  const kz = kk * dot2(d, a);
-  let res = 0;
-  const p = ky - kx * kx;
-  const p3 = p * p * p;
-  const q = kx * (2 * kx * kx - 3 * ky) + kz;
-  let h = q * q + 4 * p3;
-  if (h >= 0) {
-    h = Math.sqrt(h);
-    const x2 = scale2(sub2([h, -h], [q, q]), 1 / 2);
-    const uv = mul2(sign2(x2), pow2(abs2(x2), [1 / 3, 1 / 3]));
-    const t = clamp(uv[0] + uv[1] - kx, 0, 1);
-    res = dotself2(add2(d, scale2(add2(c, scale2(b, t)), t)));
-  } else {
-    const z2 = Math.sqrt(-p);
-    const v = Math.acos(q / (p * z2 * 2)) / 3;
-    const m = Math.cos(v);
-    const n = Math.sin(v) * 1.732050808;
-    const t = clamp3(
-      sub3(scale3([m + m, -n - m, n - m], z2), [kx, kx, kx]),
-      0,
-      1
-    );
-    res = Math.min(
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[0])), t[0]))),
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[1])), t[1])))
-    );
-    res = Math.min(
-      res,
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[2])), t[2])))
-    );
-  }
-  return Math.sqrt(res);
-}
-function gradient2(fn, pos, diff) {
-  const a = fn(pos);
-  const b = fn(add2(pos, [diff, 0]));
-  const c = fn(add2(pos, [0, diff]));
-  return [(a - b) / diff, (a - c) / diff];
-}
-function bezierifyFixedCount(path, count, learningRate, gradientDescentIters) {
-  const beziers = [];
-  for (let i = 0; i < count; i++) {
-    const startIndex = Math.floor(i / count * (path.length - 1));
-    const endIndex = Math.floor((i + 1) / count * (path.length - 1));
-    beziers.push(
-      generateBezierApproximation(
-        path,
-        startIndex,
-        endIndex,
-        learningRate,
-        gradientDescentIters
-      ).bezier
-    );
-  }
-  return beziers;
-}
-function bezierAdaptive(path, maxError, learningRate, gradientDescentIters) {
-  return bezierAdaptiveInner(
-    path,
-    maxError,
-    0,
-    path.length - 1,
-    learningRate,
-    gradientDescentIters
-  );
-}
-function bezierAdaptiveInner(path, maxError, startIndex, endIndex, learningRate, gradientDescentIters) {
-  const approx = generateBezierApproximation(
-    path,
-    startIndex,
-    endIndex,
-    learningRate,
-    gradientDescentIters
-  );
-  if (approx.error <= maxError || endIndex - startIndex < 3)
-    return [approx.bezier];
-  const mid = Math.floor((startIndex + endIndex) / 2);
-  return [
-    ...bezierAdaptiveInner(
-      path,
-      maxError,
-      startIndex,
-      mid,
-      learningRate,
-      gradientDescentIters
-    ),
-    ...bezierAdaptiveInner(
-      path,
-      maxError,
-      mid,
-      endIndex,
-      learningRate,
-      gradientDescentIters
-    )
-  ];
-}
-function generateBezierApproximation(path, startIndex, endIndex, learningRate, gradientDescentIters) {
-  const start = path[startIndex];
-  const end = path[endIndex];
-  let controlPoint = add2(
-    scale2(add2(path[startIndex], path[endIndex]), 0.5),
-    [1e-4, 1e-4]
-  );
-  const getError = (v) => {
-    let error = 0;
-    let count = 0;
-    for (let i = startIndex + 1; i < endIndex; i++) {
-      error += sdBezier(path[i], start, v, end) ** 2;
-      count++;
-    }
-    return error / count;
-  };
-  for (let i = 0; i < gradientDescentIters; i++) {
-    const gradient = gradient2(getError, controlPoint, 1e-3);
-    if (isNaN(gradient[0]) || isNaN(gradient[1])) {
-      continue;
-    }
-    controlPoint = add2(controlPoint, scale2(gradient, learningRate));
-  }
-  return {
-    bezier: { a: start, b: controlPoint, c: end },
-    error: getError(controlPoint)
-  };
-}
-function bezierPreview(beziers, size) {
-  const c = document.createElement("canvas");
-  const ctx = c.getContext("2d");
-  const points = beziers.flatMap((e) => [e.a, e.b, e.c]);
-  c.width = Math.max(...points.map((b) => b[0])) * size + size;
-  c.height = Math.max(...points.map((b) => b[1])) * size + size;
-  ctx?.beginPath();
-  for (const p of beziers) {
-    ctx.moveTo(p.a[0] * size, p.a[1] * size);
-    ctx.quadraticCurveTo(
-      p.b[0] * size,
-      p.b[1] * size,
-      p.c[0] * size,
-      p.c[1] * size
-    );
-  }
-  ctx.stroke();
-  return c;
+function boxMullerTransform(u) {
+  const a = Math.sqrt(-2 * Math.log(u[0]));
+  const b = 2 * Math.PI * u[1];
+  return [a * Math.cos(b), a * Math.sin(b)];
 }
 
 // src/webgpu/gpudoc/ui.tsx
@@ -32073,7 +32374,12 @@ export {
   TEXTURE_DIMENSIONALITIES,
   TEXTURE_FORMAT_TO_WGSL_TYPE_LUT,
   TransformHTML,
+  VERTEX_FORMAT_TO_ELEMENT_COUNT,
+  VERTEX_FORMAT_TO_ELEMENT_SIZE,
+  VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR,
+  VERTEX_FORMAT_TO_WGSL_BASE_TYPE,
   WGSL_BASE_TYPE_TO_SAMPLER_TYPE,
+  WGSL_DATA_TYPES,
   WGSL_TYPE_ALIGNMENTS,
   WGSL_TYPE_DATATYPES,
   WGSL_TYPE_ELEMENT_COUNTS,
@@ -32427,6 +32733,7 @@ export {
   uvSphere,
   variableDistancePointsOnCurve,
   variadify,
+  vertexFormatStride,
   w,
   wait,
   waitForCond,
@@ -32435,6 +32742,7 @@ export {
   workerifyClientIframe,
   workerifyServer,
   workerifyServerIframe,
+  wrapDevice,
   ww,
   www,
   wwww,

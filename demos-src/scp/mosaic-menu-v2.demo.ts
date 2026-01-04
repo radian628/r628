@@ -3,6 +3,7 @@ import {
   cart2Polar,
   cartesianProduct,
   distance2,
+  pickrand,
   polar2Cart,
   rand,
   range,
@@ -159,6 +160,8 @@ function createTesseraLayout(tessera: Tessera[]) {
 
   const styles = tesseraCellGridRanges
     .map(([x, y], i) => {
+      const tes = tessera[i];
+
       const voronoiList = voronoiCells[x + y * gridX];
 
       const minX = Math.min(...voronoiList.map((v) => v[0]));
@@ -199,7 +202,6 @@ function createTesseraLayout(tessera: Tessera[]) {
   left: ${minX}%;
   width: ${maxX - minX}%;
   height: ${maxY - minY}%;
-  background-color: #bbb;
   clip-path: polygon(${boundary});
 }
   
@@ -223,15 +225,17 @@ function createTesseraLayout(tessera: Tessera[]) {
     .map(([x, y], i) => {
       const tes = tessera[i];
 
-      return `[[div_ class="cell-${x}-${y}"]]
+      return `[[div_ class="cell-${x}-${y}" style="--color: ${tes.color}"]]
 [[div_ class="cell-${x}-${y}-env-l"]]
 @@ @@
 [[/div]]
 [[div_ class="cell-${x}-${y}-env-r"]]
 @@ @@
 [[/div]]
-[[a_ class="tessera-link" href="${tes.url}"]]@@ @@[[/a]]
-[[span class="mosaic-text"]]${tes.name}[[/span]]
+[[a class="tessera-link" href="${tes.url}"]]@@ @@[[/a]]
+[[div_ class="mosaic-text"]]
+${tes.name}
+[[/div]]
 [[/div]]`;
     })
     .join("\n\n");
@@ -239,6 +243,16 @@ function createTesseraLayout(tessera: Tessera[]) {
   return `
 
 [[module css]]
+.mosaic-menu a {
+  background-color: #bbb;
+  z-index: -1;
+  pointer-events: all;
+}
+
+.mosaic-menu a:visited {
+  background-color: var(--color);
+}
+
 .tessera-link {
   display: block;
   width: 100%;
@@ -248,119 +262,101 @@ function createTesseraLayout(tessera: Tessera[]) {
   left: 0;
 }
 
+.mosaic-text {
+  margin-top: 34cqh;
+  text-align: center;
+}
+
+.mosaic-menu {
+  aspect-ratio: 1 / 2;
+  position: relative;
+  pointer-events: none;
+}
+
+.mosaic-menu > div {
+  container-type: size;
+}
+
 ${styles}
 [[/module]]
-[[div_ style="width: 500px; height: 1000px; position: relative;"]]
+[[div_ class="mosaic-menu"]]
 ${tesseraDivs}
 [[/div]]
 
 `;
 }
 
+const COLORS = [
+  "#B5005A",
+  "#FF997C",
+  "#F96353",
+  "#00B391",
+  "#0045FF",
+  "#4800D5",
+];
+
 const TESSERA: Tessera[] = [
   {
     name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
+    desc: "Friday was the wretched end of everybody’s week, but Hanson Perry liked it fine.",
     url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
   },
   {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
+    name: "The Rainbow Pebble",
     desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
+    url: "https://scp-wiki.wikidot.com/mosaic-the-rainbow-pebble",
   },
   {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
+    name: "The Broken Dawn",
+    desc: "In which dawn breaks, and no-one will come by to fix it.",
+    url: "https://scp-wiki.wikidot.com/the-broken-dawn",
   },
   {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
+    name: "The Beast Of Liverwort Hill",
+    desc: "A metal beast appears in Liverwort Hill, but nothing steel can stay.",
+    url: "https://scp-wiki.wikidot.com/the-beast-of-liverwort-hill",
   },
   {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
+    name: "Right of First Refuse",
+    desc: "In Which a Pile of Corpses Makes a Plea to the Courts.",
+    url: "https://scp-wiki.wikidot.com/right-of-first-refuse",
   },
   {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
+    name: "The Gizzen Kirk",
+    desc: "The Proctors find a canny soul to build a church to Progress.",
+    url: "https://scp-wiki.wikidot.com/the-gizzen-kirk",
   },
   {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
+    name: "Where Once the Canvas Fish",
+    desc: "In which great beasts leave only their wake in the sky.",
+    url: "https://scp-wiki.wikidot.com/canvas-fish-fly",
   },
   {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
+    name: "The Parcelmen's Creed",
+    desc: "In which a Parcelwoman faces her greatest challenge yet: stairs.",
+    url: "https://scp-wiki.wikidot.com/the-parcelmens-creed",
   },
   {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
+    name: "Bessie Bogan and the Crow Road Inn",
+    desc: "In which the Mosaic’s favorite tavern flies into trouble.",
+    url: "https://scp-wiki.wikidot.com/bessie-bogan-and-the-crow-road-inn",
   },
   {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
+    name: "Juni Writes A Poem",
+    desc: "In which a poet finds ways to dream skyward.",
+    url: "https://scp-wiki.wikidot.com/juni-writes-a-poem",
   },
   {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
+    name: "A Gally Fellow's Lens",
+    desc: "In which we watch time pass.",
+    url: "https://scp-wiki.wikidot.com/a-gally-fellows-lens",
   },
   {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
+    name: "Leasehold On Daylight",
+    desc: "In which the light outlasts the system designed to sell it. ",
+    url: "https://scp-wiki.wikidot.com/leasehold-on-daylight",
   },
-  {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
-  },
-  {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
-  },
-  {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
-  },
-  {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
-  },
-  {
-    name: "Hanson Perry and the Crabmeat Loss",
-    color: "#f00",
-    desc: "something here",
-    url: "https://scp-wiki.wikidot.com/mosaic-crabmeat",
-  },
-];
+].map((e) => ({ ...e, color: pickrand(COLORS) }));
 
 const layout = createTesseraLayout(TESSERA);
 
