@@ -80,7 +80,7 @@ export type ListTail<List extends LL> = List extends {
 
 type WIOERUT = ListAppend<ListAppend<ListAppend<undefined, 1>, 2>, 3>;
 
-export type ArrayAppend<Arr extends any[], A> = [...Arr, A];
+export type ArrayPrepend<Arr extends any[], A> = [A, ...Arr];
 
 export type ArrayTail<Arr extends any[]> = Arr extends [...any[], infer Last]
   ? Last

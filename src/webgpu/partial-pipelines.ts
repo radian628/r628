@@ -6,6 +6,7 @@ import {
   TypeLevelError,
   ListAppend,
   LinkedList,
+  ListTail,
 } from "../typelevel";
 import {
   VERTEX_FORMAT_TO_JS_TYPE,
@@ -84,11 +85,15 @@ type WithKeys<A, B> = Omit<A, keyof B> & B;
 type RenderPassBindings = {
   pipeline?: LinkedList<GPURenderPipeline | null>;
   indexBuffer?: LinkedList<GPUBuffer>;
-  indexFormat?: "uint32" | "uint16";
+  indexFormat?: LinkedList<"uint32" | "uint16">;
 } & {
   [K in `bindGroup${number}`]?: LinkedList<GPUBindGroup | null>;
 } & {
   [K in `vertexBuffer${number}`]?: LinkedList<GPUBuffer | null>;
+};
+
+type CurrentBindings<RPB extends RenderPassBindings> = {
+  [K in keyof RPB]: RPB[K] extends LinkedList<any> ? ListTail<RPB[K]> : never;
 };
 
 type InitRenderPassEncoder = WrappedRenderPassEncoder<{}>;
@@ -189,6 +194,7 @@ enc.bindings;
 
 enc.setPipeline(undefined as unknown as GPURenderPipeline);
 
+enc.draw;
 enc.bindings.pipeline;
 enc.setPipeline(undefined as unknown as GPURenderPipeline);
 
@@ -278,7 +284,7 @@ type WrappedRenderPassEncoder<Bindings> = Bindings extends RenderPassBindings
       | "drawIndexed"
       | "drawIndexedIndirect"
     > &
-      WrappedRenderPassEncoderDrawFunctions<Bindings>
+      WrappedRenderPassEncoderDrawFunctions<CurrentBindings<Bindings>>
   : TypeLevelError<["Unrecognized render pass bindings."]>;
 
 const rpe: InitRenderPassEncoder =
