@@ -50,7 +50,7 @@ export function curry<F extends (...args: any) => any>(
 
 type Kurryable = (params: Record<any, any>) => any;
 
-type Kurried<F extends Kurryable> = F extends (
+export type Kurried<F extends Kurryable> = F extends (
   param: infer P extends Record<any, any>
 ) => infer Ret
   ? {} extends P

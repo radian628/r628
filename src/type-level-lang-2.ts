@@ -1,4 +1,9 @@
-import { ParseLisp, ToTLLTree } from "./type-level-parser";
+import {
+  ParseLibLisp,
+  ParseLisp,
+  ToTLLLib,
+  ToTLLTree,
+} from "./type-level-parser";
 import { TypeLevelError } from "./typelevel";
 
 // type SDSF = {a :1 , b:2} extends { [K in "a"]: any } ? 1 : 0
@@ -11,15 +16,20 @@ type StackFrame = {
 type Stack = StackFrame[];
 
 type StackGet<
-  Stk extends Record<any, any>[],
+  Stk extends Stack,
   V extends keyof any,
   OgCallStack = Stk,
 > = Stk extends [
-  infer Frame extends Record<any, any>,
-  ...infer Rest extends Record<any, any>[],
+  infer Frame extends StackFrame,
+  ...infer Rest extends StackFrame[],
 ]
-  ? Frame extends { [K in V]: any }
-    ? Frame[V]
+  ? Frame extends {
+      type: infer T extends "eager" | "lazy";
+      data: infer Data extends { [K in V]: any };
+    }
+    ? T extends "eager"
+      ? Data[V]
+      : Run<Data[V], Stk>
     : StackGet<Rest, V, OgCallStack>
   : TypeLevelError<
       ["Variable does not exist, ", V, ".", "Call stack:", OgCallStack]
@@ -29,7 +39,52 @@ type SplitString<Str> = Str extends `${infer A}${infer Rest}`
   ? [A, ...SplitString<Rest>]
   : [];
 
-export type Run<Expr, Stk extends Record<any, any>[]> =
+type ArrayMap<A, Stk extends Stack, Fn> = A extends [infer First, ...infer Rest]
+  ? [Run<Call<Lit<Fn>, Lit<First>>, Stk>, ...ArrayMap<Rest, Stk, Fn>]
+  : [];
+
+type GetFieldIfObj<Obj, Field> = [Obj, Field] extends [
+  infer Obj2 extends Object,
+  infer Field2 extends keyof Obj,
+]
+  ? Obj[Field2]
+  : TypeLevelError<
+      [
+        "Expected ",
+        Obj,
+        "to be an object and",
+        Field,
+        "to be one of its fields",
+      ]
+    >;
+
+type Intersection<A, B> = Omit<A, keyof B> & B;
+
+type ObjectWithField<K, V> = K extends keyof any
+  ? { [K2 in K]: V }
+  : TypeLevelError<["Expected", K, "to be a valid key."]>;
+
+type FirstEntry<P> = P extends [infer F, ...infer Rest] ? F : never;
+type SecondEntry<P> = P extends [any, infer S, ...infer Rest] ? S : never;
+
+type PairsToEntries<O> = {
+  [K in keyof O as FirstEntry<O[K]> extends keyof any
+    ? FirstEntry<O[K]>
+    : never]: SecondEntry<O[K]>;
+};
+
+type ObjectMap<F, O, Stk extends Stack> = PairsToEntries<{
+  [K in keyof O]: Run<Call<Call<Lit<F>, Lit<K>>, Lit<O[K]>>, Stk>;
+}>;
+
+type RunList<Exprs, Stk extends Stack> = Exprs extends [
+  infer First,
+  ...infer Rest,
+]
+  ? [Run<First, Stk>, ...RunList<Rest, Stk>]
+  : [];
+
+export type Run<Expr, Stk extends Stack> =
   // concat two strings
   Expr extends {
     type: "str-append";
@@ -59,146 +114,252 @@ export type Run<Expr, Stk extends Record<any, any>[]> =
           Body,
           [
             {
-              [B in keyof Bindings]: Run<Bindings[B], Stk>;
+              type: "eager";
+              data: {
+                [B in keyof Bindings]: Run<Bindings[B], Stk>;
+              };
             },
             ...Stk,
           ]
         >
-      : // literal value
-        Expr extends {
-            type: "literal";
-            value: infer Value;
+      : Expr extends {
+            type: "lazy-let";
+            bindings: infer Bindings extends Record<any, any>;
+            body: infer Body;
           }
-        ? Value
-        : // define a function w/ closure scope
+        ? Run<
+            Body,
+            [
+              {
+                type: "lazy";
+                data: Bindings;
+              },
+              ...Stk,
+            ]
+          >
+        : // literal value
           Expr extends {
-              type: "defun";
-              body: infer Body;
-              argname: infer Argname;
+              type: "literal";
+              value: infer Value;
             }
-          ? {
-              body: Body;
-              argname: Argname;
-              stack: Stk;
-            }
-          : // access a variable
+          ? Value
+          : // define a function w/ closure scope
             Expr extends {
-                type: "get";
-                binding: infer B extends keyof any;
+                type: "defun";
+                body: infer Body;
+                argname: infer Argname;
               }
-            ? StackGet<Stk, B, Stk>
-            : // call a function
+            ? {
+                body: Body;
+                argname: Argname;
+                stack: Stk;
+              }
+            : // access a variable
               Expr extends {
-                  type: "call";
-                  fn: infer Fn extends any;
-                  arg: infer Arg extends any;
+                  type: "get";
+                  binding: infer B extends keyof any;
                 }
-              ? Fn extends {
-                  body: infer Body;
-                  argname: infer Argname extends keyof any;
-                  stack: infer Stk2 extends Record<any, any>[];
-                }
-                ? Run<Body, [{ [A in Argname]: Run<Arg, Stk> }, ...Stk2]>
-                : Run<Fn, Stk> extends {
-                      body: infer Body;
-                      argname: infer Argname extends keyof any;
-                      stack: infer Stk2 extends Record<any, any>[];
-                    }
-                  ? Run<Body, [{ [A in Argname]: Run<Arg, Stk> }, ...Stk2]>
-                  : TypeLevelError<["Expected function, received ", Fn]>
-              : // recurse (f, cond, in)
+              ? StackGet<Stk, B, Stk>
+              : // call a function
                 Expr extends {
-                    type: "recurse";
+                    type: "call";
+                    fn: infer Fn extends any;
+                    arg: infer Arg extends any;
                   }
-                ? Run<
-                    Call<
-                      Lit<StackGet<Stk, "cond">>,
-                      Lit<StackGet<Stk, "in", Stk>>
-                    >,
-                    Stk
-                  > extends true
+                ? Fn extends {
+                    body: infer Body;
+                    argname: infer Argname extends keyof any;
+                    stack: infer Stk2 extends Stack;
+                  }
                   ? Run<
-                      Expr,
+                      Body,
                       [
                         {
-                          in: Run<
-                            Call<
-                              Lit<StackGet<Stk, "f">>,
-                              Lit<StackGet<Stk, "in">>
-                            >,
-                            Stk
-                          >;
+                          type: "eager";
+                          data: { [A in Argname]: Run<Arg, Stk> };
                         },
-                        ...Stk,
+                        ...Stk2,
                       ]
                     >
-                  : StackGet<Stk, "in">
-                : // head of array
-                  Expr extends {
-                      type: "head";
-                    }
-                  ? StackGet<Stk, "a"> extends [infer First, ...infer Rest]
-                    ? First
-                    : TypeLevelError<
-                        ["Cannot get head of:", StackGet<Stk, "a">]
+                  : Run<Fn, Stk> extends {
+                        body: infer Body;
+                        argname: infer Argname extends keyof any;
+                        stack: infer Stk2 extends Stack;
+                      }
+                    ? Run<
+                        Body,
+                        [
+                          {
+                            type: "eager";
+                            data: { [A in Argname]: Run<Arg, Stk> };
+                          },
+                          ...Stk2,
+                        ]
                       >
-                  : // tail of array
+                    : TypeLevelError<["Expected function, received ", Fn]>
+                : // recurse (f, cond, in)
+                  Expr extends {
+                      type: "recurse";
+                    }
+                  ? Run<
+                      Call<
+                        Lit<StackGet<Stk, "cond">>,
+                        Lit<StackGet<Stk, "in", Stk>>
+                      >,
+                      Stk
+                    > extends true
+                    ? Run<
+                        Expr,
+                        [
+                          {
+                            type: "eager";
+                            data: {
+                              in: Run<
+                                Call<
+                                  Lit<StackGet<Stk, "f">>,
+                                  Lit<StackGet<Stk, "in">>
+                                >,
+                                Stk
+                              >;
+                            };
+                          },
+                          ...Stk,
+                        ]
+                      >
+                    : StackGet<Stk, "in">
+                  : // head of array
                     Expr extends {
-                        type: "tail";
+                        type: "head";
                       }
                     ? StackGet<Stk, "a"> extends [infer First, ...infer Rest]
-                      ? Rest
+                      ? First
                       : TypeLevelError<
-                          ["Cannot get tail of:", StackGet<Stk, "a">]
+                          ["Cannot get head of:", StackGet<Stk, "a">]
                         >
-                    : // is array empty
+                    : // tail of array
                       Expr extends {
-                          type: "isempty";
+                          type: "tail";
                         }
-                      ? StackGet<Stk, "a"> extends []
-                        ? true
-                        : false
-                      : // if/else
+                      ? StackGet<Stk, "a"> extends [infer First, ...infer Rest]
+                        ? Rest
+                        : TypeLevelError<
+                            ["Cannot get tail of:", StackGet<Stk, "a">]
+                          >
+                      : // is array empty
                         Expr extends {
-                            type: "if";
+                            type: "isempty";
                           }
-                        ? StackGet<Stk, "cond"> extends true
-                          ? StackGet<Stk, "true">
-                          : StackGet<Stk, "false">
-                        : // append
+                        ? StackGet<Stk, "a"> extends []
+                          ? true
+                          : false
+                        : // if/else
                           Expr extends {
-                              type: "append";
+                              type: "if";
                             }
-                          ? StackGet<Stk, "a"> extends any[]
-                            ? [...StackGet<Stk, "a">, StackGet<Stk, "b">]
-                            : TypeLevelError<
-                                ["expected array; received", StackGet<Stk, "b">]
-                              >
-                          : // wrap in array
+                          ? StackGet<Stk, "cond"> extends true
+                            ? StackGet<Stk, "true">
+                            : StackGet<Stk, "false">
+                          : // append
                             Expr extends {
-                                type: "arrayify";
+                                type: "append";
                               }
-                            ? [StackGet<Stk, "a">]
-                            : // split string into array
-                              Expr extends {
-                                  type: "split-str";
-                                }
-                              ? SplitString<StackGet<Stk, "a">>
-                              : Expr extends {
-                                    type: "eq";
-                                  }
-                                ? [
-                                    StackGet<Stk, "a">,
+                            ? StackGet<Stk, "a"> extends any[]
+                              ? [...StackGet<Stk, "a">, StackGet<Stk, "b">]
+                              : TypeLevelError<
+                                  [
+                                    "expected array; received",
                                     StackGet<Stk, "b">,
-                                  ] extends [
-                                    StackGet<Stk, "b">,
-                                    StackGet<Stk, "a">,
                                   ]
-                                  ? true
-                                  : false
-                                : TypeLevelError<
-                                    ["Unrecognized expression: ", Expr]
-                                  >;
+                                >
+                            : // wrap in array
+                              Expr extends {
+                                  type: "arrayify";
+                                }
+                              ? [StackGet<Stk, "a">]
+                              : // split string into array
+                                Expr extends {
+                                    type: "split-str";
+                                  }
+                                ? SplitString<StackGet<Stk, "a">>
+                                : Expr extends {
+                                      type: "eq";
+                                    }
+                                  ? [
+                                      StackGet<Stk, "a">,
+                                      StackGet<Stk, "b">,
+                                    ] extends [
+                                      StackGet<Stk, "b">,
+                                      StackGet<Stk, "a">,
+                                    ]
+                                    ? true
+                                    : false
+                                  : // array map
+                                    Expr extends {
+                                        type: "array-map";
+                                      }
+                                    ? ArrayMap<
+                                        StackGet<Stk, "a">,
+                                        Stk,
+                                        StackGet<Stk, "f">
+                                      >
+                                    : // get obj field
+                                      Expr extends {
+                                          type: "get-field";
+                                        }
+                                      ? GetFieldIfObj<
+                                          StackGet<Stk, "obj">,
+                                          StackGet<Stk, "field">
+                                        >
+                                      : // obj union
+                                        Expr extends {
+                                            type: "union";
+                                          }
+                                        ?
+                                            | StackGet<Stk, "a">
+                                            | StackGet<Stk, "b">
+                                        : // stymmetric intersection
+                                          Expr extends {
+                                              type: "symmetric-intersection";
+                                            }
+                                          ? StackGet<Stk, "a"> &
+                                              StackGet<Stk, "b">
+                                          : // intersection, prioritizing b
+                                            Expr extends {
+                                                type: "intersection";
+                                              }
+                                            ? Intersection<
+                                                StackGet<Stk, "a">,
+                                                StackGet<Stk, "b">
+                                              >
+                                            : // create object with single field
+                                              Expr extends {
+                                                  type: "obj-with-field";
+                                                }
+                                              ? ObjectWithField<
+                                                  StackGet<Stk, "k">,
+                                                  StackGet<Stk, "v">
+                                                >
+                                              : // map over all object entries
+                                                Expr extends {
+                                                    type: "object-map";
+                                                  }
+                                                ? ObjectMap<
+                                                    StackGet<Stk, "f">,
+                                                    StackGet<Stk, "o">,
+                                                    Stk
+                                                  >
+                                                : Expr extends {
+                                                      type: "list-literal";
+                                                      items: infer Items extends
+                                                        any[];
+                                                    }
+                                                  ? RunList<Items, Stk>
+                                                  : TypeLevelError<
+                                                      [
+                                                        "Unrecognized expression: ",
+                                                        Expr,
+                                                      ]
+                                                    >;
 
 type SDKLJF = [1, ...[2, 3, 4]];
 
@@ -237,7 +398,7 @@ type ConcatExpanded = {
 
 type Id = Lambda<"x", { type: "get"; binding: "x" }>;
 
-type IdTest = Run<Call<Id, Lit<69>>, [{}]>;
+type IdTest = Run<Call<Id, Lit<69>>, []>;
 
 type Concat = Lambda<"a", Lambda<"b", { type: "str-append" }>>;
 type Append = Lambda<"a", Lambda<"b", { type: "append" }>>;
@@ -361,7 +522,10 @@ type HelloWorld = Run<Call<Call<Concat, Lit<"Hello, ">>, Lit<"World">>, []>;
 
 type AAAAAA = Run<Call<Concat, Lit<"A">>, []>;
 
-type AAAAA2 = Run<Call<Lit<AAAAAA>, Lit<"B">>, [{ a: "A" }]>;
+type AAAAA2 = Run<
+  Call<Lit<AAAAAA>, Lit<"B">>,
+  [{ type: "eager"; data: { a: "A" } }]
+>;
 
 type MatchChar = Lambda<
   "c",
@@ -425,25 +589,82 @@ type SDKLFJ = Run<
       };
     };
   },
-  [{}]
+  []
 >;
 
 type TLLStdlib = {
+  objfield: Lambda<"k", Lambda<"v", { type: "obj-with-field" }>>;
+  objmap: Lambda<"f", Lambda<"o", { type: "object-map" }>>;
   concat: Concat;
-  // concat2: CompileTLL<"(@ (a b) (concat a b))">;
+  concat2: CompileTLL<"(@ (a b) (concat a b))">;
+  append: Append;
   // concat22: Lambda<"a", Lambda<"b", Get<"concat">>>;
   head: Head;
   tail: Tail;
+  isempty: IsEmpty;
   hello: Lit<"hello, ">;
   world: Lit<"world">;
-  // concat3: CompileTLL<"(@ (a b c) concat)">;
-};
+  if: If;
+  eq: Eq;
+  arrayify: Arrayify;
+  emptyArray: Lit<[]>;
+  emptyObject: Lit<{}>;
+  arr1: Lit<[1, 2]>;
+  arr2: Lit<[3, 4]>;
+  arr3: Lit<["a", "b", "c"]>;
+  pair: Pair;
+  map: Lambda<"f", Lambda<"a", { type: "array-map" }>>;
+  intersection: Lambda<"a", Lambda<"b", { type: "intersection" }>>;
+} & CompileTLLLib<`
+(fst (x) (head x))
+
+(snd (x) (head (tail x)))
+
+
+(arrayConcat (a b) 
+  (if 
+    (isempty b) 
+    a
+    (arrayConcat (append a (head b)) (tail b))))  
+`> &
+  CompileTLLLib<`
+(fromEntries (a) (if
+    (isempty a)
+    emptyObject
+    (intersection (objfield (fst (head a)) (snd (head a))) (fromEntries (tail a)))
+  ))
+`>;
+
+/*
+(map (f a)
+  (if
+    (isempty a) 
+    a
+    (arrayConcat (arrayify (f (head a))) (map f (tail a)))
+))
+*/
+
+type ENTRIES2 = RunTLL<`(intersection (objfield "a" "b") (objfield "c" "d"))`>;
+
+type ENTRIESTEST = RunTLL<`(fromEntries (list (list "a" "b") (list "c" "d")))`>;
+
+type ListLitTest = RunTLL<`(map (concat "hello, ") (list "a" "b" "c"))`>;
+
+type fieldtest = RunTLL<`(objfield "hi whats up" world)`>;
+
+type fieldtest2 =
+  RunTLL<`(objmap (@ (k v) (pair v k)) (objfield hello world))`>;
+
+type SDKJFL = RunTLL<"(arrayConcat arr2 arr2)">;
+
+type AAAAA = RunTLL<`(map (concat hello) arr3)`>;
 
 type CompileTLL<Code extends string> = ToTLLTree<ParseLisp<Code>>;
+type CompileTLLLib<Code extends string> = ToTLLLib<ParseLibLisp<Code>>;
 
 type RunTLL<Code extends string, Libraries = TLLStdlib> = Run<
   {
-    type: "let";
+    type: "lazy-let";
     bindings: Libraries;
     body: CompileTLL<Code>;
   },
@@ -472,6 +693,7 @@ type TREEE = ParseLisp<"(@ (a b) c)">;
 type TREEE2 = ToTLLTree<TREEE>;
 
 type AAAAAAAA = RunTLL<"(concat hello world)">;
+type AAAAAAAA2 = RunTLL<"(concat2 hello world)">;
 
 type AAAAAAAAsdfdkljl = RunTLL<`
 (

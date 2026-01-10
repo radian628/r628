@@ -11,6 +11,9 @@ type Join<Strs> = Strs extends [infer A extends string, ...infer Bs]
   ? `${A}${Join<Bs>}`
   : "";
 
+// type Word<X> = X extends `${infer W}${' ' | '\n' | '\t' | '\r'}${infer Rest}` ? W : never;
+// type SKDJFL = Word<"asd asd\nslgfjh">
+
 type ParseSeq<
   Ps extends any[],
   Rules extends Record<any, any>,
@@ -79,7 +82,8 @@ type Parse<P, Rules extends Record<any, any>, Input extends string> =
                   ? [NextInput, Res]
                   : [NextInput, { type: T; data: Res }]
                 : never
-              : P extends ["flat", infer P2]
+              : // flatten parse arrays
+                P extends ["flat", infer P2]
                 ? Parse<P2, Rules, Input> extends [infer NextInput, infer Res]
                   ? Res extends undefined
                     ? [NextInput, Res]
@@ -89,7 +93,8 @@ type Parse<P, Rules extends Record<any, any>, Input extends string> =
                         ? [NextInput, X]
                         : [NextInput, Res]
                   : never
-                : P extends ["join", infer P2]
+                : // join strings into array
+                  P extends ["join", infer P2]
                   ? Parse<P2, Rules, Input> extends [infer NextInput, infer Res]
                     ? Res extends undefined
                       ? [NextInput, Res]
@@ -97,7 +102,8 @@ type Parse<P, Rules extends Record<any, any>, Input extends string> =
                         ? [NextInput, Join<Res>]
                         : [NextInput, Res]
                     : never
-                  : P extends ["wrap", infer P2]
+                  : // wrap data in an array
+                    P extends ["wrap", infer P2]
                     ? Parse<P2, Rules, Input> extends [
                         infer NextInput,
                         infer Res,
@@ -106,7 +112,14 @@ type Parse<P, Rules extends Record<any, any>, Input extends string> =
                         ? [NextInput, Res]
                         : [NextInput, [Res]]
                       : never
-                    : TypeLevelError<["Unrecognized parser: ", P]>;
+                    : // negated character
+                      P extends ["neg", infer S extends string]
+                      ? Input extends `${S}${infer Rest}`
+                        ? [Input, undefined]
+                        : Input extends `${infer C}${infer Rest}`
+                          ? [Rest, C]
+                          : [Input, undefined]
+                      : TypeLevelError<["Unrecognized parser: ", P]>;
 
 type LispRules = {
   num: [
@@ -180,6 +193,21 @@ type LispRules = {
     ["lit", "Y"],
     ["lit", "Z"],
   ];
+  strchar: ["neg", '"'];
+  strInner: [
+    "alt",
+    ["flat", ["seq", ["rule", "strchar"], ["rule", "strInner"]]],
+    ["rule", "strchar"],
+  ];
+  str: ["join", ["rule", "strInner"]];
+  stringLiteral: [
+    "mark",
+    "string",
+    [
+      "join",
+      ["seq", ["ign", ["lit", '"']], ["rule", "str"], ["ign", ["lit", '"']]],
+    ],
+  ];
   abc: ["seq", ["lit", "a"], ["lit", "b"], ["lit", "c"]];
   wschar: ["alt", ["lit", " "], ["lit", "\n"], ["lit", "\t"], ["lit", "\r"]];
   ws: ["alt", ["seq", ["rule", "wschar"], ["rule", "ws"]], ["rule", "wschar"]];
@@ -199,7 +227,12 @@ type LispRules = {
     ["rule", "identChar"],
   ];
   ident: ["mark", "ident", ["join", ["rule", "identInner"]]];
-  expr: ["alt", ["rule", "ident"], ["rule", "compound"]];
+  expr: [
+    "alt",
+    ["rule", "ident"],
+    ["rule", "compound"],
+    ["rule", "stringLiteral"],
+  ];
   exprlist: [
     "alt",
     [
@@ -227,6 +260,7 @@ type LispRules = {
 };
 
 type TestParse = Parse<["rule", "expr"], LispRules, "(abc (1 2 3) c)">;
+type TestParse2 = Parse<["rule", "stringLiteral"], LispRules, `"hello"`>;
 
 export type ParseLisp<S extends string> =
   Parse<["rule", "expr"], LispRules, S> extends [infer _, infer Res]
@@ -257,6 +291,28 @@ type CreateFnDef<Args, Body> = Args extends [
     }
   : ToTLLTree<Body>;
 
+export type ParseLibLisp<S extends string> =
+  Parse<["rule", "exprlist"], LispRules, S> extends [infer _, infer Res]
+    ? Res
+    : never;
+
+export type ToTLLLib<ParseTree> = ParseTree extends [infer First, ...infer Rest]
+  ? First extends {
+      type: "compound";
+      data: [
+        { type: "ident"; data: infer Name extends keyof any },
+        { type: "compound"; data: infer FnArgs },
+        infer FnBody,
+      ];
+    }
+    ? { [N in Name]: CreateFnDef<FnArgs, FnBody> } & ToTLLLib<Rest>
+    : TypeLevelError<["Expected function definition; received ", ParseTree]>
+  : {};
+
+type ToTLLTreeList<ParseTrees> = ParseTrees extends [infer First, ...infer Rest]
+  ? [ToTLLTree<First>, ...ToTLLTreeList<Rest>]
+  : [];
+
 export type ToTLLTree<ParseTree> = ParseTree extends {
   type: "ident";
   data: infer S;
@@ -273,10 +329,26 @@ export type ToTLLTree<ParseTree> = ParseTree extends {
     ? CreateFnDef<FnArgs, FnBody>
     : ParseTree extends {
           type: "compound";
-          data: [infer Fn, ...infer Args extends any[]];
+          data: [{ type: "ident"; data: "list" }, ...infer ListElements];
         }
-      ? CreateFnCall<ToTLLTree<Fn>, Args>
-      : TypeLevelError<["Unrecognized expression type: ", ParseTree]>;
+      ? {
+          type: "list-literal";
+          items: ToTLLTreeList<ListElements>;
+        }
+      : ParseTree extends {
+            type: "compound";
+            data: [infer Fn, ...infer Args extends any[]];
+          }
+        ? CreateFnCall<ToTLLTree<Fn>, Args>
+        : ParseTree extends {
+              type: "string";
+              data: infer S;
+            }
+          ? {
+              type: "literal";
+              value: S;
+            }
+          : TypeLevelError<["Unrecognized expression type: ", ParseTree]>;
 
 // type A = ToTLLTree<ParseLisp<"(concat hello world)">>;
 

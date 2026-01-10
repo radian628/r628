@@ -604,6 +604,16 @@ export type VERTEX_FORMAT_TO_TYPEDARRAY_TYPE = {
   [K in keyof typeof VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR]: (typeof VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR)[K]["prototype"];
 };
 
+export type VERTEX_FORMAT_TO_JS_TYPE = {
+  [K in keyof typeof VERTEX_FORMAT_TO_ELEMENT_COUNT]: [
+    never,
+    number,
+    Vec2,
+    Vec3,
+    Vec4,
+  ][(typeof VERTEX_FORMAT_TO_ELEMENT_COUNT)[K]];
+};
+
 export const VERTEX_FORMAT_TO_WGSL_BASE_TYPE = {
   uint8: "u32",
   uint8x2: "u32",
