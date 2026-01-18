@@ -12,8 +12,135 @@ import {
   Vec3,
   Vec4,
 } from "../math/vector";
+import { KvSwap } from "../typelevel";
 
 export type TextureFormat = keyof typeof TEXTURE_FORMAT_TO_WGSL_TYPE_LUT;
+
+export const TEXTURE_FORMAT_TO_DEPTH_SAMPLER_TYPE = {
+  depth16unorm: "depth",
+  depth24plus: "depth",
+  "depth24plus-stencil8": "depth",
+  depth32float: "depth",
+  "depth32float-stencil8": "depth",
+} as const;
+
+export const TEXTURE_FORMAT_TO_NONDEPTH_SAMPLER_TYPE = {
+  depth16unorm: "unfilterable-float",
+  depth24plus: "unfilterable-float",
+  "depth24plus-stencil8": "unfilterable-float",
+  depth32float: "unfilterable-float",
+  "depth32float-stencil8": "unfilterable-float",
+} as const;
+
+export const TEXTURE_FORMAT_TO_STENCIL_SAMPLER_TYPE = {
+  stencil8: "uint",
+  "depth24plus-stencil8": "uint",
+  "depth32plus-stencil8": "uint",
+} as const;
+
+export const TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT = {
+  r8unorm: "float",
+  r8snorm: "float",
+  r8uint: "uint",
+  r8sint: "sint",
+  r16unorm: "float",
+  r16snorm: "float",
+  r16uint: "uint",
+  r16sint: "sint",
+  r16float: "float",
+  rg8unorm: "float",
+  rg8snorm: "float",
+  rg8uint: "uint",
+  rg8sint: "sint",
+  r32uint: "uint",
+  r32sint: "sint",
+  r32float: "float",
+  rg16unorm: "float",
+  rg16snorm: "float",
+  rg16uint: "uint",
+  rg16sint: "sint",
+  rg16float: "float",
+  rgba8unorm: "float",
+  "rgba8unorm-srgb": "float",
+  rgba8snorm: "float",
+  rgba8uint: "uint",
+  rgba8sint: "sint",
+  bgra8unorm: "float",
+  "bgra8unorm-srgb": "float",
+  rgb9e5ufloat: "float",
+  rgb10a2uint: "uint",
+  rgb10a2unorm: "float",
+  rg11b10ufloat: "float",
+  rg32uint: "uint",
+  rg32sint: "sint",
+  rg32float: "float",
+  rgba16unorm: "float",
+  rgba16snorm: "float",
+  rgba16uint: "uint",
+  rgba16sint: "sint",
+  rgba16float: "float",
+  rgba32uint: "uint",
+  rgba32sint: "sint",
+  rgba32float: "float",
+  stencil8: "uint",
+  depth16unorm: "depth",
+  depth24plus: "depth",
+  "depth24plus-stencil8": "depth",
+  depth32float: "depth",
+  "depth32float-stencil8": "depth",
+  "bc1-rgba-unorm": "float",
+  "bc1-rgba-unorm-srgb": "float",
+  "bc2-rgba-unorm": "float",
+  "bc2-rgba-unorm-srgb": "float",
+  "bc3-rgba-unorm": "float",
+  "bc3-rgba-unorm-srgb": "float",
+  "bc4-r-unorm": "float",
+  "bc4-r-snorm": "float",
+  "bc5-rg-unorm": "float",
+  "bc5-rg-snorm": "float",
+  "bc6h-rgb-ufloat": "float",
+  "bc6h-rgb-float": "float",
+  "bc7-rgba-unorm": "float",
+  "bc7-rgba-unorm-srgb": "float",
+  "etc2-rgb8unorm": "float",
+  "etc2-rgb8unorm-srgb": "float",
+  "etc2-rgb8a1unorm": "float",
+  "etc2-rgb8a1unorm-srgb": "float",
+  "etc2-rgba8unorm": "float",
+  "etc2-rgba8unorm-srgb": "float",
+  "eac-r11unorm": "f32",
+  "eac-r11snorm": "f32",
+  "eac-rg11unorm": "vec2f",
+  "eac-rg11snorm": "vec2f",
+  "astc-4x4-unorm": "float",
+  "astc-4x4-unorm-srgb": "float",
+  "astc-5x4-unorm": "float",
+  "astc-5x4-unorm-srgb": "float",
+  "astc-5x5-unorm": "float",
+  "astc-5x5-unorm-srgb": "float",
+  "astc-6x5-unorm": "float",
+  "astc-6x5-unorm-srgb": "float",
+  "astc-6x6-unorm": "float",
+  "astc-6x6-unorm-srgb": "float",
+  "astc-8x5-unorm": "float",
+  "astc-8x5-unorm-srgb": "float",
+  "astc-8x6-unorm": "float",
+  "astc-8x6-unorm-srgb": "float",
+  "astc-8x8-unorm": "float",
+  "astc-8x8-unorm-srgb": "float",
+  "astc-10x5-unorm": "float",
+  "astc-10x5-unorm-srgb": "float",
+  "astc-10x6-unorm": "float",
+  "astc-10x6-unorm-srgb": "float",
+  "astc-10x8-unorm": "float",
+  "astc-10x8-unorm-srgb": "float",
+  "astc-10x10-unorm": "float",
+  "astc-10x10-unorm-srgb": "float",
+  "astc-12x10-unorm": "float",
+  "astc-12x10-unorm-srgb": "float",
+  "astc-12x12-unorm": "float",
+  "astc-12x12-unorm-srgb": "float",
+} as const;
 
 export const TEXTURE_FORMAT_TO_WGSL_TYPE_LUT = {
   r8unorm: "f32",
@@ -239,6 +366,20 @@ export const TEXEL_BLOCK_COPY_FOOTPRINTS = {
   "astc-12x12-unorm": 16,
   "astc-12x12-unorm-srgb": 16,
 } as const;
+
+// type TextureFormatToSamplerType<Fmt extends GPUTextureFormat> = KvSwap<
+//   typeof SAMPLER_TYPE_TO_WGSL_TYPE
+// >[(typeof WGSL_TYPE_DATATYPES)[(typeof TEXTURE_FORMAT_TO_WGSL_TYPE_LUT)[Fmt]]];
+
+// type SKLDJF = TextureFormatToSamplerType<"rgba8snorm">
+
+// type SDKDFJ = KvSwap<
+//   typeof SAMPLER_TYPE_TO_WGSL_TYPE
+// >
+
+export type AllowedTextureFormats<
+  SType extends "float" | "uint" | "sint" | "depth",
+> = KvSwap<typeof TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT>[SType];
 
 export const SAMPLER_TYPE_TO_WGSL_TYPE = {
   float: "f32",
@@ -684,6 +825,12 @@ export const WGSL_DATA_TYPES = {
     4: "vec4i",
   },
 } as const;
+
+export function vertexFormatToWgslType(vertexFormat: GPUVertexFormat) {
+  return WGSL_DATA_TYPES[VERTEX_FORMAT_TO_WGSL_BASE_TYPE[vertexFormat]][
+    VERTEX_FORMAT_TO_ELEMENT_COUNT[vertexFormat]
+  ];
+}
 
 export function vertexFormatStride(vformat: GPUVertexFormat) {
   const elems = VERTEX_FORMAT_TO_ELEMENT_COUNT[vformat];

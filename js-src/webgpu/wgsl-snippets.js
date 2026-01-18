@@ -8,7 +8,7 @@ var WgslSnippets = {
     vec2( 1.0,  1.0),
     vec2(-1.0, -1.0),
     vec2(-1.0,  1.0),
-)`
+);`
   },
   unitQuadUnsigned: {
     src: `const UNIT_QUAD_UNSIGNED = array(
@@ -17,7 +17,8 @@ var WgslSnippets = {
     vec2(0.0, 1.0),
     vec2(1.0, 0.0),
     vec2(0.0, 1.0),
-)`
+    vec2(0.0, 0.0),
+);`
   },
   logistic: {
     src: `fn logistic(x: f32) -> f32 {

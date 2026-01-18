@@ -367,3 +367,10 @@ export function createWgslSerializers<SS extends WGSLStructSpec[]>(...ss: SS) {
     generators: gens as WGSLSerializers<SS>,
   };
 }
+
+export function typeName(spec: WGSLStructSpec) {
+  if (spec.type === "struct") return spec.name;
+  if (spec.type === "array")
+    return `array<${typeName(spec.member)}, ${spec.count}>`;
+  return spec.type;
+}

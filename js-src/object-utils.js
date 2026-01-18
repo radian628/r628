@@ -11,6 +11,9 @@ function arrayToMapKeys(arr, f) {
 function arrayToObjKeys(arr, f) {
   return map2obj(arrayToMapKeys(arr, f));
 }
+function arrayToObjEntries(arr, f) {
+  return Object.fromEntries(arr.map(f));
+}
 function mapObjKeys(obj, callback) {
   return mapObjEntries(obj, (k, v) => [callback(k, v), v]);
 }
@@ -102,6 +105,7 @@ export {
   ALL,
   arrayToMapKeys,
   arrayToMapValues,
+  arrayToObjEntries,
   arrayToObjKeys,
   arrayToObjValues,
   map2obj,

@@ -20706,6 +20706,25 @@
     }
   });
 
+  // src/fp.ts
+  function variadify(fn, rightAssociative = false) {
+    if (rightAssociative) {
+      return (a, b, ...ts) => {
+        const arr = [a, b, ...ts];
+        let x = fn(arr.at(-2), arr.at(-1));
+        for (let i = arr.length - 3; i >= 0; i--) {
+          x = fn(arr[i], x);
+        }
+        return x;
+      };
+    }
+    return (a, b, ...ts) => {
+      let x = fn(a, b);
+      for (const t of ts) x = fn(x, t);
+      return x;
+    };
+  }
+
   // src/range.ts
   function range(hi) {
     let arr = [];
@@ -20785,6 +20804,9 @@
   }
   function argmin(arr, f) {
     return argmax(arr, (t) => -f(t));
+  }
+  function pickrand(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
   }
 
   // src/threadpool.ts
@@ -20973,6 +20995,48 @@
   }
   function modulo(a, b) {
     return a - b * Math.floor(a / b);
+  }
+
+  // src/math/vector.ts
+  function xxx(a) {
+    return [a[0], a[0], a[0]];
+  }
+  function cross(a, b) {
+    return [
+      a[1] * b[2] - a[2] * b[1],
+      a[2] * b[0] - a[0] * b[2],
+      a[0] * b[1] - a[1] * b[0]
+    ];
+  }
+  function add3(a, b) {
+    return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  }
+  function mul3(a, b) {
+    return [a[0] * b[0], a[1] * b[1], a[2] * b[2]];
+  }
+  function sub2(a, b) {
+    return [a[0] - b[0], a[1] - b[1]];
+  }
+  function sub3(a, b) {
+    return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  }
+  function max3(a, b) {
+    return [Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.max(a[2], b[2])];
+  }
+  function normalize3(a) {
+    return scale3(a, 1 / Math.sqrt(dot3(a, a)));
+  }
+  function length3(a) {
+    return Math.sqrt(dot3(a, a));
+  }
+  function sum3(a) {
+    return a[0] + a[1] + a[2];
+  }
+  function dot3(a, b) {
+    return sum3(mul3(a, b));
+  }
+  function scale3(a, b) {
+    return [a[0] * b, a[1] * b, a[2] * b];
   }
 
   // src/object-utils.ts
@@ -21166,6 +21230,19 @@
       );
     }
   };
+
+  // src/webgl/mesh.ts
+  function normalize(v) {
+    const len = Math.hypot(...v);
+    return scale3(v, 1 / len);
+  }
+  function rodrigues(v, k, theta) {
+    k = normalize(k);
+    return add3(
+      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+    );
+  }
 
   // src/audio/stream-audio.ts
   var import_fft = __toESM(require_fft());
@@ -21785,92 +21862,6 @@
   chord_inner.setPattern((0, import_typescript_parsec.alt_sc)(primitive_note, compound_note));
   var note = (0, import_typescript_parsec.alt_sc)(chord, compound_note, primitive_note);
   var track = (0, import_typescript_parsec.rep_sc)(note);
-  function parseNotes(src2) {
-    const tokens = noteLexer.parse(src2);
-    return (0, import_typescript_parsec.expectSingleResult)((0, import_typescript_parsec.expectEOF)(track.parse(tokens)));
-  }
-  function getBeatCount(notes) {
-    return notes.reduce((p, c) => p + c.timing, 0);
-  }
-  function createTrackSpecForNoteSequence(startTime, duration, notes, lastFreq, patch) {
-    let time = startTime;
-    let freq = lastFreq;
-    let spec = [];
-    const timingTotal = getBeatCount(notes);
-    for (const n of notes) {
-      const thisNoteDuration = duration * n.timing / timingTotal;
-      const data = createTrackSpecForNote(time, thisNoteDuration, n, freq, patch);
-      spec.push(...data.trackSpec);
-      time += thisNoteDuration;
-      freq = data.freq;
-    }
-    return {
-      freq,
-      trackSpec: spec
-    };
-  }
-  function createTrackSpecForNote(startTime, duration, note2, lastFreq, patch) {
-    if (note2.type === "note") {
-      const freq = note2freq(note2.noteData, lastFreq);
-      return {
-        freq,
-        trackSpec: [
-          {
-            start: startTime,
-            audio: patch(freq, duration)
-          }
-        ]
-      };
-    } else if (note2.type === "chord") {
-      const results = note2.notes.map(
-        (n) => createTrackSpecForNote(startTime, duration * n.timing, n, lastFreq, patch)
-      );
-      return {
-        freq: results.at(-1).freq,
-        trackSpec: results.flatMap((x) => x.trackSpec)
-      };
-    } else if (note2.type === "compound") {
-      return createTrackSpecForNoteSequence(
-        startTime,
-        duration,
-        note2.notes,
-        lastFreq,
-        patch
-      );
-    }
-  }
-  function createTrackSpec(track2, bpm, patch) {
-    return createTrackSpecForNoteSequence(
-      0,
-      getBeatCount(track2) * 60 / bpm,
-      track2,
-      440,
-      patch
-    ).trackSpec;
-  }
-  function note2freq(note2, lastfreq) {
-    if (note2[0].match(/[a-gA-G]/g)) {
-      let semitone = {
-        a: 0,
-        b: 2,
-        c: 3,
-        d: 5,
-        e: 7,
-        f: 8,
-        g: 10
-      }[note2[0].toLowerCase()];
-      let i;
-      for (i = 1; note2[i] === "b" || note2[i] === "#"; i++) {
-        semitone += note2[i] === "#" ? 1 : -1;
-      }
-      let octave = parseInt(note2.slice(i));
-      if (isNaN(octave)) octave = 4;
-      semitone += (octave - 4) * 12;
-      return Math.pow(2, semitone / 12) * 440;
-    } else {
-      return (lastfreq ?? 440) * Math.pow(2, parseInt(note2) / 12);
-    }
-  }
 
   // node_modules/ml-convolution/src/fftConvolution.js
   var import_fft2 = __toESM(require_fft());
@@ -22471,65 +22462,159 @@ fn perlinNoise3(P: vec3f) -> f32 {
   var import_react9 = __toESM(require_react());
   var import_client2 = __toESM(require_client());
 
-  // demos-src/audio-stream.demo.ts
-  var initWorklet = initBufferStreamerWorklet("audio-stream.demo.js");
-  if (!isWorklet()) {
-    (async () => {
-      const a = new AudioBuilder(["left", "right"], 44100);
-      const m = new AudioBuilder(["center"], 44100);
-      const adsr = m.adsrgen(1, 0.2, 0.2, 0);
-      const adsrn = (a2, d, s, r) => (len) => adsr(a2 * len, d * len, s * len, r * len);
-      const KERNSIZE = 100;
-      const clap = (freq, duration) => a.noise().convolve(a.lpf(freq * 2, 32)).gain(m.constant(400 / Math.log(freq) ** 3)).clip(0, 0.05).gain(adsr(0, 5e-3, 0.025, 0.05));
-      const melody = (freq, duration) => {
-        console.log("duration", duration);
-        return a.sine(freq).gain(m.constant(0.5)).add(a.square(freq * 0.5).gain(m.constant(0.2))).clip(0, duration).gain(adsrn(0.1, 0.3, 0.6, 1)(duration));
-      };
-      const track2 = parseNotes(`
-      4:(
-      c4 3 4  
-      c4 3 4  
-      c4 3 4  
-      c4 3 4  
-      c4 3 4  
-      c4
-      )/c2
-
-      4:(
-      b4 4 4
-      b4 4 4
-      b4 4 4
-      b4 4 4
-      b4 4 4
-      b4
-      )/b2
-
-      4:(
-      bb4 5 4
-      bb4 5 4
-      bb4 5 4
-      bb4 5 4
-      bb4 5 4
-      bb4
-      )/bb2
-      `);
-      console.log(track2);
-      const trackSpec = createTrackSpec(track2, 120, melody);
-      const w = a.createTrack(trackSpec).preload();
-      for (const c of await displayAudio(w.clip(0, 4), 1, [4e3, 100], 1)) {
-        document.body.appendChild(c);
-      }
-      document.onclick = async () => {
-        const ctx = new AudioContext();
-        const createWorklet = await (await initWorklet)(ctx);
-        const bufferStreamer = createWorklet();
-        streamAudioToWorklet(w, bufferStreamer);
-        const osc = new OscillatorNode(ctx);
-        osc.connect(bufferStreamer.worklet).connect(ctx.destination);
-        osc.start();
-      };
-    })();
+  // demos-src/3d/lod.demo.ts
+  function gradient3(fn, pos, diff) {
+    const a = fn(pos);
+    const b = fn(add3(pos, [diff, 0, 0]));
+    const c = fn(add3(pos, [0, diff, 0]));
+    const d = fn(add3(pos, [0, 0, diff]));
+    return [(b - a) / diff, (c - a) / diff, (d - a) / diff];
   }
+  function findSurface(params) {
+    const { sdf, start, threshold, maxIters, dx } = params;
+    let pos = start;
+    for (let i = 0; i < maxIters; i++) {
+      let dist = sdf(pos);
+      if (Math.abs(dist) < threshold) {
+        return pos;
+      }
+      const grad = normalize3(gradient3(sdf, start, 1e-3));
+      if (isNaN(pos[0]) || isNaN(grad[0])) {
+        console.log("nans", pos, grad);
+        throw new Error();
+      }
+      pos = add3(pos, scale3(grad, -dist * 0.3));
+    }
+    console.log("above dist threshold", sdf(pos));
+    return pos;
+  }
+  var box = (b) => (v) => {
+    const q = [
+      Math.abs(v[0]) - b[0],
+      Math.abs(v[1]) - b[1],
+      Math.abs(v[2]) - b[2]
+    ];
+    return length3(max3(q, [0, 0, 0])) + Math.min(Math.max(q[0], q[1], q[2]), 0);
+  };
+  var translateSdf = (sdf, translation) => (v) => sdf(sub3(v, translation));
+  var union = variadify(
+    (a, b) => (v) => Math.min(a(v), b(v))
+  );
+  function walkSdfSimple(params) {
+    const { step, initPos, angleThreshold, findTangent, maxIters, sdf, dx } = params;
+    const dotThreshold = Math.cos(angleThreshold);
+    let lastTangent = params.lastTangent;
+    let pos = initPos;
+    const initNormal = normalize3(gradient3(sdf, pos, dx));
+    for (let i = 0; i < maxIters; i++) {
+      const normal = normalize3(gradient3(sdf, pos, dx));
+      const cosAngle = dot3(initNormal, normal);
+      if (cosAngle < dotThreshold) {
+        return { pos, lastTangent };
+      }
+      const tangent = findTangent(pos, lastTangent);
+      lastTangent = tangent;
+      pos = findSurface({
+        sdf,
+        start: add3(pos, scale3(tangent, step)),
+        threshold: dx,
+        dx,
+        maxIters
+      });
+    }
+    return { pos, lastTangent };
+  }
+  function highestCurvatureNaive(sdf, samples) {
+    const angles = smartRange(samples).map((x) => x.remap(0, Math.PI * 2));
+    return (v, lastTangent) => {
+      const DX = 1e-3;
+      const grad = gradient3(sdf, v, DX);
+      const normal = normalize3(grad);
+      const UP = normalize3([rand(-1, 1), rand(-1, 1), rand(-1, 1)]);
+      const initTangent = normalize3(cross(normal, UP));
+      const tangents = angles.map((a) => rodrigues(initTangent, normal, a));
+      if (Math.random() > 0.65) return pickrand(tangents);
+      return argmin(tangents, (tangent) => {
+        if (lastTangent && dot3(tangent, lastTangent) < -0.4) {
+          return 2;
+        }
+        const normal2 = normalize3(
+          gradient3(sdf, add3(v, scale3(tangent, DX)), DX)
+        );
+        return dot3(normal, normal2);
+      });
+    };
+  }
+  function perspectivePlot(points, offset, magnify) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const [ox, oy, oz] = offset;
+    let angle = 0;
+    function loop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#0003";
+      ctx.beginPath();
+      let i = 0;
+      for (const pt of points) {
+        const [x, y, z] = rodrigues(pt, normalize3([1, 1, 1]), angle);
+        const pz = z + oz;
+        const projected = [
+          (x + ox) / pz * magnify + 512,
+          -((y + oy) / pz) * magnify + 512
+        ];
+        let squareSize = 30 / pz;
+        let halfSize = squareSize / 2;
+        ctx.fillStyle = `hsl(${rescale(i++, 0, points.length, 0, 360)}deg, 100%, 50%)`;
+        ctx.fillRect(
+          ...sub2(projected, [halfSize, halfSize]),
+          squareSize,
+          squareSize
+        );
+        ctx.lineTo(...projected);
+      }
+      ctx.stroke();
+      angle += 5e-3;
+      requestAnimationFrame(loop);
+    }
+    loop();
+    document.body.appendChild(canvas);
+  }
+  function main() {
+    const SCENE = union(
+      translateSdf(box(xxx([1.5])), xxx([-0.75])),
+      translateSdf(box(xxx([1.5])), xxx([0.75]))
+    );
+    let pos = findSurface({
+      sdf: SCENE,
+      start: [-3, 0, 0],
+      threshold: 1e-3,
+      maxIters: 32,
+      dx: 1e-3
+    });
+    let lastTangent;
+    let pts = [];
+    for (let i = 0; i < 1e4; i++) {
+      pts.push(pos);
+      const r = walkSdfSimple({
+        sdf: SCENE,
+        step: 0.05,
+        initPos: pos,
+        angleThreshold: Math.PI * 2 / 30,
+        // up: normalize3(rodrigues([0, 1, 0], [1, 0, 0], i * 0.01)),
+        findTangent: highestCurvatureNaive(SCENE, 20),
+        maxIters: 128,
+        dx: 1e-3,
+        lastTangent
+      });
+      pos = r.pos;
+      lastTangent = r.lastTangent;
+    }
+    console.log(pts);
+    perspectivePlot(pts, [0, 0, 12], 1600);
+  }
+  main();
 })();
 /*! Bundled license information:
 

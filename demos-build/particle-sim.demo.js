@@ -3305,7 +3305,7 @@
           contextFiberStackCursor.current === fiber && (pop(contextStackCursor, fiber), pop(contextFiberStackCursor, fiber));
           hostTransitionProviderCursor.current === fiber && (pop(hostTransitionProviderCursor, fiber), HostTransitionContext._currentValue = NotPendingTransition);
         }
-        function typeName(value) {
+        function typeName2(value) {
           return "function" === typeof Symbol && Symbol.toStringTag && value[Symbol.toStringTag] || value.constructor.name || "Object";
         }
         function willCoercionThrow(value) {
@@ -3323,7 +3323,7 @@
             return console.error(
               "The provided `%s` attribute is an unsupported type %s. This value must be coerced to a string before using it here.",
               attributeName,
-              typeName(value)
+              typeName2(value)
             ), testStringCoercion(value);
         }
         function checkCSSPropertyStringCoercion(value, propName) {
@@ -3331,14 +3331,14 @@
             return console.error(
               "The provided `%s` CSS property is an unsupported type %s. This value must be coerced to a string before using it here.",
               propName,
-              typeName(value)
+              typeName2(value)
             ), testStringCoercion(value);
         }
         function checkFormFieldValueStringCoercion(value) {
           if (willCoercionThrow(value))
             return console.error(
               "Form field values (value, checked, defaultValue, or defaultChecked props) must be strings, not %s. This value must be coerced to a string before using it here.",
-              typeName(value)
+              typeName2(value)
             ), testStringCoercion(value);
         }
         function injectInternals(internals) {
@@ -14897,7 +14897,7 @@
         function normalizeMarkupForTextOrAttribute(markup) {
           willCoercionThrow(markup) && (console.error(
             "The provided HTML markup uses a value of unsupported type %s. This value must be coerced to a string before using it here.",
-            typeName(markup)
+            typeName2(markup)
           ), testStringCoercion(markup));
           return ("string" === typeof markup ? markup : "" + markup).replace(NORMALIZE_NEWLINES_REGEX, "\n").replace(NORMALIZE_NULL_AND_REPLACEMENT_REGEX, "");
         }
@@ -21993,7 +21993,7 @@
     vec2( 1.0,  1.0),
     vec2(-1.0, -1.0),
     vec2(-1.0,  1.0),
-)`
+);`
     },
     unitQuadUnsigned: {
       src: `const UNIT_QUAD_UNSIGNED = array(
@@ -22002,7 +22002,8 @@
     vec2(0.0, 1.0),
     vec2(1.0, 0.0),
     vec2(0.0, 1.0),
-)`
+    vec2(0.0, 0.0),
+);`
     },
     logistic: {
       src: `fn logistic(x: f32) -> f32 {

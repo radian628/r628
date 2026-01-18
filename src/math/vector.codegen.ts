@@ -250,6 +250,18 @@ ${cartesianProduct(
   createFunctionVariants("mul", [vec, vec], vec, (i) => `a[${i}] * b[${i}]`) +
   createFunctionVariants("div", [vec, vec], vec, (i) => `a[${i}] / b[${i}]`) +
   createFunctionVariants("sub", [vec, vec], vec, (i) => `a[${i}] - b[${i}]`) +
+  createFunctionVariants(
+    "min",
+    [vec, vec],
+    vec,
+    (i) => `Math.min(a[${i}], b[${i}])`
+  ) +
+  createFunctionVariants(
+    "max",
+    [vec, vec],
+    vec,
+    (i) => `Math.max(a[${i}], b[${i}])`
+  ) +
   createFunctionVariants("neg", [vec], vec, (i) => `-a[${i}]`) +
   createFunctionVariantsFullBody(
     "normalize",

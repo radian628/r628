@@ -1684,6 +1684,34 @@ function sub3(a, b) {
 function sub4(a, b) {
   return [a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]];
 }
+function min2(a, b) {
+  return [Math.min(a[0], b[0]), Math.min(a[1], b[1])];
+}
+function min3(a, b) {
+  return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.min(a[2], b[2])];
+}
+function min4(a, b) {
+  return [
+    Math.min(a[0], b[0]),
+    Math.min(a[1], b[1]),
+    Math.min(a[2], b[2]),
+    Math.min(a[3], b[3])
+  ];
+}
+function max2(a, b) {
+  return [Math.max(a[0], b[0]), Math.max(a[1], b[1])];
+}
+function max3(a, b) {
+  return [Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.max(a[2], b[2])];
+}
+function max4(a, b) {
+  return [
+    Math.max(a[0], b[0]),
+    Math.max(a[1], b[1]),
+    Math.max(a[2], b[2]),
+    Math.max(a[3], b[3])
+  ];
+}
 function neg2(a) {
   return [-a[0], -a[1]];
 }
@@ -1807,6 +1835,12 @@ export {
   length2,
   length3,
   length4,
+  max2,
+  max3,
+  max4,
+  min2,
+  min3,
+  min4,
   mix2,
   mix3,
   mix4,

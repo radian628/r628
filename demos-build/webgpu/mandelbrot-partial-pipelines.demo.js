@@ -13751,10 +13751,10 @@
                           end$jscomp$0
                         );
                         if (startMarker && endMarker && (1 !== selection.rangeCount || selection.anchorNode !== startMarker.node || selection.anchorOffset !== startMarker.offset || selection.focusNode !== endMarker.node || selection.focusOffset !== endMarker.offset)) {
-                          var range3 = doc.createRange();
-                          range3.setStart(startMarker.node, startMarker.offset);
+                          var range2 = doc.createRange();
+                          range2.setStart(startMarker.node, startMarker.offset);
                           selection.removeAllRanges();
-                          start$jscomp$0 > end$jscomp$0 ? (selection.addRange(range3), selection.extend(endMarker.node, endMarker.offset)) : (range3.setEnd(endMarker.node, endMarker.offset), selection.addRange(range3));
+                          start$jscomp$0 > end$jscomp$0 ? (selection.addRange(range2), selection.extend(endMarker.node, endMarker.offset)) : (range2.setEnd(endMarker.node, endMarker.offset), selection.addRange(range2));
                         }
                       }
                     }
@@ -20706,6 +20706,84 @@
     }
   });
 
+  // src/fp.ts
+  function multicast(fs) {
+    return (...args) => fs.map((f) => f(...args));
+  }
+
+  // src/xray.ts
+  var xray = (a) => xrayInner(a, void 0, (x) => x);
+  function xrayMulticast(xrs) {
+    return new Proxy(
+      {},
+      {
+        get(target, prop, receiver) {
+          const res = xrs.map((x) => x[prop]);
+          if (prop === "$en") {
+            return xrayMulticast(res);
+          }
+          if (prop === "$" || prop === "$s" || prop === "$ctx" || prop === "$e" || prop === "$ec" || prop === "$i" || prop === "$m" || prop === "$mx") {
+            return (...args) => xrayMulticast(multicast(res)(...args));
+          }
+          return res;
+        }
+      }
+    );
+  }
+  var xrayInner = (a, ctx, set) => new Proxy(
+    {},
+    {
+      get(target, prop, receiver) {
+        if (prop === "$v") {
+          return set(a);
+        } else if (prop === "$") {
+          return (x) => xrayInner(a, ctx, () => set(x));
+        } else if (prop === "$s") {
+          return (cb2) => xrayInner(a, ctx, () => set(cb2(a, ctx)));
+        } else if (prop === "$ctx") {
+          return (cb2) => xrayInner(a, cb2(a, ctx), set);
+        }
+        if (Array.isArray(a)) {
+          if (prop === "$e") {
+            return xrayMulticast(a.map((e, i) => xrayInner(e, i, (x) => x)));
+          } else if (prop === "$ec") {
+          } else if (prop === "$en") {
+            return xrayMulticast(
+              a.map((e, i) => xrayInner(e, [...ctx ?? [], i], (x) => x))
+            );
+          } else if (prop === "$i") {
+            return (p) => xrayInner(
+              a[p],
+              ctx,
+              (x) => set(a.map((e, i) => i === p ? x : e))
+            );
+          }
+        } else if (typeof a === "object" && a) {
+          if (prop === "$m") {
+            return (cb2) => xrayInner(
+              a,
+              ctx,
+              () => set({
+                ...a,
+                ...cb2(a, ctx)
+              })
+            );
+          } else if (prop === "$mx") {
+          } else {
+            return xrayInner(
+              a[prop],
+              ctx,
+              (x) => set({
+                ...a,
+                [prop]: x
+              })
+            );
+          }
+        }
+      }
+    }
+  );
+
   // src/range.ts
   function range(hi) {
     let arr = [];
@@ -20958,6 +21036,26 @@
     return await cb();
   }
 
+  // src/stringutils.ts
+  function delimitedSequenceRegex(start, end) {
+    return new RegExp(
+      RegExp.escape(start) + "[\\s\\S]*?" + RegExp.escape(end),
+      "g"
+    );
+  }
+  function makeDelimitedReplacements(str2, replacements) {
+    for (const r of replacements) {
+      str2 = str2.replaceAll(
+        typeof r.delimiter === "string" ? delimitedSequenceRegex(r.delimiter, r.delimiter) : (
+          // @ts-expect-error
+          delimitedSequenceRegex(r.start, r.end)
+        ),
+        r.replaceWith
+      );
+    }
+    return str2;
+  }
+
   // src/interpolation.ts
   function lerp(x, a, b) {
     return a * (1 - x) + b * x;
@@ -20975,12 +21073,56 @@
     return a - b * Math.floor(a / b);
   }
 
+  // src/math/vector.ts
+  function cart2Polar(a) {
+    return [length2(a), Math.atan2(a[1], a[0])];
+  }
+  function add2(a, b) {
+    return [a[0] + b[0], a[1] + b[1]];
+  }
+  function add3(a, b) {
+    return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  }
+  function mul2(a, b) {
+    return [a[0] * b[0], a[1] * b[1]];
+  }
+  function div2(a, b) {
+    return [a[0] / b[0], a[1] / b[1]];
+  }
+  function sub2(a, b) {
+    return [a[0] - b[0], a[1] - b[1]];
+  }
+  function sub3(a, b) {
+    return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  }
+  function length2(a) {
+    return Math.sqrt(dot2(a, a));
+  }
+  function mix2(a, b, c) {
+    return add2(b, scale2(sub2(c, b), a));
+  }
+  function remap2(a, b, c, d, e) {
+    return add2(d, mul2(sub2(e, d), div2(sub2(a, b), sub2(c, b))));
+  }
+  function sum2(a) {
+    return a[0] + a[1];
+  }
+  function dot2(a, b) {
+    return sum2(mul2(a, b));
+  }
+  function scale2(a, b) {
+    return [a[0] * b, a[1] * b];
+  }
+
   // src/object-utils.ts
   function arrayToMapKeys(arr, f) {
     return new Map(arr.map((x) => [x, f(x)]));
   }
   function arrayToObjKeys(arr, f) {
     return map2obj(arrayToMapKeys(arr, f));
+  }
+  function arrayToObjEntries(arr, f) {
+    return Object.fromEntries(arr.map(f));
   }
   function mapObjValues(obj, callback) {
     return mapObjEntries(obj, (k, v) => [k, callback(k, v)]);
@@ -21112,6 +21254,63 @@
   }
 
   // src/math/intersections.ts
+  function lineIntersectLine(a, b) {
+    const ax = a.a[0];
+    const ay = a.a[1];
+    const bx = a.b[0];
+    const by = a.b[1];
+    const cx = b.a[0];
+    const cy = b.a[1];
+    const dx = b.b[0];
+    const dy = b.b[1];
+    return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
+  }
+  function lineSegmentIntersectLineSegment(a, b) {
+    const t2 = lineIntersectLine(a, b);
+    const t1 = lineIntersectLine(b, a);
+    if (t1 < 0 || t1 > 1) return;
+    if (t2 < 0 || t2 > 1) return;
+    return t2;
+  }
+  function lineIntersectRect(l, rect) {
+    const topIntersect = lineSegmentIntersectLineSegment(
+      {
+        a: rect.a,
+        b: [rect.b[0], rect.a[1]]
+      },
+      l
+    );
+    const bottomIntersect = lineSegmentIntersectLineSegment(
+      {
+        a: [rect.a[0], rect.b[1]],
+        b: rect.b
+      },
+      l
+    );
+    const leftIntersect = lineSegmentIntersectLineSegment(
+      {
+        a: rect.a,
+        b: [rect.a[0], rect.b[1]]
+      },
+      l
+    );
+    const rightIntersect = lineSegmentIntersectLineSegment(
+      {
+        a: [rect.b[0], rect.a[1]],
+        b: rect.b
+      },
+      l
+    );
+    return [topIntersect, bottomIntersect, leftIntersect, rightIntersect].filter(
+      (i) => i && i >= 0 && i <= 1
+    );
+  }
+  function lineIntersectRectClosest(l, rect) {
+    return Math.min(...lineIntersectRect(l, rect));
+  }
+  function sampleLineSegment(l, t) {
+    return mix2(t, l.a, l.b);
+  }
   function rangeIntersects(a1, a2, b1, b2) {
     return !(a1 > b2 || b1 > a2);
   }
@@ -21211,17 +21410,17 @@
         const estimatedLength = Math.ceil(this.sampleRate * this.duration);
         const clampedStart = clamp(start, 0, estimatedLength);
         const clampedEnd = clamp(start + count, 0, estimatedLength);
-        const range3 = await params.getRange(
+        const range2 = await params.getRange(
           clampedStart,
           clampedEnd - clampedStart
         );
-        if (clampedEnd - clampedStart == count) return range3;
+        if (clampedEnd - clampedStart == count) return range2;
         const out = {};
         const padStart = -Math.min(0, start);
         for (const ch of this.channels) {
           console.log("eeeee", count);
           const o = new Float32Array(count);
-          const i = range3[ch];
+          const i = range2[ch];
           for (let idx = 0; idx < i.length; idx++) {
             o[idx + padStart] = i[idx];
           }
@@ -21600,9 +21799,9 @@
     const src2 = ctx.createBufferSource();
     const len = Math.ceil(audio.sampleRate * audio.duration);
     const buf = ctx.createBuffer(2, len, audio.sampleRate);
-    const range3 = await audio.getRange(0, len);
-    buf.copyToChannel(new Float32Array(range3.left), 0);
-    buf.copyToChannel(new Float32Array(range3.right), 1);
+    const range2 = await audio.getRange(0, len);
+    buf.copyToChannel(new Float32Array(range2.left), 0);
+    buf.copyToChannel(new Float32Array(range2.right), 1);
     src2.buffer = buf;
     src2.connect(ctx.destination);
     src2.start();
@@ -21785,98 +21984,588 @@
   chord_inner.setPattern((0, import_typescript_parsec.alt_sc)(primitive_note, compound_note));
   var note = (0, import_typescript_parsec.alt_sc)(chord, compound_note, primitive_note);
   var track = (0, import_typescript_parsec.rep_sc)(note);
-  function parseNotes(src2) {
-    const tokens = noteLexer.parse(src2);
-    return (0, import_typescript_parsec.expectSingleResult)((0, import_typescript_parsec.expectEOF)(track.parse(tokens)));
-  }
-  function getBeatCount(notes) {
-    return notes.reduce((p, c) => p + c.timing, 0);
-  }
-  function createTrackSpecForNoteSequence(startTime, duration, notes, lastFreq, patch) {
-    let time = startTime;
-    let freq = lastFreq;
-    let spec = [];
-    const timingTotal = getBeatCount(notes);
-    for (const n of notes) {
-      const thisNoteDuration = duration * n.timing / timingTotal;
-      const data = createTrackSpecForNote(time, thisNoteDuration, n, freq, patch);
-      spec.push(...data.trackSpec);
-      time += thisNoteDuration;
-      freq = data.freq;
-    }
-    return {
-      freq,
-      trackSpec: spec
-    };
-  }
-  function createTrackSpecForNote(startTime, duration, note2, lastFreq, patch) {
-    if (note2.type === "note") {
-      const freq = note2freq(note2.noteData, lastFreq);
-      return {
-        freq,
-        trackSpec: [
-          {
-            start: startTime,
-            audio: patch(freq, duration)
-          }
-        ]
-      };
-    } else if (note2.type === "chord") {
-      const results = note2.notes.map(
-        (n) => createTrackSpecForNote(startTime, duration * n.timing, n, lastFreq, patch)
-      );
-      return {
-        freq: results.at(-1).freq,
-        trackSpec: results.flatMap((x) => x.trackSpec)
-      };
-    } else if (note2.type === "compound") {
-      return createTrackSpecForNoteSequence(
-        startTime,
-        duration,
-        note2.notes,
-        lastFreq,
-        patch
-      );
-    }
-  }
-  function createTrackSpec(track2, bpm, patch) {
-    return createTrackSpecForNoteSequence(
-      0,
-      getBeatCount(track2) * 60 / bpm,
-      track2,
-      440,
-      patch
-    ).trackSpec;
-  }
-  function note2freq(note2, lastfreq) {
-    if (note2[0].match(/[a-gA-G]/g)) {
-      let semitone = {
-        a: 0,
-        b: 2,
-        c: 3,
-        d: 5,
-        e: 7,
-        f: 8,
-        g: 10
-      }[note2[0].toLowerCase()];
-      let i;
-      for (i = 1; note2[i] === "b" || note2[i] === "#"; i++) {
-        semitone += note2[i] === "#" ? 1 : -1;
-      }
-      let octave = parseInt(note2.slice(i));
-      if (isNaN(octave)) octave = 4;
-      semitone += (octave - 4) * 12;
-      return Math.pow(2, semitone / 12) * 440;
-    } else {
-      return (lastfreq ?? 440) * Math.pow(2, parseInt(note2) / 12);
-    }
-  }
 
   // node_modules/ml-convolution/src/fftConvolution.js
   var import_fft2 = __toESM(require_fft());
   var import_next_power_of_two = __toESM(require_next_power_of_two());
 
+  // src/math/round.ts
+  function roundUp(factor, x) {
+    return Math.ceil(x / factor) * factor;
+  }
+
   // src/webgpu/converters.ts
+  var TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT = {
+    r8unorm: "float",
+    r8snorm: "float",
+    r8uint: "uint",
+    r8sint: "sint",
+    r16unorm: "float",
+    r16snorm: "float",
+    r16uint: "uint",
+    r16sint: "sint",
+    r16float: "float",
+    rg8unorm: "float",
+    rg8snorm: "float",
+    rg8uint: "uint",
+    rg8sint: "sint",
+    r32uint: "uint",
+    r32sint: "sint",
+    r32float: "float",
+    rg16unorm: "float",
+    rg16snorm: "float",
+    rg16uint: "uint",
+    rg16sint: "sint",
+    rg16float: "float",
+    rgba8unorm: "float",
+    "rgba8unorm-srgb": "float",
+    rgba8snorm: "float",
+    rgba8uint: "uint",
+    rgba8sint: "sint",
+    bgra8unorm: "float",
+    "bgra8unorm-srgb": "float",
+    rgb9e5ufloat: "float",
+    rgb10a2uint: "uint",
+    rgb10a2unorm: "float",
+    rg11b10ufloat: "float",
+    rg32uint: "uint",
+    rg32sint: "sint",
+    rg32float: "float",
+    rgba16unorm: "float",
+    rgba16snorm: "float",
+    rgba16uint: "uint",
+    rgba16sint: "sint",
+    rgba16float: "float",
+    rgba32uint: "uint",
+    rgba32sint: "sint",
+    rgba32float: "float",
+    stencil8: "uint",
+    depth16unorm: "depth",
+    depth24plus: "depth",
+    "depth24plus-stencil8": "depth",
+    depth32float: "depth",
+    "depth32float-stencil8": "depth",
+    "bc1-rgba-unorm": "float",
+    "bc1-rgba-unorm-srgb": "float",
+    "bc2-rgba-unorm": "float",
+    "bc2-rgba-unorm-srgb": "float",
+    "bc3-rgba-unorm": "float",
+    "bc3-rgba-unorm-srgb": "float",
+    "bc4-r-unorm": "float",
+    "bc4-r-snorm": "float",
+    "bc5-rg-unorm": "float",
+    "bc5-rg-snorm": "float",
+    "bc6h-rgb-ufloat": "float",
+    "bc6h-rgb-float": "float",
+    "bc7-rgba-unorm": "float",
+    "bc7-rgba-unorm-srgb": "float",
+    "etc2-rgb8unorm": "float",
+    "etc2-rgb8unorm-srgb": "float",
+    "etc2-rgb8a1unorm": "float",
+    "etc2-rgb8a1unorm-srgb": "float",
+    "etc2-rgba8unorm": "float",
+    "etc2-rgba8unorm-srgb": "float",
+    "eac-r11unorm": "f32",
+    "eac-r11snorm": "f32",
+    "eac-rg11unorm": "vec2f",
+    "eac-rg11snorm": "vec2f",
+    "astc-4x4-unorm": "float",
+    "astc-4x4-unorm-srgb": "float",
+    "astc-5x4-unorm": "float",
+    "astc-5x4-unorm-srgb": "float",
+    "astc-5x5-unorm": "float",
+    "astc-5x5-unorm-srgb": "float",
+    "astc-6x5-unorm": "float",
+    "astc-6x5-unorm-srgb": "float",
+    "astc-6x6-unorm": "float",
+    "astc-6x6-unorm-srgb": "float",
+    "astc-8x5-unorm": "float",
+    "astc-8x5-unorm-srgb": "float",
+    "astc-8x6-unorm": "float",
+    "astc-8x6-unorm-srgb": "float",
+    "astc-8x8-unorm": "float",
+    "astc-8x8-unorm-srgb": "float",
+    "astc-10x5-unorm": "float",
+    "astc-10x5-unorm-srgb": "float",
+    "astc-10x6-unorm": "float",
+    "astc-10x6-unorm-srgb": "float",
+    "astc-10x8-unorm": "float",
+    "astc-10x8-unorm-srgb": "float",
+    "astc-10x10-unorm": "float",
+    "astc-10x10-unorm-srgb": "float",
+    "astc-12x10-unorm": "float",
+    "astc-12x10-unorm-srgb": "float",
+    "astc-12x12-unorm": "float",
+    "astc-12x12-unorm-srgb": "float"
+  };
+  var TEXTURE_FORMAT_TO_WGSL_TYPE_LUT = {
+    r8unorm: "f32",
+    r8snorm: "f32",
+    r8uint: "u32",
+    r8sint: "i32",
+    r16unorm: "u32",
+    r16snorm: "i32",
+    r16uint: "u32",
+    r16sint: "i32",
+    r16float: "f32",
+    rg8unorm: "vec2f",
+    rg8snorm: "vec2f",
+    rg8uint: "vec2u",
+    rg8sint: "vec2i",
+    r32uint: "u32",
+    r32sint: "i32",
+    r32float: "f32",
+    rg16unorm: "vec2f",
+    rg16snorm: "vec2f",
+    rg16uint: "vec2u",
+    rg16sint: "vec2i",
+    rg16float: "vec2f",
+    rgba8unorm: "vec4f",
+    "rgba8unorm-srgb": "vec4f",
+    rgba8snorm: "vec4f",
+    rgba8uint: "vec4u",
+    rgba8sint: "vec4i",
+    bgra8unorm: "vec4f",
+    "bgra8unorm-srgb": "vec4f",
+    rgb9e5ufloat: "vec4f",
+    rgb10a2uint: "vec4u",
+    rgb10a2unorm: "vec4f",
+    rg11b10ufloat: "vec4f",
+    rg32uint: "vec2u",
+    rg32sint: "vec2i",
+    rg32float: "vec2f",
+    rgba16unorm: "vec4u",
+    rgba16snorm: "vec4i",
+    rgba16uint: "vec4u",
+    rgba16sint: "vec4i",
+    rgba16float: "vec4f",
+    rgba32uint: "vec4u",
+    rgba32sint: "vec4i",
+    rgba32float: "vec4f",
+    stencil8: "u32",
+    depth16unorm: "f32",
+    depth24plus: "f32",
+    "depth24plus-stencil8": "f32",
+    depth32float: "f32",
+    "depth32float-stencil8": "f32",
+    "bc1-rgba-unorm": "vec4f",
+    "bc1-rgba-unorm-srgb": "vec4f",
+    "bc2-rgba-unorm": "vec4f",
+    "bc2-rgba-unorm-srgb": "vec4f",
+    "bc3-rgba-unorm": "vec4f",
+    "bc3-rgba-unorm-srgb": "vec4f",
+    "bc4-r-unorm": "f32",
+    "bc4-r-snorm": "f32",
+    "bc5-rg-unorm": "vec2f",
+    "bc5-rg-snorm": "vec2f",
+    "bc6h-rgb-ufloat": "vec3f",
+    "bc6h-rgb-float": "vec3f",
+    "bc7-rgba-unorm": "vec4f",
+    "bc7-rgba-unorm-srgb": "vec4f",
+    "etc2-rgb8unorm": "vec3f",
+    "etc2-rgb8unorm-srgb": "vec3f",
+    "etc2-rgb8a1unorm": "vec4f",
+    "etc2-rgb8a1unorm-srgb": "vec4f",
+    "etc2-rgba8unorm": "vec4f",
+    "etc2-rgba8unorm-srgb": "vec4f",
+    "eac-r11unorm": "f32",
+    "eac-r11snorm": "f32",
+    "eac-rg11unorm": "vec2f",
+    "eac-rg11snorm": "vec2f",
+    "astc-4x4-unorm": "vec4f",
+    "astc-4x4-unorm-srgb": "vec4f",
+    "astc-5x4-unorm": "vec4f",
+    "astc-5x4-unorm-srgb": "vec4f",
+    "astc-5x5-unorm": "vec4f",
+    "astc-5x5-unorm-srgb": "vec4f",
+    "astc-6x5-unorm": "vec4f",
+    "astc-6x5-unorm-srgb": "vec4f",
+    "astc-6x6-unorm": "vec4f",
+    "astc-6x6-unorm-srgb": "vec4f",
+    "astc-8x5-unorm": "vec4f",
+    "astc-8x5-unorm-srgb": "vec4f",
+    "astc-8x6-unorm": "vec4f",
+    "astc-8x6-unorm-srgb": "vec4f",
+    "astc-8x8-unorm": "vec4f",
+    "astc-8x8-unorm-srgb": "vec4f",
+    "astc-10x5-unorm": "vec4f",
+    "astc-10x5-unorm-srgb": "vec4f",
+    "astc-10x6-unorm": "vec4f",
+    "astc-10x6-unorm-srgb": "vec4f",
+    "astc-10x8-unorm": "vec4f",
+    "astc-10x8-unorm-srgb": "vec4f",
+    "astc-10x10-unorm": "vec4f",
+    "astc-10x10-unorm-srgb": "vec4f",
+    "astc-12x10-unorm": "vec4f",
+    "astc-12x10-unorm-srgb": "vec4f",
+    "astc-12x12-unorm": "vec4f",
+    "astc-12x12-unorm-srgb": "vec4f"
+  };
+  function getCopyFootprintPerTexel(fmt, aspect = "all") {
+    if (aspect === "stencil-only") {
+      if (fmt === "depth24plus-stencil8" || fmt === "depth32float-stencil8") {
+        return 1;
+      }
+    } else if (aspect === "depth-only") {
+      if (fmt === "depth32float-stencil8") {
+        return 4;
+      }
+    }
+    return TEXEL_BLOCK_COPY_FOOTPRINTS[fmt];
+  }
+  var TEXEL_BLOCK_COPY_FOOTPRINTS = {
+    r8unorm: 1,
+    r8snorm: 1,
+    r8uint: 1,
+    r8sint: 1,
+    r16unorm: 2,
+    r16snorm: 2,
+    r16uint: 2,
+    r16sint: 2,
+    r16float: 2,
+    rg8unorm: 2,
+    rg8snorm: 2,
+    rg8uint: 2,
+    rg8sint: 2,
+    r32uint: 4,
+    r32sint: 4,
+    r32float: 4,
+    rg16unorm: 4,
+    rg16snorm: 4,
+    rg16uint: 4,
+    rg16sint: 4,
+    rg16float: 4,
+    rgba8unorm: 4,
+    "rgba8unorm-srgb": 4,
+    rgba8snorm: 4,
+    rgba8uint: 4,
+    rgba8sint: 4,
+    bgra8unorm: 4,
+    "bgra8unorm-srgb": 4,
+    rgb9e5ufloat: 4,
+    rgb10a2uint: 4,
+    rgb10a2unorm: 4,
+    rg11b10ufloat: 4,
+    rg32uint: 8,
+    rg32sint: 8,
+    rg32float: 8,
+    rgba16unorm: 8,
+    rgba16snorm: 8,
+    rgba16uint: 8,
+    rgba16sint: 8,
+    rgba16float: 8,
+    rgba32uint: 16,
+    rgba32sint: 16,
+    rgba32float: 16,
+    stencil8: 1,
+    depth16unorm: 2,
+    depth24plus: void 0,
+    "depth24plus-stencil8": void 0,
+    depth32float: void 0,
+    "depth32float-stencil8": void 0,
+    "bc1-rgba-unorm": 8,
+    "bc1-rgba-unorm-srgb": 8,
+    "bc2-rgba-unorm": 16,
+    "bc2-rgba-unorm-srgb": 16,
+    "bc3-rgba-unorm": 16,
+    "bc3-rgba-unorm-srgb": 16,
+    "bc4-r-unorm": 8,
+    "bc4-r-snorm": 8,
+    "bc5-rg-unorm": 16,
+    "bc5-rg-snorm": 16,
+    "bc6h-rgb-ufloat": 16,
+    "bc6h-rgb-float": 16,
+    "bc7-rgba-unorm": 16,
+    "bc7-rgba-unorm-srgb": 16,
+    "etc2-rgb8unorm": 8,
+    "etc2-rgb8unorm-srgb": 8,
+    "etc2-rgb8a1unorm": 8,
+    "etc2-rgb8a1unorm-srgb": 8,
+    "etc2-rgba8unorm": 16,
+    "etc2-rgba8unorm-srgb": 16,
+    "eac-r11unorm": 8,
+    "eac-r11snorm": 8,
+    "eac-rg11unorm": 16,
+    "eac-rg11snorm": 16,
+    "astc-4x4-unorm": 16,
+    "astc-4x4-unorm-srgb": 16,
+    "astc-5x4-unorm": 16,
+    "astc-5x4-unorm-srgb": 16,
+    "astc-5x5-unorm": 16,
+    "astc-5x5-unorm-srgb": 16,
+    "astc-6x5-unorm": 16,
+    "astc-6x5-unorm-srgb": 16,
+    "astc-6x6-unorm": 16,
+    "astc-6x6-unorm-srgb": 16,
+    "astc-8x5-unorm": 16,
+    "astc-8x5-unorm-srgb": 16,
+    "astc-8x6-unorm": 16,
+    "astc-8x6-unorm-srgb": 16,
+    "astc-8x8-unorm": 16,
+    "astc-8x8-unorm-srgb": 16,
+    "astc-10x5-unorm": 16,
+    "astc-10x5-unorm-srgb": 16,
+    "astc-10x6-unorm": 16,
+    "astc-10x6-unorm-srgb": 16,
+    "astc-10x8-unorm": 16,
+    "astc-10x8-unorm-srgb": 16,
+    "astc-10x10-unorm": 16,
+    "astc-10x10-unorm-srgb": 16,
+    "astc-12x10-unorm": 16,
+    "astc-12x10-unorm-srgb": 16,
+    "astc-12x12-unorm": 16,
+    "astc-12x12-unorm-srgb": 16
+  };
+  var SAMPLER_TYPE_TO_WGSL_TYPE = {
+    float: "f32",
+    uint: "u32",
+    sint: "i32",
+    depth: "f32"
+  };
+  var WGSL_TYPE_SIZES = {
+    i32: 4,
+    u32: 4,
+    f32: 4,
+    f16: 2,
+    "atomic<u32>": 4,
+    "atomic<i32>": 4,
+    vec2i: 8,
+    vec2u: 8,
+    vec2f: 8,
+    vec2f16: 4,
+    vec3i: 12,
+    vec3u: 12,
+    vec3f: 12,
+    vec3f16: 6,
+    vec4i: 16,
+    vec4u: 16,
+    vec4f: 16,
+    vec4f16: 8,
+    mat2x2f: 16,
+    mat2x2f16: 8,
+    mat3x2f: 24,
+    mat3x2f16: 12,
+    mat4x2f: 32,
+    mat4x2f16: 16,
+    mat2x3f: 24,
+    mat2x3f16: 12,
+    mat3x3f: 48,
+    mat3x3f16: 24,
+    mat4x3f: 64,
+    mat4x3f16: 32,
+    mat2x4f: 32,
+    mat2x4f16: 16,
+    mat3x4f: 48,
+    mat3x4f16: 24,
+    mat4x4f: 64,
+    mat4x4f16: 32
+  };
+  var WGSL_TYPE_ALIGNMENTS = {
+    i32: 4,
+    u32: 4,
+    f32: 4,
+    f16: 2,
+    "atomic<u32>": 4,
+    "atomic<i32>": 4,
+    vec2i: 8,
+    vec2u: 8,
+    vec2f: 8,
+    vec2f16: 4,
+    vec3i: 16,
+    vec3u: 16,
+    vec3f: 16,
+    vec3f16: 8,
+    vec4i: 16,
+    vec4u: 16,
+    vec4f: 16,
+    vec4f16: 8,
+    mat2x2f: 8,
+    mat2x2f16: 4,
+    mat3x2f: 8,
+    mat3x2f16: 4,
+    mat4x2f: 8,
+    mat4x2f16: 4,
+    mat2x3f: 16,
+    mat2x3f16: 8,
+    mat3x3f: 16,
+    mat3x3f16: 8,
+    mat4x3f: 16,
+    mat4x3f16: 8,
+    mat2x4f: 16,
+    mat2x4f16: 8,
+    mat3x4f: 16,
+    mat3x4f16: 8,
+    mat4x4f: 16,
+    mat4x4f16: 8
+  };
+  var WGSL_TYPE_ELEMENT_COUNTS = {
+    i32: 1,
+    u32: 1,
+    f32: 1,
+    f16: 1,
+    "atomic<u32>": 1,
+    "atomic<i32>": 1,
+    vec2i: 2,
+    vec2u: 2,
+    vec2f: 2,
+    vec2f16: 2,
+    vec3i: 3,
+    vec3u: 3,
+    vec3f: 3,
+    vec3f16: 3,
+    vec4i: 4,
+    vec4u: 4,
+    vec4f: 4,
+    vec4f16: 4,
+    mat2x2f: 4,
+    mat2x2f16: 4,
+    mat3x2f: 6,
+    mat3x2f16: 6,
+    mat4x2f: 8,
+    mat4x2f16: 8,
+    mat2x3f: 6,
+    mat2x3f16: 6,
+    mat3x3f: 9,
+    mat3x3f16: 9,
+    mat4x3f: 12,
+    mat4x3f16: 12,
+    mat2x4f: 8,
+    mat2x4f16: 8,
+    mat3x4f: 12,
+    mat3x4f16: 12,
+    mat4x4f: 16,
+    mat4x4f16: 16
+  };
+  var WGSL_TYPE_DATATYPES = {
+    i32: "i32",
+    u32: "u32",
+    f32: "f32",
+    f16: "f16",
+    "atomic<u32>": "u32",
+    "atomic<i32>": "i32",
+    vec2i: "i32",
+    vec2u: "u32",
+    vec2f: "f32",
+    vec2f16: "f16",
+    vec3i: "i32",
+    vec3u: "u32",
+    vec3f: "f32",
+    vec3f16: "f16",
+    vec4i: "i32",
+    vec4u: "u32",
+    vec4f: "f32",
+    vec4f16: "f16",
+    mat2x2f: "f32",
+    mat2x2f16: "f16",
+    mat3x2f: "f32",
+    mat3x2f16: "f16",
+    mat4x2f: "f32",
+    mat4x2f16: "f16",
+    mat2x3f: "f32",
+    mat2x3f16: "f16",
+    mat3x3f: "f32",
+    mat3x3f16: "f16",
+    mat4x3f: "f32",
+    mat4x3f16: "f16",
+    mat2x4f: "f32",
+    mat2x4f16: "f16",
+    mat3x4f: "f32",
+    mat3x4f16: "f16",
+    mat4x4f: "f32",
+    mat4x4f16: "f16"
+  };
+  var WGSL_BASE_TYPE_TO_SAMPLER_TYPE = {
+    i32: "sint",
+    u32: "uint",
+    f32: "float",
+    f16: "float"
+  };
+  var VERTEX_FORMAT_TO_ELEMENT_SIZE = {
+    uint8: 1,
+    uint8x2: 1,
+    uint8x4: 1,
+    sint8: 1,
+    sint8x2: 1,
+    sint8x4: 1,
+    unorm8: 1,
+    unorm8x2: 1,
+    unorm8x4: 1,
+    snorm8: 1,
+    snorm8x2: 1,
+    snorm8x4: 1,
+    uint16: 2,
+    uint16x2: 2,
+    uint16x4: 2,
+    sint16: 2,
+    sint16x2: 2,
+    sint16x4: 2,
+    unorm16: 2,
+    unorm16x2: 2,
+    unorm16x4: 2,
+    snorm16: 2,
+    snorm16x2: 2,
+    snorm16x4: 2,
+    float16: 2,
+    float16x2: 2,
+    float16x4: 2,
+    float32: 4,
+    float32x2: 4,
+    float32x3: 4,
+    float32x4: 4,
+    uint32: 4,
+    uint32x2: 4,
+    uint32x3: 4,
+    uint32x4: 4,
+    sint32: 4,
+    sint32x2: 4,
+    sint32x3: 4,
+    sint32x4: 4,
+    "unorm10-10-10-2": 1,
+    "unorm8x4-bgra": 1
+  };
+  var VERTEX_FORMAT_TO_ELEMENT_COUNT = {
+    uint8: 1,
+    uint8x2: 2,
+    uint8x4: 4,
+    sint8: 1,
+    sint8x2: 2,
+    sint8x4: 4,
+    unorm8: 1,
+    unorm8x2: 2,
+    unorm8x4: 4,
+    snorm8: 1,
+    snorm8x2: 2,
+    snorm8x4: 4,
+    uint16: 1,
+    uint16x2: 2,
+    uint16x4: 4,
+    sint16: 1,
+    sint16x2: 2,
+    sint16x4: 4,
+    unorm16: 1,
+    unorm16x2: 2,
+    unorm16x4: 4,
+    snorm16: 1,
+    snorm16x2: 2,
+    snorm16x4: 4,
+    float16: 1,
+    float16x2: 2,
+    float16x4: 4,
+    float32: 1,
+    float32x2: 2,
+    float32x3: 3,
+    float32x4: 4,
+    uint32: 1,
+    uint32x2: 2,
+    uint32x3: 3,
+    uint32x4: 4,
+    sint32: 1,
+    sint32x2: 2,
+    sint32x3: 3,
+    sint32x4: 4,
+    "unorm10-10-10-2": 4,
+    "unorm8x4-bgra": 4
+  };
   var VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR = {
     uint8: Uint8Array,
     uint8x2: Uint8Array,
@@ -21920,6 +22609,210 @@
     "unorm10-10-10-2": Uint8Array,
     "unorm8x4-bgra": Uint8Array
   };
+  var VERTEX_FORMAT_TO_WGSL_BASE_TYPE = {
+    uint8: "u32",
+    uint8x2: "u32",
+    uint8x4: "u32",
+    sint8: "i32",
+    sint8x2: "i32",
+    sint8x4: "i32",
+    unorm8: "f32",
+    unorm8x2: "f32",
+    unorm8x4: "f32",
+    snorm8: "f32",
+    snorm8x2: "f32",
+    snorm8x4: "f32",
+    uint16: "u32",
+    uint16x2: "u32",
+    uint16x4: "u32",
+    sint16: "i32",
+    sint16x2: "i32",
+    sint16x4: "i32",
+    unorm16: "f32",
+    unorm16x2: "f32",
+    unorm16x4: "f32",
+    snorm16: "f32",
+    snorm16x2: "f32",
+    snorm16x4: "f32",
+    float16: "f32",
+    float16x2: "f32",
+    float16x4: "f32",
+    float32: "f32",
+    float32x2: "f32",
+    float32x3: "f32",
+    float32x4: "f32",
+    uint32: "u32",
+    uint32x2: "u32",
+    uint32x3: "u32",
+    uint32x4: "u32",
+    sint32: "i32",
+    sint32x2: "i32",
+    sint32x3: "i32",
+    sint32x4: "i32",
+    "unorm10-10-10-2": "f32",
+    "unorm8x4-bgra": "f32"
+  };
+  var WGSL_DATA_TYPES = {
+    f32: {
+      1: "f32",
+      2: "vec2f",
+      3: "vec3f",
+      4: "vec4f"
+    },
+    f16: {
+      1: "f16",
+      2: "vec2f16",
+      3: "vec3f16",
+      4: "vec4f16"
+    },
+    u32: {
+      1: "u32",
+      2: "vec2u",
+      3: "vec3u",
+      4: "vec4u"
+    },
+    i32: {
+      1: "i32",
+      2: "vec2i",
+      3: "vec3i",
+      4: "vec4i"
+    }
+  };
+  function vertexFormatToWgslType(vertexFormat) {
+    return WGSL_DATA_TYPES[VERTEX_FORMAT_TO_WGSL_BASE_TYPE[vertexFormat]][VERTEX_FORMAT_TO_ELEMENT_COUNT[vertexFormat]];
+  }
+
+  // src/webgpu/wgsl-struct-layout-generator.ts
+  function struct(name, members) {
+    return {
+      type: "struct",
+      name,
+      // @ts-expect-error
+      members: Object.entries(members).map(([k, v]) => [
+        k,
+        typeof v === "string" ? { type: { type: v } } : { type: v }
+      ])
+    };
+  }
+  function getAllStructs(specs) {
+    const ret = [];
+    function r(spec) {
+      if (spec.type === "struct") {
+        ret.push(spec);
+        for (const [n, m] of Array.isArray(spec.members) ? spec.members : Object.entries(spec.members)) {
+          r(m.type);
+        }
+      } else if (spec.type === "array") {
+        r(spec.member);
+      }
+    }
+    for (const s of specs) r(s);
+    return ret;
+  }
+  function makeCodeForType(type) {
+    if (type.type === "struct") return type.name;
+    if (type.type === "array")
+      return `array<${makeCodeForType(type.member)}${type.count ? ", " + type.count : ""}>`;
+    return type.type;
+  }
+  function structsCode(spec) {
+    let out = "";
+    const allTypesToDefine = getAllStructs(spec);
+    for (const t of allTypesToDefine) {
+      out += `struct ${t.name} {
+  ${(Array.isArray(t.members) ? t.members : Object.entries(t.members)).map((m) => `${m[0]}: ${makeCodeForType(m[1].type)},`).join("\n  ")}
+}`;
+    }
+    return out;
+  }
+  function generateLayouts(specs) {
+    const clone = structuredClone(specs);
+    const determineIndividualLayoutSizeAndAlignment = memo(
+      (spec) => {
+        if (spec.type === "struct") {
+          let currOffset = 0;
+          for (const [memberName, member] of spec.members) {
+            determineIndividualLayoutSizeAndAlignment(member.type);
+            member.offset = currOffset;
+            currOffset += roundUp(member.type.align, member.type.size);
+          }
+          const lastMember = spec.members.at(-1)[1];
+          const justPastLastMember = lastMember.offset + lastMember.type.size;
+          spec.align = Math.max(...spec.members.map((m) => m[1].type.align));
+          spec.size = roundUp(spec.align, justPastLastMember);
+        } else if (spec.type === "array") {
+          determineIndividualLayoutSizeAndAlignment(spec.member);
+          spec.size = spec.count * roundUp(spec.member.align, spec.member.size);
+          spec.align = spec.member.align;
+        } else {
+          spec.size = WGSL_TYPE_SIZES[spec.type];
+          spec.align = WGSL_TYPE_ALIGNMENTS[spec.type];
+        }
+      }
+    );
+    for (const e of clone) {
+      determineIndividualLayoutSizeAndAlignment(e);
+    }
+    return clone;
+  }
+  function wgslDataTypeToDataViewSetter(dt) {
+    return {
+      i32: "setInt32",
+      u32: "setUint32",
+      f32: "setFloat32",
+      f16: "setFloat16"
+    }[dt];
+  }
+  function createLayoutGenerator(spec) {
+    function createSetters(spec2, baseOffset, arrayNestingLevel, extraOffsets, accessor) {
+      if (spec2.type === "struct") {
+        return spec2.members.map(
+          ([name, member]) => createSetters(
+            member.type,
+            baseOffset + member.offset,
+            arrayNestingLevel,
+            extraOffsets,
+            accessor + `.${name}`
+          )
+        ).join("\n");
+      } else if (spec2.type === "array") {
+        const iname = `i${arrayNestingLevel}`;
+        const elemSize = roundUp(spec2.member.align, spec2.member.size);
+        return `for (let ${iname} = 0; ${iname} < ${spec2.count}; ${iname}++) {
+  ${createSetters(spec2.member, baseOffset, arrayNestingLevel + 1, [...extraOffsets, `${iname} * ${elemSize}`], accessor + `[${iname}]`)} 
+}`;
+      } else {
+        const iname = `i${arrayNestingLevel}`;
+        const primitiveCount = WGSL_TYPE_ELEMENT_COUNTS[spec2.type];
+        return `for (let ${iname} = 0; ${iname} < ${WGSL_TYPE_ELEMENT_COUNTS[spec2.type]}; ${iname}++) {
+  dst.${wgslDataTypeToDataViewSetter(WGSL_TYPE_DATATYPES[spec2.type])}(
+    ${baseOffset} + ${extraOffsets.join(" + ")} + ${iname} * ${WGSL_TYPE_SIZES[WGSL_TYPE_DATATYPES[spec2.type]]},
+    ${primitiveCount > 1 ? accessor + `[${iname}]` : accessor},
+    true
+  );
+}`;
+      }
+    }
+    const fnbody = createSetters(spec, 0, 0, [], "src");
+    return new Function("dst", "src", fnbody);
+  }
+  function createWgslSerializers(...ss) {
+    const layouts = generateLayouts(ss);
+    const gens = layouts.map((l) => ({
+      dataLayout: l,
+      gen: createLayoutGenerator(l)
+    }));
+    return {
+      code: structsCode(layouts),
+      generators: gens
+    };
+  }
+  function typeName(spec) {
+    if (spec.type === "struct") return spec.name;
+    if (spec.type === "array")
+      return `array<${typeName(spec.member)}, ${spec.count}>`;
+    return spec.type;
+  }
 
   // src/webgpu/wgsl-snippets.ts
   var WgslSnippets = {
@@ -22437,23 +23330,1498 @@ fn perlinNoise3(P: vec3f) -> f32 {
       ).join("\n\n")
     }
   };
+  function useWgslSnippetsRaw(ss) {
+    return "\n" + ss.map((s) => `// IMPORTED_SNIPPET: ${s}
+${WgslSnippets[s].src}`).join("\n\n");
+  }
+  function snippetWithDependencies(sn, deps = /* @__PURE__ */ new Set()) {
+    deps.add(sn);
+    for (const d of WgslSnippets[sn]?.deps ?? []) {
+      snippetWithDependencies(d, deps);
+    }
+    return deps;
+  }
+  function useWgslSnippets(str2) {
+    const snippetNames = str2.split(/\s+/g);
+    const withdeps = new Set(
+      snippetNames.flatMap((s) => [...snippetWithDependencies(s)])
+    );
+    return useWgslSnippetsRaw([...withdeps]);
+  }
+
+  // raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/simple-filter.wgsl?raw
+  var simple_filter_default = "/*TEXTURES*/\r\n\r\n/*TEXTURES*/\r\n\r\n\r\n/*GLOBALS*/\r\n\r\n/*GLOBALS*/\r\n\r\nstruct FragInput {\r\n  @builtin(position) position : vec4f,\r\n  @location(0) uv : vec2f,\r\n}\r\n\r\n@vertex\r\nfn VSMain(@builtin(vertex_index) vertexIndex: u32) -> FragInput {\r\n  var output: FragInput;\r\n\r\n  output.position = vec4(array(\r\n    vec2( 1.0,  1.0),\r\n    vec2( 1.0, -1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2( 1.0,  1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2(-1.0,  1.0),\r\n  )[vertexIndex], 0.5, 1.0);\r\n\r\n  output.uv = array(\r\n    vec2(1.0, 0.0),\r\n    vec2(1.0, 1.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(1.0, 0.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(0.0, 0.0),\r\n  )[vertexIndex];\r\n\r\n  return output;\r\n}\r\n\r\nstruct Output {\r\n/*OUTPUT_STRUCT*/\r\n\r\n/*OUTPUT_STRUCT*/\r\n}\r\n\r\n@fragment\r\nfn FSMain(@location(0) uv : vec2f) -> Output  {\r\n  /*FRAGMENT_BODY*/\r\n\r\n  /*FRAGMENT_BODY*/\r\n}";
+
+  // src/webgpu/simple-filter.ts
+  function createSimpleFilterShader(params) {
+    return makeDelimitedReplacements(simple_filter_default, [
+      {
+        delimiter: "/*TEXTURES*/",
+        replaceWith: params.textures
+      },
+      {
+        delimiter: "/*GLOBALS*/",
+        replaceWith: params.globals
+      },
+      {
+        delimiter: "/*OUTPUT_STRUCT*/",
+        replaceWith: params.outputStruct
+      },
+      {
+        delimiter: "/*FRAGMENT_BODY*/",
+        replaceWith: params.fragmentBody
+      }
+    ]);
+  }
+  function createSimpleFilterPipeline(device, spec) {
+    let fragmentBody = "";
+    let bindings = "";
+    let bindingIndex = 0;
+    const inputEntries = Object.entries(spec.inputs);
+    const samplers = [];
+    let hasInputs = inputEntries.length > 0;
+    if (hasInputs) {
+      for (const s of spec.samplers ?? [{}]) {
+        bindings += `@group(0) @binding(${bindingIndex})
+var sampler${bindingIndex}: sampler;
+`;
+        samplers.push(device.createSampler(s));
+        bindingIndex++;
+      }
+    }
+    bindingIndex = 0;
+    const nameToInputMap = /* @__PURE__ */ new Map();
+    const nameToOutputMap = /* @__PURE__ */ new Map();
+    let uniformBindGroupIndex = hasInputs ? 2 : 0;
+    for (const [name, value] of inputEntries) {
+      bindings += `@group(1) @binding(${bindingIndex}) 
+var tex_${name}: ${value.dimensionality ?? "texture_2d"}<${value.type ?? "f32"}>;`;
+      nameToInputMap.set(name, bindingIndex);
+      fragmentBody += !value.dimensionality ? `  var ${name} = textureSample(tex_${name}, sampler${value.sampleWith ?? 0}, uv);
+` : "";
+      bindingIndex++;
+    }
+    let outputStruct = "";
+    let outputBindingIndex = 0;
+    for (const [name, value] of Object.entries(spec.outputs)) {
+      outputStruct += `  @location(${outputBindingIndex}) ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]},
+`;
+      nameToOutputMap.set(name, outputBindingIndex);
+      fragmentBody += `  var ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]};
+`;
+      outputBindingIndex++;
+    }
+    fragmentBody += spec.source;
+    fragmentBody += `
+  var OUTPUT: Output;
+`;
+    const outputsEntries = Object.entries(spec.outputs);
+    for (const [name, value] of outputsEntries) {
+      fragmentBody += `  OUTPUT.${name} = ${name};
+`;
+    }
+    fragmentBody += "return OUTPUT;";
+    let globals = "";
+    globals += spec.globals ?? "";
+    if (spec.uniforms) {
+      globals += `@group(${uniformBindGroupIndex}) @binding(0) var<uniform> params : Params;
+struct Params {
+`;
+      for (const [uniformName, uniformType] of Object.entries(
+        spec.uniforms ?? {}
+      )) {
+        globals += `  ${uniformName}: ${uniformType},
+`;
+      }
+      globals += "}";
+    }
+    const shaderSource = createSimpleFilterShader({
+      textures: bindings,
+      globals,
+      outputStruct,
+      fragmentBody
+    });
+    const [uniformLayouts] = spec.uniforms ? (
+      // @ts-expect-error
+      generateLayouts([struct("Params", spec.uniforms)])
+    ) : void 0;
+    const uniformGenerator = createLayoutGenerator(uniformLayouts);
+    const module = device.createShaderModule({
+      code: shaderSource
+    });
+    const pipeline = device.createRenderPipeline({
+      layout: "auto",
+      vertex: { module },
+      fragment: {
+        module,
+        targets: outputsEntries.map(([name, value]) => ({
+          format: value
+        }))
+      }
+    });
+    const samplerBindGroup = hasInputs ? device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: samplers.map((s, i) => ({
+        resource: s,
+        binding: i
+      }))
+    }) : void 0;
+    return {
+      pipeline,
+      makeUniformBuffer() {
+        const buffer = device.createBuffer({
+          size: 1024,
+          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
+        });
+        const bindGroup = device.createBindGroup({
+          layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
+          entries: [
+            {
+              resource: buffer,
+              binding: 0
+            }
+          ]
+        });
+        const ret = {
+          buffer,
+          bindGroup,
+          setBuffer(values) {
+            const buf = new ArrayBuffer(uniformLayouts.size);
+            uniformGenerator(new DataView(buf), values);
+            device.queue.writeBuffer(buffer, 0, buf);
+            return ret;
+          }
+        };
+        return ret;
+      },
+      withInputs(inputs) {
+        const inputTextureBindGroup = hasInputs ? device.createBindGroup({
+          layout: pipeline.getBindGroupLayout(1),
+          entries: inputEntries.map(([name, value], i) => ({
+            resource: inputs[name],
+            binding: i
+          }))
+        }) : void 0;
+        return {
+          withDedicatedUniformBuffer(existingBufferInfo) {
+            const uniformBuffer = existingBufferInfo?.buffer ?? device.createBuffer({
+              size: uniformLayouts.size,
+              usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
+            });
+            const uniformBufferOffset = existingBufferInfo?.offset ?? 0;
+            const uniformBindGroup = device.createBindGroup({
+              layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
+              entries: [
+                {
+                  binding: 0,
+                  resource: uniformBuffer
+                }
+              ]
+            });
+            function record(bundleEncoder) {
+              bundleEncoder.setPipeline(pipeline);
+              if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
+              if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
+              bundleEncoder.setBindGroup(uniformBindGroupIndex, uniformBindGroup);
+              bundleEncoder.draw(6);
+            }
+            const defaultBundleEncoder = device.createRenderBundleEncoder({
+              colorFormats: outputsEntries.map((o) => o[1])
+            });
+            record(defaultBundleEncoder);
+            const bundle = defaultBundleEncoder.finish();
+            return {
+              run: (encoder, outputs) => {
+                const pass = encoder.beginRenderPass({
+                  colorAttachments: outputsEntries.map(
+                    ([name, value]) => outputs[name] instanceof GPUTextureView ? {
+                      view: outputs[name],
+                      clearValue: [0, 0, 0, 1],
+                      loadOp: "clear",
+                      storeOp: "store"
+                    } : outputs[name]
+                  )
+                });
+                pass.executeBundles([bundle]);
+                pass.end();
+              },
+              bundle,
+              runWithRenderPass: (pass) => {
+                pass.executeBundles([bundle]);
+              },
+              record,
+              setUniforms(values) {
+                const buf = new ArrayBuffer(uniformLayouts.size);
+                uniformGenerator(new DataView(buf), values);
+                device.queue.writeBuffer(uniformBuffer, uniformBufferOffset, buf);
+              }
+            };
+          },
+          withUniforms: (uniforms) => {
+            function record(bundleEncoder) {
+              bundleEncoder.setPipeline(pipeline);
+              if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
+              if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
+              if (uniforms)
+                bundleEncoder.setBindGroup(
+                  uniformBindGroupIndex,
+                  uniforms.bindGroup
+                );
+              bundleEncoder.draw(6);
+            }
+            const defaultBundleEncoder = device.createRenderBundleEncoder({
+              colorFormats: outputsEntries.map((o) => o[1])
+            });
+            record(defaultBundleEncoder);
+            const bundle = defaultBundleEncoder.finish();
+            return {
+              run: (encoder, outputs) => {
+                const pass = encoder.beginRenderPass({
+                  colorAttachments: outputsEntries.map(
+                    ([name, value]) => outputs[name] instanceof GPUTextureView ? {
+                      view: outputs[name],
+                      clearValue: [0, 0, 0, 1],
+                      loadOp: "clear",
+                      storeOp: "store"
+                    } : outputs[name]
+                  )
+                });
+                pass.executeBundles([bundle]);
+                pass.end();
+              },
+              bundle,
+              runWithRenderPass: (pass) => {
+                pass.executeBundles([bundle]);
+              },
+              record
+            };
+          }
+        };
+      }
+    };
+  }
+
+  // src/webgpu/readpixels.ts
+  function readPixelsSizeReq(params) {
+    let { format, subregion } = params;
+    const copyFootprintPerTexel = getCopyFootprintPerTexel(format);
+    const area = sub3(subregion[1], subregion[0]);
+    return roundUp(256, copyFootprintPerTexel * area[0]) * area[1] * area[2];
+  }
+  async function readPixels(params) {
+    let { device, tex, buf, subregion, mipLevel, aspect, offsetInBuffer } = params;
+    const copyFootprintPerTexel = getCopyFootprintPerTexel(params.tex.format);
+    if (!subregion) {
+      subregion = [
+        [0, 0, 0],
+        [tex.width, tex.height, tex.depthOrArrayLayers]
+      ];
+    }
+    const enc = device.createCommandEncoder();
+    const area = sub3(subregion[1], subregion[0]);
+    const bytesPerRow = roundUp(256, copyFootprintPerTexel * area[0]);
+    const rowsPerImage = area[1];
+    enc.copyTextureToBuffer(
+      {
+        texture: tex,
+        mipLevel,
+        aspect,
+        origin: subregion[0]
+      },
+      {
+        buffer: buf,
+        offset: offsetInBuffer,
+        bytesPerRow,
+        rowsPerImage
+      },
+      area
+    );
+    device.queue.submit([enc.finish()]);
+    await device.queue.onSubmittedWorkDone();
+    await buf.mapAsync(GPUMapMode.READ);
+    const range2 = buf.getMappedRange();
+    return {
+      range: range2,
+      bytesPerRow,
+      rowsPerImage
+    };
+  }
+  async function readPixelsToCpuBuffer(params) {
+    const { tex } = params;
+    const size = readPixelsSizeReq({
+      format: tex.format,
+      subregion: params.subregion ?? [
+        [0, 0, 0],
+        [tex.width, tex.height, tex.depthOrArrayLayers]
+      ]
+    });
+    const cpuBuffer = params.cpuBuffer ?? new ArrayBuffer(size);
+    const mappedBuffer = await readPixels(params);
+    const mappedBufferContents = new Uint8Array(mappedBuffer.range);
+    const cpuBufferContents = new Uint8Array(cpuBuffer);
+    for (let i = 0; i < mappedBufferContents.length; i++) {
+      cpuBufferContents[i] = mappedBufferContents[i];
+    }
+    params.buf.unmap();
+    return {
+      cpuBuffer,
+      bytesPerRow: mappedBuffer.bytesPerRow,
+      rowsPerImage: mappedBuffer.rowsPerImage,
+      size
+    };
+  }
+
+  // src/webgpu/partial-pipelines.ts
+  function pipelineRenderpass(pipeline, pass) {
+    const bindGroupNameToIndex = new Map(
+      pipeline.bindGroups.map((b, i) => [b.name, i])
+    );
+    const inputNameToIndex = new Map(pipeline.inputs.map((b, i) => [b.name, i]));
+    return (bindings) => {
+      console.log(bindGroupNameToIndex, bindings);
+      for (const [k, v] of Object.entries(bindings)) {
+        const bindGroupIndex = bindGroupNameToIndex.get(k);
+        if (bindGroupIndex !== void 0) {
+          pass.setBindGroup(bindGroupIndex, v);
+          continue;
+        }
+        const inputIndex = inputNameToIndex.get(k);
+        if (inputIndex !== void 0) {
+          pass.setVertexBuffer(
+            inputIndex,
+            ...Array.isArray(v) ? v : [v]
+          );
+          continue;
+        }
+        throw new Error(`Bound pipeline does not have attribute '${k}'.`);
+      }
+    };
+  }
+  function wrapDevice(device) {
+    return {
+      uniformBuffer(name, spec) {
+        const [withLayouts] = generateLayouts([spec]);
+        const gen = createLayoutGenerator(withLayouts);
+        return {
+          type: "uniform-buffer",
+          name,
+          format: spec,
+          visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
+          quickCreate(data) {
+            const gpubuf = this.instantiate();
+            const arrayBuf = new ArrayBuffer(withLayouts.size);
+            gen(new DataView(arrayBuf), data);
+            device.queue.writeBuffer(gpubuf, 0, arrayBuf);
+            return gpubuf;
+          },
+          instantiate() {
+            const buf = device.createBuffer({
+              usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+              size: withLayouts.size
+            });
+            buf.format = {
+              type: "uniform",
+              data: spec
+            };
+            return buf;
+          },
+          fill(buf, offset, data) {
+            const cpubuf = new ArrayBuffer(withLayouts.size);
+            gen(new DataView(cpubuf), data);
+            device.queue.writeBuffer(buf, offset, cpubuf);
+          },
+          wgsl(groupIndex, bindingIndex) {
+            return `@group(${groupIndex}) @binding(${bindingIndex}) var<uniform> ${name} : ${typeName(spec)};`;
+          }
+        };
+      },
+      vertexBuffer(name, params) {
+        let size = params.stride;
+        return {
+          name,
+          stepMode: params.stepMode,
+          type: "vertex-buffer",
+          arrayStride: size,
+          attributes: params.types,
+          // @ts-expect-error
+          reinterpret(buf) {
+            return buf;
+          },
+          // @ts-expect-error
+          instantiate(count) {
+            const buf = device.createBuffer({
+              usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+              size: count * size
+            });
+            return buf;
+          },
+          quickCreate(data) {
+            const buf = this.instantiate(data.length);
+            const cpubuf = new ArrayBuffer(size * data.length);
+            const attrViews = arrayToObjEntries(params.types, (attr) => [
+              attr.name,
+              new VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR[attr.format](cpubuf)
+            ]);
+            let index = 0;
+            for (const d of data) {
+              for (const a of params.types) {
+                const view = attrViews[a.name];
+                const elementSize = VERTEX_FORMAT_TO_ELEMENT_SIZE[a.format];
+                const elementCount = VERTEX_FORMAT_TO_ELEMENT_COUNT[a.format];
+                for (let i = 0; i < elementCount; i++) {
+                  const byteOffset = index * size + a.offset;
+                  const elementOffset = byteOffset / elementSize + i;
+                  view[elementOffset] = elementCount === 1 ? d[a.name] : d[a.name][i];
+                }
+              }
+              index++;
+            }
+            console.log(attrViews, cpubuf);
+            device.queue.writeBuffer(buf, 0, cpubuf);
+            return buf;
+          }
+        };
+      },
+      bindGroup(name, ...entries) {
+        const layout = device.createBindGroupLayout({
+          entries: entries.map((e, i) => {
+            if (e.type === "texture") {
+              return {
+                binding: i,
+                visibility: e.visibility,
+                layout: {
+                  texture: {
+                    sampleType: TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT[e.format],
+                    multisampled: e.multisampled,
+                    viewDimension: e.viewDimension
+                  }
+                }
+              };
+            } else if (e.type === "uniform-buffer") {
+              return {
+                binding: i,
+                visibility: e.visibility,
+                buffer: {
+                  type: "uniform"
+                }
+              };
+            } else if (e.type === "vertex-buffer") {
+              return {
+                binding: i,
+                visibility: e.visibility,
+                buffer: {
+                  type: e.readonly ? "read-only-storage" : "storage"
+                }
+              };
+            }
+          })
+        });
+        layout.entries = entries;
+        layout.name = name;
+        layout.instantiate = (params) => {
+          const bg = device.createBindGroup({
+            layout,
+            entries: entries.map((e, i) => ({
+              binding: i,
+              resource: params[e.name]
+            }))
+          });
+          return bg;
+        };
+        return layout;
+      },
+      texture(name, params) {
+        return {
+          name,
+          type: "texture",
+          format: params.format,
+          visibility: params.visibility,
+          // @ts-expect-error
+          viewDimension: params.viewDimension ?? "2d",
+          // @ts-expect-error
+          multisampled: params.multisampled ?? false,
+          instantiate(resolution, usage) {
+            return device.createTexture({
+              size: resolution,
+              usage,
+              format: params.format
+            });
+          }
+        };
+      },
+      shader(code, stages = ["vertex", "fragment"]) {
+        const module = device.createShaderModule({
+          code
+        });
+        return { module, stages };
+      },
+      async pipeline(params) {
+        const requiredStructDefs = params.bindGroups.flatMap(
+          (bg) => bg.entries.flatMap((e) => {
+            if (e.type === "uniform-buffer") {
+              return [e.format];
+            } else {
+              return [];
+            }
+          })
+        );
+        const requiredBindings = params.bindGroups.flatMap(
+          (bg, groupIndex) => bg.entries.flatMap((e, bindingIndex) => {
+            if (e.type === "uniform-buffer") {
+              return e.wgsl(groupIndex, bindingIndex);
+            } else {
+              return "";
+            }
+          })
+        ).join("\n");
+        let shaderLoc = 0;
+        const vertexStruct = params.inputs.length > 0 ? `struct Vertex {
+        ${params.inputs.flatMap((i) => i.attributes.map((attr) => `@location(${shaderLoc++}) ${attr.name}: ${vertexFormatToWgslType(attr.format)}`)).join(",\n")}
+      }` : "";
+        return this.pipelineRaw({
+          bindGroups: params.bindGroups,
+          inputs: params.inputs,
+          outputs: params.outputs,
+          depthStencil: params.depthStencil,
+          shader: this.shader(
+            `
+        ${createWgslSerializers(...requiredStructDefs).code}
+        ${requiredBindings}
+        ${params.globals ?? ""}
+        ${vertexStruct}
+
+        struct FragInput {
+          ${params.fragment?.struct ?? ""}
+        }
+
+        struct FragOutput {
+          ${Object.entries(params.outputs).map(
+              ([name, value], i) => `@location(${i}) ${name} : ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[typeof value === "string" ? value : value.format]}`
+            ).join(",\n  ")}
+        }
+
+        @vertex
+        fn VSMain(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32, ${vertexStruct ? "vertex: Vertex" : ""}) -> FragInput {
+          ${params.vertex} 
+        }
+
+      ${params.fragment ? `@fragment
+        fn FSMain(input : FragInput) -> FragOutput {
+          ${params.fragment.function}
+        }` : ""}
+        `,
+            params.fragment ? ["vertex", "fragment"] : ["vertex"]
+          )
+        });
+      },
+      async pipelineRaw(params) {
+        let vertex = void 0;
+        if (params.shader.stages.includes("vertex")) {
+          const buffers = [];
+          let shaderLoc = 0;
+          for (const b of params.inputs) {
+            let currBuffer = {
+              arrayStride: b.arrayStride,
+              stepMode: b.stepMode,
+              attributes: []
+            };
+            buffers.push(currBuffer);
+            for (const a of b.attributes) {
+              currBuffer.attributes.push({
+                format: a.format,
+                offset: a.offset,
+                shaderLocation: shaderLoc
+              });
+              shaderLoc++;
+            }
+          }
+          vertex = {
+            module: params.shader.module,
+            buffers
+          };
+        }
+        let fragment = void 0;
+        if (params.shader.stages.includes("fragment")) {
+          fragment = {
+            module: params.shader.module,
+            targets: Object.values(params.outputs).map(
+              (e) => typeof e === "string" ? { format: e } : e?.type === "texture" ? {
+                format: e.format
+              } : e
+            )
+          };
+        }
+        const ppln = await device.createRenderPipelineAsync({
+          vertex,
+          fragment,
+          depthStencil: params.depthStencil,
+          layout: device.createPipelineLayout({
+            bindGroupLayouts: params.bindGroups.map((bg, i) => bg)
+          })
+        });
+        ppln.bindGroups = params.bindGroups;
+        ppln.shader = params.shader;
+        ppln.inputs = params.inputs;
+        return ppln;
+      }
+    };
+  }
 
   // src/webgpu/gpudoc/ui.tsx
   var import_react4 = __toESM(require_react());
   var import_client = __toESM(require_client());
 
+  // src/webgpu/gpudoc/display-texture.ts
+  function create2dShaderFormat(device, samplerType, outputFormat) {
+    console.log("creating new pipeline", samplerType, outputFormat);
+    return createSimpleFilterPipeline(device, {
+      inputs: {
+        input: {
+          type: SAMPLER_TYPE_TO_WGSL_TYPE[samplerType],
+          dimensionality: samplerType === "depth" ? "texture_depth_2d" : "texture_2d"
+        }
+      },
+      outputs: {
+        dst: outputFormat
+      },
+      uniforms: {
+        cornerA: "vec2f",
+        cornerB: "vec2f",
+        blackEquiv: "vec4f",
+        whiteEquiv: "vec4f"
+      },
+      source: `
+let uv2 = mix(params.cornerA, params.cornerB, uv);
+
+let pixel = vec4f(textureSample(tex_input, sampler0, uv2));
+
+dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
+    `
+    });
+  }
+  function textureDisplayer(device) {
+    const getDisplayerPipeline = memo(
+      (samplerType, outputFormat) => create2dShaderFormat(device, samplerType, outputFormat)
+    );
+    return {
+      displayTexture2d(src2, dst, encoder) {
+        const pipeline = getDisplayerPipeline(src2.samplerType, dst.format);
+        const uniforms = pipeline.makeUniformBuffer().setBuffer({
+          cornerA: src2.cornerA,
+          cornerB: src2.cornerB,
+          blackEquiv: src2.blackEquiv,
+          whiteEquiv: src2.whiteEquiv
+        });
+        pipeline.withInputs({
+          input: src2.tex
+        }).withUniforms(uniforms).run(encoder, {
+          dst: dst.tex
+        });
+      }
+    };
+  }
+
+  // raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/gpudoc/gpudoc.css?raw
+  var gpudoc_default = ':root {\r\n  --default-padding: 1rem;\r\n  --default-border: 1px solid #999;\r\n  --input-color: #000;\r\n  --red: #f66;\r\n  --green: #4f4;\r\n  --blue: #aaf;\r\n  --alpha: #bbb;\r\n}\r\n\r\n.gpudoc {\r\n  width: 100vw;\r\n  height: 100vh;\r\n  position: absolute;\r\n  top: 0;\r\n  left: 0;\r\n  z-index: 9999;\r\n  background-color: #121212;\r\n  color: white;\r\n  font-family: sans-serif;\r\n  border-right: var(--default-border);\r\n  display: grid;\r\n  grid-template-areas:\r\n    "tab-bar"\r\n    "tab";\r\n  grid-template-rows: max-content 1fr;\r\n  box-sizing: border-box;\r\n}\r\n\r\n.tex-thumbs {\r\n  display: grid;\r\n  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\r\n  list-style: none;\r\n}\r\n\r\n.tex-thumbs li {\r\n  display: flex;\r\n  align-items: center;\r\n  flex-direction: column;\r\n  max-width: 350px;\r\n  padding: var(--default-padding);\r\n}\r\n\r\n.tex-thumbs .name {\r\n  font-weight: bold;\r\n  margin-bottom: var(--default-padding);\r\n}\r\n\r\n.tex-thumbs .canvas,\r\n.tex-thumbs canvas {\r\n  width: 100%;\r\n}\r\n\r\n.tab-bar {\r\n  font-size: 0.9em;\r\n  padding: 0;\r\n  margin: 0;\r\n  display: flex;\r\n  flex-wrap: wrap;\r\n  border-bottom: var(--default-border);\r\n  list-style: none;\r\n  grid-area: tab-bar;\r\n}\r\n\r\n.tab-bar li {\r\n  padding: calc(var(--default-padding) * 0.5);\r\n  border-right: var(--default-border);\r\n}\r\n\r\n.tab-bar li.selected {\r\n  background-color: #333;\r\n}\r\n\r\n.gpudoc .tab {\r\n  grid-area: tab;\r\n  height: 100%;\r\n}\r\n\r\n.tex-inspector {\r\n  height: 100%;\r\n  display: grid;\r\n  grid-template-areas: "canvas ui";\r\n}\r\n\r\n.tex-inspector > div:has(canvas) {\r\n  height: 100%;\r\n  grid-area: canvas;\r\n  position: relative;\r\n  overflow: hidden;\r\n}\r\n\r\n.tex-inspector canvas {\r\n  height: 100%;\r\n  width: 100%;\r\n}\r\n\r\n.tex-inspector .ui {\r\n  grid-area: ui;\r\n}\r\n\r\n.color-sliders {\r\n  display: grid;\r\n  grid-template-areas:\r\n    "darklabel lightlabel"\r\n    "dark light";\r\n}\r\n\r\n.color-sliders .dark,\r\n.color-sliders .light {\r\n  display: flex;\r\n  flex-direction: column;\r\n}\r\n\r\n.dark-label {\r\n  grid-area: darklabel;\r\n}\r\n.light-label {\r\n  grid-area: lightlabel;\r\n}\r\n\r\n.color-sliders .dark {\r\n  grid-area: dark;\r\n}\r\n.color-sliders .light {\r\n  grid-area: light;\r\n}\r\n\r\n.color-sliders input {\r\n  border: var(--default-border);\r\n  background-color: var(--input-color);\r\n  width: 4rem;\r\n}\r\n\r\n.color-sliders input:nth-child(1) {\r\n  color: var(--red);\r\n}\r\n.color-sliders input:nth-child(2) {\r\n  color: var(--green);\r\n}\r\n.color-sliders input:nth-child(3) {\r\n  color: var(--blue);\r\n}\r\n.color-sliders input:nth-child(4) {\r\n  color: var(--alpha);\r\n}\r\n\r\n.texel-inspector-window {\r\n  border: var(--default-border);\r\n  background-color: #121212;\r\n}\r\n\r\n.texel-marker {\r\n  border-radius: 3px;\r\n  border: 1px solid black;\r\n  outline: 1px solid white;\r\n}\r\n\r\n.line-segment {\r\n  border-radius: 3px;\r\n  border: 1px solid white;\r\n  background-color: black;\r\n}\r\n\r\n.texel-dragger {\r\n  width: 20px;\r\n  height: 20px;\r\n  transform: translate(-10px, -10px);\r\n  border-radius: 10px;\r\n  background-color: #0003;\r\n  border: 1px solid #fff8;\r\n}\r\n\r\n.dragger {\r\n  cursor: grab;\r\n}\r\n\r\n.texel-components {\r\n  display: grid;\r\n  grid-template-columns: repeat(4, 1fr);\r\n}\r\n\r\n.red {\r\n  color: var(--red);\r\n}\r\n.green {\r\n  color: var(--green);\r\n}\r\n.blue {\r\n  color: var(--blue);\r\n}\r\n.alpha {\r\n  color: var(--alpha);\r\n}\r\n';
+
+  // node_modules/uuid/dist/stringify.js
+  var byteToHex = [];
+  for (let i = 0; i < 256; ++i) {
+    byteToHex.push((i + 256).toString(16).slice(1));
+  }
+  function unsafeStringify(arr, offset = 0) {
+    return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
+  }
+
+  // node_modules/uuid/dist/rng.js
+  var getRandomValues;
+  var rnds8 = new Uint8Array(16);
+  function rng() {
+    if (!getRandomValues) {
+      if (typeof crypto === "undefined" || !crypto.getRandomValues) {
+        throw new Error("crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported");
+      }
+      getRandomValues = crypto.getRandomValues.bind(crypto);
+    }
+    return getRandomValues(rnds8);
+  }
+
+  // node_modules/uuid/dist/native.js
+  var randomUUID = typeof crypto !== "undefined" && crypto.randomUUID && crypto.randomUUID.bind(crypto);
+  var native_default = { randomUUID };
+
+  // node_modules/uuid/dist/v4.js
+  function _v4(options, buf, offset) {
+    options = options || {};
+    const rnds = options.random ?? options.rng?.() ?? rng();
+    if (rnds.length < 16) {
+      throw new Error("Random bytes length must be >= 16");
+    }
+    rnds[6] = rnds[6] & 15 | 64;
+    rnds[8] = rnds[8] & 63 | 128;
+    if (buf) {
+      offset = offset || 0;
+      if (offset < 0 || offset + 16 > buf.length) {
+        throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+      }
+      for (let i = 0; i < 16; ++i) {
+        buf[offset + i] = rnds[i];
+      }
+      return buf;
+    }
+    return unsafeStringify(rnds);
+  }
+  function v4(options, buf, offset) {
+    if (native_default.randomUUID && !buf && !options) {
+      return native_default.randomUUID();
+    }
+    return _v4(options, buf, offset);
+  }
+  var v4_default = v4;
+
   // src/ui/pan-and-zoom.tsx
   var import_react = __toESM(require_react());
+  function PanAndZoom(props) {
+    const scrollSensitivity = props.scrollSensitivity ?? 1;
+    const scrollDecay = props.scrollDecay ?? 0.01;
+    const scrollSnapToZero = props.scrollSnapToZero ?? 1e-3;
+    const scrollVel = (0, import_react.useRef)(0);
+    const mouseDown = (0, import_react.useRef)(false);
+    const normalizedMousePos = (0, import_react.useRef)({ x: 0, y: 0 });
+    (0, import_react.useEffect)(() => {
+      let stopped = false;
+      let lastTime = performance.now();
+      const cb2 = (time) => {
+        if (stopped) return;
+        const deltaTime = time - lastTime;
+        lastTime = time;
+        scrollVel.current *= Math.pow(scrollDecay, deltaTime / 1e3);
+        if (Math.abs(scrollVel.current) > scrollSnapToZero) {
+          props.setCoords((c) => {
+            const targetOriginX = lerp(
+              normalizedMousePos.current.x,
+              c.a[0],
+              c.b[0]
+            );
+            const targetOriginY = lerp(
+              normalizedMousePos.current.y,
+              c.a[1],
+              c.b[1]
+            );
+            const scrollAmount = scrollVel.current * deltaTime / 1e3;
+            return {
+              a: [
+                lerp(scrollAmount, c.a[0], targetOriginX),
+                lerp(scrollAmount, c.a[1], targetOriginY)
+              ],
+              b: [
+                lerp(scrollAmount, c.b[0], targetOriginX),
+                lerp(scrollAmount, c.b[1], targetOriginY)
+              ]
+            };
+          });
+          props.onUpdate?.();
+        }
+        requestAnimationFrame(cb2);
+      };
+      requestAnimationFrame(cb2);
+      return () => {
+        stopped = true;
+      };
+    }, []);
+    const divref = (0, import_react.useRef)(null);
+    return /* @__PURE__ */ import_react.default.createElement(
+      "div",
+      {
+        style: {
+          width: "fit-content",
+          display: "flex"
+        },
+        ref: divref,
+        onWheel: (e) => {
+          e.preventDefault();
+          scrollVel.current += Math.sign(e.deltaY) * scrollSensitivity * (props.swapScroll ? -1 : 1);
+        },
+        onMouseDown: (e) => {
+          mouseDown.current = true;
+        },
+        onMouseUp: (e) => {
+          mouseDown.current = false;
+        },
+        onMouseMove: (e) => {
+          const rect = divref.current?.getBoundingClientRect();
+          if (!rect) return;
+          normalizedMousePos.current = {
+            x: rescale(e.nativeEvent.offsetX, 0, rect.width, 0, 1),
+            y: rescale(e.nativeEvent.offsetY, 0, rect.height, 0, 1)
+          };
+          if (!mouseDown.current) return;
+          props.setCoords((c) => {
+            const dx = -rescale(e.movementX, 0, rect.width, 0, c.b[0] - c.a[0]);
+            const dy = -rescale(e.movementY, 0, rect.height, 0, c.b[1] - c.a[1]);
+            return {
+              a: [c.a[0] + dx, c.a[1] + dy],
+              b: [c.b[0] + dx, c.b[1] + dy]
+            };
+          });
+          props.onUpdate?.();
+        }
+      },
+      props.children
+    );
+  }
 
   // src/ui/react-number-field.tsx
   var import_react2 = __toESM(require_react());
+  function stringifyNumber(x) {
+    return x.toLocaleString("fullwide", {
+      useGrouping: false,
+      maximumFractionDigits: 10
+    });
+  }
+  function roundAndClamp(x, min, max, step, offset) {
+    x = Math.max(Math.min(x, max), min);
+    if (step === 0) return x;
+    return Math.round((x - offset) / step) * step + offset;
+  }
+  function NumberField(propsOpt) {
+    const props = {
+      scale: "log",
+      sensitivity: 0.01,
+      min: -Infinity,
+      max: Infinity,
+      step: 0,
+      offset: 0,
+      displayPrecision: 3,
+      defaultIfNaN: 0,
+      jumpstartDragFromZero: 0,
+      ...propsOpt
+    };
+    const value = isNaN(props.value) ? props.defaultIfNaN : props.value;
+    const [valueTemp, _setValueTemp] = (0, import_react2.useState)(stringifyNumber(value));
+    const lastNumberRef = (0, import_react2.useRef)(value);
+    function constrain(n) {
+      return roundAndClamp(n, props.min, props.max, props.step, props.offset);
+    }
+    function setValueTemp(vt, forceConstrain) {
+      if (!forceConstrain) _setValueTemp(vt);
+      const num = Number(vt);
+      if (!isNaN(num)) {
+        const cn = constrain(num);
+        props.setValue(cn);
+        lastNumberRef.current = cn;
+        if (forceConstrain) {
+          _setValueTemp(stringifyNumber(cn));
+        }
+      }
+    }
+    function setValueTempNum(n, forceConstrain) {
+      return setValueTemp(
+        stringifyNumber(forceConstrain ? constrain(n) : n),
+        forceConstrain
+      );
+    }
+    (0, import_react2.useEffect)(() => {
+      if (lastNumberRef.current !== value) {
+        lastNumberRef.current = value;
+        _setValueTemp(stringifyNumber(value));
+      }
+    }, [value]);
+    return /* @__PURE__ */ import_react2.default.createElement(
+      "input",
+      {
+        value: valueTemp,
+        onInput: (e) => {
+          setValueTemp(e.currentTarget.value, false);
+        },
+        ref: (e) => {
+          e?.addEventListener("change", () => {
+            setValueTemp(e.value, true);
+          });
+        },
+        onMouseDown: async (e) => {
+          const elem = e.currentTarget;
+          await e.currentTarget.requestPointerLock();
+          let dragnum = value;
+          const mousemoveListener = (e2) => {
+            const x = e2.movementX;
+            if (props.scale === "log") {
+              if (dragnum === 0) {
+                dragnum = props.jumpstartDragFromZero * Math.sign(x);
+              } else {
+                dragnum = dragnum * (2 ** props.sensitivity) ** x;
+              }
+            } else {
+              dragnum += x * props.sensitivity;
+            }
+            setValueTempNum(dragnum, true);
+          };
+          const mouseupListener = (e2) => {
+            document.removeEventListener("mousemove", mousemoveListener);
+            document.removeEventListener("mouseup", mouseupListener);
+            document.exitPointerLock();
+          };
+          document.addEventListener("mousemove", mousemoveListener);
+          document.addEventListener("mouseup", mouseupListener);
+        }
+      }
+    );
+  }
 
   // src/ui/react-draggable-window.tsx
   var import_react3 = __toESM(require_react());
   var DraggableWindowContext = (0, import_react3.createContext)(void 0);
+  function useParentDims(getParent) {
+    const [parentDims, setParentDims] = (0, import_react3.useState)([1, 1]);
+    const elemRef = (0, import_react3.useRef)(null);
+    function updateParentDims() {
+      if (!elemRef.current) return;
+      const parent = getParent(elemRef.current);
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
+      setParentDims([rect.width, rect.height]);
+    }
+    (0, import_react3.useEffect)(() => {
+      if (!elemRef.current) return;
+      const parent = getParent(elemRef.current);
+      if (!parent) return;
+      updateParentDims();
+    }, []);
+    (0, import_react3.useEffect)(() => {
+      if (!elemRef.current) return;
+      const parent = getParent(elemRef.current);
+      if (!parent) return;
+      const observer = new ResizeObserver(() => {
+        updateParentDims();
+      });
+      observer.observe(parent);
+      return () => {
+        observer.disconnect();
+      };
+    });
+    return [elemRef, parentDims];
+  }
+  function DraggableWindow(props) {
+    const transformedX = rescale(
+      props.pos[0],
+      props.transform.a[0],
+      props.transform.b[0],
+      0,
+      100
+    );
+    const transformedY = rescale(
+      props.pos[1],
+      props.transform.a[1],
+      props.transform.b[1],
+      0,
+      100
+    );
+    const [elemRef, parentDims] = useParentDims((e) => e.parentElement);
+    return /* @__PURE__ */ import_react3.default.createElement(
+      DraggableWindowContext.Provider,
+      {
+        value: {
+          pos: props.pos,
+          setPos: props.setPos,
+          currentScaleFactors: div2(
+            sub2(props.transform.b, props.transform.a),
+            parentDims
+            // [100, 100]
+          )
+        }
+      },
+      /* @__PURE__ */ import_react3.default.createElement(
+        "div",
+        {
+          ref: elemRef,
+          className: "draggable-window",
+          style: {
+            position: "absolute",
+            top: `${transformedY}%`,
+            left: `${transformedX}%`
+          }
+        },
+        props.children
+      )
+    );
+  }
+  function LineSeg(props) {
+    const [elemRef, parentDims] = useParentDims((e) => e.parentElement);
+    const remappedEndpointA = remap2(
+      props.endpoints.a,
+      props.transform.a,
+      props.transform.b,
+      [0, 0],
+      parentDims
+    );
+    const remappedEndpointB = remap2(
+      props.endpoints.b,
+      props.transform.a,
+      props.transform.b,
+      [0, 0],
+      parentDims
+    );
+    const [dist, dir] = cart2Polar(sub2(remappedEndpointB, remappedEndpointA));
+    return /* @__PURE__ */ import_react3.default.createElement(
+      "div",
+      {
+        ref: elemRef,
+        className: "line-segment",
+        style: {
+          position: "absolute",
+          transformOrigin: "top left",
+          height: "1px",
+          width: `${dist}px`,
+          transform: `rotate(${dir}rad)`,
+          left: `${remappedEndpointA[0]}px`,
+          top: `${remappedEndpointA[1]}px`
+        }
+      }
+    );
+  }
+  function Dragger(props) {
+    const { pos, setPos, currentScaleFactors } = (0, import_react3.useContext)(
+      DraggableWindowContext
+    );
+    const elemRef = (0, import_react3.useRef)(null);
+    const [isHeld, setIsHeld] = (0, import_react3.useState)(false);
+    const tempPosRef = (0, import_react3.useRef)([0, 0]);
+    (0, import_react3.useEffect)(() => {
+      if (!isHeld) return;
+      const elem = elemRef.current;
+      if (!elem) return;
+      const mousemove = (evt) => {
+        tempPosRef.current = add2(
+          tempPosRef.current,
+          mul2([evt.movementX, evt.movementY], currentScaleFactors)
+        );
+        setPos(tempPosRef.current);
+        evt.stopPropagation();
+      };
+      document.addEventListener("mousemove", mousemove);
+      return () => {
+        document.removeEventListener("mousemove", mousemove);
+      };
+    }, [isHeld]);
+    (0, import_react3.useEffect)(() => {
+      const elem = elemRef.current;
+      if (!elem) return;
+      const mouseup = (evt) => {
+        setIsHeld(false);
+        elem.style.userSelect = "";
+      };
+      const mousedown = (evt) => {
+        setIsHeld(true);
+        tempPosRef.current = pos;
+        elem.style.userSelect = "none";
+        evt.stopPropagation();
+      };
+      elem.addEventListener("mousedown", mousedown);
+      document.addEventListener("mouseup", mouseup);
+      return () => {
+        elem.removeEventListener("mousedown", mousedown);
+        document.removeEventListener("mouseup", mouseup);
+      };
+    }, [pos, currentScaleFactors]);
+    return /* @__PURE__ */ import_react3.default.createElement("div", { className: "dragger", ref: elemRef }, props.children);
+  }
 
   // src/webgpu/gpudoc/ui.tsx
   var GPUDocContext = (0, import_react4.createContext)(void 0);
+  function gpuDebugWindow(params) {
+    const d = document.createElement("div");
+    const root = (0, import_client.createRoot)(d).render(
+      /* @__PURE__ */ import_react4.default.createElement(
+        GpudocDebugWindow,
+        {
+          device: params.device,
+          textures: params.textures,
+          buffers: params.buffers
+        }
+      )
+    );
+    return d;
+  }
+  function GpudocDebugWindow(props) {
+    const displayer = (0, import_react4.useMemo)(
+      () => textureDisplayer(props.device),
+      [props.device]
+    );
+    const [tabs, setTabs] = (0, import_react4.useState)([
+      {
+        type: "search-texture",
+        search: "",
+        id: v4_default()
+      }
+    ]);
+    const [currentTabIndex, setCurrentTabIndex] = (0, import_react4.useState)(0);
+    const currentTab = tabs[currentTabIndex];
+    return /* @__PURE__ */ import_react4.default.createElement(
+      GPUDocContext.Provider,
+      {
+        value: {
+          displayer,
+          device: props.device,
+          tabs,
+          currentTabIndex,
+          setCurrentTabIndex,
+          setTabs,
+          textures: props.textures,
+          buffers: props.buffers
+        }
+      },
+      /* @__PURE__ */ import_react4.default.createElement("style", null, gpudoc_default),
+      /* @__PURE__ */ import_react4.default.createElement("div", { className: "gpudoc" }, /* @__PURE__ */ import_react4.default.createElement(GpudocTabBar, null), /* @__PURE__ */ import_react4.default.createElement("div", { className: "tab" }, /* @__PURE__ */ import_react4.default.createElement(
+        GpudocTab,
+        {
+          tab: currentTab,
+          setTab: (newtab) => setTabs(
+            (oldtabs) => oldtabs.map((t, i) => i === currentTabIndex ? newtab(t) : t)
+          )
+        }
+      )))
+    );
+  }
+  function GpudocTab(props) {
+    const tab = props.tab;
+    const { textures, tabs } = useGpudoc();
+    if (tab.type === "search-texture") {
+      return /* @__PURE__ */ import_react4.default.createElement("ul", { className: "tex-thumbs" }, [...textures].map((t) => /* @__PURE__ */ import_react4.default.createElement(TextureThumbnail, { tex: t.tex, key: t.id })));
+    } else {
+      return /* @__PURE__ */ import_react4.default.createElement(
+        "div",
+        {
+          className: "tex-inspector",
+          ref: (elem) => {
+            const listener = (e) => {
+              e.preventDefault();
+            };
+            elem.addEventListener("wheel", listener);
+            return () => {
+              elem.removeEventListener("wheel", listener);
+            };
+          }
+        },
+        /* @__PURE__ */ import_react4.default.createElement("div", { className: "ui" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "color-sliders" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "dark-label" }, "Dark"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "light-label" }, "Light"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "dark" }, range(4).map((i) => /* @__PURE__ */ import_react4.default.createElement(
+          NumberField,
+          {
+            key: i,
+            value: tab.dark[i],
+            setValue: (v) => props.setTab(
+              (oldtab) => xray(oldtab).dark.$i(i).$(v).$v
+            ),
+            jumpstartDragFromZero: 0.01
+          }
+        ))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "light" }, range(4).map((i) => /* @__PURE__ */ import_react4.default.createElement(
+          NumberField,
+          {
+            key: i,
+            value: tab.light[i],
+            setValue: (v) => props.setTab(
+              (oldtab) => xray(oldtab).light.$i(i).$(v).$v
+            ),
+            jumpstartDragFromZero: 0.01
+          }
+        ))))),
+        /* @__PURE__ */ import_react4.default.createElement(
+          PanAndZoom,
+          {
+            coords: tab.coords,
+            setCoords: (coords) => {
+              props.setTab((oldtab) => ({
+                ...oldtab,
+                // @ts-expect-error
+                coords: coords(oldtab.coords)
+              }));
+            }
+          },
+          tab.texelInspectorWindows.map((t, i) => /* @__PURE__ */ import_react4.default.createElement(
+            TexelInspectorWindow,
+            {
+              tab,
+              key: t.id,
+              win: t,
+              setWin: (w) => props.setTab(
+                (oldtab) => xray(oldtab).texelInspectorWindows.$i(i).$(w).$v
+              )
+            }
+          )),
+          /* @__PURE__ */ import_react4.default.createElement(
+            TextureCanvas,
+            {
+              tex: tab.tex,
+              useCalculatedSize: true,
+              cornerA: tab.coords.a,
+              cornerB: tab.coords.b,
+              dark: tab.dark,
+              light: tab.light
+            }
+          )
+        )
+      );
+    }
+  }
+  function TexelInspectorWindow(props) {
+    const { win, tab } = props;
+    const { device } = useGpudoc();
+    const texelCoords = [
+      clamp(Math.floor(win.samplePos[0] * tab.tex.width), 0, tab.tex.width - 1),
+      clamp(Math.floor(win.samplePos[1] * tab.tex.height), 0, tab.tex.height - 1),
+      clamp(win.layer, 0, tab.tex.depthOrArrayLayers - 1)
+    ];
+    const roundedSamplePos = [
+      texelCoords[0] / tab.tex.width,
+      texelCoords[1] / tab.tex.height
+    ];
+    const texelMarkerX = rescale(
+      roundedSamplePos[0],
+      tab.coords.a[0],
+      tab.coords.b[0],
+      0,
+      100
+    );
+    const texelMarkerY = rescale(
+      roundedSamplePos[1],
+      tab.coords.a[1],
+      tab.coords.b[1],
+      0,
+      100
+    );
+    const area = sub2(tab.coords.b, tab.coords.a);
+    const lineseg = {
+      b: [
+        roundedSamplePos[0] + 0.5 / tab.tex.width,
+        roundedSamplePos[1] + 0.5 / tab.tex.height
+      ],
+      a: win.pos
+    };
+    const segEndpointA = sampleLineSegment(
+      lineseg,
+      lineIntersectRectClosest(lineseg, {
+        a: roundedSamplePos,
+        b: [
+          roundedSamplePos[0] + 1 / tab.tex.width,
+          roundedSamplePos[1] + 1 / tab.tex.height
+        ]
+      })
+    );
+    const [pixel, setPixel] = (0, import_react4.useState)([0, 0, 0, 0]);
+    (0, import_react4.useEffect)(() => {
+      (async () => {
+        const tempBuf = device.createBuffer({
+          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+          size: 16
+        });
+        const b = await readPixelsToCpuBuffer({
+          tex: tab.tex,
+          aspect: "all",
+          buf: tempBuf,
+          subregion: [texelCoords, add3(texelCoords, [1, 1, 1])],
+          device
+        });
+        const ui8a = new Uint8Array(b.cpuBuffer);
+        setPixel([ui8a[0], ui8a[1], ui8a[2], ui8a[3]]);
+      })();
+    }, [win.samplePos]);
+    return /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement(
+      "div",
+      {
+        className: "texel-marker",
+        style: {
+          position: "absolute",
+          left: `${texelMarkerX}%`,
+          top: `${texelMarkerY}%`,
+          width: `${100 / area[0] / tab.tex.width}%`,
+          height: `${100 / area[1] / tab.tex.height}%`
+        }
+      }
+    ), /* @__PURE__ */ import_react4.default.createElement(
+      LineSeg,
+      {
+        transform: props.tab.coords,
+        endpoints: {
+          a: segEndpointA,
+          b: win.pos
+        }
+      }
+    ), /* @__PURE__ */ import_react4.default.createElement(
+      DraggableWindow,
+      {
+        transform: props.tab.coords,
+        pos: win.samplePos,
+        setPos: (p) => props.setWin(xray(win).samplePos.$(p).$v)
+      },
+      /* @__PURE__ */ import_react4.default.createElement(Dragger, null, /* @__PURE__ */ import_react4.default.createElement("div", { className: "texel-dragger" }))
+    ), /* @__PURE__ */ import_react4.default.createElement(
+      DraggableWindow,
+      {
+        transform: props.tab.coords,
+        pos: win.pos,
+        setPos: (p) => props.setWin(xray(win).pos.$(p).$v)
+      },
+      /* @__PURE__ */ import_react4.default.createElement("div", { className: "texel-inspector-window" }, /* @__PURE__ */ import_react4.default.createElement(Dragger, null, "Texel (", texelCoords[0], ", ", texelCoords[1], ")"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "texel-components" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "red" }, pixel[0]), /* @__PURE__ */ import_react4.default.createElement("div", { className: "green" }, pixel[1]), /* @__PURE__ */ import_react4.default.createElement("div", { className: "blue" }, pixel[2]), /* @__PURE__ */ import_react4.default.createElement("div", { className: "alpha" }, pixel[3])))
+    ));
+  }
+  function GpudocTabBar() {
+    const { tabs, currentTabIndex, setCurrentTabIndex, setTabs } = useGpudoc();
+    return /* @__PURE__ */ import_react4.default.createElement("ul", { className: "tab-bar" }, tabs.map((t, i) => /* @__PURE__ */ import_react4.default.createElement(
+      "li",
+      {
+        onClick: () => {
+          setCurrentTabIndex(i);
+        },
+        key: t.id,
+        className: currentTabIndex === i ? "selected" : ""
+      },
+      /* @__PURE__ */ import_react4.default.createElement(GpudocTabThumbDisplay, { tab: t })
+    )));
+  }
+  function GpudocTabThumbDisplay(props) {
+    const tab = props.tab;
+    if (tab.type === "search-texture") {
+      return /* @__PURE__ */ import_react4.default.createElement("div", null, "Search Texture");
+    } else {
+      return /* @__PURE__ */ import_react4.default.createElement("div", null, "Texture: ", tab.tex.label);
+    }
+  }
+  function TextureThumbnail(props) {
+    const { tabs, setTabs, setCurrentTabIndex } = useGpudoc();
+    return /* @__PURE__ */ import_react4.default.createElement(
+      "li",
+      {
+        onClick: () => {
+          setTabs([
+            ...tabs,
+            {
+              type: "inspect-texture",
+              tex: props.tex,
+              id: v4_default(),
+              coords: { a: [0, 0], b: [1, 1] },
+              dark: [0, 0, 0, 0],
+              light: [1, 1, 1, 1],
+              texelInspectorWindows: [
+                {
+                  samplePos: [0.5, 0.5],
+                  layer: 0,
+                  pos: [0.5, 0.5],
+                  id: v4_default()
+                }
+              ]
+            }
+          ]);
+          setCurrentTabIndex(tabs.length);
+        }
+      },
+      /* @__PURE__ */ import_react4.default.createElement("div", { className: "name" }, props.tex.label),
+      /* @__PURE__ */ import_react4.default.createElement("div", { className: "canvas" }, /* @__PURE__ */ import_react4.default.createElement(TextureCanvas, { tex: props.tex }))
+    );
+  }
+  function useGpudoc() {
+    return (0, import_react4.useContext)(GPUDocContext);
+  }
+  function setCanvasDims(canvas, dims) {
+    const [width, height] = [Math.round(dims[0]), Math.round(dims[1])];
+    if (width !== canvas.width) canvas.width = width;
+    if (height !== canvas.height) canvas.height = height;
+  }
+  function TextureCanvas(props) {
+    const canvasRef = (0, import_react4.useRef)(null);
+    const { displayer, device } = useGpudoc();
+    (0, import_react4.useEffect)(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+      const ctx = canvas.getContext("webgpu");
+      ctx.configure({
+        device,
+        format: canvasFormat
+      });
+    }, [device]);
+    function rerender() {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+      const ctx = canvas.getContext("webgpu");
+      const encoder = device.createCommandEncoder();
+      const textureWgslType = TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[props.tex.format];
+      const wgslBaseType = WGSL_TYPE_DATATYPES[textureWgslType];
+      const samplerType = WGSL_BASE_TYPE_TO_SAMPLER_TYPE[wgslBaseType];
+      displayer.displayTexture2d(
+        {
+          tex: props.tex.createView(),
+          samplerType,
+          cornerA: props.cornerA ?? [0, 0],
+          cornerB: props.cornerB ?? [1, 1],
+          blackEquiv: props.dark ?? [0, 0, 0, 0],
+          whiteEquiv: props.light ?? [1, 1, 1, 1]
+        },
+        {
+          tex: ctx.getCurrentTexture().createView(),
+          format: canvasFormat
+        },
+        encoder
+      );
+      device.queue.submit([encoder.finish()]);
+    }
+    (0, import_react4.useEffect)(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const tex = props.tex;
+      const dims = [tex.width, tex.height, tex.depthOrArrayLayers];
+      if (!props.useCalculatedSize) {
+        if (props.canvasDims) {
+          setCanvasDims(canvas, props.canvasDims);
+        } else {
+          setCanvasDims(canvas, dims);
+        }
+      }
+      rerender();
+    }, [
+      props.tex,
+      device,
+      props.canvasDims,
+      props.cornerA,
+      props.cornerB,
+      props.dark,
+      props.light
+    ]);
+    (0, import_react4.useEffect)(() => {
+      const canvas = canvasRef.current;
+      if (!canvas || !props.useCalculatedSize) return;
+      const observer = new ResizeObserver(() => {
+        const rect = canvas.getBoundingClientRect();
+        setCanvasDims(canvas, [
+          rect.width * window.devicePixelRatio,
+          rect.height * window.devicePixelRatio
+        ]);
+        rerender();
+      });
+      observer.observe(canvas);
+      return () => observer.disconnect();
+    }, [props.useCalculatedSize]);
+    return /* @__PURE__ */ import_react4.default.createElement("canvas", { ref: canvasRef });
+  }
+
+  // src/webgpu/gpudoc/gpudoc.ts
+  function hookGPUDevice(device, passthrough = false) {
+    if (passthrough) return device;
+    const textures = /* @__PURE__ */ new Set();
+    const buffers = /* @__PURE__ */ new Set();
+    let texId = 0;
+    let bufId = 0;
+    const oldCreateTexture = device.createTexture.bind(device);
+    device.createTexture = (descriptor) => {
+      const desc2 = { ...descriptor };
+      desc2.usage |= GPUTextureUsage.COPY_SRC;
+      const tex = oldCreateTexture(desc2);
+      textures.add({ tex, id: texId++ });
+      return tex;
+    };
+    device.getDebugView = () => {
+      return gpuDebugWindow({ textures, buffers, device });
+    };
+    return device;
+  }
 
   // src/ui/use-latest.tsx
   var import_react5 = __toESM(require_react());
@@ -22471,65 +24839,162 @@ fn perlinNoise3(P: vec3f) -> f32 {
   var import_react9 = __toESM(require_react());
   var import_client2 = __toESM(require_client());
 
-  // demos-src/audio-stream.demo.ts
-  var initWorklet = initBufferStreamerWorklet("audio-stream.demo.js");
-  if (!isWorklet()) {
-    (async () => {
-      const a = new AudioBuilder(["left", "right"], 44100);
-      const m = new AudioBuilder(["center"], 44100);
-      const adsr = m.adsrgen(1, 0.2, 0.2, 0);
-      const adsrn = (a2, d, s, r) => (len) => adsr(a2 * len, d * len, s * len, r * len);
-      const KERNSIZE = 100;
-      const clap = (freq, duration) => a.noise().convolve(a.lpf(freq * 2, 32)).gain(m.constant(400 / Math.log(freq) ** 3)).clip(0, 0.05).gain(adsr(0, 5e-3, 0.025, 0.05));
-      const melody = (freq, duration) => {
-        console.log("duration", duration);
-        return a.sine(freq).gain(m.constant(0.5)).add(a.square(freq * 0.5).gain(m.constant(0.2))).clip(0, duration).gain(adsrn(0.1, 0.3, 0.6, 1)(duration));
-      };
-      const track2 = parseNotes(`
-      4:(
-      c4 3 4  
-      c4 3 4  
-      c4 3 4  
-      c4 3 4  
-      c4 3 4  
-      c4
-      )/c2
+  // demos-src/webgpu/mandelbrot-partial-pipelines.demo.ts
+  (async () => {
+    function fail(msg) {
+      window.alert(msg);
+      throw new Error(msg);
+    }
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) {
+      fail("No GPU adapter!");
+      return;
+    }
+    const device = hookGPUDevice(await adapter.requestDevice());
+    device.addEventListener(
+      "uncapturederror",
+      (event) => console.error(event.error)
+    );
+    if (!device) {
+      fail("No GPU device!");
+    }
+    const canvas = document.createElement("canvas");
+    document.body.appendChild(canvas);
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const ctx = canvas.getContext("webgpu");
+    ctx.configure({
+      device,
+      format: navigator.gpu.getPreferredCanvasFormat()
+    });
+    const wdevice = wrapDevice(device);
+    const uniformStruct = struct("Params", {
+      corner1: "vec2f",
+      corner2: "vec2f",
+      iters: "u32"
+    });
+    const uniformBufferFormat = wdevice.uniformBuffer("params", uniformStruct);
+    const bindGroupFormat = wdevice.bindGroup("bg", uniformBufferFormat);
+    console.log(createWgslSerializers(uniformStruct).code);
+    const colorTexture = wdevice.texture("color", {
+      format: "rgba8unorm"
+    });
+    const quadBufferFormat = wdevice.vertexBuffer("vertex", {
+      types: [
+        {
+          name: "position",
+          format: "float32x2",
+          offset: 0
+        }
+      ],
+      stride: 8,
+      stepMode: "vertex"
+    });
+    const bufRaw = device.createBuffer({
+      size: 4 * 2 * 6,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX
+    });
+    device.queue.writeBuffer(
+      bufRaw,
+      0,
+      new Float32Array([1, 1, 1, -1, -1, -1, 1, 1, -1, -1, -1, 1])
+    );
+    const quadBuffer = quadBufferFormat.reinterpret(bufRaw);
+    const pipeline = await wdevice.pipeline({
+      inputs: [quadBufferFormat],
+      bindGroups: [bindGroupFormat],
+      outputs: { color: colorTexture },
+      globals: `${useWgslSnippets("perlinNoise unitQuadUnsigned unitQuadSigned")}`,
+      vertex: `
+  var output: FragInput;
+  output.position = vec4(vertex.position, 0.5, 1.0);
+  output.uv = output.position.xy * 0.5 + 0.5;
+  return output;
+    `,
+      fragment: {
+        function: `
+  let c = 
+    mix(params.corner1, params.corner2, input.uv);
 
-      4:(
-      b4 4 4
-      b4 4 4
-      b4 4 4
-      b4 4 4
-      b4 4 4
-      b4
-      )/b2
+  var z = vec2f(0.0);
 
-      4:(
-      bb4 5 4
-      bb4 5 4
-      bb4 5 4
-      bb4 5 4
-      bb4 5 4
-      bb4
-      )/bb2
-      `);
-      console.log(track2);
-      const trackSpec = createTrackSpec(track2, 120, melody);
-      const w = a.createTrack(trackSpec).preload();
-      for (const c of await displayAudio(w.clip(0, 4), 1, [4e3, 100], 1)) {
-        document.body.appendChild(c);
-      }
-      document.onclick = async () => {
-        const ctx = new AudioContext();
-        const createWorklet = await (await initWorklet)(ctx);
-        const bufferStreamer = createWorklet();
-        streamAudioToWorklet(w, bufferStreamer);
-        const osc = new OscillatorNode(ctx);
-        osc.connect(bufferStreamer.worklet).connect(ctx.destination);
-        osc.start();
-      };
-    })();
+  var escaped = false;
+
+  for (var i = 0u; i < params.iters; i++) {
+    z = vec2f(
+      z.x * z.x - z.y * z.y,
+      2.0 * z.x * z.y
+    ) + c; 
+
+    if (length(z) > 2.0) {
+      escaped = true;
+      break;
+    }
   }
+
+  if (escaped) {
+    return vec4f(1.0, 0.0, 1.0, 1.0); 
+  } else {
+    return vec4f(vec2f(perlinNoise2(input.uv * 10.0)), 0.0, 1.0); 
+  }
+      `,
+        struct: `
+@builtin(position) position : vec4f,
+@location(0) uv : vec2f,      
+      `
+      }
+    });
+    const uniformBuffer = uniformBufferFormat.instantiate();
+    uniformBufferFormat.fill(uniformBuffer, 0, {
+      corner1: [-2, -2],
+      corner2: [2, 2],
+      iters: 32
+    });
+    const bindGroup = bindGroupFormat.instantiate({
+      params: uniformBuffer
+    });
+    const tex = colorTexture.instantiate(
+      [1024, 1024],
+      GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    );
+    const encoder = device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          clearValue: [1, 0, 0, 1],
+          loadOp: "clear",
+          storeOp: "store",
+          view: tex.createView()
+        }
+      ]
+    });
+    const bind = pipelineRenderpass(pipeline, pass);
+    pass.setPipeline(pipeline);
+    bind({
+      bg: bindGroup,
+      vertex: quadBuffer
+    });
+    pass.draw(6);
+    pass.end();
+    const displayer = textureDisplayer(device);
+    displayer.displayTexture2d(
+      {
+        tex: tex.createView(),
+        samplerType: "float",
+        cornerA: [0, 0],
+        cornerB: [1, 1],
+        blackEquiv: [0, 0, 0, 0],
+        whiteEquiv: [1, 1, 1, 1]
+      },
+      {
+        tex: ctx.getCurrentTexture().createView(),
+        format: navigator.gpu.getPreferredCanvasFormat()
+      },
+      encoder
+    );
+    device.queue.submit([encoder.finish()]);
+    document.body.appendChild(device.getDebugView());
+  })();
 })();
 /*! Bundled license information:
 

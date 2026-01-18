@@ -22,6 +22,14 @@ export function arrayToObjKeys<K extends keyof any, V>(
   return map2obj(arrayToMapKeys(arr, f));
 }
 
+export function arrayToObjEntries<E, K extends keyof any, V>(
+  arr: E[],
+  f: (e: E, i: number, array: E[]) => [K, V]
+): Record<K, V> {
+  // @ts-expect-error
+  return Object.fromEntries(arr.map(f));
+}
+
 export function mapObjKeys<K extends keyof any, V, K2 extends keyof any>(
   obj: Record<K, V>,
   callback: (k: K, v: V) => K2

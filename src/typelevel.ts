@@ -12,6 +12,27 @@ export type FromEntries<Arr> = Arr extends [
     ? {}
     : TypeLevelError<["Expected k-v pair array; received", Arr]>;
 
+export type ToKvPairs<Arr, KeyElem extends keyof any> = Arr extends [
+  { [K in KeyElem]: infer V extends keyof any },
+  ...infer Rest extends any[],
+]
+  ? ToKvPairs<Rest, KeyElem> extends any[]
+    ? [[V, Arr[0]], ...ToKvPairs<Rest, KeyElem>]
+    : ToKvPairs<Rest, KeyElem>
+  : Arr extends []
+    ? []
+    : TypeLevelError<
+        ["Expected array with elements with key", KeyElem, "; received", Arr]
+      >;
+
+type KvSwapInner<Kv extends Record<any, [any, any]>> = {
+  [K in keyof Kv as Kv[K][0]]: Kv[K][1];
+};
+
+export type KvSwap<Kv extends Record<any, keyof any>> = KvSwapInner<{
+  [K in keyof Kv]: [Kv[K], K];
+}>;
+
 export type Eq<A, B> = [A, B] extends [B, A] ? true : false;
 
 export type All<Bools extends boolean[]> = Bools extends [

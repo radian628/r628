@@ -33,13 +33,13 @@ var require_fft = __commonJS({
       if (this.size <= 1 || (this.size & this.size - 1) !== 0)
         throw new Error("FFT size must be a power of two and bigger than 1");
       this._csize = size << 1;
-      var table2 = new Array(this.size * 2);
-      for (var i = 0; i < table2.length; i += 2) {
+      var table = new Array(this.size * 2);
+      for (var i = 0; i < table.length; i += 2) {
         const angle = Math.PI * i / this.size;
-        table2[i] = Math.cos(angle);
-        table2[i + 1] = -Math.sin(angle);
+        table[i] = Math.cos(angle);
+        table[i + 1] = -Math.sin(angle);
       }
-      this.table = table2;
+      this.table = table;
       var power = 0;
       for (var t = 1; this.size > t; t <<= 1)
         power++;
@@ -138,7 +138,7 @@ var require_fft = __commonJS({
         }
       }
       var inv = this._inv ? -1 : 1;
-      var table2 = this.table;
+      var table = this.table;
       for (step >>= 2; step >= 2; step >>= 2) {
         len = size / step << 1;
         var quarterLen = len >>> 2;
@@ -159,16 +159,16 @@ var require_fft = __commonJS({
             const Di = out[D + 1];
             const MAr = Ar;
             const MAi = Ai;
-            const tableBr = table2[k];
-            const tableBi = inv * table2[k + 1];
+            const tableBr = table[k];
+            const tableBi = inv * table[k + 1];
             const MBr = Br * tableBr - Bi * tableBi;
             const MBi = Br * tableBi + Bi * tableBr;
-            const tableCr = table2[2 * k];
-            const tableCi = inv * table2[2 * k + 1];
+            const tableCr = table[2 * k];
+            const tableCi = inv * table[2 * k + 1];
             const MCr = Cr * tableCr - Ci * tableCi;
             const MCi = Cr * tableCi + Ci * tableCr;
-            const tableDr = table2[3 * k];
-            const tableDi = inv * table2[3 * k + 1];
+            const tableDr = table[3 * k];
+            const tableDi = inv * table[3 * k + 1];
             const MDr = Dr * tableDr - Di * tableDi;
             const MDi = Dr * tableDi + Di * tableDr;
             const T0r = MAr + MCr;
@@ -275,7 +275,7 @@ var require_fft = __commonJS({
         }
       }
       var inv = this._inv ? -1 : 1;
-      var table2 = this.table;
+      var table = this.table;
       for (step >>= 2; step >= 2; step >>= 2) {
         len = size / step << 1;
         var halfLen = len >>> 1;
@@ -297,16 +297,16 @@ var require_fft = __commonJS({
             var Di = out[D + 1];
             var MAr = Ar;
             var MAi = Ai;
-            var tableBr = table2[k];
-            var tableBi = inv * table2[k + 1];
+            var tableBr = table[k];
+            var tableBi = inv * table[k + 1];
             var MBr = Br * tableBr - Bi * tableBi;
             var MBi = Br * tableBi + Bi * tableBr;
-            var tableCr = table2[2 * k];
-            var tableCi = inv * table2[2 * k + 1];
+            var tableCr = table[2 * k];
+            var tableCi = inv * table[2 * k + 1];
             var MCr = Cr * tableCr - Ci * tableCi;
             var MCi = Cr * tableCi + Ci * tableCr;
-            var tableDr = table2[3 * k];
-            var tableDi = inv * table2[3 * k + 1];
+            var tableDr = table[3 * k];
+            var tableDi = inv * table[3 * k + 1];
             var MDr = Dr * tableDr - Di * tableDi;
             var MDi = Dr * tableDi + Di * tableDr;
             var T0r = MAr + MCr;
@@ -551,10 +551,10 @@ var require_Lexer = __commonJS({
             return result;
           }
         };
-        LexerImpl2.prototype.parseNextAvailable = function(input, index2, rowBegin, columnBegin) {
+        LexerImpl2.prototype.parseNextAvailable = function(input, index, rowBegin, columnBegin) {
           var token;
           while (true) {
-            token = this.parseNext(input, token === void 0 ? index2 : token.pos.index + token.text.length, token === void 0 ? rowBegin : token.pos.rowEnd, token === void 0 ? columnBegin : token.pos.columnEnd);
+            token = this.parseNext(input, token === void 0 ? index : token.pos.index + token.text.length, token === void 0 ? rowBegin : token.pos.rowEnd, token === void 0 ? columnBegin : token.pos.columnEnd);
             if (token === void 0) {
               return void 0;
             } else if (token.keep) {
@@ -1266,8 +1266,8 @@ var require_Rule = __commonJS({
       function() {
         function RuleImpl2() {
         }
-        RuleImpl2.prototype.setPattern = function(parser2) {
-          this.parser = parser2;
+        RuleImpl2.prototype.setPattern = function(parser) {
+          this.parser = parser;
         };
         RuleImpl2.prototype.parse = function(token) {
           if (this.parser === void 0) {
@@ -1335,14 +1335,14 @@ var require_ParserModule = __commonJS({
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.makeParserModule = exports.lazy = void 0;
-    function lazy2(thunk) {
+    function lazy(thunk) {
       return {
         parse: function(token) {
           return thunk().parse(token);
         }
       };
     }
-    exports.lazy = lazy2;
+    exports.lazy = lazy;
     var defineReadOnly = function(target, propName, value) {
       return Object.defineProperty(target, propName, {
         configurable: true,
@@ -1354,7 +1354,7 @@ var require_ParserModule = __commonJS({
     function makeParserModule(definitions) {
       var parserModule = /* @__PURE__ */ Object.create(null);
       var _loop_1 = function(key2, parserThunk2) {
-        parserModule = defineReadOnly(parserModule, key2, lazy2(function() {
+        parserModule = defineReadOnly(parserModule, key2, lazy(function() {
           return parserThunk2(parserModule);
         }));
       };
@@ -1527,7 +1527,7 @@ var require_react_development = __commonJS({
               type = type._init;
               try {
                 return getComponentNameFromType(type(innerType));
-              } catch (x2) {
+              } catch (x) {
               }
           }
         return null;
@@ -1539,7 +1539,7 @@ var require_react_development = __commonJS({
         try {
           var name = getComponentNameFromType(type);
           return name ? "<" + name + ">" : "<...>";
-        } catch (x2) {
+        } catch (x) {
           return "<...>";
         }
       }
@@ -1642,8 +1642,8 @@ var require_react_development = __commonJS({
           return escaperLookup[match];
         });
       }
-      function getElementKey(element, index2) {
-        return "object" === typeof element && null !== element && null != element.key ? (checkKeyStringCoercion(element.key), escape("" + element.key)) : index2.toString(36);
+      function getElementKey(element, index) {
+        return "object" === typeof element && null !== element && null != element.key ? (checkKeyStringCoercion(element.key), escape("" + element.key)) : index.toString(36);
       }
       function noop$1() {
       }
@@ -1670,7 +1670,7 @@ var require_react_development = __commonJS({
         }
         throw thenable;
       }
-      function mapIntoArray(children, array2, escapedPrefix, nameSoFar, callback) {
+      function mapIntoArray(children, array, escapedPrefix, nameSoFar, callback) {
         var type = typeof children;
         if ("undefined" === type || "boolean" === type) children = null;
         var invokeCallback = false;
@@ -1691,7 +1691,7 @@ var require_react_development = __commonJS({
                 case REACT_LAZY_TYPE:
                   return invokeCallback = children._init, mapIntoArray(
                     invokeCallback(children._payload),
-                    array2,
+                    array,
                     escapedPrefix,
                     nameSoFar,
                     callback
@@ -1702,7 +1702,7 @@ var require_react_development = __commonJS({
           invokeCallback = children;
           callback = callback(invokeCallback);
           var childKey = "" === nameSoFar ? "." + getElementKey(invokeCallback, 0) : nameSoFar;
-          isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array2, escapedPrefix, "", function(c) {
+          isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array, escapedPrefix, "", function(c) {
             return c;
           })) : null != callback && (isValidElement(callback) && (null != callback.key && (invokeCallback && invokeCallback.key === callback.key || checkKeyStringCoercion(callback.key)), escapedPrefix = cloneAndReplaceKey(
             callback,
@@ -1710,7 +1710,7 @@ var require_react_development = __commonJS({
               userProvidedKeyEscapeRegex,
               "$&/"
             ) + "/") + childKey
-          ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array2.push(callback));
+          ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array.push(callback));
           return 1;
         }
         invokeCallback = 0;
@@ -1719,7 +1719,7 @@ var require_react_development = __commonJS({
           for (var i = 0; i < children.length; i++)
             nameSoFar = children[i], type = childKey + getElementKey(nameSoFar, i), invokeCallback += mapIntoArray(
               nameSoFar,
-              array2,
+              array,
               escapedPrefix,
               type,
               callback
@@ -1730,7 +1730,7 @@ var require_react_development = __commonJS({
           ), didWarnAboutMaps = true), children = i.call(children), i = 0; !(nameSoFar = children.next()).done; )
             nameSoFar = nameSoFar.value, type = childKey + getElementKey(nameSoFar, i++), invokeCallback += mapIntoArray(
               nameSoFar,
-              array2,
+              array,
               escapedPrefix,
               type,
               callback
@@ -1739,14 +1739,14 @@ var require_react_development = __commonJS({
           if ("function" === typeof children.then)
             return mapIntoArray(
               resolveThenable(children),
-              array2,
+              array,
               escapedPrefix,
               nameSoFar,
               callback
             );
-          array2 = String(children);
+          array = String(children);
           throw Error(
-            "Objects are not valid as a React child (found: " + ("[object Object]" === array2 ? "object with keys {" + Object.keys(children).join(", ") + "}" : array2) + "). If you meant to render a collection of children, use an array instead."
+            "Objects are not valid as a React child (found: " + ("[object Object]" === array ? "object with keys {" + Object.keys(children).join(", ") + "}" : array) + "). If you meant to render a collection of children, use an array instead."
           );
         }
         return invokeCallback;
@@ -2436,12 +2436,12 @@ var require_scheduler_development = __commonJS({
         }
       }
       function push(heap, node) {
-        var index2 = heap.length;
+        var index = heap.length;
         heap.push(node);
-        a: for (; 0 < index2; ) {
-          var parentIndex = index2 - 1 >>> 1, parent = heap[parentIndex];
+        a: for (; 0 < index; ) {
+          var parentIndex = index - 1 >>> 1, parent = heap[parentIndex];
           if (0 < compare(parent, node))
-            heap[parentIndex] = node, heap[index2] = parent, index2 = parentIndex;
+            heap[parentIndex] = node, heap[index] = parent, index = parentIndex;
           else break a;
         }
       }
@@ -2450,15 +2450,15 @@ var require_scheduler_development = __commonJS({
       }
       function pop(heap) {
         if (0 === heap.length) return null;
-        var first = heap[0], last2 = heap.pop();
-        if (last2 !== first) {
-          heap[0] = last2;
-          a: for (var index2 = 0, length = heap.length, halfLength = length >>> 1; index2 < halfLength; ) {
-            var leftIndex = 2 * (index2 + 1) - 1, left = heap[leftIndex], rightIndex = leftIndex + 1, right = heap[rightIndex];
-            if (0 > compare(left, last2))
-              rightIndex < length && 0 > compare(right, left) ? (heap[index2] = right, heap[rightIndex] = last2, index2 = rightIndex) : (heap[index2] = left, heap[leftIndex] = last2, index2 = leftIndex);
-            else if (rightIndex < length && 0 > compare(right, last2))
-              heap[index2] = right, heap[rightIndex] = last2, index2 = rightIndex;
+        var first = heap[0], last = heap.pop();
+        if (last !== first) {
+          heap[0] = last;
+          a: for (var index = 0, length = heap.length, halfLength = length >>> 1; index < halfLength; ) {
+            var leftIndex = 2 * (index + 1) - 1, left = heap[leftIndex], rightIndex = leftIndex + 1, right = heap[rightIndex];
+            if (0 > compare(left, last))
+              rightIndex < length && 0 > compare(right, left) ? (heap[index] = right, heap[rightIndex] = last, index = rightIndex) : (heap[index] = left, heap[leftIndex] = last, index = leftIndex);
+            else if (rightIndex < length && 0 > compare(right, last))
+              heap[index] = right, heap[rightIndex] = last, index = rightIndex;
             else break a;
           }
         }
@@ -2912,10 +2912,10 @@ var require_react_dom_client_development = __commonJS({
           fiber = fiber.next, id2--;
         return fiber;
       }
-      function copyWithSetImpl(obj, path, index2, value) {
-        if (index2 >= path.length) return value;
-        var key = path[index2], updated = isArrayImpl(obj) ? obj.slice() : assign({}, obj);
-        updated[key] = copyWithSetImpl(obj[key], path, index2 + 1, value);
+      function copyWithSetImpl(obj, path, index, value) {
+        if (index >= path.length) return value;
+        var key = path[index], updated = isArrayImpl(obj) ? obj.slice() : assign({}, obj);
+        updated[key] = copyWithSetImpl(obj[key], path, index + 1, value);
         return updated;
       }
       function copyWithRename(obj, oldPath, newPath) {
@@ -2932,21 +2932,21 @@ var require_react_dom_client_development = __commonJS({
           return copyWithRenameImpl(obj, oldPath, newPath, 0);
         }
       }
-      function copyWithRenameImpl(obj, oldPath, newPath, index2) {
-        var oldKey = oldPath[index2], updated = isArrayImpl(obj) ? obj.slice() : assign({}, obj);
-        index2 + 1 === oldPath.length ? (updated[newPath[index2]] = updated[oldKey], isArrayImpl(updated) ? updated.splice(oldKey, 1) : delete updated[oldKey]) : updated[oldKey] = copyWithRenameImpl(
+      function copyWithRenameImpl(obj, oldPath, newPath, index) {
+        var oldKey = oldPath[index], updated = isArrayImpl(obj) ? obj.slice() : assign({}, obj);
+        index + 1 === oldPath.length ? (updated[newPath[index]] = updated[oldKey], isArrayImpl(updated) ? updated.splice(oldKey, 1) : delete updated[oldKey]) : updated[oldKey] = copyWithRenameImpl(
           obj[oldKey],
           oldPath,
           newPath,
-          index2 + 1
+          index + 1
         );
         return updated;
       }
-      function copyWithDeleteImpl(obj, path, index2) {
-        var key = path[index2], updated = isArrayImpl(obj) ? obj.slice() : assign({}, obj);
-        if (index2 + 1 === path.length)
+      function copyWithDeleteImpl(obj, path, index) {
+        var key = path[index], updated = isArrayImpl(obj) ? obj.slice() : assign({}, obj);
+        if (index + 1 === path.length)
           return isArrayImpl(updated) ? updated.splice(key, 1) : delete updated[key], updated;
-        updated[key] = copyWithDeleteImpl(obj[key], path, index2 + 1);
+        updated[key] = copyWithDeleteImpl(obj[key], path, index + 1);
         return updated;
       }
       function shouldSuspendImpl() {
@@ -2970,11 +2970,11 @@ var require_react_dom_client_development = __commonJS({
       function noop$2() {
       }
       function setToSortedString(set) {
-        var array2 = [];
+        var array = [];
         set.forEach(function(value) {
-          array2.push(value);
+          array.push(value);
         });
-        return array2.sort().join(", ");
+        return array.sort().join(", ");
       }
       function createFiber(tag, pendingProps, key, mode) {
         return new FiberNode(tag, pendingProps, key, mode);
@@ -3157,7 +3157,7 @@ var require_react_dom_client_development = __commonJS({
               type = type._init;
               try {
                 return getComponentNameFromType(type(innerType));
-              } catch (x2) {
+              } catch (x) {
               }
           }
         return null;
@@ -3388,9 +3388,9 @@ var require_react_dom_client_development = __commonJS({
       function markStateUpdateScheduled(fiber, lane) {
         null !== injectedProfilingHooks && "function" === typeof injectedProfilingHooks.markStateUpdateScheduled && injectedProfilingHooks.markStateUpdateScheduled(fiber, lane);
       }
-      function clz32Fallback(x2) {
-        x2 >>>= 0;
-        return 0 === x2 ? 32 : 31 - (log(x2) / LN2 | 0) | 0;
+      function clz32Fallback(x) {
+        x >>>= 0;
+        return 0 === x ? 32 : 31 - (log(x) / LN2 | 0) | 0;
       }
       function getLabelForLane(lane) {
         if (lane & 1) return "SyncHydrationLane";
@@ -3551,13 +3551,13 @@ var require_react_dom_client_development = __commonJS({
         root2.shellSuspendCounter = 0;
         var entanglements = root2.entanglements, expirationTimes = root2.expirationTimes, hiddenUpdates = root2.hiddenUpdates;
         for (remainingLanes = previouslyPendingLanes & ~remainingLanes; 0 < remainingLanes; ) {
-          var index2 = 31 - clz32(remainingLanes), lane = 1 << index2;
-          entanglements[index2] = 0;
-          expirationTimes[index2] = -1;
-          var hiddenUpdatesForLane = hiddenUpdates[index2];
+          var index = 31 - clz32(remainingLanes), lane = 1 << index;
+          entanglements[index] = 0;
+          expirationTimes[index] = -1;
+          var hiddenUpdatesForLane = hiddenUpdates[index];
           if (null !== hiddenUpdatesForLane)
-            for (hiddenUpdates[index2] = null, index2 = 0; index2 < hiddenUpdatesForLane.length; index2++) {
-              var update = hiddenUpdatesForLane[index2];
+            for (hiddenUpdates[index] = null, index = 0; index < hiddenUpdatesForLane.length; index++) {
+              var update = hiddenUpdatesForLane[index];
               null !== update && (update.lane &= -536870913);
             }
           remainingLanes &= ~lane;
@@ -3575,8 +3575,8 @@ var require_react_dom_client_development = __commonJS({
       function markRootEntangled(root2, entangledLanes) {
         var rootEntangledLanes = root2.entangledLanes |= entangledLanes;
         for (root2 = root2.entanglements; rootEntangledLanes; ) {
-          var index2 = 31 - clz32(rootEntangledLanes), lane = 1 << index2;
-          lane & entangledLanes | root2[index2] & entangledLanes && (root2[index2] |= entangledLanes);
+          var index = 31 - clz32(rootEntangledLanes), lane = 1 << index;
+          lane & entangledLanes | root2[index] & entangledLanes && (root2[index] |= entangledLanes);
           rootEntangledLanes &= ~lane;
         }
       }
@@ -3622,21 +3622,21 @@ var require_react_dom_client_development = __commonJS({
       function addFiberToLanesMap(root2, fiber, lanes) {
         if (isDevToolsPresent)
           for (root2 = root2.pendingUpdatersLaneMap; 0 < lanes; ) {
-            var index2 = 31 - clz32(lanes), lane = 1 << index2;
-            root2[index2].add(fiber);
+            var index = 31 - clz32(lanes), lane = 1 << index;
+            root2[index].add(fiber);
             lanes &= ~lane;
           }
       }
       function movePendingFibersToMemoized(root2, lanes) {
         if (isDevToolsPresent)
           for (var pendingUpdatersLaneMap = root2.pendingUpdatersLaneMap, memoizedUpdaters = root2.memoizedUpdaters; 0 < lanes; ) {
-            var index2 = 31 - clz32(lanes);
-            root2 = 1 << index2;
-            index2 = pendingUpdatersLaneMap[index2];
-            0 < index2.size && (index2.forEach(function(fiber) {
+            var index = 31 - clz32(lanes);
+            root2 = 1 << index;
+            index = pendingUpdatersLaneMap[index];
+            0 < index.size && (index.forEach(function(fiber) {
               var alternate = fiber.alternate;
               null !== alternate && memoizedUpdaters.has(alternate) || memoizedUpdaters.add(fiber);
-            }), index2.clear());
+            }), index.clear());
             lanes &= ~root2;
           }
       }
@@ -3865,10 +3865,10 @@ var require_react_dom_client_development = __commonJS({
         if (void 0 === prefix)
           try {
             throw Error();
-          } catch (x2) {
-            var match = x2.stack.trim().match(/\n( *(at )?)/);
+          } catch (x) {
+            var match = x.stack.trim().match(/\n( *(at )?)/);
             prefix = match && match[1] || "";
-            suffix = -1 < x2.stack.indexOf("\n    at") ? " (<anonymous>)" : -1 < x2.stack.indexOf("@") ? "@unknown:0:0" : "";
+            suffix = -1 < x.stack.indexOf("\n    at") ? " (<anonymous>)" : -1 < x.stack.indexOf("@") ? "@unknown:0:0" : "";
           }
         return "\n" + prefix + name + suffix;
       }
@@ -3899,8 +3899,8 @@ var require_react_dom_client_development = __commonJS({
                   if ("object" === typeof Reflect && Reflect.construct) {
                     try {
                       Reflect.construct(Fake, []);
-                    } catch (x2) {
-                      var control = x2;
+                    } catch (x) {
+                      var control = x;
                     }
                     Reflect.construct(fn, [], Fake);
                   } else {
@@ -4039,8 +4039,8 @@ var require_react_dom_client_development = __commonJS({
             workInProgress2 = workInProgress2.return;
           } while (workInProgress2);
           return info;
-        } catch (x2) {
-          return "\nError generating stack: " + x2.message + "\n" + x2.stack;
+        } catch (x) {
+          return "\nError generating stack: " + x.message + "\n" + x.stack;
         }
       }
       function describeFunctionComponentFrameWithoutLineNumber(fn) {
@@ -4096,8 +4096,8 @@ var require_react_dom_client_development = __commonJS({
               (workInProgress2 = workInProgress2.owner) && ownerStack && (info += "\n" + formatOwnerStack(ownerStack));
             } else break;
           var JSCompiler_inline_result = info;
-        } catch (x2) {
-          JSCompiler_inline_result = "\nError generating stack: " + x2.message + "\n" + x2.stack;
+        } catch (x) {
+          JSCompiler_inline_result = "\nError generating stack: " + x.message + "\n" + x.stack;
         }
         return JSCompiler_inline_result;
       }
@@ -4146,11 +4146,11 @@ var require_react_dom_client_development = __commonJS({
         checkFormFieldValueStringCoercion(node[valueField]);
         var currentValue = "" + node[valueField];
         if (!node.hasOwnProperty(valueField) && "undefined" !== typeof descriptor && "function" === typeof descriptor.get && "function" === typeof descriptor.set) {
-          var get2 = descriptor.get, set = descriptor.set;
+          var get = descriptor.get, set = descriptor.set;
           Object.defineProperty(node, valueField, {
             configurable: true,
             get: function() {
-              return get2.call(this);
+              return get.call(this);
             },
             set: function(value) {
               checkFormFieldValueStringCoercion(value);
@@ -4600,7 +4600,7 @@ var require_react_dom_client_development = __commonJS({
       function describeDiff(rootNode) {
         try {
           return "\n\n" + describeNode(rootNode, 0);
-        } catch (x2) {
+        } catch (x) {
           return "";
         }
       }
@@ -5458,8 +5458,8 @@ var require_react_dom_client_development = __commonJS({
         if ("input" === domEventName || "change" === domEventName)
           return getInstIfValueChanged(targetInst);
       }
-      function is(x2, y2) {
-        return x2 === y2 && (0 !== x2 || 1 / x2 === 1 / y2) || x2 !== x2 && y2 !== y2;
+      function is(x, y) {
+        return x === y && (0 !== x || 1 / x === 1 / y) || x !== x && y !== y;
       }
       function shallowEqual(objA, objB) {
         if (objectIs(objA, objB)) return true;
@@ -5894,7 +5894,7 @@ var require_react_dom_client_development = __commonJS({
         treeForkProvider = workInProgress2;
         treeForkCount = totalChildren;
       }
-      function pushTreeId(workInProgress2, totalChildren, index2) {
+      function pushTreeId(workInProgress2, totalChildren, index) {
         warnIfNotHydrating();
         idStack[idStackIndex++] = treeContextId;
         idStack[idStackIndex++] = treeContextOverflow;
@@ -5904,17 +5904,17 @@ var require_react_dom_client_development = __commonJS({
         workInProgress2 = treeContextOverflow;
         var baseLength = 32 - clz32(baseIdWithLeadingBit) - 1;
         baseIdWithLeadingBit &= ~(1 << baseLength);
-        index2 += 1;
+        index += 1;
         var length = 32 - clz32(totalChildren) + baseLength;
         if (30 < length) {
           var numberOfOverflowBits = baseLength - baseLength % 5;
           length = (baseIdWithLeadingBit & (1 << numberOfOverflowBits) - 1).toString(32);
           baseIdWithLeadingBit >>= numberOfOverflowBits;
           baseLength -= numberOfOverflowBits;
-          treeContextId = 1 << 32 - clz32(totalChildren) + baseLength | index2 << baseLength | baseIdWithLeadingBit;
+          treeContextId = 1 << 32 - clz32(totalChildren) + baseLength | index << baseLength | baseIdWithLeadingBit;
           treeContextOverflow = length + workInProgress2;
         } else
-          treeContextId = 1 << length | index2 << baseLength | baseIdWithLeadingBit, treeContextOverflow = workInProgress2;
+          treeContextId = 1 << length | index << baseLength | baseIdWithLeadingBit, treeContextOverflow = workInProgress2;
       }
       function pushMaterializedTreeId(workInProgress2) {
         warnIfNotHydrating();
@@ -6436,13 +6436,13 @@ var require_react_dom_client_development = __commonJS({
       }
       function noop$3() {
       }
-      function trackUsedThenable(thenableState2, thenable, index2) {
+      function trackUsedThenable(thenableState2, thenable, index) {
         null !== ReactSharedInternals.actQueue && (ReactSharedInternals.didUsePromise = true);
         var trackedThenables = thenableState2.thenables;
-        index2 = trackedThenables[index2];
-        void 0 === index2 ? trackedThenables.push(thenable) : index2 !== thenable && (thenableState2.didWarnAboutUncachedPromise || (thenableState2.didWarnAboutUncachedPromise = true, console.error(
+        index = trackedThenables[index];
+        void 0 === index ? trackedThenables.push(thenable) : index !== thenable && (thenableState2.didWarnAboutUncachedPromise || (thenableState2.didWarnAboutUncachedPromise = true, console.error(
           "A component was suspended by an uncached promise. Creating promises inside a Client Component or hook is not yet supported, except via a Suspense-compatible library or framework."
-        )), thenable.then(noop$3, noop$3), thenable = index2);
+        )), thenable.then(noop$3, noop$3), thenable = index);
         switch (thenable.status) {
           case "fulfilled":
             return thenable.value;
@@ -6759,17 +6759,17 @@ var require_react_dom_client_development = __commonJS({
         if (null !== hookTypesDev && (hookTypesUpdateIndexDev++, hookTypesDev[hookTypesUpdateIndexDev] !== hookName)) {
           var componentName2 = getComponentNameFromFiber(currentlyRenderingFiber);
           if (!didWarnAboutMismatchedHooksForComponent.has(componentName2) && (didWarnAboutMismatchedHooksForComponent.add(componentName2), null !== hookTypesDev)) {
-            for (var table2 = "", i = 0; i <= hookTypesUpdateIndexDev; i++) {
+            for (var table = "", i = 0; i <= hookTypesUpdateIndexDev; i++) {
               var oldHookName = hookTypesDev[i], newHookName = i === hookTypesUpdateIndexDev ? hookName : oldHookName;
               for (oldHookName = i + 1 + ". " + oldHookName; 30 > oldHookName.length; )
                 oldHookName += " ";
               oldHookName += newHookName + "\n";
-              table2 += oldHookName;
+              table += oldHookName;
             }
             console.error(
               "React has detected a change in the order of Hooks called by %s. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://react.dev/link/rules-of-hooks\n\n   Previous render            Next render\n   ------------------------------------------------------\n%s   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
               componentName2,
-              table2
+              table
             );
           }
         }
@@ -6982,12 +6982,12 @@ var require_react_dom_client_development = __commonJS({
         return { lastEffect: null, events: null, stores: null, memoCache: null };
       }
       function useThenable(thenable) {
-        var index2 = thenableIndexCounter$1;
+        var index = thenableIndexCounter$1;
         thenableIndexCounter$1 += 1;
         null === thenableState$1 && (thenableState$1 = createThenableState());
-        thenable = trackUsedThenable(thenableState$1, thenable, index2);
-        index2 = currentlyRenderingFiber;
-        null === (null === workInProgressHook ? index2.memoizedState : workInProgressHook.next) && (index2 = index2.alternate, ReactSharedInternals.H = null !== index2 && null !== index2.memoizedState ? HooksDispatcherOnUpdateInDEV : HooksDispatcherOnMountInDEV);
+        thenable = trackUsedThenable(thenableState$1, thenable, index);
+        index = currentlyRenderingFiber;
+        null === (null === workInProgressHook ? index.memoizedState : workInProgressHook.next) && (index = index.alternate, ReactSharedInternals.H = null !== index && null !== index.memoizedState ? HooksDispatcherOnUpdateInDEV : HooksDispatcherOnMountInDEV);
         return thenable;
       }
       function use(usable) {
@@ -7003,8 +7003,8 @@ var require_react_dom_client_development = __commonJS({
         if (null == memoCache) {
           var current2 = currentlyRenderingFiber.alternate;
           null !== current2 && (current2 = current2.updateQueue, null !== current2 && (current2 = current2.memoCache, null != current2 && (memoCache = {
-            data: current2.data.map(function(array2) {
-              return array2.slice();
+            data: current2.data.map(function(array) {
+              return array.slice();
             }),
             index: 0
           })));
@@ -7414,13 +7414,13 @@ var require_react_dom_client_development = __commonJS({
         null !== actionNode && (nextState = actionNode.next, nextState === actionNode ? actionQueue.pending = null : (nextState = nextState.next, actionNode.next = nextState, runActionStateAction(actionQueue, nextState)));
       }
       function onActionError(actionQueue, actionNode, error) {
-        var last2 = actionQueue.pending;
+        var last = actionQueue.pending;
         actionQueue.pending = null;
-        if (null !== last2) {
-          last2 = last2.next;
+        if (null !== last) {
+          last = last.next;
           do
             actionNode.status = "rejected", actionNode.reason = error, notifyActionListeners(actionNode), actionNode = actionNode.next;
-          while (actionNode !== last2);
+          while (actionNode !== last);
         }
         actionQueue.action = null;
       }
@@ -7528,9 +7528,9 @@ var require_react_dom_client_development = __commonJS({
         if ("object" === typeof currentStateHook && null !== currentStateHook && "function" === typeof currentStateHook.then)
           try {
             var state = useThenable(currentStateHook);
-          } catch (x2) {
-            if (x2 === SuspenseException) throw SuspenseActionException;
-            throw x2;
+          } catch (x) {
+            if (x === SuspenseException) throw SuspenseActionException;
+            throw x;
           }
         else state = currentStateHook;
         currentStateHook = updateWorkInProgressHook();
@@ -8045,10 +8045,10 @@ var require_react_dom_client_development = __commonJS({
         }
       }
       function unwrapThenable(thenable) {
-        var index2 = thenableIndexCounter;
+        var index = thenableIndexCounter;
         thenableIndexCounter += 1;
         null === thenableState && (thenableState = createThenableState());
-        return trackUsedThenable(thenableState, thenable, index2);
+        return trackUsedThenable(thenableState, thenable, index);
       }
       function coerceRef(workInProgress2, element) {
         element = element.props.ref;
@@ -8689,9 +8689,9 @@ var require_react_dom_client_development = __commonJS({
             );
             thenableState = null;
             return firstChildFiber;
-          } catch (x2) {
-            if (x2 === SuspenseException || x2 === SuspenseActionException) throw x2;
-            var fiber = createFiber(29, x2, null, returnFiber.mode);
+          } catch (x) {
+            if (x === SuspenseException || x === SuspenseActionException) throw x;
+            var fiber = createFiber(29, x, null, returnFiber.mode);
             fiber.lanes = lanes;
             fiber.return = returnFiber;
             var debugInfo = fiber._debugInfo = currentDebugInfo;
@@ -8870,14 +8870,14 @@ var require_react_dom_client_development = __commonJS({
             1,
             badgeFormat + error[0],
             badgeStyle,
-            pad2 + JSCompiler_inline_result + pad2,
+            pad + JSCompiler_inline_result + pad,
             resetStyle
           ) : error.splice(
             0,
             0,
             badgeFormat,
             badgeStyle,
-            pad2 + JSCompiler_inline_result + pad2,
+            pad + JSCompiler_inline_result + pad,
             resetStyle
           );
           error.unshift(console);
@@ -9881,13 +9881,13 @@ var require_react_dom_client_development = __commonJS({
           propagationRoot
         );
       }
-      function validateSuspenseListNestedChild(childSlot, index2) {
+      function validateSuspenseListNestedChild(childSlot, index) {
         var isAnArray = isArrayImpl(childSlot);
         childSlot = !isAnArray && "function" === typeof getIteratorFn(childSlot);
         return isAnArray || childSlot ? (isAnArray = isAnArray ? "array" : "iterable", console.error(
           "A nested %s was passed to row #%s in <SuspenseList />. Wrap it in an additional SuspenseList to configure its revealOrder: <SuspenseList revealOrder=...> ... <SuspenseList revealOrder=...>{%s}</SuspenseList> ... </SuspenseList>",
           isAnArray,
-          index2,
+          index,
           isAnArray
         ), false) : true;
       }
@@ -13180,8 +13180,8 @@ var require_react_dom_client_development = __commonJS({
         didAttemptEntireTree && (root2.warmLanes |= suspendedLanes);
         didAttemptEntireTree = root2.expirationTimes;
         for (var lanes = suspendedLanes; 0 < lanes; ) {
-          var index2 = 31 - clz32(lanes), lane = 1 << index2;
-          didAttemptEntireTree[index2] = -1;
+          var index = 31 - clz32(lanes), lane = 1 << index;
+          didAttemptEntireTree[index] = -1;
           lanes &= ~lane;
         }
         0 !== spawnedLane && markSpawnedDeferredLane(root2, spawnedLane, suspendedLanes);
@@ -13222,8 +13222,8 @@ var require_react_dom_client_development = __commonJS({
         var allEntangledLanes = root2.entangledLanes;
         if (0 !== allEntangledLanes)
           for (root2 = root2.entanglements, allEntangledLanes &= lanes; 0 < allEntangledLanes; ) {
-            var index2 = 31 - clz32(allEntangledLanes), lane = 1 << index2;
-            lanes |= root2[index2];
+            var index = 31 - clz32(allEntangledLanes), lane = 1 << index;
+            lanes |= root2[index];
             allEntangledLanes &= ~lane;
           }
         entangledRenderLanes = lanes;
@@ -14182,10 +14182,10 @@ var require_react_dom_client_development = __commonJS({
       }
       function scheduleTaskForRootDuringMicrotask(root2, currentTime) {
         for (var suspendedLanes = root2.suspendedLanes, pingedLanes = root2.pingedLanes, expirationTimes = root2.expirationTimes, lanes = root2.pendingLanes & -62914561; 0 < lanes; ) {
-          var index2 = 31 - clz32(lanes), lane = 1 << index2, expirationTime = expirationTimes[index2];
+          var index = 31 - clz32(lanes), lane = 1 << index, expirationTime = expirationTimes[index];
           if (-1 === expirationTime) {
             if (0 === (lane & suspendedLanes) || 0 !== (lane & pingedLanes))
-              expirationTimes[index2] = computeExpirationTime(lane, currentTime);
+              expirationTimes[index] = computeExpirationTime(lane, currentTime);
           } else expirationTime <= currentTime && (root2.expiredLanes |= lane);
           lanes &= ~lane;
         }
@@ -17042,10 +17042,10 @@ var require_react_dom_client_development = __commonJS({
       function insertStylesheet(instance, precedence, root2) {
         for (var nodes = root2.querySelectorAll(
           'link[rel="stylesheet"][data-precedence],style[data-precedence]'
-        ), last2 = nodes.length ? nodes[nodes.length - 1] : null, prior = last2, i = 0; i < nodes.length; i++) {
+        ), last = nodes.length ? nodes[nodes.length - 1] : null, prior = last, i = 0; i < nodes.length; i++) {
           var node = nodes[i];
           if (node.dataset.precedence === precedence) prior = node;
-          else if (prior !== last2) break;
+          else if (prior !== last) break;
         }
         prior ? prior.parentNode.insertBefore(instance, prior.nextSibling) : (precedence = 9 === root2.nodeType ? root2.head : root2, precedence.insertBefore(instance, precedence.firstChild));
       }
@@ -17247,7 +17247,7 @@ var require_react_dom_client_development = __commonJS({
       function insertStylesheetIntoRoot(root2, resource) {
         if (!(resource.state.loading & Inserted)) {
           var precedences = precedencesByRoot.get(root2);
-          if (precedences) var last2 = precedences.get(LAST_PRECEDENCE);
+          if (precedences) var last = precedences.get(LAST_PRECEDENCE);
           else {
             precedences = /* @__PURE__ */ new Map();
             precedencesByRoot.set(root2, precedences);
@@ -17256,19 +17256,19 @@ var require_react_dom_client_development = __commonJS({
             ), i = 0; i < nodes.length; i++) {
               var node = nodes[i];
               if ("LINK" === node.nodeName || "not all" !== node.getAttribute("media"))
-                precedences.set(node.dataset.precedence, node), last2 = node;
+                precedences.set(node.dataset.precedence, node), last = node;
             }
-            last2 && precedences.set(LAST_PRECEDENCE, last2);
+            last && precedences.set(LAST_PRECEDENCE, last);
           }
           nodes = resource.instance;
           node = nodes.getAttribute("data-precedence");
-          i = precedences.get(node) || last2;
-          i === last2 && precedences.set(LAST_PRECEDENCE, nodes);
+          i = precedences.get(node) || last;
+          i === last && precedences.set(LAST_PRECEDENCE, nodes);
           precedences.set(node, nodes);
           this.count++;
-          last2 = onUnsuspend.bind(this);
-          nodes.addEventListener("load", last2);
-          nodes.addEventListener("error", last2);
+          last = onUnsuspend.bind(this);
+          nodes.addEventListener("load", last);
+          nodes.addEventListener("error", last);
           i ? i.parentNode.insertBefore(nodes, i.nextSibling) : (root2 = 9 === root2.nodeType ? root2.head : root2, root2.insertBefore(nodes, root2.firstChild));
           resource.state.loading |= Inserted;
         }
@@ -17381,7 +17381,7 @@ var require_react_dom_client_development = __commonJS({
         return current;
       }
       function getLaneLabelMap() {
-        for (var map = /* @__PURE__ */ new Map(), lane = 1, index2 = 0; 31 > index2; index2++) {
+        for (var map = /* @__PURE__ */ new Map(), lane = 1, index = 0; 31 > index; index++) {
           var label = getLabelForLane(lane);
           map.set(lane, label);
           lane *= 2;
@@ -18883,14 +18883,14 @@ var require_react_dom_client_development = __commonJS({
       var rendererCursorDEV = createCursor(null);
       var rendererSigil = {};
       var currentlyRenderingFiber$1 = null, lastContextDependency = null, isDisallowedContextReadInDEV = false, AbortControllerLocal = "undefined" !== typeof AbortController ? AbortController : function() {
-        var listeners = [], signal2 = this.signal = {
+        var listeners = [], signal = this.signal = {
           aborted: false,
           addEventListener: function(type, listener) {
             listeners.push(listener);
           }
         };
         this.abort = function() {
-          signal2.aborted = true;
+          signal.aborted = true;
           listeners.forEach(function(listener) {
             return listener();
           });
@@ -20118,9 +20118,9 @@ var require_react_dom_client_development = __commonJS({
           }
         }
       }, callDestroyInDEV = callDestroy.react_stack_bottom_frame.bind(callDestroy), callLazyInit = {
-        react_stack_bottom_frame: function(lazy2) {
-          var init = lazy2._init;
-          return init(lazy2._payload);
+        react_stack_bottom_frame: function(lazy) {
+          var init = lazy._init;
+          return init(lazy._payload);
         }
       }, callLazyInitInDEV = callLazyInit.react_stack_bottom_frame.bind(callLazyInit), thenableState = null, thenableIndexCounter = 0, currentDebugInfo = null, didWarnAboutMaps;
       var didWarnAboutGenerators = didWarnAboutMaps = false;
@@ -20473,7 +20473,7 @@ var require_react_dom_client_development = __commonJS({
         _currentValue: NotPendingTransition,
         _currentValue2: NotPendingTransition,
         _threadCount: 0
-      }, badgeFormat = "%c%s%c ", badgeStyle = "background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px", resetStyle = "", pad2 = " ", bind = Function.prototype.bind;
+      }, badgeFormat = "%c%s%c ", badgeStyle = "background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px", resetStyle = "", pad = " ", bind = Function.prototype.bind;
       var didWarnAboutNestedUpdates = false;
       var overrideHookState = null, overrideHookStateDeletePath = null, overrideHookStateRenamePath = null, overrideProps = null, overridePropsDeletePath = null, overridePropsRenamePath = null, scheduleUpdate = null, setErrorHandler = null, setSuspenseHandler = null;
       overrideHookState = function(fiber, id2, path, value) {
@@ -20705,318 +20705,565 @@ var require_client = __commonJS({
   }
 });
 
-// src/fp.ts
-function variadify(fn, rightAssociative = false) {
-  if (rightAssociative) {
-    return (a, b, ...ts) => {
-      const arr = [a, b, ...ts];
-      let x2 = fn(arr.at(-2), arr.at(-1));
-      for (let i = arr.length - 3; i >= 0; i--) {
-        x2 = fn(arr[i], x2);
-      }
-      return x2;
-    };
+// src/webgpu/converters.ts
+var TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT = {
+  r8unorm: "float",
+  r8snorm: "float",
+  r8uint: "uint",
+  r8sint: "sint",
+  r16unorm: "float",
+  r16snorm: "float",
+  r16uint: "uint",
+  r16sint: "sint",
+  r16float: "float",
+  rg8unorm: "float",
+  rg8snorm: "float",
+  rg8uint: "uint",
+  rg8sint: "sint",
+  r32uint: "uint",
+  r32sint: "sint",
+  r32float: "float",
+  rg16unorm: "float",
+  rg16snorm: "float",
+  rg16uint: "uint",
+  rg16sint: "sint",
+  rg16float: "float",
+  rgba8unorm: "float",
+  "rgba8unorm-srgb": "float",
+  rgba8snorm: "float",
+  rgba8uint: "uint",
+  rgba8sint: "sint",
+  bgra8unorm: "float",
+  "bgra8unorm-srgb": "float",
+  rgb9e5ufloat: "float",
+  rgb10a2uint: "uint",
+  rgb10a2unorm: "float",
+  rg11b10ufloat: "float",
+  rg32uint: "uint",
+  rg32sint: "sint",
+  rg32float: "float",
+  rgba16unorm: "float",
+  rgba16snorm: "float",
+  rgba16uint: "uint",
+  rgba16sint: "sint",
+  rgba16float: "float",
+  rgba32uint: "uint",
+  rgba32sint: "sint",
+  rgba32float: "float",
+  stencil8: "uint",
+  depth16unorm: "depth",
+  depth24plus: "depth",
+  "depth24plus-stencil8": "depth",
+  depth32float: "depth",
+  "depth32float-stencil8": "depth",
+  "bc1-rgba-unorm": "float",
+  "bc1-rgba-unorm-srgb": "float",
+  "bc2-rgba-unorm": "float",
+  "bc2-rgba-unorm-srgb": "float",
+  "bc3-rgba-unorm": "float",
+  "bc3-rgba-unorm-srgb": "float",
+  "bc4-r-unorm": "float",
+  "bc4-r-snorm": "float",
+  "bc5-rg-unorm": "float",
+  "bc5-rg-snorm": "float",
+  "bc6h-rgb-ufloat": "float",
+  "bc6h-rgb-float": "float",
+  "bc7-rgba-unorm": "float",
+  "bc7-rgba-unorm-srgb": "float",
+  "etc2-rgb8unorm": "float",
+  "etc2-rgb8unorm-srgb": "float",
+  "etc2-rgb8a1unorm": "float",
+  "etc2-rgb8a1unorm-srgb": "float",
+  "etc2-rgba8unorm": "float",
+  "etc2-rgba8unorm-srgb": "float",
+  "eac-r11unorm": "f32",
+  "eac-r11snorm": "f32",
+  "eac-rg11unorm": "vec2f",
+  "eac-rg11snorm": "vec2f",
+  "astc-4x4-unorm": "float",
+  "astc-4x4-unorm-srgb": "float",
+  "astc-5x4-unorm": "float",
+  "astc-5x4-unorm-srgb": "float",
+  "astc-5x5-unorm": "float",
+  "astc-5x5-unorm-srgb": "float",
+  "astc-6x5-unorm": "float",
+  "astc-6x5-unorm-srgb": "float",
+  "astc-6x6-unorm": "float",
+  "astc-6x6-unorm-srgb": "float",
+  "astc-8x5-unorm": "float",
+  "astc-8x5-unorm-srgb": "float",
+  "astc-8x6-unorm": "float",
+  "astc-8x6-unorm-srgb": "float",
+  "astc-8x8-unorm": "float",
+  "astc-8x8-unorm-srgb": "float",
+  "astc-10x5-unorm": "float",
+  "astc-10x5-unorm-srgb": "float",
+  "astc-10x6-unorm": "float",
+  "astc-10x6-unorm-srgb": "float",
+  "astc-10x8-unorm": "float",
+  "astc-10x8-unorm-srgb": "float",
+  "astc-10x10-unorm": "float",
+  "astc-10x10-unorm-srgb": "float",
+  "astc-12x10-unorm": "float",
+  "astc-12x10-unorm-srgb": "float",
+  "astc-12x12-unorm": "float",
+  "astc-12x12-unorm-srgb": "float"
+};
+var TEXTURE_FORMAT_TO_WGSL_TYPE_LUT = {
+  r8unorm: "f32",
+  r8snorm: "f32",
+  r8uint: "u32",
+  r8sint: "i32",
+  r16unorm: "u32",
+  r16snorm: "i32",
+  r16uint: "u32",
+  r16sint: "i32",
+  r16float: "f32",
+  rg8unorm: "vec2f",
+  rg8snorm: "vec2f",
+  rg8uint: "vec2u",
+  rg8sint: "vec2i",
+  r32uint: "u32",
+  r32sint: "i32",
+  r32float: "f32",
+  rg16unorm: "vec2f",
+  rg16snorm: "vec2f",
+  rg16uint: "vec2u",
+  rg16sint: "vec2i",
+  rg16float: "vec2f",
+  rgba8unorm: "vec4f",
+  "rgba8unorm-srgb": "vec4f",
+  rgba8snorm: "vec4f",
+  rgba8uint: "vec4u",
+  rgba8sint: "vec4i",
+  bgra8unorm: "vec4f",
+  "bgra8unorm-srgb": "vec4f",
+  rgb9e5ufloat: "vec4f",
+  rgb10a2uint: "vec4u",
+  rgb10a2unorm: "vec4f",
+  rg11b10ufloat: "vec4f",
+  rg32uint: "vec2u",
+  rg32sint: "vec2i",
+  rg32float: "vec2f",
+  rgba16unorm: "vec4u",
+  rgba16snorm: "vec4i",
+  rgba16uint: "vec4u",
+  rgba16sint: "vec4i",
+  rgba16float: "vec4f",
+  rgba32uint: "vec4u",
+  rgba32sint: "vec4i",
+  rgba32float: "vec4f",
+  stencil8: "u32",
+  depth16unorm: "f32",
+  depth24plus: "f32",
+  "depth24plus-stencil8": "f32",
+  depth32float: "f32",
+  "depth32float-stencil8": "f32",
+  "bc1-rgba-unorm": "vec4f",
+  "bc1-rgba-unorm-srgb": "vec4f",
+  "bc2-rgba-unorm": "vec4f",
+  "bc2-rgba-unorm-srgb": "vec4f",
+  "bc3-rgba-unorm": "vec4f",
+  "bc3-rgba-unorm-srgb": "vec4f",
+  "bc4-r-unorm": "f32",
+  "bc4-r-snorm": "f32",
+  "bc5-rg-unorm": "vec2f",
+  "bc5-rg-snorm": "vec2f",
+  "bc6h-rgb-ufloat": "vec3f",
+  "bc6h-rgb-float": "vec3f",
+  "bc7-rgba-unorm": "vec4f",
+  "bc7-rgba-unorm-srgb": "vec4f",
+  "etc2-rgb8unorm": "vec3f",
+  "etc2-rgb8unorm-srgb": "vec3f",
+  "etc2-rgb8a1unorm": "vec4f",
+  "etc2-rgb8a1unorm-srgb": "vec4f",
+  "etc2-rgba8unorm": "vec4f",
+  "etc2-rgba8unorm-srgb": "vec4f",
+  "eac-r11unorm": "f32",
+  "eac-r11snorm": "f32",
+  "eac-rg11unorm": "vec2f",
+  "eac-rg11snorm": "vec2f",
+  "astc-4x4-unorm": "vec4f",
+  "astc-4x4-unorm-srgb": "vec4f",
+  "astc-5x4-unorm": "vec4f",
+  "astc-5x4-unorm-srgb": "vec4f",
+  "astc-5x5-unorm": "vec4f",
+  "astc-5x5-unorm-srgb": "vec4f",
+  "astc-6x5-unorm": "vec4f",
+  "astc-6x5-unorm-srgb": "vec4f",
+  "astc-6x6-unorm": "vec4f",
+  "astc-6x6-unorm-srgb": "vec4f",
+  "astc-8x5-unorm": "vec4f",
+  "astc-8x5-unorm-srgb": "vec4f",
+  "astc-8x6-unorm": "vec4f",
+  "astc-8x6-unorm-srgb": "vec4f",
+  "astc-8x8-unorm": "vec4f",
+  "astc-8x8-unorm-srgb": "vec4f",
+  "astc-10x5-unorm": "vec4f",
+  "astc-10x5-unorm-srgb": "vec4f",
+  "astc-10x6-unorm": "vec4f",
+  "astc-10x6-unorm-srgb": "vec4f",
+  "astc-10x8-unorm": "vec4f",
+  "astc-10x8-unorm-srgb": "vec4f",
+  "astc-10x10-unorm": "vec4f",
+  "astc-10x10-unorm-srgb": "vec4f",
+  "astc-12x10-unorm": "vec4f",
+  "astc-12x10-unorm-srgb": "vec4f",
+  "astc-12x12-unorm": "vec4f",
+  "astc-12x12-unorm-srgb": "vec4f"
+};
+var WGSL_TYPE_SIZES = {
+  i32: 4,
+  u32: 4,
+  f32: 4,
+  f16: 2,
+  "atomic<u32>": 4,
+  "atomic<i32>": 4,
+  vec2i: 8,
+  vec2u: 8,
+  vec2f: 8,
+  vec2f16: 4,
+  vec3i: 12,
+  vec3u: 12,
+  vec3f: 12,
+  vec3f16: 6,
+  vec4i: 16,
+  vec4u: 16,
+  vec4f: 16,
+  vec4f16: 8,
+  mat2x2f: 16,
+  mat2x2f16: 8,
+  mat3x2f: 24,
+  mat3x2f16: 12,
+  mat4x2f: 32,
+  mat4x2f16: 16,
+  mat2x3f: 24,
+  mat2x3f16: 12,
+  mat3x3f: 48,
+  mat3x3f16: 24,
+  mat4x3f: 64,
+  mat4x3f16: 32,
+  mat2x4f: 32,
+  mat2x4f16: 16,
+  mat3x4f: 48,
+  mat3x4f16: 24,
+  mat4x4f: 64,
+  mat4x4f16: 32
+};
+var WGSL_TYPE_ALIGNMENTS = {
+  i32: 4,
+  u32: 4,
+  f32: 4,
+  f16: 2,
+  "atomic<u32>": 4,
+  "atomic<i32>": 4,
+  vec2i: 8,
+  vec2u: 8,
+  vec2f: 8,
+  vec2f16: 4,
+  vec3i: 16,
+  vec3u: 16,
+  vec3f: 16,
+  vec3f16: 8,
+  vec4i: 16,
+  vec4u: 16,
+  vec4f: 16,
+  vec4f16: 8,
+  mat2x2f: 8,
+  mat2x2f16: 4,
+  mat3x2f: 8,
+  mat3x2f16: 4,
+  mat4x2f: 8,
+  mat4x2f16: 4,
+  mat2x3f: 16,
+  mat2x3f16: 8,
+  mat3x3f: 16,
+  mat3x3f16: 8,
+  mat4x3f: 16,
+  mat4x3f16: 8,
+  mat2x4f: 16,
+  mat2x4f16: 8,
+  mat3x4f: 16,
+  mat3x4f16: 8,
+  mat4x4f: 16,
+  mat4x4f16: 8
+};
+var WGSL_TYPE_ELEMENT_COUNTS = {
+  i32: 1,
+  u32: 1,
+  f32: 1,
+  f16: 1,
+  "atomic<u32>": 1,
+  "atomic<i32>": 1,
+  vec2i: 2,
+  vec2u: 2,
+  vec2f: 2,
+  vec2f16: 2,
+  vec3i: 3,
+  vec3u: 3,
+  vec3f: 3,
+  vec3f16: 3,
+  vec4i: 4,
+  vec4u: 4,
+  vec4f: 4,
+  vec4f16: 4,
+  mat2x2f: 4,
+  mat2x2f16: 4,
+  mat3x2f: 6,
+  mat3x2f16: 6,
+  mat4x2f: 8,
+  mat4x2f16: 8,
+  mat2x3f: 6,
+  mat2x3f16: 6,
+  mat3x3f: 9,
+  mat3x3f16: 9,
+  mat4x3f: 12,
+  mat4x3f16: 12,
+  mat2x4f: 8,
+  mat2x4f16: 8,
+  mat3x4f: 12,
+  mat3x4f16: 12,
+  mat4x4f: 16,
+  mat4x4f16: 16
+};
+var WGSL_TYPE_DATATYPES = {
+  i32: "i32",
+  u32: "u32",
+  f32: "f32",
+  f16: "f16",
+  "atomic<u32>": "u32",
+  "atomic<i32>": "i32",
+  vec2i: "i32",
+  vec2u: "u32",
+  vec2f: "f32",
+  vec2f16: "f16",
+  vec3i: "i32",
+  vec3u: "u32",
+  vec3f: "f32",
+  vec3f16: "f16",
+  vec4i: "i32",
+  vec4u: "u32",
+  vec4f: "f32",
+  vec4f16: "f16",
+  mat2x2f: "f32",
+  mat2x2f16: "f16",
+  mat3x2f: "f32",
+  mat3x2f16: "f16",
+  mat4x2f: "f32",
+  mat4x2f16: "f16",
+  mat2x3f: "f32",
+  mat2x3f16: "f16",
+  mat3x3f: "f32",
+  mat3x3f16: "f16",
+  mat4x3f: "f32",
+  mat4x3f16: "f16",
+  mat2x4f: "f32",
+  mat2x4f16: "f16",
+  mat3x4f: "f32",
+  mat3x4f16: "f16",
+  mat4x4f: "f32",
+  mat4x4f16: "f16"
+};
+var VERTEX_FORMAT_TO_ELEMENT_SIZE = {
+  uint8: 1,
+  uint8x2: 1,
+  uint8x4: 1,
+  sint8: 1,
+  sint8x2: 1,
+  sint8x4: 1,
+  unorm8: 1,
+  unorm8x2: 1,
+  unorm8x4: 1,
+  snorm8: 1,
+  snorm8x2: 1,
+  snorm8x4: 1,
+  uint16: 2,
+  uint16x2: 2,
+  uint16x4: 2,
+  sint16: 2,
+  sint16x2: 2,
+  sint16x4: 2,
+  unorm16: 2,
+  unorm16x2: 2,
+  unorm16x4: 2,
+  snorm16: 2,
+  snorm16x2: 2,
+  snorm16x4: 2,
+  float16: 2,
+  float16x2: 2,
+  float16x4: 2,
+  float32: 4,
+  float32x2: 4,
+  float32x3: 4,
+  float32x4: 4,
+  uint32: 4,
+  uint32x2: 4,
+  uint32x3: 4,
+  uint32x4: 4,
+  sint32: 4,
+  sint32x2: 4,
+  sint32x3: 4,
+  sint32x4: 4,
+  "unorm10-10-10-2": 1,
+  "unorm8x4-bgra": 1
+};
+var VERTEX_FORMAT_TO_ELEMENT_COUNT = {
+  uint8: 1,
+  uint8x2: 2,
+  uint8x4: 4,
+  sint8: 1,
+  sint8x2: 2,
+  sint8x4: 4,
+  unorm8: 1,
+  unorm8x2: 2,
+  unorm8x4: 4,
+  snorm8: 1,
+  snorm8x2: 2,
+  snorm8x4: 4,
+  uint16: 1,
+  uint16x2: 2,
+  uint16x4: 4,
+  sint16: 1,
+  sint16x2: 2,
+  sint16x4: 4,
+  unorm16: 1,
+  unorm16x2: 2,
+  unorm16x4: 4,
+  snorm16: 1,
+  snorm16x2: 2,
+  snorm16x4: 4,
+  float16: 1,
+  float16x2: 2,
+  float16x4: 4,
+  float32: 1,
+  float32x2: 2,
+  float32x3: 3,
+  float32x4: 4,
+  uint32: 1,
+  uint32x2: 2,
+  uint32x3: 3,
+  uint32x4: 4,
+  sint32: 1,
+  sint32x2: 2,
+  sint32x3: 3,
+  sint32x4: 4,
+  "unorm10-10-10-2": 4,
+  "unorm8x4-bgra": 4
+};
+var VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR = {
+  uint8: Uint8Array,
+  uint8x2: Uint8Array,
+  uint8x4: Uint8Array,
+  sint8: Int8Array,
+  sint8x2: Int8Array,
+  sint8x4: Int8Array,
+  unorm8: Uint8Array,
+  unorm8x2: Uint8Array,
+  unorm8x4: Uint8Array,
+  snorm8: Int8Array,
+  snorm8x2: Int8Array,
+  snorm8x4: Int8Array,
+  uint16: Uint16Array,
+  uint16x2: Uint16Array,
+  uint16x4: Uint16Array,
+  sint16: Int16Array,
+  sint16x2: Int16Array,
+  sint16x4: Int16Array,
+  unorm16: Uint16Array,
+  unorm16x2: Uint16Array,
+  unorm16x4: Uint16Array,
+  snorm16: Int16Array,
+  snorm16x2: Int16Array,
+  snorm16x4: Int16Array,
+  float16: Float16Array,
+  float16x2: Float16Array,
+  float16x4: Float16Array,
+  float32: Float32Array,
+  float32x2: Float32Array,
+  float32x3: Float32Array,
+  float32x4: Float32Array,
+  uint32: Uint32Array,
+  uint32x2: Uint32Array,
+  uint32x3: Uint32Array,
+  uint32x4: Uint32Array,
+  sint32: Int32Array,
+  sint32x2: Int32Array,
+  sint32x3: Int32Array,
+  sint32x4: Int32Array,
+  "unorm10-10-10-2": Uint8Array,
+  "unorm8x4-bgra": Uint8Array
+};
+var VERTEX_FORMAT_TO_WGSL_BASE_TYPE = {
+  uint8: "u32",
+  uint8x2: "u32",
+  uint8x4: "u32",
+  sint8: "i32",
+  sint8x2: "i32",
+  sint8x4: "i32",
+  unorm8: "f32",
+  unorm8x2: "f32",
+  unorm8x4: "f32",
+  snorm8: "f32",
+  snorm8x2: "f32",
+  snorm8x4: "f32",
+  uint16: "u32",
+  uint16x2: "u32",
+  uint16x4: "u32",
+  sint16: "i32",
+  sint16x2: "i32",
+  sint16x4: "i32",
+  unorm16: "f32",
+  unorm16x2: "f32",
+  unorm16x4: "f32",
+  snorm16: "f32",
+  snorm16x2: "f32",
+  snorm16x4: "f32",
+  float16: "f32",
+  float16x2: "f32",
+  float16x4: "f32",
+  float32: "f32",
+  float32x2: "f32",
+  float32x3: "f32",
+  float32x4: "f32",
+  uint32: "u32",
+  uint32x2: "u32",
+  uint32x3: "u32",
+  uint32x4: "u32",
+  sint32: "i32",
+  sint32x2: "i32",
+  sint32x3: "i32",
+  sint32x4: "i32",
+  "unorm10-10-10-2": "f32",
+  "unorm8x4-bgra": "f32"
+};
+var WGSL_DATA_TYPES = {
+  f32: {
+    1: "f32",
+    2: "vec2f",
+    3: "vec3f",
+    4: "vec4f"
+  },
+  f16: {
+    1: "f16",
+    2: "vec2f16",
+    3: "vec3f16",
+    4: "vec4f16"
+  },
+  u32: {
+    1: "u32",
+    2: "vec2u",
+    3: "vec3u",
+    4: "vec4u"
+  },
+  i32: {
+    1: "i32",
+    2: "vec2i",
+    3: "vec3i",
+    4: "vec4i"
   }
-  return (a, b, ...ts) => {
-    let x2 = fn(a, b);
-    for (const t of ts) x2 = fn(x2, t);
-    return x2;
-  };
-}
-function curry(f, argc) {
-  if (argc === 0) {
-    return f();
-  }
-  if (argc === 1) {
-    return f;
-  }
-  return (arg) => {
-    return curry((...as) => f(arg, ...as), argc - 1);
-  };
-}
-function kurry(f, keys) {
-  keys = new Set(keys);
-  if (keys.size === 0) {
-    return f({});
-  }
-  return (p) => {
-    const newSet = keys.difference(new Set(Object.keys(p)));
-    return kurry((p2) => f({ ...p, ...p2 }), newSet);
-  };
-}
-function multicast(fs) {
-  return (...args) => fs.map((f) => f(...args));
-}
-
-// src/xray.ts
-var xray = (a) => xrayInner(a, void 0, (x2) => x2);
-function xrayMulticast(xrs) {
-  return new Proxy(
-    {},
-    {
-      get(target, prop, receiver) {
-        const res = xrs.map((x2) => x2[prop]);
-        if (prop === "$en") {
-          return xrayMulticast(res);
-        }
-        if (prop === "$" || prop === "$s" || prop === "$ctx" || prop === "$e" || prop === "$ec" || prop === "$i" || prop === "$m" || prop === "$mx") {
-          return (...args) => xrayMulticast(multicast(res)(...args));
-        }
-        return res;
-      }
-    }
-  );
-}
-var xrayInner = (a, ctx, set) => new Proxy(
-  {},
-  {
-    get(target, prop, receiver) {
-      if (prop === "$v") {
-        return set(a);
-      } else if (prop === "$") {
-        return (x2) => xrayInner(a, ctx, () => set(x2));
-      } else if (prop === "$s") {
-        return (cb2) => xrayInner(a, ctx, () => set(cb2(a, ctx)));
-      } else if (prop === "$ctx") {
-        return (cb2) => xrayInner(a, cb2(a, ctx), set);
-      }
-      if (Array.isArray(a)) {
-        if (prop === "$e") {
-          return xrayMulticast(a.map((e, i) => xrayInner(e, i, (x2) => x2)));
-        } else if (prop === "$ec") {
-        } else if (prop === "$en") {
-          return xrayMulticast(
-            a.map((e, i) => xrayInner(e, [...ctx ?? [], i], (x2) => x2))
-          );
-        } else if (prop === "$i") {
-          return (p) => xrayInner(
-            a[p],
-            ctx,
-            (x2) => set(a.map((e, i) => i === p ? x2 : e))
-          );
-        }
-      } else if (typeof a === "object" && a) {
-        if (prop === "$m") {
-          return (cb2) => xrayInner(
-            a,
-            ctx,
-            () => set({
-              ...a,
-              ...cb2(a, ctx)
-            })
-          );
-        } else if (prop === "$mx") {
-        } else {
-          return xrayInner(
-            a[prop],
-            ctx,
-            (x2) => set({
-              ...a,
-              [prop]: x2
-            })
-          );
-        }
-      }
-    }
-  }
-);
-
-// src/workerify.ts
-function workerifyServer(i, discriminator, onReceive, send) {
-  let inf = i;
-  const unsub = onReceive(async (req) => {
-    if (!req || req._discriminator !== discriminator) {
-      return;
-    }
-    const typedReq = req;
-    const responseContents = await inf[typedReq.type](...typedReq.contents);
-    send({
-      contents: responseContents,
-      _discriminator: discriminator,
-      id: typedReq.id
-    });
-  });
-  return {
-    unsub,
-    setInterface(i2) {
-      inf = i2;
-    }
-  };
-}
-function workerifyClient(discriminator, onReceive, send) {
-  let msgid = 0;
-  return new Proxy({}, {
-    get(i, prop) {
-      return (...args) => {
-        const id2 = (msgid++).toString();
-        const req = {
-          type: prop,
-          contents: args,
-          _discriminator: discriminator,
-          id: id2
-        };
-        return new Promise((resolve, reject) => {
-          const unsub = onReceive((res) => {
-            if (!res || res._discriminator !== discriminator) {
-              return;
-            }
-            const typedRes = res;
-            if (typedRes.id === id2) {
-              resolve(typedRes.contents);
-              unsub();
-            }
-          });
-          send(req);
-        });
-      };
-    }
-  });
-}
-function workerifyServerIframe(discriminator, i, target) {
-  return workerifyServer(
-    i,
-    discriminator,
-    (cb2) => {
-      const listener = (e) => cb2(e.data);
-      window.addEventListener("message", listener);
-      return () => {
-        window.removeEventListener("message", listener);
-      };
-    },
-    (r) => {
-      target.postMessage(r, "*");
-    }
-  );
-}
-function workerifyClientIframe(discriminator, target) {
-  return workerifyClient(
-    discriminator,
-    (cb2) => {
-      const listener = (e) => cb2(e.data);
-      window.addEventListener("message", listener);
-      return () => {
-        window.removeEventListener("message", listener);
-      };
-    },
-    (req) => {
-      target.postMessage(req, "*");
-    }
-  );
-}
-function createWorkerWithInterface(discriminator, src2) {
-  const worker = new Worker(src2);
-  return workerifyClient(
-    discriminator,
-    (cb2) => {
-      const listener = (e) => cb2(e.data);
-      worker.addEventListener("message", listener);
-      return () => {
-        worker.removeEventListener("message", listener);
-      };
-    },
-    (req) => {
-      worker.postMessage(req);
-    }
-  );
-}
-function createWorkerReceiver(discriminator, t) {
-  return workerifyServer(
-    t,
-    discriminator,
-    (cb2) => {
-      const listener = (e) => cb2(e.data);
-      globalThis.addEventListener("message", listener);
-      return () => {
-        globalThis.removeEventListener("message", listener);
-      };
-    },
-    (req) => {
-      globalThis.postMessage(req);
-    }
-  );
-}
-
-// src/wait.ts
-function waitUntil(fn) {
-  return new Promise((resolve, reject) => {
-    const unsub = fn((t) => {
-      unsub();
-      resolve(t);
-    });
-  });
-}
-function wait(ms) {
-  return new Promise((resolve, reject) => {
-    setTimeout(resolve, ms);
-  });
-}
-function waitForCond(fn, checkInterval = 0) {
-  return new Promise((resolve, reject) => {
-    const interval = setInterval(() => {
-      const result = fn();
-      if (result !== void 0) {
-        resolve(result);
-        clearInterval(interval);
-      }
-    }, checkInterval);
-  });
-}
-
-// src/throttle.ts
-function throttle(callback, options) {
-  let queue = [];
-  const requestHistorySize = options.limits.reduce(
-    (prev, curr) => Math.max(prev, curr.duration),
-    0
-  );
-  let requestHistory = [];
-  const pendingRequests = /* @__PURE__ */ new Set();
-  setInterval(() => {
-    while (true) {
-      const req = queue.at(0);
-      if (!req) return;
-      const time = Date.now();
-      requestHistory = requestHistory.filter(
-        (h) => (time - h.time) / 1e3 <= requestHistorySize
-      );
-      if (pendingRequests.size >= options.maxConcurrentRequests) return;
-      for (const l of options.limits) {
-        let reqCount = 0;
-        for (const h of requestHistory) {
-          const secondsAgo = (time - h.time) / 1e3;
-          if (secondsAgo <= l.duration) {
-            reqCount++;
-          }
-        }
-        if (reqCount >= l.maxRequests) {
-          return;
-        }
-      }
-      queue.shift();
-      requestHistory.push({
-        time: Date.now()
-      });
-      const responsePromise = callback(...req.params);
-      pendingRequests.add(responsePromise);
-      (async () => {
-        const response = await responsePromise;
-        req.callback(response);
-        pendingRequests.delete(responsePromise);
-      })();
-    }
-  });
-  const fn = (...params) => {
-    return new Promise((resolve, reject) => {
-      queue.push({
-        params,
-        callback: (rt) => {
-          resolve(rt);
-        }
-      });
-    });
-  };
-  fn._throttled = true;
-  return fn;
+};
+function vertexFormatToWgslType(vertexFormat) {
+  return WGSL_DATA_TYPES[VERTEX_FORMAT_TO_WGSL_BASE_TYPE[vertexFormat]][VERTEX_FORMAT_TO_ELEMENT_COUNT[vertexFormat]];
 }
 
 // src/range.ts
@@ -21027,23 +21274,9 @@ function range(hi) {
   }
   return arr;
 }
-function rangeFrom(lo, hi) {
-  let arr = [];
-  for (let i = lo; i < hi && i < 1e7; i++) {
-    arr.push(i);
-  }
-  return arr;
-}
-function stringRangeMapJoin(hi, f, s = "\\n") {
-  const r = range(hi);
-  return r.map(f).join(s);
-}
-function stringMapJoin(a, f, s = "\\n") {
-  return a.map(f).join(s);
-}
 function smartRangeMap(n, cb2) {
   const a = range(n);
-  const res1 = a.map((i, index2, arr) => {
+  const res1 = a.map((i, index, arr) => {
     return {
       remap(lo, hi, inclEnd) {
         return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
@@ -21079,11 +21312,8 @@ function smartRangeMap(n, cb2) {
 function smartRange(n) {
   return smartRangeMap(n, id);
 }
-function id(x2) {
-  return x2;
-}
-function smartRangeStringMapJoin(n, cb2, s = "\\n") {
-  return stringMapJoin(smartRangeMap(n, id), cb2, s);
+function id(x) {
+  return x;
 }
 function rand(lo, hi, random) {
   if (!random) random = () => Math.random();
@@ -21091,28 +21321,6 @@ function rand(lo, hi, random) {
 }
 
 // src/array-utils.ts
-function interleave(arr, cb2) {
-  let out = [];
-  for (let i = 0; i < arr.length - 1; i++) {
-    out.push(arr[i], cb2(arr[i], arr[i + 1]));
-  }
-  if (arr.length > 0) {
-    out.push(arr.at(-1));
-  }
-  return out;
-}
-function splitBy(arr, amount) {
-  let outarr = [[]];
-  for (let i = 0; i < arr.length; i++) {
-    if (i % amount === amount - 1) outarr.push([]);
-    outarr.at(-1).push(arr[i]);
-  }
-  return outarr;
-}
-function bifurcate(arr, fn) {
-  const bools = arr.map(fn);
-  return [arr.filter((e, i) => bools[i]), arr.filter((e, i) => !bools[i])];
-}
 function groupBy(arr, getGroup) {
   const groups = /* @__PURE__ */ new Map();
   for (const entry of arr) {
@@ -21137,60 +21345,6 @@ function argmax(arr, f) {
 }
 function argmin(arr, f) {
   return argmax(arr, (t) => -f(t));
-}
-function powerSet(arr) {
-  if (arr.length === 0) return [[]];
-  return powerSet(arr.slice(1)).flatMap((e) => [e, [arr[0], ...e]]);
-}
-function permute(arr) {
-  if (arr.length === 0) return [[]];
-  return permute(arr.slice(1)).flatMap(
-    (p) => range(p.length + 1).map(
-      (i) => p.slice(0, i).concat([arr[0]]).concat(p.slice(i))
-    )
-  );
-}
-function cartesianProductInner(ts, arr) {
-  if (ts.length === 0) return [arr];
-  return ts[0].map((e) => cartesianProductInner(ts.slice(1), [...arr, e])).flat(1);
-}
-function cartesianProduct(...ts) {
-  const res = cartesianProductInner(ts, []);
-  return res;
-}
-function pickrand(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-function zip(...ts) {
-  return range(ts[0].length).map((i) => ts.map((t) => t[i]));
-}
-function index(arr) {
-  return zip(arr, range(arr.length));
-}
-function makeDitherKernel(iters) {
-  if (iters === 0) {
-    return [0];
-  }
-  const kernel = makeDitherKernel(iters - 1);
-  const oldLength = kernel.length;
-  const oldSideLength = Math.sqrt(oldLength);
-  const newLength = kernel.length * 4;
-  const newSideLength = Math.sqrt(newLength);
-  let k = new Array(newLength);
-  for (const [x2, y2, idx] of [
-    [0, 0, 0],
-    [1, 1, 1],
-    [1, 0, 2],
-    [0, 1, 3]
-  ]) {
-    let baseIndex = y2 * newSideLength + x2;
-    for (let i = 0; i < oldSideLength; i++) {
-      for (let j = 0; j < oldSideLength; j++) {
-        k[baseIndex + i * 2 * newSideLength + j * 2] = kernel[i * oldSideLength + j] + idx * kernel.length;
-      }
-    }
-  }
-  return k;
 }
 
 // src/threadpool.ts
@@ -21268,11 +21422,11 @@ function createRoundRobinThreadpool(src2, workerCount2, serialization2, t) {
       const onResponse = async (e) => {
         if (e.data.id !== myid) return;
         worker.removeEventListener("message", onResponse);
-        const parseRetVal = serialization2?.[prop]?.parseRetVal ?? ((x2) => x2);
+        const parseRetVal = serialization2?.[prop]?.parseRetVal ?? ((x) => x);
         resolve(await parseRetVal(e.data.returnValue));
       };
       worker.addEventListener("message", onResponse);
-      const serializeArgs = serialization2?.[prop]?.serializeArgs ?? ((x2) => x2);
+      const serializeArgs = serialization2?.[prop]?.serializeArgs ?? ((x) => x);
       worker.postMessage(
         {
           type: prop,
@@ -21320,7 +21474,7 @@ function createRoundRobinThreadpool(src2, workerCount2, serialization2, t) {
         return async (...args) => {
           return await Promise.all(
             workers.map(
-              (w2, i2) => sendMessageToWorkerWithResponse(prop, args, i2)
+              (w, i2) => sendMessageToWorkerWithResponse(prop, args, i2)
             )
           );
         };
@@ -21364,2353 +21518,32 @@ async function inMainThread(cb) {
   return await cb();
 }
 
-// src/stringutils.ts
-async function smartAsyncReplaceAll(input, rgx, callback, options) {
-  if (!options) options = {};
-  if (options.cursor === void 0) options.cursor = 0;
-  const matchesRaw = input.matchAll(rgx);
-  const matches = matchesRaw ? [...matchesRaw] : [];
-  let outFragments = [];
-  function calcCursorPos(initCursor, start, length) {
-    const outCursor = initCursor - start;
-    if (outCursor < 0 || outCursor > length) return void 0;
-    return outCursor;
-  }
-  for (let i = 0; i < matches.length + 1; i++) {
-    const prevIndex = matches[i - 1] ? matches[i - 1].index + matches[i - 1][0].length : 0;
-    const currIndex = matches[i] ? matches[i].index : input.length;
-    let precedingFragment = input.slice(prevIndex, currIndex);
-    let matchedFragment = matches[i] ? matches[i][0] : "";
-    outFragments.push(
-      Promise.resolve({
-        beforeStr: precedingFragment,
-        afterStr: precedingFragment,
-        cursorPos: calcCursorPos(
-          options.cursor,
-          prevIndex,
-          precedingFragment.length
-        )
-      })
-    );
-    if (matches[i] === void 0) break;
-    outFragments.push(
-      (async () => {
-        const res = await callback(
-          matchedFragment,
-          currIndex,
-          calcCursorPos(options.cursor ?? 0, currIndex, matchedFragment.length)
-        );
-        return {
-          beforeStr: matchedFragment,
-          afterStr: typeof res === "string" ? res : res.str,
-          cursorPos: typeof res === "string" ? void 0 : res.cursorPos
-        };
-      })()
-    );
-  }
-  const awaitedOutFragments = await Promise.all(outFragments);
-  let accumStringLength = 0;
-  let finalCursorPos = void 0;
-  for (const f of awaitedOutFragments) {
-    if (f.cursorPos !== void 0) {
-      finalCursorPos = accumStringLength + f.cursorPos;
-      break;
-    }
-    accumStringLength += f.afterStr.length;
-  }
-  return {
-    str: awaitedOutFragments.map((e) => e.afterStr).join(""),
-    cursor: finalCursorPos ?? 0
-  };
-}
-function multiDelimit(str2, delimiters) {
-  if (delimiters.length === 0) return str2;
-  return str2.split(delimiters[0]).map((e) => multiDelimit(e, delimiters.slice(1)));
-}
-function randUnicode(lo, hi, count, random) {
-  if (!random) random = () => Math.random();
-  return "".padEnd(count).split("").map((e) => String.fromCharCode(Math.floor(random() * (hi - lo)) + lo));
-}
-function getLinesAndCols(str2) {
-  let line = 1;
-  let col = 1;
-  let out = [];
-  for (const char of str2) {
-    out.push([line, col]);
-    if (char === "\n") {
-      line++;
-      col = 1;
-    } else {
-      col++;
-    }
-  }
-  out.push([line, col]);
-  return out;
-}
-function delimitedSequenceRegex(start, end) {
-  return new RegExp(
-    RegExp.escape(start) + "[\\s\\S]*?" + RegExp.escape(end),
-    "g"
-  );
-}
-function makeDelimitedReplacements(str2, replacements) {
-  for (const r of replacements) {
-    str2 = str2.replaceAll(
-      typeof r.delimiter === "string" ? delimitedSequenceRegex(r.delimiter, r.delimiter) : (
-        // @ts-expect-error
-        delimitedSequenceRegex(r.start, r.end)
-      ),
-      r.replaceWith
-    );
-  }
-  return str2;
-}
-
-// src/string-field.ts
-function stringField(src2) {
-  const element = document.createElement("input");
-  element.value = src2.get();
-  const unsub = src2.subscribe((t) => {
-    if (element.value !== t) {
-      element.value = t;
-    }
-  });
-  element.oninput = () => {
-    src2.set(element.value);
-  };
-  return {
-    element,
-    unmount: unsub
-  };
-}
-
 // src/interpolation.ts
-function lerp(x2, a, b) {
-  return a * (1 - x2) + b * x2;
+function lerp(x, a, b) {
+  return a * (1 - x) + b * x;
 }
-function unlerp(x2, a, b) {
-  return (x2 - a) / (b - a);
+function unlerp(x, a, b) {
+  return (x - a) / (b - a);
 }
-function rescale(x2, a1, b1, a2, b2) {
-  return lerp(unlerp(x2, a1, b1), a2, b2);
+function rescale(x, a1, b1, a2, b2) {
+  return lerp(unlerp(x, a1, b1), a2, b2);
 }
-function rescaleClamped(x2, a1, b1, a2, b2) {
-  return lerp(clamp(unlerp(x2, a1, b1), 0, 1), a2, b2);
-}
-function clamp(x2, lo, hi) {
-  return Math.max(Math.min(x2, hi), lo);
-}
-function clampToArray(x2, array2) {
-  return clamp(x2, 0, array2.length - 1);
-}
-function getClamped(arr, i) {
-  return arr[clampToArray(i, arr)];
-}
-function unclampedSmoothstep(x2) {
-  return x2 * x2 * (3 - 2 * x2);
-}
-function smoothstep(x2) {
-  return unclampedSmoothstep(clamp(x2, 0, 1));
+function clamp(x, lo, hi) {
+  return Math.max(Math.min(x, hi), lo);
 }
 function modulo(a, b) {
   return a - b * Math.floor(a / b);
 }
 
-// src/math/vector.ts
-function xxxx(a) {
-  return [a[0], a[0], a[0], a[0]];
-}
-function yxxx(a) {
-  return [a[1], a[0], a[0], a[0]];
-}
-function zxxx(a) {
-  return [a[2], a[0], a[0], a[0]];
-}
-function wxxx(a) {
-  return [a[3], a[0], a[0], a[0]];
-}
-function xyxx(a) {
-  return [a[0], a[1], a[0], a[0]];
-}
-function yyxx(a) {
-  return [a[1], a[1], a[0], a[0]];
-}
-function zyxx(a) {
-  return [a[2], a[1], a[0], a[0]];
-}
-function wyxx(a) {
-  return [a[3], a[1], a[0], a[0]];
-}
-function xzxx(a) {
-  return [a[0], a[2], a[0], a[0]];
-}
-function yzxx(a) {
-  return [a[1], a[2], a[0], a[0]];
-}
-function zzxx(a) {
-  return [a[2], a[2], a[0], a[0]];
-}
-function wzxx(a) {
-  return [a[3], a[2], a[0], a[0]];
-}
-function xwxx(a) {
-  return [a[0], a[3], a[0], a[0]];
-}
-function ywxx(a) {
-  return [a[1], a[3], a[0], a[0]];
-}
-function zwxx(a) {
-  return [a[2], a[3], a[0], a[0]];
-}
-function wwxx(a) {
-  return [a[3], a[3], a[0], a[0]];
-}
-function xxyx(a) {
-  return [a[0], a[0], a[1], a[0]];
-}
-function yxyx(a) {
-  return [a[1], a[0], a[1], a[0]];
-}
-function zxyx(a) {
-  return [a[2], a[0], a[1], a[0]];
-}
-function wxyx(a) {
-  return [a[3], a[0], a[1], a[0]];
-}
-function xyyx(a) {
-  return [a[0], a[1], a[1], a[0]];
-}
-function yyyx(a) {
-  return [a[1], a[1], a[1], a[0]];
-}
-function zyyx(a) {
-  return [a[2], a[1], a[1], a[0]];
-}
-function wyyx(a) {
-  return [a[3], a[1], a[1], a[0]];
-}
-function xzyx(a) {
-  return [a[0], a[2], a[1], a[0]];
-}
-function yzyx(a) {
-  return [a[1], a[2], a[1], a[0]];
-}
-function zzyx(a) {
-  return [a[2], a[2], a[1], a[0]];
-}
-function wzyx(a) {
-  return [a[3], a[2], a[1], a[0]];
-}
-function xwyx(a) {
-  return [a[0], a[3], a[1], a[0]];
-}
-function ywyx(a) {
-  return [a[1], a[3], a[1], a[0]];
-}
-function zwyx(a) {
-  return [a[2], a[3], a[1], a[0]];
-}
-function wwyx(a) {
-  return [a[3], a[3], a[1], a[0]];
-}
-function xxzx(a) {
-  return [a[0], a[0], a[2], a[0]];
-}
-function yxzx(a) {
-  return [a[1], a[0], a[2], a[0]];
-}
-function zxzx(a) {
-  return [a[2], a[0], a[2], a[0]];
-}
-function wxzx(a) {
-  return [a[3], a[0], a[2], a[0]];
-}
-function xyzx(a) {
-  return [a[0], a[1], a[2], a[0]];
-}
-function yyzx(a) {
-  return [a[1], a[1], a[2], a[0]];
-}
-function zyzx(a) {
-  return [a[2], a[1], a[2], a[0]];
-}
-function wyzx(a) {
-  return [a[3], a[1], a[2], a[0]];
-}
-function xzzx(a) {
-  return [a[0], a[2], a[2], a[0]];
-}
-function yzzx(a) {
-  return [a[1], a[2], a[2], a[0]];
-}
-function zzzx(a) {
-  return [a[2], a[2], a[2], a[0]];
-}
-function wzzx(a) {
-  return [a[3], a[2], a[2], a[0]];
-}
-function xwzx(a) {
-  return [a[0], a[3], a[2], a[0]];
-}
-function ywzx(a) {
-  return [a[1], a[3], a[2], a[0]];
-}
-function zwzx(a) {
-  return [a[2], a[3], a[2], a[0]];
-}
-function wwzx(a) {
-  return [a[3], a[3], a[2], a[0]];
-}
-function xxwx(a) {
-  return [a[0], a[0], a[3], a[0]];
-}
-function yxwx(a) {
-  return [a[1], a[0], a[3], a[0]];
-}
-function zxwx(a) {
-  return [a[2], a[0], a[3], a[0]];
-}
-function wxwx(a) {
-  return [a[3], a[0], a[3], a[0]];
-}
-function xywx(a) {
-  return [a[0], a[1], a[3], a[0]];
-}
-function yywx(a) {
-  return [a[1], a[1], a[3], a[0]];
-}
-function zywx(a) {
-  return [a[2], a[1], a[3], a[0]];
-}
-function wywx(a) {
-  return [a[3], a[1], a[3], a[0]];
-}
-function xzwx(a) {
-  return [a[0], a[2], a[3], a[0]];
-}
-function yzwx(a) {
-  return [a[1], a[2], a[3], a[0]];
-}
-function zzwx(a) {
-  return [a[2], a[2], a[3], a[0]];
-}
-function wzwx(a) {
-  return [a[3], a[2], a[3], a[0]];
-}
-function xwwx(a) {
-  return [a[0], a[3], a[3], a[0]];
-}
-function ywwx(a) {
-  return [a[1], a[3], a[3], a[0]];
-}
-function zwwx(a) {
-  return [a[2], a[3], a[3], a[0]];
-}
-function wwwx(a) {
-  return [a[3], a[3], a[3], a[0]];
-}
-function xxxy(a) {
-  return [a[0], a[0], a[0], a[1]];
-}
-function yxxy(a) {
-  return [a[1], a[0], a[0], a[1]];
-}
-function zxxy(a) {
-  return [a[2], a[0], a[0], a[1]];
-}
-function wxxy(a) {
-  return [a[3], a[0], a[0], a[1]];
-}
-function xyxy(a) {
-  return [a[0], a[1], a[0], a[1]];
-}
-function yyxy(a) {
-  return [a[1], a[1], a[0], a[1]];
-}
-function zyxy(a) {
-  return [a[2], a[1], a[0], a[1]];
-}
-function wyxy(a) {
-  return [a[3], a[1], a[0], a[1]];
-}
-function xzxy(a) {
-  return [a[0], a[2], a[0], a[1]];
-}
-function yzxy(a) {
-  return [a[1], a[2], a[0], a[1]];
-}
-function zzxy(a) {
-  return [a[2], a[2], a[0], a[1]];
-}
-function wzxy(a) {
-  return [a[3], a[2], a[0], a[1]];
-}
-function xwxy(a) {
-  return [a[0], a[3], a[0], a[1]];
-}
-function ywxy(a) {
-  return [a[1], a[3], a[0], a[1]];
-}
-function zwxy(a) {
-  return [a[2], a[3], a[0], a[1]];
-}
-function wwxy(a) {
-  return [a[3], a[3], a[0], a[1]];
-}
-function xxyy(a) {
-  return [a[0], a[0], a[1], a[1]];
-}
-function yxyy(a) {
-  return [a[1], a[0], a[1], a[1]];
-}
-function zxyy(a) {
-  return [a[2], a[0], a[1], a[1]];
-}
-function wxyy(a) {
-  return [a[3], a[0], a[1], a[1]];
-}
-function xyyy(a) {
-  return [a[0], a[1], a[1], a[1]];
-}
-function yyyy(a) {
-  return [a[1], a[1], a[1], a[1]];
-}
-function zyyy(a) {
-  return [a[2], a[1], a[1], a[1]];
-}
-function wyyy(a) {
-  return [a[3], a[1], a[1], a[1]];
-}
-function xzyy(a) {
-  return [a[0], a[2], a[1], a[1]];
-}
-function yzyy(a) {
-  return [a[1], a[2], a[1], a[1]];
-}
-function zzyy(a) {
-  return [a[2], a[2], a[1], a[1]];
-}
-function wzyy(a) {
-  return [a[3], a[2], a[1], a[1]];
-}
-function xwyy(a) {
-  return [a[0], a[3], a[1], a[1]];
-}
-function ywyy(a) {
-  return [a[1], a[3], a[1], a[1]];
-}
-function zwyy(a) {
-  return [a[2], a[3], a[1], a[1]];
-}
-function wwyy(a) {
-  return [a[3], a[3], a[1], a[1]];
-}
-function xxzy(a) {
-  return [a[0], a[0], a[2], a[1]];
-}
-function yxzy(a) {
-  return [a[1], a[0], a[2], a[1]];
-}
-function zxzy(a) {
-  return [a[2], a[0], a[2], a[1]];
-}
-function wxzy(a) {
-  return [a[3], a[0], a[2], a[1]];
-}
-function xyzy(a) {
-  return [a[0], a[1], a[2], a[1]];
-}
-function yyzy(a) {
-  return [a[1], a[1], a[2], a[1]];
-}
-function zyzy(a) {
-  return [a[2], a[1], a[2], a[1]];
-}
-function wyzy(a) {
-  return [a[3], a[1], a[2], a[1]];
-}
-function xzzy(a) {
-  return [a[0], a[2], a[2], a[1]];
-}
-function yzzy(a) {
-  return [a[1], a[2], a[2], a[1]];
-}
-function zzzy(a) {
-  return [a[2], a[2], a[2], a[1]];
-}
-function wzzy(a) {
-  return [a[3], a[2], a[2], a[1]];
-}
-function xwzy(a) {
-  return [a[0], a[3], a[2], a[1]];
-}
-function ywzy(a) {
-  return [a[1], a[3], a[2], a[1]];
-}
-function zwzy(a) {
-  return [a[2], a[3], a[2], a[1]];
-}
-function wwzy(a) {
-  return [a[3], a[3], a[2], a[1]];
-}
-function xxwy(a) {
-  return [a[0], a[0], a[3], a[1]];
-}
-function yxwy(a) {
-  return [a[1], a[0], a[3], a[1]];
-}
-function zxwy(a) {
-  return [a[2], a[0], a[3], a[1]];
-}
-function wxwy(a) {
-  return [a[3], a[0], a[3], a[1]];
-}
-function xywy(a) {
-  return [a[0], a[1], a[3], a[1]];
-}
-function yywy(a) {
-  return [a[1], a[1], a[3], a[1]];
-}
-function zywy(a) {
-  return [a[2], a[1], a[3], a[1]];
-}
-function wywy(a) {
-  return [a[3], a[1], a[3], a[1]];
-}
-function xzwy(a) {
-  return [a[0], a[2], a[3], a[1]];
-}
-function yzwy(a) {
-  return [a[1], a[2], a[3], a[1]];
-}
-function zzwy(a) {
-  return [a[2], a[2], a[3], a[1]];
-}
-function wzwy(a) {
-  return [a[3], a[2], a[3], a[1]];
-}
-function xwwy(a) {
-  return [a[0], a[3], a[3], a[1]];
-}
-function ywwy(a) {
-  return [a[1], a[3], a[3], a[1]];
-}
-function zwwy(a) {
-  return [a[2], a[3], a[3], a[1]];
-}
-function wwwy(a) {
-  return [a[3], a[3], a[3], a[1]];
-}
-function xxxz(a) {
-  return [a[0], a[0], a[0], a[2]];
-}
-function yxxz(a) {
-  return [a[1], a[0], a[0], a[2]];
-}
-function zxxz(a) {
-  return [a[2], a[0], a[0], a[2]];
-}
-function wxxz(a) {
-  return [a[3], a[0], a[0], a[2]];
-}
-function xyxz(a) {
-  return [a[0], a[1], a[0], a[2]];
-}
-function yyxz(a) {
-  return [a[1], a[1], a[0], a[2]];
-}
-function zyxz(a) {
-  return [a[2], a[1], a[0], a[2]];
-}
-function wyxz(a) {
-  return [a[3], a[1], a[0], a[2]];
-}
-function xzxz(a) {
-  return [a[0], a[2], a[0], a[2]];
-}
-function yzxz(a) {
-  return [a[1], a[2], a[0], a[2]];
-}
-function zzxz(a) {
-  return [a[2], a[2], a[0], a[2]];
-}
-function wzxz(a) {
-  return [a[3], a[2], a[0], a[2]];
-}
-function xwxz(a) {
-  return [a[0], a[3], a[0], a[2]];
-}
-function ywxz(a) {
-  return [a[1], a[3], a[0], a[2]];
-}
-function zwxz(a) {
-  return [a[2], a[3], a[0], a[2]];
-}
-function wwxz(a) {
-  return [a[3], a[3], a[0], a[2]];
-}
-function xxyz(a) {
-  return [a[0], a[0], a[1], a[2]];
-}
-function yxyz(a) {
-  return [a[1], a[0], a[1], a[2]];
-}
-function zxyz(a) {
-  return [a[2], a[0], a[1], a[2]];
-}
-function wxyz(a) {
-  return [a[3], a[0], a[1], a[2]];
-}
-function xyyz(a) {
-  return [a[0], a[1], a[1], a[2]];
-}
-function yyyz(a) {
-  return [a[1], a[1], a[1], a[2]];
-}
-function zyyz(a) {
-  return [a[2], a[1], a[1], a[2]];
-}
-function wyyz(a) {
-  return [a[3], a[1], a[1], a[2]];
-}
-function xzyz(a) {
-  return [a[0], a[2], a[1], a[2]];
-}
-function yzyz(a) {
-  return [a[1], a[2], a[1], a[2]];
-}
-function zzyz(a) {
-  return [a[2], a[2], a[1], a[2]];
-}
-function wzyz(a) {
-  return [a[3], a[2], a[1], a[2]];
-}
-function xwyz(a) {
-  return [a[0], a[3], a[1], a[2]];
-}
-function ywyz(a) {
-  return [a[1], a[3], a[1], a[2]];
-}
-function zwyz(a) {
-  return [a[2], a[3], a[1], a[2]];
-}
-function wwyz(a) {
-  return [a[3], a[3], a[1], a[2]];
-}
-function xxzz(a) {
-  return [a[0], a[0], a[2], a[2]];
-}
-function yxzz(a) {
-  return [a[1], a[0], a[2], a[2]];
-}
-function zxzz(a) {
-  return [a[2], a[0], a[2], a[2]];
-}
-function wxzz(a) {
-  return [a[3], a[0], a[2], a[2]];
-}
-function xyzz(a) {
-  return [a[0], a[1], a[2], a[2]];
-}
-function yyzz(a) {
-  return [a[1], a[1], a[2], a[2]];
-}
-function zyzz(a) {
-  return [a[2], a[1], a[2], a[2]];
-}
-function wyzz(a) {
-  return [a[3], a[1], a[2], a[2]];
-}
-function xzzz(a) {
-  return [a[0], a[2], a[2], a[2]];
-}
-function yzzz(a) {
-  return [a[1], a[2], a[2], a[2]];
-}
-function zzzz(a) {
-  return [a[2], a[2], a[2], a[2]];
-}
-function wzzz(a) {
-  return [a[3], a[2], a[2], a[2]];
-}
-function xwzz(a) {
-  return [a[0], a[3], a[2], a[2]];
-}
-function ywzz(a) {
-  return [a[1], a[3], a[2], a[2]];
-}
-function zwzz(a) {
-  return [a[2], a[3], a[2], a[2]];
-}
-function wwzz(a) {
-  return [a[3], a[3], a[2], a[2]];
-}
-function xxwz(a) {
-  return [a[0], a[0], a[3], a[2]];
-}
-function yxwz(a) {
-  return [a[1], a[0], a[3], a[2]];
-}
-function zxwz(a) {
-  return [a[2], a[0], a[3], a[2]];
-}
-function wxwz(a) {
-  return [a[3], a[0], a[3], a[2]];
-}
-function xywz(a) {
-  return [a[0], a[1], a[3], a[2]];
-}
-function yywz(a) {
-  return [a[1], a[1], a[3], a[2]];
-}
-function zywz(a) {
-  return [a[2], a[1], a[3], a[2]];
-}
-function wywz(a) {
-  return [a[3], a[1], a[3], a[2]];
-}
-function xzwz(a) {
-  return [a[0], a[2], a[3], a[2]];
-}
-function yzwz(a) {
-  return [a[1], a[2], a[3], a[2]];
-}
-function zzwz(a) {
-  return [a[2], a[2], a[3], a[2]];
-}
-function wzwz(a) {
-  return [a[3], a[2], a[3], a[2]];
-}
-function xwwz(a) {
-  return [a[0], a[3], a[3], a[2]];
-}
-function ywwz(a) {
-  return [a[1], a[3], a[3], a[2]];
-}
-function zwwz(a) {
-  return [a[2], a[3], a[3], a[2]];
-}
-function wwwz(a) {
-  return [a[3], a[3], a[3], a[2]];
-}
-function xxxw(a) {
-  return [a[0], a[0], a[0], a[3]];
-}
-function yxxw(a) {
-  return [a[1], a[0], a[0], a[3]];
-}
-function zxxw(a) {
-  return [a[2], a[0], a[0], a[3]];
-}
-function wxxw(a) {
-  return [a[3], a[0], a[0], a[3]];
-}
-function xyxw(a) {
-  return [a[0], a[1], a[0], a[3]];
-}
-function yyxw(a) {
-  return [a[1], a[1], a[0], a[3]];
-}
-function zyxw(a) {
-  return [a[2], a[1], a[0], a[3]];
-}
-function wyxw(a) {
-  return [a[3], a[1], a[0], a[3]];
-}
-function xzxw(a) {
-  return [a[0], a[2], a[0], a[3]];
-}
-function yzxw(a) {
-  return [a[1], a[2], a[0], a[3]];
-}
-function zzxw(a) {
-  return [a[2], a[2], a[0], a[3]];
-}
-function wzxw(a) {
-  return [a[3], a[2], a[0], a[3]];
-}
-function xwxw(a) {
-  return [a[0], a[3], a[0], a[3]];
-}
-function ywxw(a) {
-  return [a[1], a[3], a[0], a[3]];
-}
-function zwxw(a) {
-  return [a[2], a[3], a[0], a[3]];
-}
-function wwxw(a) {
-  return [a[3], a[3], a[0], a[3]];
-}
-function xxyw(a) {
-  return [a[0], a[0], a[1], a[3]];
-}
-function yxyw(a) {
-  return [a[1], a[0], a[1], a[3]];
-}
-function zxyw(a) {
-  return [a[2], a[0], a[1], a[3]];
-}
-function wxyw(a) {
-  return [a[3], a[0], a[1], a[3]];
-}
-function xyyw(a) {
-  return [a[0], a[1], a[1], a[3]];
-}
-function yyyw(a) {
-  return [a[1], a[1], a[1], a[3]];
-}
-function zyyw(a) {
-  return [a[2], a[1], a[1], a[3]];
-}
-function wyyw(a) {
-  return [a[3], a[1], a[1], a[3]];
-}
-function xzyw(a) {
-  return [a[0], a[2], a[1], a[3]];
-}
-function yzyw(a) {
-  return [a[1], a[2], a[1], a[3]];
-}
-function zzyw(a) {
-  return [a[2], a[2], a[1], a[3]];
-}
-function wzyw(a) {
-  return [a[3], a[2], a[1], a[3]];
-}
-function xwyw(a) {
-  return [a[0], a[3], a[1], a[3]];
-}
-function ywyw(a) {
-  return [a[1], a[3], a[1], a[3]];
-}
-function zwyw(a) {
-  return [a[2], a[3], a[1], a[3]];
-}
-function wwyw(a) {
-  return [a[3], a[3], a[1], a[3]];
-}
-function xxzw(a) {
-  return [a[0], a[0], a[2], a[3]];
-}
-function yxzw(a) {
-  return [a[1], a[0], a[2], a[3]];
-}
-function zxzw(a) {
-  return [a[2], a[0], a[2], a[3]];
-}
-function wxzw(a) {
-  return [a[3], a[0], a[2], a[3]];
-}
-function xyzw(a) {
-  return [a[0], a[1], a[2], a[3]];
-}
-function yyzw(a) {
-  return [a[1], a[1], a[2], a[3]];
-}
-function zyzw(a) {
-  return [a[2], a[1], a[2], a[3]];
-}
-function wyzw(a) {
-  return [a[3], a[1], a[2], a[3]];
-}
-function xzzw(a) {
-  return [a[0], a[2], a[2], a[3]];
-}
-function yzzw(a) {
-  return [a[1], a[2], a[2], a[3]];
-}
-function zzzw(a) {
-  return [a[2], a[2], a[2], a[3]];
-}
-function wzzw(a) {
-  return [a[3], a[2], a[2], a[3]];
-}
-function xwzw(a) {
-  return [a[0], a[3], a[2], a[3]];
-}
-function ywzw(a) {
-  return [a[1], a[3], a[2], a[3]];
-}
-function zwzw(a) {
-  return [a[2], a[3], a[2], a[3]];
-}
-function wwzw(a) {
-  return [a[3], a[3], a[2], a[3]];
-}
-function xxww(a) {
-  return [a[0], a[0], a[3], a[3]];
-}
-function yxww(a) {
-  return [a[1], a[0], a[3], a[3]];
-}
-function zxww(a) {
-  return [a[2], a[0], a[3], a[3]];
-}
-function wxww(a) {
-  return [a[3], a[0], a[3], a[3]];
-}
-function xyww(a) {
-  return [a[0], a[1], a[3], a[3]];
-}
-function yyww(a) {
-  return [a[1], a[1], a[3], a[3]];
-}
-function zyww(a) {
-  return [a[2], a[1], a[3], a[3]];
-}
-function wyww(a) {
-  return [a[3], a[1], a[3], a[3]];
-}
-function xzww(a) {
-  return [a[0], a[2], a[3], a[3]];
-}
-function yzww(a) {
-  return [a[1], a[2], a[3], a[3]];
-}
-function zzww(a) {
-  return [a[2], a[2], a[3], a[3]];
-}
-function wzww(a) {
-  return [a[3], a[2], a[3], a[3]];
-}
-function xwww(a) {
-  return [a[0], a[3], a[3], a[3]];
-}
-function ywww(a) {
-  return [a[1], a[3], a[3], a[3]];
-}
-function zwww(a) {
-  return [a[2], a[3], a[3], a[3]];
-}
-function wwww(a) {
-  return [a[3], a[3], a[3], a[3]];
-}
-function xxx(a) {
-  return [a[0], a[0], a[0]];
-}
-function yxx(a) {
-  return [a[1], a[0], a[0]];
-}
-function zxx(a) {
-  return [a[2], a[0], a[0]];
-}
-function wxx(a) {
-  return [a[3], a[0], a[0]];
-}
-function xyx(a) {
-  return [a[0], a[1], a[0]];
-}
-function yyx(a) {
-  return [a[1], a[1], a[0]];
-}
-function zyx(a) {
-  return [a[2], a[1], a[0]];
-}
-function wyx(a) {
-  return [a[3], a[1], a[0]];
-}
-function xzx(a) {
-  return [a[0], a[2], a[0]];
-}
-function yzx(a) {
-  return [a[1], a[2], a[0]];
-}
-function zzx(a) {
-  return [a[2], a[2], a[0]];
-}
-function wzx(a) {
-  return [a[3], a[2], a[0]];
-}
-function xwx(a) {
-  return [a[0], a[3], a[0]];
-}
-function ywx(a) {
-  return [a[1], a[3], a[0]];
-}
-function zwx(a) {
-  return [a[2], a[3], a[0]];
-}
-function wwx(a) {
-  return [a[3], a[3], a[0]];
-}
-function xxy(a) {
-  return [a[0], a[0], a[1]];
-}
-function yxy(a) {
-  return [a[1], a[0], a[1]];
-}
-function zxy(a) {
-  return [a[2], a[0], a[1]];
-}
-function wxy(a) {
-  return [a[3], a[0], a[1]];
-}
-function xyy(a) {
-  return [a[0], a[1], a[1]];
-}
-function yyy(a) {
-  return [a[1], a[1], a[1]];
-}
-function zyy(a) {
-  return [a[2], a[1], a[1]];
-}
-function wyy(a) {
-  return [a[3], a[1], a[1]];
-}
-function xzy(a) {
-  return [a[0], a[2], a[1]];
-}
-function yzy(a) {
-  return [a[1], a[2], a[1]];
-}
-function zzy(a) {
-  return [a[2], a[2], a[1]];
-}
-function wzy(a) {
-  return [a[3], a[2], a[1]];
-}
-function xwy(a) {
-  return [a[0], a[3], a[1]];
-}
-function ywy(a) {
-  return [a[1], a[3], a[1]];
-}
-function zwy(a) {
-  return [a[2], a[3], a[1]];
-}
-function wwy(a) {
-  return [a[3], a[3], a[1]];
-}
-function xxz(a) {
-  return [a[0], a[0], a[2]];
-}
-function yxz(a) {
-  return [a[1], a[0], a[2]];
-}
-function zxz(a) {
-  return [a[2], a[0], a[2]];
-}
-function wxz(a) {
-  return [a[3], a[0], a[2]];
-}
-function xyz(a) {
-  return [a[0], a[1], a[2]];
-}
-function yyz(a) {
-  return [a[1], a[1], a[2]];
-}
-function zyz(a) {
-  return [a[2], a[1], a[2]];
-}
-function wyz(a) {
-  return [a[3], a[1], a[2]];
-}
-function xzz(a) {
-  return [a[0], a[2], a[2]];
-}
-function yzz(a) {
-  return [a[1], a[2], a[2]];
-}
-function zzz(a) {
-  return [a[2], a[2], a[2]];
-}
-function wzz(a) {
-  return [a[3], a[2], a[2]];
-}
-function xwz(a) {
-  return [a[0], a[3], a[2]];
-}
-function ywz(a) {
-  return [a[1], a[3], a[2]];
-}
-function zwz(a) {
-  return [a[2], a[3], a[2]];
-}
-function wwz(a) {
-  return [a[3], a[3], a[2]];
-}
-function xxw(a) {
-  return [a[0], a[0], a[3]];
-}
-function yxw(a) {
-  return [a[1], a[0], a[3]];
-}
-function zxw(a) {
-  return [a[2], a[0], a[3]];
-}
-function wxw(a) {
-  return [a[3], a[0], a[3]];
-}
-function xyw(a) {
-  return [a[0], a[1], a[3]];
-}
-function yyw(a) {
-  return [a[1], a[1], a[3]];
-}
-function zyw(a) {
-  return [a[2], a[1], a[3]];
-}
-function wyw(a) {
-  return [a[3], a[1], a[3]];
-}
-function xzw(a) {
-  return [a[0], a[2], a[3]];
-}
-function yzw(a) {
-  return [a[1], a[2], a[3]];
-}
-function zzw(a) {
-  return [a[2], a[2], a[3]];
-}
-function wzw(a) {
-  return [a[3], a[2], a[3]];
-}
-function xww(a) {
-  return [a[0], a[3], a[3]];
-}
-function yww(a) {
-  return [a[1], a[3], a[3]];
-}
-function zww(a) {
-  return [a[2], a[3], a[3]];
-}
-function www(a) {
-  return [a[3], a[3], a[3]];
-}
-function xx(a) {
-  return [a[0], a[0]];
-}
-function yx(a) {
-  return [a[1], a[0]];
-}
-function zx(a) {
-  return [a[2], a[0]];
-}
-function wx(a) {
-  return [a[3], a[0]];
-}
-function xy(a) {
-  return [a[0], a[1]];
-}
-function yy(a) {
-  return [a[1], a[1]];
-}
-function zy(a) {
-  return [a[2], a[1]];
-}
-function wy(a) {
-  return [a[3], a[1]];
-}
-function xz(a) {
-  return [a[0], a[2]];
-}
-function yz(a) {
-  return [a[1], a[2]];
-}
-function zz(a) {
-  return [a[2], a[2]];
-}
-function wz(a) {
-  return [a[3], a[2]];
-}
-function xw(a) {
-  return [a[0], a[3]];
-}
-function yw(a) {
-  return [a[1], a[3]];
-}
-function zw(a) {
-  return [a[2], a[3]];
-}
-function ww(a) {
-  return [a[3], a[3]];
-}
-function x(a) {
-  return a[0];
-}
-function y(a) {
-  return a[1];
-}
-function z(a) {
-  return a[2];
-}
-function w(a) {
-  return a[3];
-}
-function cross(a, b) {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0]
-  ];
-}
-function polar2Cart(r, theta) {
-  return [r * Math.cos(theta), r * Math.sin(theta)];
-}
-function polarVec2Cart(rCommaTheta) {
-  return polar2Cart(...rCommaTheta);
-}
-function cart2Polar(a) {
-  return [length2(a), Math.atan2(a[1], a[0])];
-}
-function pointTo(a, b) {
-  return Math.atan2(b[1] - a[1], b[0] - a[0]);
-}
-function componentwise2(a, f) {
-  return [f(a[0]), f(a[1])];
-}
-function componentwise3(a, f) {
-  return [f(a[0]), f(a[1]), f(a[2])];
-}
-function componentwise4(a, f) {
-  return [f(a[0]), f(a[1]), f(a[2]), f(a[3])];
-}
-function mulScalarByVec2(a, b) {
-  return [a * b[0], a * b[1]];
-}
-function mulScalarByVec3(a, b) {
-  return [a * b[0], a * b[1], a * b[2]];
-}
-function mulScalarByVec4(a, b) {
-  return [a * b[0], a * b[1], a * b[2], a * b[3]];
-}
-function mulVec2ByMat2(a, b) {
-  return [a[0] * b[0] + a[1] * b[1], a[0] * b[2] + a[1] * b[3]];
-}
-function mulVec2ByMat3x2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1],
-    a[0] * b[2] + a[1] * b[3],
-    a[0] * b[4] + a[1] * b[5]
-  ];
-}
-function mulVec2ByMat4x2(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1],
-    a[0] * b[2] + a[1] * b[3],
-    a[0] * b[4] + a[1] * b[5],
-    a[0] * b[6] + a[1] * b[7]
-  ];
-}
-function mulVec3ByMat2x3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
-    a[0] * b[3] + a[1] * b[4] + a[2] * b[5]
-  ];
-}
-function mulVec3ByMat3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
-    a[0] * b[3] + a[1] * b[4] + a[2] * b[5],
-    a[0] * b[6] + a[1] * b[7] + a[2] * b[8]
-  ];
-}
-function mulVec3ByMat4x3(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
-    a[0] * b[3] + a[1] * b[4] + a[2] * b[5],
-    a[0] * b[6] + a[1] * b[7] + a[2] * b[8],
-    a[0] * b[9] + a[1] * b[10] + a[2] * b[11]
-  ];
-}
-function mulVec4ByMat2x4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
-    a[0] * b[4] + a[1] * b[5] + a[2] * b[6] + a[3] * b[7]
-  ];
-}
-function mulVec4ByMat3x4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
-    a[0] * b[4] + a[1] * b[5] + a[2] * b[6] + a[3] * b[7],
-    a[0] * b[8] + a[1] * b[9] + a[2] * b[10] + a[3] * b[11]
-  ];
-}
-function mulVec4ByMat4(a, b) {
-  return [
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
-    a[0] * b[4] + a[1] * b[5] + a[2] * b[6] + a[3] * b[7],
-    a[0] * b[8] + a[1] * b[9] + a[2] * b[10] + a[3] * b[11],
-    a[0] * b[12] + a[1] * b[13] + a[2] * b[14] + a[3] * b[15]
-  ];
-}
-function mulVec2ByScalar(a, b) {
-  return [a[0] * b, a[1] * b];
-}
-function mulVec2ByVec2(a, b) {
-  return [a[0] * b[0], a[1] * b[0], a[0] * b[1], a[1] * b[1]];
-}
-function mulVec2ByVec3(a, b) {
-  return [
-    a[0] * b[0],
-    a[1] * b[0],
-    a[0] * b[1],
-    a[1] * b[1],
-    a[0] * b[2],
-    a[1] * b[2]
-  ];
-}
-function mulVec2ByVec4(a, b) {
-  return [
-    a[0] * b[0],
-    a[1] * b[0],
-    a[0] * b[1],
-    a[1] * b[1],
-    a[0] * b[2],
-    a[1] * b[2],
-    a[0] * b[3],
-    a[1] * b[3]
-  ];
-}
-function mulMat2ByVec2(a, b) {
-  return [a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1]];
-}
-function mulMat2(a, b) {
-  return [
-    a[0] * b[0] + a[2] * b[1],
-    a[1] * b[0] + a[3] * b[1],
-    a[0] * b[2] + a[2] * b[3],
-    a[1] * b[2] + a[3] * b[3]
-  ];
-}
-function mulMat2ByMat3x2(a, b) {
-  return [
-    a[0] * b[0] + a[2] * b[1],
-    a[1] * b[0] + a[3] * b[1],
-    a[0] * b[2] + a[2] * b[3],
-    a[1] * b[2] + a[3] * b[3],
-    a[0] * b[4] + a[2] * b[5],
-    a[1] * b[4] + a[3] * b[5]
-  ];
-}
-function mulMat2ByMat4x2(a, b) {
-  return [
-    a[0] * b[0] + a[2] * b[1],
-    a[1] * b[0] + a[3] * b[1],
-    a[0] * b[2] + a[2] * b[3],
-    a[1] * b[2] + a[3] * b[3],
-    a[0] * b[4] + a[2] * b[5],
-    a[1] * b[4] + a[3] * b[5],
-    a[0] * b[6] + a[2] * b[7],
-    a[1] * b[6] + a[3] * b[7]
-  ];
-}
-function mulMat3x2ByVec3(a, b) {
-  return [
-    a[0] * b[0] + a[2] * b[1] + a[4] * b[2],
-    a[1] * b[0] + a[3] * b[1] + a[5] * b[2]
-  ];
-}
-function mulMat3x2ByMat2x3(a, b) {
-  return [
-    a[0] * b[0] + a[2] * b[1] + a[4] * b[2],
-    a[1] * b[0] + a[3] * b[1] + a[5] * b[2],
-    a[0] * b[3] + a[2] * b[4] + a[4] * b[5],
-    a[1] * b[3] + a[3] * b[4] + a[5] * b[5]
-  ];
-}
-function mulMat3x2ByMat3(a, b) {
-  return [
-    a[0] * b[0] + a[2] * b[1] + a[4] * b[2],
-    a[1] * b[0] + a[3] * b[1] + a[5] * b[2],
-    a[0] * b[3] + a[2] * b[4] + a[4] * b[5],
-    a[1] * b[3] + a[3] * b[4] + a[5] * b[5],
-    a[0] * b[6] + a[2] * b[7] + a[4] * b[8],
-    a[1] * b[6] + a[3] * b[7] + a[5] * b[8]
-  ];
-}
-function mulMat3x2ByMat4x3(a, b) {
-  return [
-    a[0] * b[0] + a[2] * b[1] + a[4] * b[2],
-    a[1] * b[0] + a[3] * b[1] + a[5] * b[2],
-    a[0] * b[3] + a[2] * b[4] + a[4] * b[5],
-    a[1] * b[3] + a[3] * b[4] + a[5] * b[5],
-    a[0] * b[6] + a[2] * b[7] + a[4] * b[8],
-    a[1] * b[6] + a[3] * b[7] + a[5] * b[8],
-    a[0] * b[9] + a[2] * b[10] + a[4] * b[11],
-    a[1] * b[9] + a[3] * b[10] + a[5] * b[11]
-  ];
-}
-function mulMat4x2ByVec4(a, b) {
-  return [
-    a[0] * b[0] + a[2] * b[1] + a[4] * b[2] + a[6] * b[3],
-    a[1] * b[0] + a[3] * b[1] + a[5] * b[2] + a[7] * b[3]
-  ];
-}
-function mulMat4x2ByMat2x4(a, b) {
-  return [
-    a[0] * b[0] + a[2] * b[1] + a[4] * b[2] + a[6] * b[3],
-    a[1] * b[0] + a[3] * b[1] + a[5] * b[2] + a[7] * b[3],
-    a[0] * b[4] + a[2] * b[5] + a[4] * b[6] + a[6] * b[7],
-    a[1] * b[4] + a[3] * b[5] + a[5] * b[6] + a[7] * b[7]
-  ];
-}
-function mulMat4x2ByMat3x4(a, b) {
-  return [
-    a[0] * b[0] + a[2] * b[1] + a[4] * b[2] + a[6] * b[3],
-    a[1] * b[0] + a[3] * b[1] + a[5] * b[2] + a[7] * b[3],
-    a[0] * b[4] + a[2] * b[5] + a[4] * b[6] + a[6] * b[7],
-    a[1] * b[4] + a[3] * b[5] + a[5] * b[6] + a[7] * b[7],
-    a[0] * b[8] + a[2] * b[9] + a[4] * b[10] + a[6] * b[11],
-    a[1] * b[8] + a[3] * b[9] + a[5] * b[10] + a[7] * b[11]
-  ];
-}
-function mulMat4x2ByMat4(a, b) {
-  return [
-    a[0] * b[0] + a[2] * b[1] + a[4] * b[2] + a[6] * b[3],
-    a[1] * b[0] + a[3] * b[1] + a[5] * b[2] + a[7] * b[3],
-    a[0] * b[4] + a[2] * b[5] + a[4] * b[6] + a[6] * b[7],
-    a[1] * b[4] + a[3] * b[5] + a[5] * b[6] + a[7] * b[7],
-    a[0] * b[8] + a[2] * b[9] + a[4] * b[10] + a[6] * b[11],
-    a[1] * b[8] + a[3] * b[9] + a[5] * b[10] + a[7] * b[11],
-    a[0] * b[12] + a[2] * b[13] + a[4] * b[14] + a[6] * b[15],
-    a[1] * b[12] + a[3] * b[13] + a[5] * b[14] + a[7] * b[15]
-  ];
-}
-function mulVec3ByScalar(a, b) {
-  return [a[0] * b, a[1] * b, a[2] * b];
-}
-function mulVec3ByVec2(a, b) {
-  return [
-    a[0] * b[0],
-    a[1] * b[0],
-    a[2] * b[0],
-    a[0] * b[1],
-    a[1] * b[1],
-    a[2] * b[1]
-  ];
-}
-function mulVec3ByVec3(a, b) {
-  return [
-    a[0] * b[0],
-    a[1] * b[0],
-    a[2] * b[0],
-    a[0] * b[1],
-    a[1] * b[1],
-    a[2] * b[1],
-    a[0] * b[2],
-    a[1] * b[2],
-    a[2] * b[2]
-  ];
-}
-function mulVec3ByVec4(a, b) {
-  return [
-    a[0] * b[0],
-    a[1] * b[0],
-    a[2] * b[0],
-    a[0] * b[1],
-    a[1] * b[1],
-    a[2] * b[1],
-    a[0] * b[2],
-    a[1] * b[2],
-    a[2] * b[2],
-    a[0] * b[3],
-    a[1] * b[3],
-    a[2] * b[3]
-  ];
-}
-function mulMat2x3ByVec2(a, b) {
-  return [
-    a[0] * b[0] + a[3] * b[1],
-    a[1] * b[0] + a[4] * b[1],
-    a[2] * b[0] + a[5] * b[1]
-  ];
-}
-function mulMat2x3ByMat2(a, b) {
-  return [
-    a[0] * b[0] + a[3] * b[1],
-    a[1] * b[0] + a[4] * b[1],
-    a[2] * b[0] + a[5] * b[1],
-    a[0] * b[2] + a[3] * b[3],
-    a[1] * b[2] + a[4] * b[3],
-    a[2] * b[2] + a[5] * b[3]
-  ];
-}
-function mulMat2x3ByMat3x2(a, b) {
-  return [
-    a[0] * b[0] + a[3] * b[1],
-    a[1] * b[0] + a[4] * b[1],
-    a[2] * b[0] + a[5] * b[1],
-    a[0] * b[2] + a[3] * b[3],
-    a[1] * b[2] + a[4] * b[3],
-    a[2] * b[2] + a[5] * b[3],
-    a[0] * b[4] + a[3] * b[5],
-    a[1] * b[4] + a[4] * b[5],
-    a[2] * b[4] + a[5] * b[5]
-  ];
-}
-function mulMat2x3ByMat4x2(a, b) {
-  return [
-    a[0] * b[0] + a[3] * b[1],
-    a[1] * b[0] + a[4] * b[1],
-    a[2] * b[0] + a[5] * b[1],
-    a[0] * b[2] + a[3] * b[3],
-    a[1] * b[2] + a[4] * b[3],
-    a[2] * b[2] + a[5] * b[3],
-    a[0] * b[4] + a[3] * b[5],
-    a[1] * b[4] + a[4] * b[5],
-    a[2] * b[4] + a[5] * b[5],
-    a[0] * b[6] + a[3] * b[7],
-    a[1] * b[6] + a[4] * b[7],
-    a[2] * b[6] + a[5] * b[7]
-  ];
-}
-function mulMat3ByVec3(a, b) {
-  return [
-    a[0] * b[0] + a[3] * b[1] + a[6] * b[2],
-    a[1] * b[0] + a[4] * b[1] + a[7] * b[2],
-    a[2] * b[0] + a[5] * b[1] + a[8] * b[2]
-  ];
-}
-function mulMat3ByMat2x3(a, b) {
-  return [
-    a[0] * b[0] + a[3] * b[1] + a[6] * b[2],
-    a[1] * b[0] + a[4] * b[1] + a[7] * b[2],
-    a[2] * b[0] + a[5] * b[1] + a[8] * b[2],
-    a[0] * b[3] + a[3] * b[4] + a[6] * b[5],
-    a[1] * b[3] + a[4] * b[4] + a[7] * b[5],
-    a[2] * b[3] + a[5] * b[4] + a[8] * b[5]
-  ];
-}
-function mulMat3(a, b) {
-  return [
-    a[0] * b[0] + a[3] * b[1] + a[6] * b[2],
-    a[1] * b[0] + a[4] * b[1] + a[7] * b[2],
-    a[2] * b[0] + a[5] * b[1] + a[8] * b[2],
-    a[0] * b[3] + a[3] * b[4] + a[6] * b[5],
-    a[1] * b[3] + a[4] * b[4] + a[7] * b[5],
-    a[2] * b[3] + a[5] * b[4] + a[8] * b[5],
-    a[0] * b[6] + a[3] * b[7] + a[6] * b[8],
-    a[1] * b[6] + a[4] * b[7] + a[7] * b[8],
-    a[2] * b[6] + a[5] * b[7] + a[8] * b[8]
-  ];
-}
-function mulMat3ByMat4x3(a, b) {
-  return [
-    a[0] * b[0] + a[3] * b[1] + a[6] * b[2],
-    a[1] * b[0] + a[4] * b[1] + a[7] * b[2],
-    a[2] * b[0] + a[5] * b[1] + a[8] * b[2],
-    a[0] * b[3] + a[3] * b[4] + a[6] * b[5],
-    a[1] * b[3] + a[4] * b[4] + a[7] * b[5],
-    a[2] * b[3] + a[5] * b[4] + a[8] * b[5],
-    a[0] * b[6] + a[3] * b[7] + a[6] * b[8],
-    a[1] * b[6] + a[4] * b[7] + a[7] * b[8],
-    a[2] * b[6] + a[5] * b[7] + a[8] * b[8],
-    a[0] * b[9] + a[3] * b[10] + a[6] * b[11],
-    a[1] * b[9] + a[4] * b[10] + a[7] * b[11],
-    a[2] * b[9] + a[5] * b[10] + a[8] * b[11]
-  ];
-}
-function mulMat4x3ByVec4(a, b) {
-  return [
-    a[0] * b[0] + a[3] * b[1] + a[6] * b[2] + a[9] * b[3],
-    a[1] * b[0] + a[4] * b[1] + a[7] * b[2] + a[10] * b[3],
-    a[2] * b[0] + a[5] * b[1] + a[8] * b[2] + a[11] * b[3]
-  ];
-}
-function mulMat4x3ByMat2x4(a, b) {
-  return [
-    a[0] * b[0] + a[3] * b[1] + a[6] * b[2] + a[9] * b[3],
-    a[1] * b[0] + a[4] * b[1] + a[7] * b[2] + a[10] * b[3],
-    a[2] * b[0] + a[5] * b[1] + a[8] * b[2] + a[11] * b[3],
-    a[0] * b[4] + a[3] * b[5] + a[6] * b[6] + a[9] * b[7],
-    a[1] * b[4] + a[4] * b[5] + a[7] * b[6] + a[10] * b[7],
-    a[2] * b[4] + a[5] * b[5] + a[8] * b[6] + a[11] * b[7]
-  ];
-}
-function mulMat4x3ByMat3x4(a, b) {
-  return [
-    a[0] * b[0] + a[3] * b[1] + a[6] * b[2] + a[9] * b[3],
-    a[1] * b[0] + a[4] * b[1] + a[7] * b[2] + a[10] * b[3],
-    a[2] * b[0] + a[5] * b[1] + a[8] * b[2] + a[11] * b[3],
-    a[0] * b[4] + a[3] * b[5] + a[6] * b[6] + a[9] * b[7],
-    a[1] * b[4] + a[4] * b[5] + a[7] * b[6] + a[10] * b[7],
-    a[2] * b[4] + a[5] * b[5] + a[8] * b[6] + a[11] * b[7],
-    a[0] * b[8] + a[3] * b[9] + a[6] * b[10] + a[9] * b[11],
-    a[1] * b[8] + a[4] * b[9] + a[7] * b[10] + a[10] * b[11],
-    a[2] * b[8] + a[5] * b[9] + a[8] * b[10] + a[11] * b[11]
-  ];
-}
-function mulMat4x3ByMat4(a, b) {
-  return [
-    a[0] * b[0] + a[3] * b[1] + a[6] * b[2] + a[9] * b[3],
-    a[1] * b[0] + a[4] * b[1] + a[7] * b[2] + a[10] * b[3],
-    a[2] * b[0] + a[5] * b[1] + a[8] * b[2] + a[11] * b[3],
-    a[0] * b[4] + a[3] * b[5] + a[6] * b[6] + a[9] * b[7],
-    a[1] * b[4] + a[4] * b[5] + a[7] * b[6] + a[10] * b[7],
-    a[2] * b[4] + a[5] * b[5] + a[8] * b[6] + a[11] * b[7],
-    a[0] * b[8] + a[3] * b[9] + a[6] * b[10] + a[9] * b[11],
-    a[1] * b[8] + a[4] * b[9] + a[7] * b[10] + a[10] * b[11],
-    a[2] * b[8] + a[5] * b[9] + a[8] * b[10] + a[11] * b[11],
-    a[0] * b[12] + a[3] * b[13] + a[6] * b[14] + a[9] * b[15],
-    a[1] * b[12] + a[4] * b[13] + a[7] * b[14] + a[10] * b[15],
-    a[2] * b[12] + a[5] * b[13] + a[8] * b[14] + a[11] * b[15]
-  ];
-}
-function mulVec4ByScalar(a, b) {
-  return [a[0] * b, a[1] * b, a[2] * b, a[3] * b];
-}
-function mulVec4ByVec2(a, b) {
-  return [
-    a[0] * b[0],
-    a[1] * b[0],
-    a[2] * b[0],
-    a[3] * b[0],
-    a[0] * b[1],
-    a[1] * b[1],
-    a[2] * b[1],
-    a[3] * b[1]
-  ];
-}
-function mulVec4ByVec3(a, b) {
-  return [
-    a[0] * b[0],
-    a[1] * b[0],
-    a[2] * b[0],
-    a[3] * b[0],
-    a[0] * b[1],
-    a[1] * b[1],
-    a[2] * b[1],
-    a[3] * b[1],
-    a[0] * b[2],
-    a[1] * b[2],
-    a[2] * b[2],
-    a[3] * b[2]
-  ];
-}
-function mulVec4ByVec4(a, b) {
-  return [
-    a[0] * b[0],
-    a[1] * b[0],
-    a[2] * b[0],
-    a[3] * b[0],
-    a[0] * b[1],
-    a[1] * b[1],
-    a[2] * b[1],
-    a[3] * b[1],
-    a[0] * b[2],
-    a[1] * b[2],
-    a[2] * b[2],
-    a[3] * b[2],
-    a[0] * b[3],
-    a[1] * b[3],
-    a[2] * b[3],
-    a[3] * b[3]
-  ];
-}
-function mulMat2x4ByVec2(a, b) {
-  return [
-    a[0] * b[0] + a[4] * b[1],
-    a[1] * b[0] + a[5] * b[1],
-    a[2] * b[0] + a[6] * b[1],
-    a[3] * b[0] + a[7] * b[1]
-  ];
-}
-function mulMat2x4ByMat2(a, b) {
-  return [
-    a[0] * b[0] + a[4] * b[1],
-    a[1] * b[0] + a[5] * b[1],
-    a[2] * b[0] + a[6] * b[1],
-    a[3] * b[0] + a[7] * b[1],
-    a[0] * b[2] + a[4] * b[3],
-    a[1] * b[2] + a[5] * b[3],
-    a[2] * b[2] + a[6] * b[3],
-    a[3] * b[2] + a[7] * b[3]
-  ];
-}
-function mulMat2x4ByMat3x2(a, b) {
-  return [
-    a[0] * b[0] + a[4] * b[1],
-    a[1] * b[0] + a[5] * b[1],
-    a[2] * b[0] + a[6] * b[1],
-    a[3] * b[0] + a[7] * b[1],
-    a[0] * b[2] + a[4] * b[3],
-    a[1] * b[2] + a[5] * b[3],
-    a[2] * b[2] + a[6] * b[3],
-    a[3] * b[2] + a[7] * b[3],
-    a[0] * b[4] + a[4] * b[5],
-    a[1] * b[4] + a[5] * b[5],
-    a[2] * b[4] + a[6] * b[5],
-    a[3] * b[4] + a[7] * b[5]
-  ];
-}
-function mulMat2x4ByMat4x2(a, b) {
-  return [
-    a[0] * b[0] + a[4] * b[1],
-    a[1] * b[0] + a[5] * b[1],
-    a[2] * b[0] + a[6] * b[1],
-    a[3] * b[0] + a[7] * b[1],
-    a[0] * b[2] + a[4] * b[3],
-    a[1] * b[2] + a[5] * b[3],
-    a[2] * b[2] + a[6] * b[3],
-    a[3] * b[2] + a[7] * b[3],
-    a[0] * b[4] + a[4] * b[5],
-    a[1] * b[4] + a[5] * b[5],
-    a[2] * b[4] + a[6] * b[5],
-    a[3] * b[4] + a[7] * b[5],
-    a[0] * b[6] + a[4] * b[7],
-    a[1] * b[6] + a[5] * b[7],
-    a[2] * b[6] + a[6] * b[7],
-    a[3] * b[6] + a[7] * b[7]
-  ];
-}
-function mulMat3x4ByVec3(a, b) {
-  return [
-    a[0] * b[0] + a[4] * b[1] + a[8] * b[2],
-    a[1] * b[0] + a[5] * b[1] + a[9] * b[2],
-    a[2] * b[0] + a[6] * b[1] + a[10] * b[2],
-    a[3] * b[0] + a[7] * b[1] + a[11] * b[2]
-  ];
-}
-function mulMat3x4ByMat2x3(a, b) {
-  return [
-    a[0] * b[0] + a[4] * b[1] + a[8] * b[2],
-    a[1] * b[0] + a[5] * b[1] + a[9] * b[2],
-    a[2] * b[0] + a[6] * b[1] + a[10] * b[2],
-    a[3] * b[0] + a[7] * b[1] + a[11] * b[2],
-    a[0] * b[3] + a[4] * b[4] + a[8] * b[5],
-    a[1] * b[3] + a[5] * b[4] + a[9] * b[5],
-    a[2] * b[3] + a[6] * b[4] + a[10] * b[5],
-    a[3] * b[3] + a[7] * b[4] + a[11] * b[5]
-  ];
-}
-function mulMat3x4ByMat3(a, b) {
-  return [
-    a[0] * b[0] + a[4] * b[1] + a[8] * b[2],
-    a[1] * b[0] + a[5] * b[1] + a[9] * b[2],
-    a[2] * b[0] + a[6] * b[1] + a[10] * b[2],
-    a[3] * b[0] + a[7] * b[1] + a[11] * b[2],
-    a[0] * b[3] + a[4] * b[4] + a[8] * b[5],
-    a[1] * b[3] + a[5] * b[4] + a[9] * b[5],
-    a[2] * b[3] + a[6] * b[4] + a[10] * b[5],
-    a[3] * b[3] + a[7] * b[4] + a[11] * b[5],
-    a[0] * b[6] + a[4] * b[7] + a[8] * b[8],
-    a[1] * b[6] + a[5] * b[7] + a[9] * b[8],
-    a[2] * b[6] + a[6] * b[7] + a[10] * b[8],
-    a[3] * b[6] + a[7] * b[7] + a[11] * b[8]
-  ];
-}
-function mulMat3x4ByMat4x3(a, b) {
-  return [
-    a[0] * b[0] + a[4] * b[1] + a[8] * b[2],
-    a[1] * b[0] + a[5] * b[1] + a[9] * b[2],
-    a[2] * b[0] + a[6] * b[1] + a[10] * b[2],
-    a[3] * b[0] + a[7] * b[1] + a[11] * b[2],
-    a[0] * b[3] + a[4] * b[4] + a[8] * b[5],
-    a[1] * b[3] + a[5] * b[4] + a[9] * b[5],
-    a[2] * b[3] + a[6] * b[4] + a[10] * b[5],
-    a[3] * b[3] + a[7] * b[4] + a[11] * b[5],
-    a[0] * b[6] + a[4] * b[7] + a[8] * b[8],
-    a[1] * b[6] + a[5] * b[7] + a[9] * b[8],
-    a[2] * b[6] + a[6] * b[7] + a[10] * b[8],
-    a[3] * b[6] + a[7] * b[7] + a[11] * b[8],
-    a[0] * b[9] + a[4] * b[10] + a[8] * b[11],
-    a[1] * b[9] + a[5] * b[10] + a[9] * b[11],
-    a[2] * b[9] + a[6] * b[10] + a[10] * b[11],
-    a[3] * b[9] + a[7] * b[10] + a[11] * b[11]
-  ];
-}
-function mulMat4ByVec4(a, b) {
-  return [
-    a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3],
-    a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3],
-    a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3],
-    a[3] * b[0] + a[7] * b[1] + a[11] * b[2] + a[15] * b[3]
-  ];
-}
-function mulMat4ByMat2x4(a, b) {
-  return [
-    a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3],
-    a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3],
-    a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3],
-    a[3] * b[0] + a[7] * b[1] + a[11] * b[2] + a[15] * b[3],
-    a[0] * b[4] + a[4] * b[5] + a[8] * b[6] + a[12] * b[7],
-    a[1] * b[4] + a[5] * b[5] + a[9] * b[6] + a[13] * b[7],
-    a[2] * b[4] + a[6] * b[5] + a[10] * b[6] + a[14] * b[7],
-    a[3] * b[4] + a[7] * b[5] + a[11] * b[6] + a[15] * b[7]
-  ];
-}
-function mulMat4ByMat3x4(a, b) {
-  return [
-    a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3],
-    a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3],
-    a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3],
-    a[3] * b[0] + a[7] * b[1] + a[11] * b[2] + a[15] * b[3],
-    a[0] * b[4] + a[4] * b[5] + a[8] * b[6] + a[12] * b[7],
-    a[1] * b[4] + a[5] * b[5] + a[9] * b[6] + a[13] * b[7],
-    a[2] * b[4] + a[6] * b[5] + a[10] * b[6] + a[14] * b[7],
-    a[3] * b[4] + a[7] * b[5] + a[11] * b[6] + a[15] * b[7],
-    a[0] * b[8] + a[4] * b[9] + a[8] * b[10] + a[12] * b[11],
-    a[1] * b[8] + a[5] * b[9] + a[9] * b[10] + a[13] * b[11],
-    a[2] * b[8] + a[6] * b[9] + a[10] * b[10] + a[14] * b[11],
-    a[3] * b[8] + a[7] * b[9] + a[11] * b[10] + a[15] * b[11]
-  ];
-}
-function mulMat4(a, b) {
-  return [
-    a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3],
-    a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3],
-    a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3],
-    a[3] * b[0] + a[7] * b[1] + a[11] * b[2] + a[15] * b[3],
-    a[0] * b[4] + a[4] * b[5] + a[8] * b[6] + a[12] * b[7],
-    a[1] * b[4] + a[5] * b[5] + a[9] * b[6] + a[13] * b[7],
-    a[2] * b[4] + a[6] * b[5] + a[10] * b[6] + a[14] * b[7],
-    a[3] * b[4] + a[7] * b[5] + a[11] * b[6] + a[15] * b[7],
-    a[0] * b[8] + a[4] * b[9] + a[8] * b[10] + a[12] * b[11],
-    a[1] * b[8] + a[5] * b[9] + a[9] * b[10] + a[13] * b[11],
-    a[2] * b[8] + a[6] * b[9] + a[10] * b[10] + a[14] * b[11],
-    a[3] * b[8] + a[7] * b[9] + a[11] * b[10] + a[15] * b[11],
-    a[0] * b[12] + a[4] * b[13] + a[8] * b[14] + a[12] * b[15],
-    a[1] * b[12] + a[5] * b[13] + a[9] * b[14] + a[13] * b[15],
-    a[2] * b[12] + a[6] * b[13] + a[10] * b[14] + a[14] * b[15],
-    a[3] * b[12] + a[7] * b[13] + a[11] * b[14] + a[15] * b[15]
-  ];
-}
-function add2(a, b) {
-  return [a[0] + b[0], a[1] + b[1]];
-}
-function add3(a, b) {
-  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-}
-function add4(a, b) {
-  return [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]];
-}
-function mul2(a, b) {
-  return [a[0] * b[0], a[1] * b[1]];
-}
-function mul3(a, b) {
-  return [a[0] * b[0], a[1] * b[1], a[2] * b[2]];
-}
-function mul4(a, b) {
-  return [a[0] * b[0], a[1] * b[1], a[2] * b[2], a[3] * b[3]];
-}
-function div2(a, b) {
-  return [a[0] / b[0], a[1] / b[1]];
-}
-function div3(a, b) {
-  return [a[0] / b[0], a[1] / b[1], a[2] / b[2]];
-}
-function div4(a, b) {
-  return [a[0] / b[0], a[1] / b[1], a[2] / b[2], a[3] / b[3]];
-}
-function sub2(a, b) {
-  return [a[0] - b[0], a[1] - b[1]];
-}
-function sub3(a, b) {
-  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-}
-function sub4(a, b) {
-  return [a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]];
-}
-function min2(a, b) {
-  return [Math.min(a[0], b[0]), Math.min(a[1], b[1])];
-}
-function min3(a, b) {
-  return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.min(a[2], b[2])];
-}
-function min4(a, b) {
-  return [
-    Math.min(a[0], b[0]),
-    Math.min(a[1], b[1]),
-    Math.min(a[2], b[2]),
-    Math.min(a[3], b[3])
-  ];
-}
-function max2(a, b) {
-  return [Math.max(a[0], b[0]), Math.max(a[1], b[1])];
-}
-function max3(a, b) {
-  return [Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.max(a[2], b[2])];
-}
-function max4(a, b) {
-  return [
-    Math.max(a[0], b[0]),
-    Math.max(a[1], b[1]),
-    Math.max(a[2], b[2]),
-    Math.max(a[3], b[3])
-  ];
-}
-function neg2(a) {
-  return [-a[0], -a[1]];
-}
-function neg3(a) {
-  return [-a[0], -a[1], -a[2]];
-}
-function neg4(a) {
-  return [-a[0], -a[1], -a[2], -a[3]];
-}
-function normalize2(a) {
-  return scale2(a, 1 / Math.sqrt(dot2(a, a)));
-}
-function normalize3(a) {
-  return scale3(a, 1 / Math.sqrt(dot3(a, a)));
-}
-function normalize4(a) {
-  return scale4(a, 1 / Math.sqrt(dot4(a, a)));
-}
-function length2(a) {
-  return Math.sqrt(dot2(a, a));
-}
-function length3(a) {
-  return Math.sqrt(dot3(a, a));
-}
-function length4(a) {
-  return Math.sqrt(dot4(a, a));
-}
-function distance2(a, b) {
-  return length2(sub2(a, b));
-}
-function distance3(a, b) {
-  return length3(sub3(a, b));
-}
-function distance4(a, b) {
-  return length4(sub4(a, b));
-}
-function mix2(a, b, c) {
-  return add2(b, scale2(sub2(c, b), a));
-}
-function mix3(a, b, c) {
-  return add3(b, scale3(sub3(c, b), a));
-}
-function mix4(a, b, c) {
-  return add4(b, scale4(sub4(c, b), a));
-}
-function rescale2(a, b) {
-  return scale2(normalize2(a), b);
-}
-function rescale3(a, b) {
-  return scale3(normalize3(a), b);
-}
-function rescale4(a, b) {
-  return scale4(normalize4(a), b);
-}
-function remap2(a, b, c, d, e) {
-  return add2(d, mul2(sub2(e, d), div2(sub2(a, b), sub2(c, b))));
-}
-function remap3(a, b, c, d, e) {
-  return add3(d, mul3(sub3(e, d), div3(sub3(a, b), sub3(c, b))));
-}
-function remap4(a, b, c, d, e) {
-  return add4(d, mul4(sub4(e, d), div4(sub4(a, b), sub4(c, b))));
-}
-function interp2(a, b, c, d) {
-  return add2(b, mul2(sub2(c, b), componentwise2(a, d)));
-}
-function interp3(a, b, c, d) {
-  return add3(b, mul3(sub3(c, b), componentwise3(a, d)));
-}
-function interp4(a, b, c, d) {
-  return add4(b, mul4(sub4(c, b), componentwise4(a, d)));
-}
-function sum2(a) {
-  return a[0] + a[1];
-}
-function sum3(a) {
-  return a[0] + a[1] + a[2];
-}
-function sum4(a) {
-  return a[0] + a[1] + a[2] + a[3];
-}
-function dot2(a, b) {
-  return sum2(mul2(a, b));
-}
-function dot3(a, b) {
-  return sum3(mul3(a, b));
-}
-function dot4(a, b) {
-  return sum4(mul4(a, b));
-}
-function scale2(a, b) {
-  return [a[0] * b, a[1] * b];
-}
-function scale3(a, b) {
-  return [a[0] * b, a[1] * b, a[2] * b];
-}
-function scale4(a, b) {
-  return [a[0] * b, a[1] * b, a[2] * b, a[3] * b];
-}
-
-// src/spatial-hash-table.ts
-function spatialHashTable(htBounds, resolution, getBounds) {
-  let objects = /* @__PURE__ */ new Map();
-  let buckets = range(resolution[0] * resolution[1]).map((e) => /* @__PURE__ */ new Set());
-  function getBucketIndexes(bounds) {
-    const bucketXStart = Math.floor(
-      rescaleClamped(
-        bounds.a[0],
-        htBounds.a[0],
-        htBounds.b[0],
-        0,
-        resolution[0] - 1
-      )
-    );
-    const bucketXEnd = Math.ceil(
-      rescaleClamped(
-        bounds.b[0],
-        htBounds.a[0],
-        htBounds.b[0],
-        0,
-        resolution[0]
-      )
-    );
-    const bucketYStart = Math.floor(
-      rescaleClamped(
-        bounds.a[1],
-        htBounds.a[1],
-        htBounds.b[1],
-        0,
-        resolution[1] - 1
-      )
-    );
-    const bucketYEnd = Math.ceil(
-      rescaleClamped(
-        bounds.b[1],
-        htBounds.a[1],
-        htBounds.b[1],
-        0,
-        resolution[1]
-      )
-    );
-    const indexes = [];
-    for (let x2 = bucketXStart; x2 < Math.max(bucketXEnd, bucketXStart + 1); x2++) {
-      for (let y2 = bucketYStart; y2 < Math.max(bucketYEnd, bucketYStart + 1); y2++) {
-        indexes.push(x2 + y2 * resolution[0]);
-      }
-    }
-    return indexes;
-  }
-  return {
-    objects,
-    buckets,
-    resolution,
-    getBounds,
-    bounds: htBounds,
-    insert(t) {
-      const indexes = getBucketIndexes(getBounds(t));
-      for (const i of indexes) {
-        buckets[i].add(t);
-      }
-      objects.set(t, { buckets: indexes });
-    },
-    delete(t) {
-      const obj = objects.get(t);
-      if (!obj) return false;
-      for (const b of obj.buckets) {
-        buckets[b].delete(t);
-      }
-      objects.delete(t);
-      return true;
-    },
-    queryRect(r) {
-      const queryBuckets = getBucketIndexes(r);
-      const output = /* @__PURE__ */ new Set();
-      for (const b of queryBuckets) {
-        for (const t of buckets[b]) {
-          output.add(t);
-        }
-      }
-      return output;
-    },
-    queryPoint(r) {
-      return this.queryRect({
-        a: r,
-        b: r
-      });
-    },
-    all() {
-      return new Set(objects.keys());
-    },
-    setObjects(o) {
-      this.objects = o;
-      objects = o;
-    },
-    setBuckets(b) {
-      this.buckets = buckets;
-      buckets = b;
-    }
-  };
-}
-function inCircle(sht, c, getObjectCircle) {
-  const rectResult = sht.queryRect({
-    a: [c.center[0] - c.radius, c.center[1] - c.radius],
-    b: [c.center[0] + c.radius, c.center[1] + c.radius]
-  });
-  return new Set(
-    Array.from(rectResult.values()).filter((e) => {
-      const objectCircle = getObjectCircle(e);
-      return distance2(objectCircle.center, c.center) < objectCircle.radius + c.radius;
-    })
-  );
-}
-function serializeSpatialHashTable(sht, serializeItem) {
-  if (!serializeItem) {
-    return {
-      // @ts-expect-error
-      buckets: sht.buckets,
-      resolution: sht.resolution,
-      bounds: sht.bounds,
-      // @ts-expect-error
-      objects: sht.objects
-    };
-  }
-  const serializedObjects = new Map(
-    [...sht.objects].map(([k, v]) => [k, { serialized: serializeItem(k), v }])
-  );
-  const ssht = {
-    buckets: sht.buckets.map(
-      (b) => new Set([...b].map((i) => serializedObjects.get(i)?.serialized))
-    ),
-    resolution: sht.resolution,
-    bounds: sht.bounds,
-    objects: new Map(
-      [...sht.objects].map(([k, v]) => [
-        serializedObjects.get(k).serialized,
-        v
-      ])
-    )
-  };
-  return ssht;
-}
-function parseSpatialHashTable(ssht, getBounds, parseItem) {
-  if (!parseItem) {
-    const sht = spatialHashTable(ssht.bounds, ssht.resolution, getBounds);
-    sht.setBuckets(ssht.buckets);
-    sht.setObjects(ssht.objects);
-    return sht;
-  }
-  const parsedObjects = new Map(
-    [...ssht.objects].map(([k, v]) => [k, { parsed: parseItem(k), v }])
-  );
-  {
-    const sht = spatialHashTable(ssht.bounds, ssht.resolution, getBounds);
-    sht.setBuckets(
-      ssht.buckets.map(
-        (b) => new Set([...b].map((i) => parsedObjects.get(i)?.parsed))
-      )
-    );
-    sht.setObjects(
-      new Map(
-        [...ssht.objects].map(([k, v]) => [parsedObjects.get(k).parsed, v])
-      )
-    );
-    return sht;
-  }
-}
-
-// src/result.ts
-function ok(t) {
-  return {
-    ok: true,
-    data: t
-  };
-}
-function err(e) {
-  return {
-    ok: false,
-    error: e
-  };
-}
-
-// src/quadtree.ts
-function makeQuadtree(data, x1, y1, x2, y2, maxPoints, maxDepth) {
-  let midX = (x1 + x2) / 2;
-  let midY = (y1 + y2) / 2;
-  if (maxDepth === 0 || data.length <= maxPoints) {
-    return {
-      data: { type: "points", points: data },
-      x1,
-      y1,
-      x2,
-      y2,
-      midX,
-      midY
-    };
-  }
-  const childQuadtreeDatas = [
-    [],
-    [],
-    [],
-    []
-  ];
-  for (let i = 0; i < data.length; i++) {
-    const pt = data[i];
-    let idx = (pt.x > midX ? 1 : 0) + (pt.y > midY ? 2 : 0);
-    childQuadtreeDatas[idx].push(pt);
-  }
-  return {
-    x1,
-    y1,
-    x2,
-    y2,
-    midX,
-    midY,
-    data: {
-      type: "children",
-      children: [
-        makeQuadtree(
-          childQuadtreeDatas[0],
-          x1,
-          y1,
-          midX,
-          midY,
-          maxPoints,
-          maxDepth - 1
-        ),
-        makeQuadtree(
-          childQuadtreeDatas[1],
-          midX,
-          y1,
-          x2,
-          midY,
-          maxPoints,
-          maxDepth - 1
-        ),
-        makeQuadtree(
-          childQuadtreeDatas[2],
-          x1,
-          midY,
-          midX,
-          y2,
-          maxPoints,
-          maxDepth - 1
-        ),
-        makeQuadtree(
-          childQuadtreeDatas[3],
-          midX,
-          midY,
-          x2,
-          y2,
-          maxPoints,
-          maxDepth - 1
-        )
-      ]
-    }
-  };
-}
-function doRangesIntersect(aLo, aHi, bLo, bHi) {
-  return !(aHi < bLo || bHi < aLo);
-}
-function lookupQuadtree(qt, x1, y1, x2, y2) {
-  if (!(doRangesIntersect(x1, x2, qt.x1, qt.x2) && doRangesIntersect(y1, y2, qt.y1, qt.y2)))
-    return [];
-  if (qt.data.type === "points") return qt.data.points;
-  return [
-    ...lookupQuadtree(qt.data.children[0], x1, y1, x2, y2),
-    ...lookupQuadtree(qt.data.children[1], x1, y1, x2, y2),
-    ...lookupQuadtree(qt.data.children[2], x1, y1, x2, y2),
-    ...lookupQuadtree(qt.data.children[3], x1, y1, x2, y2)
-  ];
-}
-
-// src/point-free.ts
-function compose(...args) {
-  return (x2) => {
-    for (const a of args) x2 = a(x2);
-    return x2;
-  };
-}
-
-// src/parser.ts
-function str2html(str2) {
-  return new DOMParser().parseFromString(str2, "text/html");
-}
-function chainParser(parser2) {
-  const oldParser = this;
-  return {
-    parse(e) {
-      const res = oldParser.parse(e);
-      return parser2.parse(res);
-    },
-    $: chainParser
-  };
-}
-function domQueryAll(selector, parser2) {
-  return {
-    parse(e) {
-      return [...e.querySelectorAll(selector)].map(
-        (e2) => parser2.parse(e2)
-      );
-    },
-    $: chainParser
-  };
-}
-function domQuery(selector, doesExist, doesNotExist) {
-  return {
-    parse(e) {
-      const res = e.querySelector(selector);
-      return res ? doesExist(res) : doesNotExist();
-    },
-    $: chainParser
-  };
-}
-function domQueryObj(fields) {
-  return {
-    parse(e) {
-      return Object.fromEntries(
-        Object.entries(fields).map(([k, v]) => [k, v.parse(e)])
-      );
-    },
-    $: chainParser
-  };
-}
-function get(prop) {
-  return parser((t) => t[prop]);
-}
-function parser(fn) {
-  return {
-    parse: fn,
-    $: chainParser
-  };
-}
-function regexMatch(regex) {
-  return parser((s) => s.match(regex)?.[0]);
-}
-function orElse(fallback) {
-  return parser((s) => s ?? fallback());
-}
-var ud = () => void 0;
-function str2int(fallback, radix) {
-  return parser((s) => {
-    const i = parseInt(s, radix);
-    if (isNaN(i)) {
-      return fallback();
-    }
-    return i;
-  });
-}
-function str2float(fallback) {
-  return parser((s) => {
-    const i = parseFloat(s);
-    if (isNaN(i)) return fallback();
-    return i;
-  });
-}
-function innerTextRegex(selector, regex, fallbackIfNotExist, fallbackIfNoMatch) {
-  return domQuery(
-    selector,
-    (e) => e.innerText.match(regex)?.[0] ?? fallbackIfNoMatch(e),
-    () => fallbackIfNotExist
-  );
-}
-
 // src/object-utils.ts
-function arrayToMapValues(arr, f) {
-  return new Map(arr.map((x2) => [f(x2), x2]));
-}
-function arrayToObjValues(arr, f) {
-  return map2obj(arrayToMapValues(arr, f));
-}
 function arrayToMapKeys(arr, f) {
-  return new Map(arr.map((x2) => [x2, f(x2)]));
+  return new Map(arr.map((x) => [x, f(x)]));
 }
 function arrayToObjKeys(arr, f) {
   return map2obj(arrayToMapKeys(arr, f));
 }
 function arrayToObjEntries(arr, f) {
   return Object.fromEntries(arr.map(f));
-}
-function mapObjKeys(obj, callback) {
-  return mapObjEntries(obj, (k, v) => [callback(k, v), v]);
 }
 function mapObjValues(obj, callback) {
   return mapObjEntries(obj, (k, v) => [k, callback(k, v)]);
@@ -23723,78 +21556,7 @@ function mapObjEntries(obj, callback) {
 function map2obj(map) {
   return Object.fromEntries(map.entries());
 }
-function obj2map(r) {
-  return new Map(Object.entries(r));
-}
-function mapMapEntries(map, callback) {
-  return new Map([...map.entries()].map((e) => callback(...e)));
-}
-function mapMapKeys(map, callback) {
-  return new Map([...map.entries()].map((e) => [callback(...e), e[1]]));
-}
-function mapMapValues(map, callback) {
-  return new Map([...map.entries()].map((e) => [e[0], callback(...e)]));
-}
-function setDeep(obj, path, value) {
-  if (path.length === 0) return value;
-  const inner = setDeep(obj[path[0]], path.slice(1), value);
-  if (Array.isArray(obj)) {
-    return obj.map((e, i) => i === path[0] ? inner : e);
-  }
-  return {
-    ...obj,
-    [path[0]]: inner
-  };
-}
 var ALL = Symbol("allKeys");
-function nestedMap(obj, path, value) {
-  function nestedMapInner(obj2, path2, value2, segs) {
-    if (path2.length === 0) return value2(...segs);
-    if (Array.isArray(path2[0])) {
-      if (Array.isArray(obj2)) {
-        const keys = new Set(path2[0]);
-        return obj2.map(
-          (e, i) => keys.has(i) ? nestedMapInner(e, path2.slice(1), value2, [[i, e], ...segs]) : e
-        );
-      } else {
-        const obj22 = { ...obj2 };
-        for (const key of path2[0]) {
-          obj22[key] = nestedMapInner(obj2[key], path2.slice(1), value2, [
-            [key, obj2[key]],
-            ...segs
-          ]);
-        }
-        return obj22;
-      }
-    } else if (path2[0] === ALL) {
-      if (Array.isArray(obj2)) {
-        return obj2.map(
-          (e, i) => nestedMapInner(e, path2.slice(1), value2, [[i, e], ...segs])
-        );
-      } else {
-        return Object.fromEntries(
-          Object.entries(obj2).map(([k, v]) => [
-            k,
-            nestedMapInner(v, path2.slice(1), value2, [[k, v], ...segs])
-          ])
-        );
-      }
-    } else {
-      const inner = nestedMapInner(obj2[path2[0]], path2.slice(1), value2, [
-        [path2[0], obj2],
-        ...segs
-      ]);
-      if (Array.isArray(obj2)) {
-        return obj2.map((e, i) => i === path2[0] ? inner : e);
-      }
-      return {
-        ...obj2,
-        [path2[0]]: inner
-      };
-    }
-  }
-  return nestedMapInner(obj, path, value, []);
-}
 var _ALL = Symbol("all2");
 
 // src/array-map.ts
@@ -23890,99 +21652,10 @@ var ArrayMap = class _ArrayMap {
     return am;
   }
 };
-function table(data, indexPaths, indexes, propFilterKeys, propFilterValues) {
-  if (!data) data = /* @__PURE__ */ new Set();
-  if (!indexes) indexes = new ArrayMap();
-  if (!indexPaths) indexPaths = new ArrayMap();
-  if (!propFilterKeys) propFilterKeys = [];
-  if (!propFilterValues) propFilterValues = [];
-  return {
-    // @ts-expect-error
-    filter: new Proxy(
-      {},
-      {
-        get(target, prop, receiver) {
-          return (v) => table(
-            data,
-            indexPaths,
-            indexes,
-            propFilterKeys.concat(prop),
-            propFilterValues.concat(v)
-          );
-        }
-      }
-    ),
-    get() {
-      if (propFilterKeys.length === 0) {
-        return [...data];
-      }
-      propFilterKeys = [...new Set(propFilterKeys)].sort();
-      const indexPathExists = indexPaths.get(propFilterKeys);
-      if (!indexPathExists) {
-        for (const d of data) {
-          const filter = propFilterKeys.flatMap((e) => [e, d[e]]);
-          const set2 = indexes.change(
-            filter,
-            (s) => (s ?? /* @__PURE__ */ new Set()).add(d)
-          );
-        }
-        indexPaths.set(propFilterKeys, true);
-      }
-      const fullFilter = propFilterKeys.flatMap((e, i) => [
-        e,
-        propFilterValues[i]
-      ]);
-      const set = indexes.get(fullFilter);
-      return set ? [...set] : [];
-    },
-    getOne() {
-      const data2 = this.get();
-      if (data2.length !== 1)
-        throw new Error(
-          `Expected a single result. path=${propFilterKeys.join(
-            ","
-          )}, values=${propFilterValues.join(",")}`
-        );
-      return data2[0];
-    },
-    delete() {
-      propFilterKeys = [...new Set(propFilterKeys)].sort();
-      const toDelete = this.get();
-      indexPaths.forEach((path, set) => {
-        for (const d of toDelete) {
-          const filter = path.flatMap((e) => [e, d[e]]);
-          indexes.change(filter, (s) => (s?.delete(d), s ?? /* @__PURE__ */ new Set()));
-        }
-      });
-      for (const d of toDelete) {
-        data.delete(d);
-      }
-      return toDelete;
-    },
-    add(t) {
-      propFilterKeys = [...new Set(propFilterKeys)].sort();
-      indexPaths.forEach((path, set) => {
-        const filter = path.flatMap((e) => [e, t[e]]);
-        indexes.change(filter, (s) => (s ?? /* @__PURE__ */ new Set()).add(t));
-      });
-      data.add(t);
-    },
-    [Symbol.iterator]() {
-      return this.get()[Symbol.iterator]();
-    }
-  };
-}
-function tableWithData(data) {
-  const tbl = table();
-  for (const d of data) {
-    tbl.add(d);
-  }
-  return tbl;
-}
 
 // src/memo.ts
 function memo(callback, serializeParams) {
-  if (!serializeParams) serializeParams = (x2) => x2;
+  if (!serializeParams) serializeParams = (x) => x;
   const map = new ArrayMap();
   const fn = (...params) => {
     const serialized = serializeParams(params);
@@ -24000,889 +21673,10 @@ function memo(callback, serializeParams) {
   fn.getCache = () => map;
   return fn;
 }
-function memoWithTimedInvalidation(callback, lifetime, serializeParams) {
-  const m = memo((...p) => {
-    const res = callback(...p);
-    setTimeout(
-      () => {
-        m.invalidate(...p);
-      },
-      lifetime(p, res)
-    );
-    return res;
-  }, serializeParams);
-  return m;
-}
-function lazy(callback) {
-  let executed = false;
-  let cached;
-  return () => {
-    if (!executed) {
-      cached = callback();
-      executed = true;
-    }
-    return cached;
-  };
-}
-
-// src/lookup-optimized-spatial-hash-table.ts
-var OVERFLOW_BUCKETS_BIT = 2147483648;
-function createLookupOptimizedSHTGenerator(params) {
-  const { bounds, resolution, getBounds, estimatedObjectsPerBucket } = params;
-  const htBounds = bounds;
-  function getBucketIndexes(bounds2) {
-    const bucketXStart = Math.floor(
-      rescaleClamped(
-        bounds2.a[0],
-        htBounds.a[0],
-        htBounds.b[0],
-        0,
-        resolution[0] - 1
-      )
-    );
-    const bucketXEnd = Math.ceil(
-      rescaleClamped(
-        bounds2.b[0],
-        htBounds.a[0],
-        htBounds.b[0],
-        0,
-        resolution[0]
-      )
-    );
-    const bucketYStart = Math.floor(
-      rescaleClamped(
-        bounds2.a[1],
-        htBounds.a[1],
-        htBounds.b[1],
-        0,
-        resolution[1] - 1
-      )
-    );
-    const bucketYEnd = Math.ceil(
-      rescaleClamped(
-        bounds2.b[1],
-        htBounds.a[1],
-        htBounds.b[1],
-        0,
-        resolution[1]
-      )
-    );
-    const indexes = [];
-    for (let x2 = bucketXStart; x2 < Math.max(bucketXEnd, bucketXStart + 1); x2++) {
-      for (let y2 = bucketYStart; y2 < Math.max(bucketYEnd, bucketYStart + 1); y2++) {
-        indexes.push(x2 + y2 * resolution[0]);
-      }
-    }
-    return indexes;
-  }
-  const bucketsArrayFixedSize = estimatedObjectsPerBucket + 1;
-  const bucketElementCount = resolution[0] * resolution[1] * bucketsArrayFixedSize;
-  return (objects) => {
-    const buckets = new Uint32Array(bucketElementCount);
-    const overflowBuckets = [];
-    for (let j = 0; j < objects.length; j++) {
-      const indexes = getBucketIndexes(getBounds(objects[j]));
-      for (const i of indexes) {
-        const indexIntoBucketsArray = i * bucketsArrayFixedSize;
-        const len = buckets[indexIntoBucketsArray];
-        if (len & OVERFLOW_BUCKETS_BIT) {
-          overflowBuckets[len & ~OVERFLOW_BUCKETS_BIT].push(objects[j]);
-        } else {
-          if (len === estimatedObjectsPerBucket) {
-            buckets[indexIntoBucketsArray] = overflowBuckets.length | OVERFLOW_BUCKETS_BIT;
-            overflowBuckets.push([objects[j]]);
-          } else {
-            let indexToSet = indexIntoBucketsArray + len + 1;
-            buckets[indexToSet] = j;
-            buckets[indexIntoBucketsArray]++;
-          }
-        }
-      }
-    }
-    return {
-      buckets,
-      overflowBuckets,
-      getBounds,
-      objects,
-      estimatedObjectsPerBucket,
-      queryRect(bounds2) {
-        const indexes = getBucketIndexes(bounds2);
-        return function* () {
-          for (const i of indexes) {
-            const bktBaseIndex = i * bucketsArrayFixedSize;
-            const bktInfo = buckets[bktBaseIndex];
-            const useOverflow = bktInfo & OVERFLOW_BUCKETS_BIT;
-            let count = useOverflow ? estimatedObjectsPerBucket : bktInfo;
-            for (let j = 1; j < count + 1; j++) {
-              yield objects[buckets[bktBaseIndex + j]];
-            }
-            if (useOverflow) {
-              for (const of of overflowBuckets[bktInfo & ~OVERFLOW_BUCKETS_BIT])
-                yield of;
-            }
-          }
-        }();
-      },
-      queryPoint(bounds2) {
-        return this.queryRect({ a: bounds2, b: bounds2 });
-      }
-    };
-  };
-}
-
-// src/localstorage-io.ts
-function registerStorageItem(name, defaultValue) {
-  name = "radian628-wikidot-usertools-" + name;
-  let subscriptions = /* @__PURE__ */ new Set();
-  const obj = {
-    get() {
-      const it = localStorage.getItem(name);
-      if (!it) return defaultValue;
-      try {
-        return JSON.parse(it);
-      } catch {
-        return defaultValue;
-      }
-    },
-    set(content) {
-      localStorage.setItem(name, JSON.stringify(content));
-      for (const s of subscriptions) {
-        s(content);
-      }
-    },
-    subscribe(cb2) {
-      subscriptions.add(cb2);
-      return () => {
-        subscriptions.delete(cb2);
-      };
-    }
-  };
-  if (!obj.get() && defaultValue) obj.set(defaultValue);
-  return obj;
-}
-
-// src/listen-for-element.ts
-function listenForSelector(selector) {
-  const elem = document.querySelector(selector);
-  if (elem) return Promise.resolve(elem);
-  return new Promise((resolve, reject) => {
-    const observer = new MutationObserver(() => {
-      const elem2 = document.querySelector(selector);
-      if (elem2) {
-        observer.disconnect();
-        resolve(elem2);
-      }
-    });
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-  });
-}
-function listenForNoSelector(selector) {
-  const elem = document.querySelector(selector);
-  if (!elem) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const observer = new MutationObserver(() => {
-      const elem2 = document.querySelector(selector);
-      if (!elem2) {
-        observer.disconnect();
-        resolve();
-      }
-    });
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-  });
-}
-var alterElementsCallbackId = 0;
-function alterElements(selector, callback) {
-  const id2 = alterElementsCallbackId++;
-  const alteredByKey = "alteredby" + id2;
-  let unmountCallbacks = [];
-  function alter() {
-    const elems = document.querySelectorAll(selector);
-    for (const e of Array.from(elems)) {
-      if (e.dataset[alteredByKey]) continue;
-      const unmount = callback(e);
-      unmountCallbacks.push(unmount);
-      e.dataset[alteredByKey] = "true";
-    }
-  }
-  alter();
-  const observer = new MutationObserver(() => {
-    alter();
-  });
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-  return () => {
-    observer.disconnect();
-    for (const cb2 of unmountCallbacks) cb2();
-  };
-}
-var injectedCallbackId = 0;
-function injectElementsAt(selector, position, element) {
-  const myid = injectedCallbackId++;
-  const key = "injectedBy" + injectedCallbackId;
-  let shouldStop = false;
-  let currentElements = [];
-  function observerCallback() {
-    currentElements = currentElements.filter((e) => {
-      if (document.body.contains(e.anchor)) {
-        return true;
-      } else {
-        e.unmount();
-        e.element.parentElement?.removeChild(e.element);
-        return false;
-      }
-    });
-    const elems = document.querySelectorAll(selector);
-    for (const e of Array.from(elems)) {
-      if (!(e instanceof HTMLElement) || e.dataset[key]) continue;
-      e.dataset[key] = "true";
-      const r = element(e);
-      e.insertAdjacentElement(position, r.element);
-      currentElements.push({
-        element: r.element,
-        unmount: r.unmount,
-        anchor: e
-      });
-    }
-  }
-  const observer = new MutationObserver(() => {
-    observerCallback();
-  });
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-  observerCallback();
-  return () => {
-    observer.disconnect();
-    shouldStop = true;
-  };
-}
-
-// src/lens.ts
-function setDeep2(obj, path, value) {
-  if (path.length === 0) return value;
-  return {
-    ...obj,
-    [path[0]]: setDeep2(obj[path[0]], path.slice(1), value)
-  };
-}
-function getDeep(obj, path) {
-  if (path.length === 0) return obj;
-  return getDeep(obj[path[0]], path.slice(1));
-}
-function lensInner(s, path = []) {
-  return new Proxy(
-    {},
-    {
-      get(target, prop, receiver) {
-        if (prop === "$") {
-          return (v) => setDeep2(s.at(-1), path, v);
-        } else if (prop === "$push") {
-          return lensInner([...s, getDeep(s.at(-1), path)], []);
-        } else if (prop === "$pop") {
-          return lensInner(s.slice(0, -1), []);
-        } else {
-          return lensInner(s.at(-1), [...path, prop]);
-        }
-      }
-    }
-  );
-}
-function lens(t) {
-  return lensInner([t], []);
-}
-
-// src/inject.ts
-async function injectFunction(get2, set, injector) {
-  return new Promise((resolve, reject) => {
-    const interval = setInterval(() => {
-      const fn = get2();
-      if (!fn) return;
-      set(injector(fn));
-      clearInterval(interval);
-      resolve();
-    });
-  });
-}
-
-// src/graph.ts
-function createGraph() {
-  return {
-    vertices: /* @__PURE__ */ new Set(),
-    edges: /* @__PURE__ */ new Set()
-  };
-}
-function createGraphFromData(vertices, edges) {
-  const graph = createGraph();
-  const vertexMap = /* @__PURE__ */ new Map();
-  for (const v of vertices) {
-    vertexMap.set(v, addVertex(graph, v));
-  }
-  for (const e of edges) {
-    addEdge(
-      graph,
-      [vertexMap.get(e.endpoints[0]), vertexMap.get(e.endpoints[1])],
-      e.data
-    );
-  }
-  return graph;
-}
-function addVertex(graph, data) {
-  const vertex = {
-    data,
-    incoming: /* @__PURE__ */ new Set(),
-    outgoing: /* @__PURE__ */ new Set()
-  };
-  graph.vertices.add(vertex);
-  return vertex;
-}
-function addEdge(graph, endpoints, data) {
-  const edge = {
-    data,
-    endpoints
-  };
-  endpoints[0].outgoing.add(edge);
-  endpoints[1].incoming.add(edge);
-  graph.edges.add(edge);
-  return edge;
-}
-function deleteEdge(graph, edge) {
-  edge.endpoints[0].outgoing.delete(edge);
-  edge.endpoints[1].incoming.delete(edge);
-  graph.edges.delete(edge);
-}
-function getConnectedComponents(graph) {
-  const components = [];
-  const vertsRemaining = new Set(graph.vertices);
-  while (vertsRemaining.size > 0) {
-    const foundVertices = /* @__PURE__ */ new Set();
-    const foundEdges = /* @__PURE__ */ new Set();
-    let queue = [vertsRemaining.values().next().value];
-    while (queue.length > 0) {
-      const vert = queue.shift();
-      vertsRemaining.delete(vert);
-      foundVertices.add(vert);
-      for (const edge of vert.outgoing) {
-        foundEdges.add(edge);
-        if (!foundVertices.has(edge.endpoints[1])) {
-          queue.push(edge.endpoints[1]);
-        }
-        foundVertices.add(edge.endpoints[1]);
-      }
-      for (const edge of vert.incoming) {
-        foundEdges.add(edge);
-        if (!foundVertices.has(edge.endpoints[0])) {
-          queue.push(edge.endpoints[0]);
-        }
-        foundVertices.add(edge.endpoints[0]);
-      }
-    }
-    components.push({
-      vertices: foundVertices,
-      edges: foundEdges
-    });
-  }
-  return components;
-}
-function findEndpoint(graph) {
-  for (const v of graph.vertices) {
-    if (v.incoming.size + v.outgoing.size === 1) return v;
-  }
-  return void 0;
-}
-function getDepthFirstTraversalOrder(graph, startPoint) {
-  const order = [];
-  const foundVertices = /* @__PURE__ */ new Set();
-  let stack = [
-    startPoint ?? graph.vertices.values().next().value
-  ];
-  if (!stack[0]) return [];
-  foundVertices.add(stack[0]);
-  while (stack.length > 0) {
-    const vertex = stack.pop();
-    order.push(vertex);
-    for (const edge of vertex.outgoing) {
-      if (foundVertices.has(edge.endpoints[1])) {
-        continue;
-      }
-      stack.push(edge.endpoints[1]);
-      foundVertices.add(edge.endpoints[1]);
-    }
-    for (const edge of vertex.incoming) {
-      if (foundVertices.has(edge.endpoints[0])) {
-        continue;
-      }
-      stack.push(edge.endpoints[0]);
-      foundVertices.add(edge.endpoints[0]);
-    }
-  }
-  return order;
-}
-function subdivideEdges(graph, getAdjoiningVertices) {
-  for (const edge of [...graph.edges]) {
-    const adjoiningElements = getAdjoiningVertices(edge);
-    if (!adjoiningElements) continue;
-    const adjoiningVertices = adjoiningElements[0].map(
-      (v) => addVertex(graph, v[1])
-    );
-    const adjoiningEdgeData = adjoiningElements[0].map((v) => v[0]).concat(adjoiningElements[1]);
-    const starts = [edge.endpoints[0], ...adjoiningVertices];
-    const ends = [...adjoiningVertices, edge.endpoints[1]];
-    for (let i = 0; i < starts.length; i++) {
-      const endpoints = [starts[i], ends[i]];
-      addEdge(graph, endpoints, adjoiningEdgeData[i]);
-    }
-    graph.edges.delete(edge);
-  }
-}
-function subdivideEdgesAtCuts(graph, getEdgeCuts, getVertexAlongCut) {
-  subdivideEdges(graph, (edge) => {
-    const cuts = getEdgeCuts(edge);
-    if (!cuts) return void 0;
-    return [
-      cuts[0].map((c) => [
-        c[0],
-        getVertexAlongCut(edge.endpoints[0], edge.endpoints[1], c[1])
-      ]),
-      cuts[1]
-    ];
-  });
-}
-function subdivideEdgesAtCutsSimple(graph, getEdgeCuts, getVertexAlongCut, defaultEdge) {
-  subdivideEdgesAtCuts(
-    graph,
-    (e) => {
-      return [
-        getEdgeCuts(e).filter((e2) => e2 < 1 && e2 > 0).sort((a, b) => a - b).map((e2) => [defaultEdge, e2]),
-        defaultEdge
-      ];
-    },
-    getVertexAlongCut
-  );
-}
-function incidentEdges(v) {
-  return /* @__PURE__ */ new Set([...v.incoming, ...v.outgoing]);
-}
-function compareAngle(a, b) {
-  return Math.min(
-    Math.abs(a - b),
-    Math.abs(a - b + Math.PI * 2),
-    Math.abs(a - b - Math.PI * 2)
-  );
-}
-function getMaximumAngleDifference(edge, getAngle) {
-  const myAngle = getAngle(edge);
-  const edges = [
-    ...incidentEdges(edge.endpoints[0]),
-    ...incidentEdges(edge.endpoints[1])
-  ];
-  const maxAngle = Math.max(
-    ...edges.map((e) => compareAngle(myAngle, getAngle(e)))
-  );
-  return maxAngle;
-}
-function subdivideEdgesByMaximumAngleDifference(graph, getAngle, subdivideBy, getVertexAlongCut) {
-  subdivideEdgesAtCuts(
-    graph,
-    (edge) => {
-      const maxAngle = getMaximumAngleDifference(edge, getAngle);
-      return subdivideBy(edge, maxAngle);
-    },
-    getVertexAlongCut
-  );
-}
-function subdivideEdgesByDistance(graph, maxDistance, distanceMetric, createNewSubdividedVertex, createNewSubdividedEdge) {
-  subdivideEdges(graph, (edge) => {
-    const dist = distanceMetric(edge);
-    if (dist <= maxDistance) {
-      return void 0;
-    }
-    const numPointsToAdd = Math.floor(dist / maxDistance);
-    const verts = [];
-    for (let i = 0; i < numPointsToAdd; i++) {
-      const vert = createNewSubdividedVertex(
-        edge,
-        (i + 1) / (numPointsToAdd + 1),
-        i,
-        numPointsToAdd
-      );
-      const newEdge = createNewSubdividedEdge(
-        edge,
-        i / (numPointsToAdd + 1),
-        (i + 1) / (numPointsToAdd + 1),
-        i,
-        numPointsToAdd + 1
-      );
-      verts.push([newEdge, vert]);
-    }
-    return [
-      verts,
-      createNewSubdividedEdge(
-        edge,
-        numPointsToAdd / (numPointsToAdd + 1),
-        1,
-        numPointsToAdd,
-        numPointsToAdd + 1
-      )
-    ];
-  });
-}
-function graph2json(graph, serializeVertex, serializeEdge) {
-  let index2 = 0;
-  if (!serializeVertex) serializeVertex = id;
-  if (!serializeEdge) serializeEdge = id;
-  const vertexIndexMap = /* @__PURE__ */ new Map();
-  let json = {
-    vertices: [],
-    edges: []
-  };
-  for (const v of graph.vertices) {
-    vertexIndexMap.set(v, index2);
-    json.vertices.push(serializeVertex(v.data));
-    index2++;
-  }
-  for (const e of graph.edges) {
-    json.edges.push({
-      endpoints: [
-        vertexIndexMap.get(e.endpoints[0]),
-        vertexIndexMap.get(e.endpoints[1])
-      ],
-      data: serializeEdge(e.data)
-    });
-  }
-  return json;
-}
-function json2graph(json, parseVertex, parseEdge) {
-  if (!parseVertex) parseVertex = id;
-  if (!parseEdge) parseEdge = id;
-  const graph = createGraph();
-  let vertexList = [];
-  for (const v of json.vertices)
-    vertexList.push(addVertex(graph, parseVertex(v)));
-  for (const e of json.edges) {
-    addEdge(
-      graph,
-      [vertexList[e.endpoints[0]], vertexList[e.endpoints[1]]],
-      parseEdge(e.data)
-    );
-  }
-  return graph;
-}
-
-// src/events.ts
-function eventEmitter() {
-  let callbacks = /* @__PURE__ */ new Set();
-  return {
-    dispatch(data) {
-      for (const cb2 of callbacks) {
-        cb2(data);
-      }
-    },
-    on(fn) {
-      callbacks.add(fn);
-      return () => {
-        callbacks.delete(fn);
-      };
-    },
-    off(fn) {
-      callbacks.delete(fn);
-    },
-    clear() {
-      callbacks = /* @__PURE__ */ new Set();
-    }
-  };
-}
-
-// src/evalbox.ts
-function createEvalbox() {
-  const evalbox = document.createElement("iframe");
-  evalbox.sandbox = "allow-scripts";
-  let index2 = 0;
-  return new Promise((resolve, reject) => {
-    const initLoadListener = () => {
-      evalbox.removeEventListener("load", initLoadListener);
-      resolve({
-        iframe: evalbox,
-        eval(str2) {
-          return new Promise((resolve2, reject2) => {
-            let myindex = index2++;
-            const listener = (e) => {
-              if (e.data && e.data.id === myindex) {
-                resolve2(
-                  e.data.type === "eval-success" ? {
-                    data: e.data.payload,
-                    success: true
-                  } : {
-                    success: false,
-                    error: typeof e.data.payload === "string" ? e.data.payload : "No Error Provided"
-                  }
-                );
-                window.removeEventListener("message", listener);
-              }
-            };
-            window.addEventListener("message", listener);
-            evalbox.contentWindow?.postMessage(
-              {
-                id: myindex,
-                payload: str2,
-                type: "eval"
-              },
-              "*"
-            );
-          });
-        },
-        kill() {
-          document.body.removeChild(evalbox);
-        },
-        reload() {
-          return new Promise((resolve2, reject2) => {
-            const refreshListener = () => {
-              evalbox.removeEventListener("load", refreshListener);
-              resolve2();
-            };
-            evalbox.addEventListener("load", refreshListener);
-            evalbox.contentWindow?.location.reload();
-          });
-        }
-      });
-    };
-    evalbox.addEventListener("load", initLoadListener);
-    evalbox.style.display = "none";
-    document.body.appendChild(evalbox);
-    evalbox.srcdoc = `
-<!DOCTYPE html>
-<html>
-  <head></head>
-  <body>
-    <script>
-      window.addEventListener("message", async (e) => {
-        if (e.data && e.data.type === "eval") {
-          try {
-            const res = await eval(e.data.payload);
-            e.source.postMessage({
-              type: "eval-success",
-              payload: res,
-              id: e.data.id
-            }, "*");
-          } catch (err) {
-            e.source.postMessage({
-              type: "eval-fail",
-              payload: err.toString(),
-              id: e.data.id
-            }, "*"); 
-          }
-        }
-      });
-    <\/script> 
-  </body>
-</html>
-`;
-  });
-}
-
-// src/download.ts
-function download(file, name) {
-  const a = document.createElement("a");
-  a.download = name;
-  const url = URL.createObjectURL(file);
-  a.href = url;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-function downloadText(text, name) {
-  const blob = new Blob([text], { type: "text/plain" });
-  download(blob, name);
-}
-function canvasToBlob(c, type, quality) {
-  return new Promise((resolve, reject) => {
-    c.toBlob(
-      (blob) => {
-        resolve(blob);
-      },
-      type,
-      quality
-    );
-  });
-}
-function blobToDataURL(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.addEventListener("load", () => {
-      resolve(reader.result);
-    });
-    reader.readAsDataURL(blob);
-  });
-}
-function loadImg(url) {
-  const img = new Image();
-  return new Promise((resolve, reject) => {
-    img.onload = () => {
-      resolve(img);
-    };
-    img.src = url;
-  });
-}
-
-// src/debounce.ts
-function debounce(callback) {
-  let nextRequestIndex = 0;
-  let currentRequest = void 0;
-  const fn = async (...params) => {
-    nextRequestIndex += 1;
-    const myindex = nextRequestIndex;
-    if (currentRequest) {
-      await currentRequest;
-    }
-    if (nextRequestIndex === myindex) {
-      const myreq = callback(...params);
-      currentRequest = myreq;
-      const res = await myreq;
-      currentRequest = void 0;
-      return res;
-    }
-    return void 0;
-  };
-  fn._debounced = true;
-  return fn;
-}
 
 // src/math/intersections.ts
-function quadraticFormula(a, b, c) {
-  const bSquaredMinusFourAC = b ** 2 - 4 * a * c;
-  if (bSquaredMinusFourAC < 0) return [];
-  if (bSquaredMinusFourAC === 0) return [-b / (2 * a)];
-  return [
-    (-b - Math.sqrt(bSquaredMinusFourAC)) / (2 * a),
-    (-b + Math.sqrt(bSquaredMinusFourAC)) / (2 * a)
-  ];
-}
-function circleIntersectLine(circle, seg) {
-  const bxMinusAx = seg.b[0] - seg.a[0];
-  const byMinusAy = seg.b[1] - seg.a[1];
-  const axMinusCx = seg.a[0] - circle.center[0];
-  const ayMinusCy = seg.a[1] - circle.center[1];
-  const a = bxMinusAx ** 2 + byMinusAy ** 2;
-  const b = 2 * (bxMinusAx * axMinusCx + byMinusAy * ayMinusCy);
-  const c = axMinusCx ** 2 + ayMinusCy ** 2 - circle.radius ** 2;
-  return quadraticFormula(a, b, c);
-}
-function lineIntersectLine(a, b) {
-  const ax = a.a[0];
-  const ay = a.a[1];
-  const bx = a.b[0];
-  const by = a.b[1];
-  const cx = b.a[0];
-  const cy = b.a[1];
-  const dx = b.b[0];
-  const dy = b.b[1];
-  return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
-}
-function lineSegmentIntersectLineSegment(a, b) {
-  const t2 = lineIntersectLine(a, b);
-  const t1 = lineIntersectLine(b, a);
-  if (t1 < 0 || t1 > 1) return;
-  if (t2 < 0 || t2 > 1) return;
-  return t2;
-}
-function lineIntersectRect(l, rect) {
-  const topIntersect = lineSegmentIntersectLineSegment(
-    {
-      a: rect.a,
-      b: [rect.b[0], rect.a[1]]
-    },
-    l
-  );
-  const bottomIntersect = lineSegmentIntersectLineSegment(
-    {
-      a: [rect.a[0], rect.b[1]],
-      b: rect.b
-    },
-    l
-  );
-  const leftIntersect = lineSegmentIntersectLineSegment(
-    {
-      a: rect.a,
-      b: [rect.a[0], rect.b[1]]
-    },
-    l
-  );
-  const rightIntersect = lineSegmentIntersectLineSegment(
-    {
-      a: [rect.b[0], rect.a[1]],
-      b: rect.b
-    },
-    l
-  );
-  return [topIntersect, bottomIntersect, leftIntersect, rightIntersect].filter(
-    (i) => i && i >= 0 && i <= 1
-  );
-}
-function lineIntersectRectClosest(l, rect) {
-  return Math.min(...lineIntersectRect(l, rect));
-}
-function rayIntersectLine(ray, b) {
-  return lineIntersectLine(
-    {
-      a: ray.center,
-      b: add2(ray.center, [Math.cos(ray.dir), Math.sin(ray.dir)])
-    },
-    b
-  );
-}
-function getSmallestAngleDifference(a, b) {
-  const minDiff = Math.min(
-    Math.abs(a - b),
-    Math.abs(a - b + Math.PI * 2),
-    Math.abs(a - b - Math.PI * 2)
-  );
-  const lowest = Math.min(a, b);
-  return [lowest, lowest + minDiff];
-}
-function getEqualAngularDivisionsOfLineSegment(center, b, interval) {
-  const [angle1, angle2] = getSmallestAngleDifference(
-    pointTo(center, b.a),
-    pointTo(center, b.b)
-  );
-  const truncatedAngle1 = Math.ceil(angle1 / interval) * interval;
-  let tValues = [];
-  for (let i = truncatedAngle1; i < angle2; i += interval) {
-    tValues.push(
-      rayIntersectLine(
-        {
-          center,
-          dir: i
-        },
-        b
-      )
-    );
-  }
-  return tValues;
-}
-function closestApproachOfLineSegmentToPoint(l, pt) {
-  const ax = l.a[0];
-  const ay = l.a[1];
-  const bx = l.b[0];
-  const by = l.b[1];
-  const cx = pt[0];
-  const cy = pt[1];
-  return (-(bx - ax) * (ax - cx) - (by - ay) * (ay - cy)) / ((bx - ax) ** 2 + (by - ay) ** 2);
-}
-function sampleLineSegment(l, t) {
-  return mix2(t, l.a, l.b);
-}
 function rangeIntersects(a1, a2, b1, b2) {
   return !(a1 > b2 || b1 > a2);
-}
-function rectIntersects(a, b) {
-  return rangeIntersects(a.a[0], a.b[0], b.a[0], b.b[0]) && rangeIntersects(a.a[1], a.b[1], b.a[1], b.b[1]);
 }
 
 // src/1d-spatial-hash-table.ts
@@ -24935,413 +21729,6 @@ var OneDimensionalSpatialHashTable = class {
     );
   }
 };
-
-// src/webgl/shader.ts
-function source2shader(gl, type, source) {
-  const shader = gl.createShader(
-    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
-  );
-  if (!shader) return err(void 0);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader));
-    return err(void 0);
-  }
-  return ok(shader);
-}
-function shaders2program(gl, v, f) {
-  const program = gl.createProgram();
-  gl.attachShader(program, v);
-  gl.attachShader(program, f);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(program));
-    return err(void 0);
-  }
-  return ok(program);
-}
-function sources2program(gl, vs, fs) {
-  const v = source2shader(gl, "v", vs);
-  const f = source2shader(gl, "f", fs);
-  if (!v.ok || !f.ok) return err(void 0);
-  return shaders2program(gl, v.data, f.data);
-}
-function fullscreenQuadBuffer(gl) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      -1,
-      -1,
-      1,
-      -1,
-      -1,
-      1,
-      1,
-      1,
-      -1,
-      1,
-      1,
-      -1
-    ]),
-    gl.STATIC_DRAW
-  );
-  return ok(buffer);
-}
-function glRenderToQuad(options) {
-  const canvas = document.createElement("canvas");
-  canvas.width = options.width;
-  canvas.height = options.height;
-  const gl = canvas.getContext(options.version ?? "webgl2");
-  gl.viewport(0, 0, options.width, options.height);
-  if (!gl) return err(void 0);
-  const buf = fullscreenQuadBuffer(gl);
-  const prog = sources2program(
-    gl,
-    `#version 300 es
-precision highp float;
-
-in vec2 in_vpos;
-out vec2 pos;
-
-void main() {
-  pos = in_vpos * 0.5 + 0.5;
-  gl_Position = vec4(in_vpos, 0.5, 1.0);
-}`,
-    (options.noheader ? "" : `#version 300 es
-precision highp float;
-in vec2 pos;
-out vec4 col;
-`) + (options.noAutoUniforms ? "" : [
-      [options.uniforms, "", "float"],
-      [options.intUniforms, "i", "int"],
-      [options.uintUniforms, "u", "uint"]
-    ].map(
-      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
-        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
-      }).join("\n")
-    ).join("\n")) + options.fragsource
-  );
-  if (!prog.data) return err(void 0);
-  gl.useProgram(prog.data);
-  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
-  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(attrloc);
-  for (const [uniforms, type] of [
-    [options.uniforms, "i"],
-    [options.intUniforms, "i"],
-    [options.uintUniforms, "ui"]
-  ]) {
-    for (const [k, v] of Object.entries(uniforms ?? {})) {
-      const v2 = Array.isArray(v) ? v : [v];
-      gl[`uniform${v2.length}${type}v`](
-        gl.getUniformLocation(prog.data, k),
-        v2
-      );
-    }
-  }
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-  return ok(canvas);
-}
-
-// src/webgl/scene.ts
-function applyUniform(gl, prog, name, spec) {
-  const [t, d] = spec;
-  const l = gl.getUniformLocation(prog, name);
-  if (l === null) {
-    throw new Error(
-      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
-    );
-  }
-  if (t === "float") gl.uniform1f(l, d);
-  if (t === "vec2") gl.uniform2f(l, ...d);
-  if (t === "vec3") gl.uniform3f(l, ...d);
-  if (t === "vec4") gl.uniform4f(l, ...d);
-  if (t === "int") gl.uniform1i(l, d);
-  if (t === "ivec2") gl.uniform2i(l, ...d);
-  if (t === "ivec3") gl.uniform3i(l, ...d);
-  if (t === "ivec4") gl.uniform4i(l, ...d);
-  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
-  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
-  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
-  if (t === "float[]") gl.uniform1fv(l, d);
-  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
-  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
-  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
-  if (t === "int[]") gl.uniform1iv(l, d);
-  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
-  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
-  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
-  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
-  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
-  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
-}
-function applyUniforms(gl, prog, uniforms) {
-  for (const [k, v] of Object.entries(uniforms)) {
-    applyUniform(gl, prog, k, v);
-  }
-}
-function createScene(sceneSpec) {
-  const gl = sceneSpec.gl;
-  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
-  let sceneUniforms = sceneSpec.uniforms ?? {};
-  return {
-    uniforms() {
-      return sceneUniforms;
-    },
-    resetUniforms(u) {
-      sceneUniforms = u;
-    },
-    updateUniforms(u) {
-      sceneUniforms = { ...sceneUniforms, ...u };
-    },
-    addObject3D(spec) {
-      let objectUniforms = spec.uniforms ?? {};
-      return {
-        gl() {
-          return gl;
-        },
-        draw() {
-          gl.useProgram(spec.program);
-          spec.buffer.setLayout(spec.program);
-          applyUniforms(
-            gl,
-            spec.program,
-            combineUniforms(sceneUniforms, objectUniforms)
-          );
-          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
-        },
-        uniforms() {
-          return objectUniforms;
-        },
-        resetUniforms(u) {
-          objectUniforms = u;
-        },
-        updateUniforms(u) {
-          objectUniforms = { ...objectUniforms, ...u };
-        }
-      };
-    }
-  };
-}
-
-// src/webgl/mesh.ts
-function parametric2D(x2, y2, attr, getPoint) {
-  const data = [];
-  for (let j = 0; j < y2; j++) {
-    for (let i = 0; i < x2; i++) {
-      const a = getPoint(i, j);
-      const b = getPoint(i + 1, j);
-      const c = getPoint(i, j + 1);
-      const d = getPoint(i + 1, j + 1);
-      data.push({ [attr]: a });
-      data.push({ [attr]: c });
-      data.push({ [attr]: b });
-      data.push({ [attr]: c });
-      data.push({ [attr]: d });
-      data.push({ [attr]: b });
-    }
-  }
-  return data;
-}
-function uvSphere(x2, y2, rad, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
-    let px = Math.cos(a) * Math.cos(b) * rad;
-    let pz = Math.sin(a) * Math.cos(b) * rad;
-    let py = Math.sin(b) * rad;
-    return [px, py, pz];
-  });
-}
-function ring(x2, rad, height, attr) {
-  return parametric2D(x2, 1, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const px = Math.cos(a) * rad;
-    const pz = Math.sin(a) * rad;
-    const py = j === 1 ? height / 2 : -height / 2;
-    return [px, py, pz];
-  });
-}
-function torus(x2, y2, R, r, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI * 2;
-    let px = Math.cos(a);
-    let pz = Math.sin(a);
-    let py = Math.sin(b) * r;
-    px *= R + Math.cos(b) * r;
-    pz *= R + Math.cos(b) * r;
-    return [px, py, pz];
-  });
-}
-function move(mesh, attr, offset) {
-  return mesh.map((m) => ({
-    ...m,
-    [attr]: m[attr].map((e, i) => e + offset[i])
-  }));
-}
-function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
-  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
-  const rangeInv = 1 / (near - far);
-  return [
-    f / aspectRatio,
-    0,
-    0,
-    0,
-    0,
-    f,
-    0,
-    0,
-    0,
-    0,
-    (near + far) * rangeInv,
-    -1,
-    0,
-    0,
-    near * far * rangeInv * 2,
-    0
-  ];
-}
-function ortho(left, right, top, bottom, near, far) {
-  return [
-    2 / (right - left),
-    0,
-    0,
-    -(right + left) / (right - left),
-    0,
-    2 / (top - bottom),
-    0,
-    -(top + bottom) / (top - bottom),
-    0,
-    0,
-    -2 / (far - near),
-    -(far + near) / (far - near),
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function normalize(v) {
-  const len = Math.hypot(...v);
-  return scale3(v, 1 / len);
-}
-function rodrigues(v, k, theta) {
-  k = normalize(k);
-  return add3(
-    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-  );
-}
-function rotate(axis, angle) {
-  return [
-    ...rodrigues([1, 0, 0], axis, angle),
-    0,
-    ...rodrigues([0, 1, 0], axis, angle),
-    0,
-    ...rodrigues([0, 0, 1], axis, angle),
-    0,
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function scale(axes) {
-  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
-}
-function translate(v) {
-  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
-}
-
-// src/webgl/buffer.ts
-function getDatatypeSize(gl, datatype) {
-  return {
-    [gl.BYTE]: 1,
-    [gl.SHORT]: 2,
-    [gl.UNSIGNED_BYTE]: 1,
-    [gl.UNSIGNED_SHORT]: 2,
-    [gl.FLOAT]: 4,
-    [gl.HALF_FLOAT]: 2,
-    [gl.INT]: 4,
-    [gl.UNSIGNED_INT]: 4,
-    [gl.INT_2_10_10_10_REV]: 4,
-    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
-  }[datatype];
-}
-function createBufferWithLayout(gl, layout, data) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  const layoutEntries = Object.entries(layout);
-  let stride = 0;
-  const offsets = /* @__PURE__ */ new Map();
-  for (const [name, attrs] of layoutEntries) {
-    offsets.set(name, stride);
-    stride += attrs.size * getDatatypeSize(gl, attrs.type);
-  }
-  const arraybuf = new ArrayBuffer(stride * data.length);
-  const rawdata = new DataView(arraybuf);
-  let i = 0;
-  for (const d of data) {
-    for (const [name, attrs] of layoutEntries) {
-      for (let j = 0; j < attrs.size; j++) {
-        const val = d[name][j];
-        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
-        if (attrs.type === gl.BYTE) {
-          rawdata.setInt8(pos, val);
-        } else if (attrs.type === gl.UNSIGNED_BYTE) {
-          rawdata.setUint8(pos, val);
-        } else if (attrs.type === gl.FLOAT) {
-          rawdata.setFloat32(pos, val, true);
-        } else if (attrs.type === gl.SHORT) {
-          rawdata.setInt16(pos, val, true);
-        } else if (attrs.type === gl.UNSIGNED_SHORT) {
-          rawdata.setUint16(pos, val, true);
-        }
-      }
-    }
-    i++;
-  }
-  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
-  return {
-    vertexCount: data.length,
-    buffer,
-    setLayout(prog) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      for (const [name, attrs] of layoutEntries) {
-        const loc = gl.getAttribLocation(prog, name);
-        if (attrs.isInt) {
-          gl.vertexAttribIPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            stride,
-            offsets.get(name)
-          );
-        } else {
-          gl.vertexAttribPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            attrs.normalized ?? false,
-            stride,
-            offsets.get(name)
-          );
-        }
-        gl.enableVertexAttribArray(loc);
-      }
-    },
-    bindArray(gl2) {
-      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
-    },
-    bindIndex(gl2) {
-      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
-    }
-  };
-}
 
 // src/audio/stream-audio.ts
 var import_fft = __toESM(require_fft());
@@ -25414,7 +21801,7 @@ var AudioStream = class _AudioStream {
       this.channels,
       this.sampleRate,
       [this, gain],
-      (time, sample, a, g) => mapObjValues(a, (k, x2) => x2 * g[k]),
+      (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k]),
       this.duration
     );
   }
@@ -25423,7 +21810,7 @@ var AudioStream = class _AudioStream {
       this.channels,
       this.sampleRate,
       [this, stream],
-      (time, sample, a, b) => mapObjValues(a, (k, x2) => x2 + b[k])
+      (time, sample, a, b) => mapObjValues(a, (k, x) => x + b[k])
     );
   }
   clip(start, end) {
@@ -25472,21 +21859,21 @@ var AudioStream = class _AudioStream {
     });
   }
 };
-function fft(x2) {
-  const f = new import_fft.default(x2.length);
+function fft(x) {
+  const f = new import_fft.default(x.length);
   const out = f.createComplexArray();
-  const data = f.toComplexArray(x2);
+  const data = f.toComplexArray(x);
   f.transform(out, data);
   return new Float32Array(out);
 }
-function ifft(x2) {
-  const f = new import_fft.default(x2.length / 2);
+function ifft(x) {
+  const f = new import_fft.default(x.length / 2);
   const out = f.createComplexArray();
-  f.inverseTransform(out, x2);
+  f.inverseTransform(out, x);
   return new Float32Array(range(out.length / 2).map((i) => out[i * 2]));
 }
-function fftConvolve(x2, h) {
-  const arr1 = fft(x2);
+function fftConvolve(x, h) {
+  const arr1 = fft(x);
   const arr2 = fft(h);
   let out = new Float32Array(arr1.length);
   for (let i = 0; i < arr1.length; i += 2) {
@@ -25495,16 +21882,16 @@ function fftConvolve(x2, h) {
   }
   return ifft(out);
 }
-function nextPowerOfTwo(x2) {
-  return Math.pow(2, Math.ceil(Math.log2(x2)));
+function nextPowerOfTwo(x) {
+  return Math.pow(2, Math.ceil(Math.log2(x)));
 }
-function zeroPad(x2, length) {
-  if (x2.length === length) return x2;
-  const y2 = new Float32Array(length);
-  for (let i = 0; i < x2.length; i++) {
-    y2[i] = x2[i];
+function zeroPad(x, length) {
+  if (x.length === length) return x;
+  const y = new Float32Array(length);
+  for (let i = 0; i < x.length; i++) {
+    y[i] = x[i];
   }
-  return y2;
+  return y;
 }
 var powersOfTwo = range(31).map((i) => 2 ** (i + 1));
 var getOptimumOverlapSaveFilterSize = memo((M) => {
@@ -25514,22 +21901,22 @@ var getOptimumOverlapSaveFilterSize = memo((M) => {
     (N) => cost(M, N)
   );
 });
-function overlapSaveConvolve(x2, h) {
+function overlapSaveConvolve(x, h) {
   const M = h.length;
   const N = getOptimumOverlapSaveFilterSize(M);
   const kernel = zeroPad(h, N);
   const L = N - M + 1;
-  const blockcount = Math.ceil(x2.length / L);
+  const blockcount = Math.ceil(x.length / L);
   const dst = new Float32Array(L * blockcount);
   for (let i = 0; i < blockcount; i++) {
     const position = L * i;
-    const xslice = zeroPad(x2.slice(position, position + N), N);
+    const xslice = zeroPad(x.slice(position, position + N), N);
     const convolved = fftConvolve(xslice, kernel);
     for (let j = 0; j < L; j++) {
       dst[position + j] = convolved[M + j - 1];
     }
   }
-  return dst.slice(0, x2.length);
+  return dst.slice(0, x.length);
 }
 function createSignal(params) {
   const constr = params.constructors;
@@ -25643,7 +22030,7 @@ function combineAudio(channels, sampleRate, audio, f, customDuration) {
   return stream;
 }
 function broadcastTo(channels, sampleRate, mono) {
-  return combineAudio(channels, sampleRate, [mono], (_, __, x2) => x2);
+  return combineAudio(channels, sampleRate, [mono], (_, __, x) => x);
 }
 function lowPassFilterSample(n, N, m) {
   return 1 / N * range(m * 2 + 1).map((i) => Math.cos(2 * Math.PI * (i - m) / N * n)).reduce((a, b) => a + b, 0);
@@ -25703,13 +22090,13 @@ var AudioBuilder = class {
       profile
     );
   }
-  constant(x2) {
+  constant(x) {
     return createSignal({
       sampleRate: this.sampleRate,
       channels: this.channels,
       duration: Infinity,
       length: Infinity,
-      constructors: arrayToObjKeys(this.channels, () => () => x2)
+      constructors: arrayToObjKeys(this.channels, () => () => x)
     });
   }
   sine(frequency, amplitude = 1, phase = 0) {
@@ -25717,7 +22104,7 @@ var AudioBuilder = class {
       frequency,
       amplitude,
       phase,
-      (x2) => Math.sin(x2 * Math.PI * 2)
+      (x) => Math.sin(x * Math.PI * 2)
     );
   }
   square(frequency, amplitude = 1, phase = 0) {
@@ -25725,11 +22112,11 @@ var AudioBuilder = class {
       frequency,
       amplitude,
       phase,
-      (x2) => x2 > 0.5 ? -1 : 1
+      (x) => x > 0.5 ? -1 : 1
     );
   }
   saw(frequency, amplitude = 1, phase = 0) {
-    return this.waveform(frequency, amplitude, phase, (x2) => x2 * 2 - 1);
+    return this.waveform(frequency, amplitude, phase, (x) => x * 2 - 1);
   }
   noise(amplitude = 1) {
     return createSignal({
@@ -25937,7 +22324,7 @@ var chord = (0, import_typescript_parsec.apply)(
   (0, import_typescript_parsec.seq)(
     note_timing,
     (0, import_typescript_parsec.lrec_sc)(
-      (0, import_typescript_parsec.apply)(chord_inner, (x2) => [x2]),
+      (0, import_typescript_parsec.apply)(chord_inner, (x) => [x]),
       (0, import_typescript_parsec.seq)((0, import_typescript_parsec.str)("/"), chord_inner),
       (a, [_, b]) => [...a, b]
     )
@@ -25961,4436 +22348,10 @@ compound_note.setPattern(
 chord_inner.setPattern((0, import_typescript_parsec.alt_sc)(primitive_note, compound_note));
 var note = (0, import_typescript_parsec.alt_sc)(chord, compound_note, primitive_note);
 var track = (0, import_typescript_parsec.rep_sc)(note);
-function parseNotes(src2) {
-  const tokens = noteLexer.parse(src2);
-  return (0, import_typescript_parsec.expectSingleResult)((0, import_typescript_parsec.expectEOF)(track.parse(tokens)));
-}
-function getBeatCount(notes) {
-  return notes.reduce((p, c) => p + c.timing, 0);
-}
-function createTrackSpecForNoteSequence(startTime, duration, notes, lastFreq, patch) {
-  let time = startTime;
-  let freq = lastFreq;
-  let spec = [];
-  const timingTotal = getBeatCount(notes);
-  for (const n of notes) {
-    const thisNoteDuration = duration * n.timing / timingTotal;
-    const data = createTrackSpecForNote(time, thisNoteDuration, n, freq, patch);
-    spec.push(...data.trackSpec);
-    time += thisNoteDuration;
-    freq = data.freq;
-  }
-  return {
-    freq,
-    trackSpec: spec
-  };
-}
-function createTrackSpecForNote(startTime, duration, note2, lastFreq, patch) {
-  if (note2.type === "note") {
-    const freq = note2freq(note2.noteData, lastFreq);
-    return {
-      freq,
-      trackSpec: [
-        {
-          start: startTime,
-          audio: patch(freq, duration)
-        }
-      ]
-    };
-  } else if (note2.type === "chord") {
-    const results = note2.notes.map(
-      (n) => createTrackSpecForNote(startTime, duration * n.timing, n, lastFreq, patch)
-    );
-    return {
-      freq: results.at(-1).freq,
-      trackSpec: results.flatMap((x2) => x2.trackSpec)
-    };
-  } else if (note2.type === "compound") {
-    return createTrackSpecForNoteSequence(
-      startTime,
-      duration,
-      note2.notes,
-      lastFreq,
-      patch
-    );
-  }
-}
-function createTrackSpec(track2, bpm, patch) {
-  return createTrackSpecForNoteSequence(
-    0,
-    getBeatCount(track2) * 60 / bpm,
-    track2,
-    440,
-    patch
-  ).trackSpec;
-}
-function note2freq(note2, lastfreq) {
-  if (note2[0].match(/[a-gA-G]/g)) {
-    let semitone = {
-      a: 0,
-      b: 2,
-      c: 3,
-      d: 5,
-      e: 7,
-      f: 8,
-      g: 10
-    }[note2[0].toLowerCase()];
-    let i;
-    for (i = 1; note2[i] === "b" || note2[i] === "#"; i++) {
-      semitone += note2[i] === "#" ? 1 : -1;
-    }
-    let octave = parseInt(note2.slice(i));
-    if (isNaN(octave)) octave = 4;
-    semitone += (octave - 4) * 12;
-    return Math.pow(2, semitone / 12) * 440;
-  } else {
-    return (lastfreq ?? 440) * Math.pow(2, parseInt(note2) / 12);
-  }
-}
-
-// node_modules/ml-convolution/src/utils.js
-function checkSize(size) {
-  if (!Number.isInteger(size) || size < 1) {
-    throw new TypeError(`size must be a positive integer. Got ${size}`);
-  }
-}
-function checkKernel(kernel) {
-  if (kernel.length === 0 || kernel.length % 2 !== 1) {
-    throw new RangeError(
-      `kernel must have an odd positive length. Got ${kernel.length}`
-    );
-  }
-}
-function checkBorderType(borderType) {
-  if (borderType !== "CONSTANT" && borderType !== "CUT") {
-    throw new RangeError(`unexpected border type: ${borderType}`);
-  }
-}
-function checkInputLength(actual, expected) {
-  if (actual !== expected) {
-    throw new RangeError(
-      `input length (${actual}) does not match setup size (${expected})`
-    );
-  }
-}
-function createArray(len) {
-  const array2 = [];
-  for (var i = 0; i < len; i++) {
-    array2.push(0);
-  }
-  return array2;
-}
 
 // node_modules/ml-convolution/src/fftConvolution.js
 var import_fft2 = __toESM(require_fft());
 var import_next_power_of_two = __toESM(require_next_power_of_two());
-var FFTConvolution = class {
-  constructor(size, kernel, borderType = "CONSTANT") {
-    checkSize(size);
-    checkKernel(kernel);
-    checkBorderType(borderType);
-    this.size = size;
-    this.kernelOffset = (kernel.length - 1) / 2;
-    this.doubleOffset = 2 * this.kernelOffset;
-    this.borderType = borderType;
-    const resultLength = size + this.doubleOffset;
-    this.fftLength = (0, import_next_power_of_two.default)(Math.max(resultLength, 2));
-    this.fftComplexLength = this.fftLength * 2;
-    this.fft = new import_fft2.default(this.fftLength);
-    kernel = kernel.slice().reverse();
-    const paddedKernel = createArray(this.fftComplexLength);
-    this.fftKernel = createArray(this.fftComplexLength);
-    pad(kernel, paddedKernel, this.fftComplexLength);
-    this.fft.transform(this.fftKernel, paddedKernel);
-    this.paddedInput = createArray(this.fftComplexLength);
-    this.fftInput = createArray(this.fftComplexLength);
-    this.ifftOutput = createArray(this.fftComplexLength);
-    this.result = paddedKernel;
-  }
-  convolve(input) {
-    checkInputLength(input.length, this.size);
-    pad(input, this.paddedInput, this.fftComplexLength);
-    this.fft.transform(this.fftInput, this.paddedInput);
-    for (var i = 0; i < this.fftInput.length; i += 2) {
-      const tmp = this.fftInput[i] * this.fftKernel[i] - this.fftInput[i + 1] * this.fftKernel[i + 1];
-      this.fftInput[i + 1] = this.fftInput[i] * this.fftKernel[i + 1] + this.fftInput[i + 1] * this.fftKernel[i];
-      this.fftInput[i] = tmp;
-    }
-    this.fft.inverseTransform(this.ifftOutput, this.fftInput);
-    const r = this.fft.fromComplexArray(this.ifftOutput, this.result);
-    if (this.borderType === "CONSTANT") {
-      return r.slice(this.kernelOffset, this.kernelOffset + input.length);
-    } else {
-      return r.slice(this.doubleOffset, input.length);
-    }
-  }
-};
-function fftConvolution(input, kernel, borderType) {
-  return new FFTConvolution(input.length, kernel, borderType).convolve(input);
-}
-function pad(data, out, len) {
-  let i = 0;
-  for (; i < data.length; i++) {
-    out[i * 2] = data[i];
-    out[i * 2 + 1] = 0;
-  }
-  i *= 2;
-  for (; i < len; i += 2) {
-    out[i] = 0;
-    out[i + 1] = 0;
-  }
-}
-
-// node_modules/mediabunny/dist/modules/src/misc.js
-function assert(x2) {
-  if (!x2) {
-    throw new Error("Assertion failed.");
-  }
-}
-var Bitstream = class _Bitstream {
-  constructor(bytes) {
-    this.bytes = bytes;
-    this.pos = 0;
-  }
-  seekToByte(byteOffset) {
-    this.pos = 8 * byteOffset;
-  }
-  readBit() {
-    const byteIndex = Math.floor(this.pos / 8);
-    const byte = this.bytes[byteIndex] ?? 0;
-    const bitIndex = 7 - (this.pos & 7);
-    const bit = (byte & 1 << bitIndex) >> bitIndex;
-    this.pos++;
-    return bit;
-  }
-  readBits(n) {
-    if (n === 1) {
-      return this.readBit();
-    }
-    let result = 0;
-    for (let i = 0; i < n; i++) {
-      result <<= 1;
-      result |= this.readBit();
-    }
-    return result;
-  }
-  writeBits(n, value) {
-    const end = this.pos + n;
-    for (let i = this.pos; i < end; i++) {
-      const byteIndex = Math.floor(i / 8);
-      let byte = this.bytes[byteIndex];
-      const bitIndex = 7 - (i & 7);
-      byte &= ~(1 << bitIndex);
-      byte |= (value & 1 << end - i - 1) >> end - i - 1 << bitIndex;
-      this.bytes[byteIndex] = byte;
-    }
-    this.pos = end;
-  }
-  readAlignedByte() {
-    if (this.pos % 8 !== 0) {
-      throw new Error("Bitstream is not byte-aligned.");
-    }
-    const byteIndex = this.pos / 8;
-    const byte = this.bytes[byteIndex] ?? 0;
-    this.pos += 8;
-    return byte;
-  }
-  skipBits(n) {
-    this.pos += n;
-  }
-  getBitsLeft() {
-    return this.bytes.length * 8 - this.pos;
-  }
-  clone() {
-    const clone = new _Bitstream(this.bytes);
-    clone.pos = this.pos;
-    return clone;
-  }
-};
-var toUint8Array = (source) => {
-  if (source instanceof Uint8Array) {
-    return source;
-  } else if (source instanceof ArrayBuffer) {
-    return new Uint8Array(source);
-  } else {
-    return new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
-  }
-};
-var toDataView = (source) => {
-  if (source instanceof DataView) {
-    return source;
-  } else if (source instanceof ArrayBuffer) {
-    return new DataView(source);
-  } else {
-    return new DataView(source.buffer, source.byteOffset, source.byteLength);
-  }
-};
-var textDecoder = new TextDecoder();
-var textEncoder = new TextEncoder();
-var invertObject = (object) => {
-  return Object.fromEntries(Object.entries(object).map(([key, value]) => [value, key]));
-};
-var COLOR_PRIMARIES_MAP = {
-  bt709: 1,
-  // ITU-R BT.709
-  bt470bg: 5,
-  // ITU-R BT.470BG
-  smpte170m: 6,
-  // ITU-R BT.601 525 - SMPTE 170M
-  bt2020: 9,
-  // ITU-R BT.202
-  smpte432: 12
-  // SMPTE EG 432-1
-};
-var COLOR_PRIMARIES_MAP_INVERSE = invertObject(COLOR_PRIMARIES_MAP);
-var TRANSFER_CHARACTERISTICS_MAP = {
-  "bt709": 1,
-  // ITU-R BT.709
-  "smpte170m": 6,
-  // SMPTE 170M
-  "linear": 8,
-  // Linear transfer characteristics
-  "iec61966-2-1": 13,
-  // IEC 61966-2-1
-  "pg": 16,
-  // Rec. ITU-R BT.2100-2 perceptual quantization (PQ) system
-  "hlg": 18
-  // Rec. ITU-R BT.2100-2 hybrid loggamma (HLG) system
-};
-var TRANSFER_CHARACTERISTICS_MAP_INVERSE = invertObject(TRANSFER_CHARACTERISTICS_MAP);
-var MATRIX_COEFFICIENTS_MAP = {
-  "rgb": 0,
-  // Identity
-  "bt709": 1,
-  // ITU-R BT.709
-  "bt470bg": 5,
-  // ITU-R BT.470BG
-  "smpte170m": 6,
-  // SMPTE 170M
-  "bt2020-ncl": 9
-  // ITU-R BT.2020-2 (non-constant luminance)
-};
-var MATRIX_COEFFICIENTS_MAP_INVERSE = invertObject(MATRIX_COEFFICIENTS_MAP);
-var isAllowSharedBufferSource = (x2) => {
-  return x2 instanceof ArrayBuffer || typeof SharedArrayBuffer !== "undefined" && x2 instanceof SharedArrayBuffer || ArrayBuffer.isView(x2);
-};
-var AsyncMutex = class {
-  constructor() {
-    this.currentPromise = Promise.resolve();
-  }
-  async acquire() {
-    let resolver;
-    const nextPromise = new Promise((resolve) => {
-      resolver = resolve;
-    });
-    const currentPromiseAlias = this.currentPromise;
-    this.currentPromise = nextPromise;
-    await currentPromiseAlias;
-    return resolver;
-  }
-};
-var promiseWithResolvers = () => {
-  let resolve;
-  let reject;
-  const promise = new Promise((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-};
-var assertNever = (x2) => {
-  throw new Error(`Unexpected value: ${x2}`);
-};
-var setUint24 = (view, byteOffset, value, littleEndian) => {
-  value = value >>> 0;
-  value = value & 16777215;
-  if (littleEndian) {
-    view.setUint8(byteOffset, value & 255);
-    view.setUint8(byteOffset + 1, value >>> 8 & 255);
-    view.setUint8(byteOffset + 2, value >>> 16 & 255);
-  } else {
-    view.setUint8(byteOffset, value >>> 16 & 255);
-    view.setUint8(byteOffset + 1, value >>> 8 & 255);
-    view.setUint8(byteOffset + 2, value & 255);
-  }
-};
-var setInt24 = (view, byteOffset, value, littleEndian) => {
-  value = clamp2(value, -8388608, 8388607);
-  if (value < 0) {
-    value = value + 16777216 & 16777215;
-  }
-  setUint24(view, byteOffset, value, littleEndian);
-};
-var setInt64 = (view, byteOffset, value, littleEndian) => {
-  if (littleEndian) {
-    view.setUint32(byteOffset + 0, value, true);
-    view.setInt32(byteOffset + 4, Math.floor(value / 2 ** 32), true);
-  } else {
-    view.setInt32(byteOffset + 0, Math.floor(value / 2 ** 32), true);
-    view.setUint32(byteOffset + 4, value, true);
-  }
-};
-var clamp2 = (value, min, max) => {
-  return Math.max(min, Math.min(max, value));
-};
-var ilog = (x2) => {
-  let ret = 0;
-  while (x2) {
-    ret++;
-    x2 >>= 1;
-  }
-  return ret;
-};
-var ISO_639_2_REGEX = /^[a-z]{3}$/;
-var isIso639Dash2LanguageCode = (x2) => {
-  return ISO_639_2_REGEX.test(x2);
-};
-var SECOND_TO_MICROSECOND_FACTOR = 1e6 * (1 + Number.EPSILON);
-var CallSerializer = class {
-  constructor() {
-    this.currentPromise = Promise.resolve();
-  }
-  call(fn) {
-    return this.currentPromise = this.currentPromise.then(fn);
-  }
-};
-var keyValueIterator = function* (object) {
-  for (const key in object) {
-    const value = object[key];
-    if (value === void 0) {
-      continue;
-    }
-    yield { key, value };
-  }
-};
-var bytesToBase64 = (bytes) => {
-  let string = "";
-  for (let i = 0; i < bytes.length; i++) {
-    string += String.fromCharCode(bytes[i]);
-  }
-  return btoa(string);
-};
-
-// node_modules/mediabunny/dist/modules/src/tags.js
-var RichImageData = class {
-  /** Creates a new {@link RichImageData}. */
-  constructor(data, mimeType) {
-    this.data = data;
-    this.mimeType = mimeType;
-  }
-};
-var validateMetadataTags = (tags) => {
-  if (!tags || typeof tags !== "object") {
-    throw new TypeError("tags must be an object.");
-  }
-  if (tags.title !== void 0 && typeof tags.title !== "string") {
-    throw new TypeError("tags.title, when provided, must be a string.");
-  }
-  if (tags.description !== void 0 && typeof tags.description !== "string") {
-    throw new TypeError("tags.description, when provided, must be a string.");
-  }
-  if (tags.artist !== void 0 && typeof tags.artist !== "string") {
-    throw new TypeError("tags.artist, when provided, must be a string.");
-  }
-  if (tags.album !== void 0 && typeof tags.album !== "string") {
-    throw new TypeError("tags.album, when provided, must be a string.");
-  }
-  if (tags.albumArtist !== void 0 && typeof tags.albumArtist !== "string") {
-    throw new TypeError("tags.albumArtist, when provided, must be a string.");
-  }
-  if (tags.trackNumber !== void 0 && (!Number.isInteger(tags.trackNumber) || tags.trackNumber <= 0)) {
-    throw new TypeError("tags.trackNumber, when provided, must be a positive integer.");
-  }
-  if (tags.tracksTotal !== void 0 && (!Number.isInteger(tags.tracksTotal) || tags.tracksTotal <= 0)) {
-    throw new TypeError("tags.tracksTotal, when provided, must be a positive integer.");
-  }
-  if (tags.discNumber !== void 0 && (!Number.isInteger(tags.discNumber) || tags.discNumber <= 0)) {
-    throw new TypeError("tags.discNumber, when provided, must be a positive integer.");
-  }
-  if (tags.discsTotal !== void 0 && (!Number.isInteger(tags.discsTotal) || tags.discsTotal <= 0)) {
-    throw new TypeError("tags.discsTotal, when provided, must be a positive integer.");
-  }
-  if (tags.genre !== void 0 && typeof tags.genre !== "string") {
-    throw new TypeError("tags.genre, when provided, must be a string.");
-  }
-  if (tags.date !== void 0 && (!(tags.date instanceof Date) || Number.isNaN(tags.date.getTime()))) {
-    throw new TypeError("tags.date, when provided, must be a valid Date.");
-  }
-  if (tags.lyrics !== void 0 && typeof tags.lyrics !== "string") {
-    throw new TypeError("tags.lyrics, when provided, must be a string.");
-  }
-  if (tags.images !== void 0) {
-    if (!Array.isArray(tags.images)) {
-      throw new TypeError("tags.images, when provided, must be an array.");
-    }
-    for (const image of tags.images) {
-      if (!image || typeof image !== "object") {
-        throw new TypeError("Each image in tags.images must be an object.");
-      }
-      if (!(image.data instanceof Uint8Array)) {
-        throw new TypeError("Each image.data must be a Uint8Array.");
-      }
-      if (typeof image.mimeType !== "string") {
-        throw new TypeError("Each image.mimeType must be a string.");
-      }
-      if (!["coverFront", "coverBack", "unknown"].includes(image.kind)) {
-        throw new TypeError("Each image.kind must be 'coverFront', 'coverBack', or 'unknown'.");
-      }
-    }
-  }
-  if (tags.comment !== void 0 && typeof tags.comment !== "string") {
-    throw new TypeError("tags.comment, when provided, must be a string.");
-  }
-  if (tags.raw !== void 0) {
-    if (!tags.raw || typeof tags.raw !== "object") {
-      throw new TypeError("tags.raw, when provided, must be an object.");
-    }
-    for (const value of Object.values(tags.raw)) {
-      if (value !== null && typeof value !== "string" && !(value instanceof Uint8Array) && !(value instanceof RichImageData)) {
-        throw new TypeError("Each value in tags.raw must be a string, Uint8Array, RichImageData, or null.");
-      }
-    }
-  }
-};
-
-// node_modules/mediabunny/dist/modules/src/codec.js
-var VIDEO_CODECS = [
-  "avc",
-  "hevc",
-  "vp9",
-  "av1",
-  "vp8"
-];
-var PCM_AUDIO_CODECS = [
-  "pcm-s16",
-  // We don't prefix 'le' so we're compatible with the WebCodecs-registered PCM codec strings
-  "pcm-s16be",
-  "pcm-s24",
-  "pcm-s24be",
-  "pcm-s32",
-  "pcm-s32be",
-  "pcm-f32",
-  "pcm-f32be",
-  "pcm-f64",
-  "pcm-f64be",
-  "pcm-u8",
-  "pcm-s8",
-  "ulaw",
-  "alaw"
-];
-var NON_PCM_AUDIO_CODECS = [
-  "aac",
-  "opus",
-  "mp3",
-  "vorbis",
-  "flac"
-];
-var AUDIO_CODECS = [
-  ...NON_PCM_AUDIO_CODECS,
-  ...PCM_AUDIO_CODECS
-];
-var SUBTITLE_CODECS = [
-  "webvtt"
-];
-var buildAudioCodecString = (codec, numberOfChannels, sampleRate) => {
-  if (codec === "aac") {
-    if (numberOfChannels >= 2 && sampleRate <= 24e3) {
-      return "mp4a.40.29";
-    }
-    if (sampleRate <= 24e3) {
-      return "mp4a.40.5";
-    }
-    return "mp4a.40.2";
-  } else if (codec === "mp3") {
-    return "mp3";
-  } else if (codec === "opus") {
-    return "opus";
-  } else if (codec === "vorbis") {
-    return "vorbis";
-  } else if (codec === "flac") {
-    return "flac";
-  } else if (PCM_AUDIO_CODECS.includes(codec)) {
-    return codec;
-  }
-  throw new TypeError(`Unhandled codec '${codec}'.`);
-};
-var OPUS_INTERNAL_SAMPLE_RATE = 48e3;
-var PCM_CODEC_REGEX = /^pcm-([usf])(\d+)+(be)?$/;
-var parsePcmCodec = (codec) => {
-  assert(PCM_AUDIO_CODECS.includes(codec));
-  if (codec === "ulaw") {
-    return { dataType: "ulaw", sampleSize: 1, littleEndian: true, silentValue: 255 };
-  } else if (codec === "alaw") {
-    return { dataType: "alaw", sampleSize: 1, littleEndian: true, silentValue: 213 };
-  }
-  const match = PCM_CODEC_REGEX.exec(codec);
-  assert(match);
-  let dataType;
-  if (match[1] === "u") {
-    dataType = "unsigned";
-  } else if (match[1] === "s") {
-    dataType = "signed";
-  } else {
-    dataType = "float";
-  }
-  const sampleSize = Number(match[2]) / 8;
-  const littleEndian = match[3] !== "be";
-  const silentValue = codec === "pcm-u8" ? 2 ** 7 : 0;
-  return { dataType, sampleSize, littleEndian, silentValue };
-};
-var inferCodecFromCodecString = (codecString) => {
-  if (codecString.startsWith("avc1") || codecString.startsWith("avc3")) {
-    return "avc";
-  } else if (codecString.startsWith("hev1") || codecString.startsWith("hvc1")) {
-    return "hevc";
-  } else if (codecString === "vp8") {
-    return "vp8";
-  } else if (codecString.startsWith("vp09")) {
-    return "vp9";
-  } else if (codecString.startsWith("av01")) {
-    return "av1";
-  }
-  if (codecString.startsWith("mp4a.40") || codecString === "mp4a.67") {
-    return "aac";
-  } else if (codecString === "mp3" || codecString === "mp4a.69" || codecString === "mp4a.6B" || codecString === "mp4a.6b") {
-    return "mp3";
-  } else if (codecString === "opus") {
-    return "opus";
-  } else if (codecString === "vorbis") {
-    return "vorbis";
-  } else if (codecString === "flac") {
-    return "flac";
-  } else if (codecString === "ulaw") {
-    return "ulaw";
-  } else if (codecString === "alaw") {
-    return "alaw";
-  } else if (PCM_CODEC_REGEX.test(codecString)) {
-    return codecString;
-  }
-  if (codecString === "webvtt") {
-    return "webvtt";
-  }
-  return null;
-};
-var getAudioEncoderConfigExtension = (codec) => {
-  if (codec === "aac") {
-    return {
-      aac: {
-        format: "aac"
-        // Ensure the format is not ADTS
-      }
-    };
-  } else if (codec === "opus") {
-    return {
-      opus: {
-        format: "opus"
-      }
-    };
-  }
-  return {};
-};
-var VALID_AUDIO_CODEC_STRING_PREFIXES = ["mp4a", "mp3", "opus", "vorbis", "flac", "ulaw", "alaw", "pcm"];
-var validateAudioChunkMetadata = (metadata) => {
-  if (!metadata) {
-    throw new TypeError("Audio chunk metadata must be provided.");
-  }
-  if (typeof metadata !== "object") {
-    throw new TypeError("Audio chunk metadata must be an object.");
-  }
-  if (!metadata.decoderConfig) {
-    throw new TypeError("Audio chunk metadata must include a decoder configuration.");
-  }
-  if (typeof metadata.decoderConfig !== "object") {
-    throw new TypeError("Audio chunk metadata decoder configuration must be an object.");
-  }
-  if (typeof metadata.decoderConfig.codec !== "string") {
-    throw new TypeError("Audio chunk metadata decoder configuration must specify a codec string.");
-  }
-  if (!VALID_AUDIO_CODEC_STRING_PREFIXES.some((prefix) => metadata.decoderConfig.codec.startsWith(prefix))) {
-    throw new TypeError("Audio chunk metadata decoder configuration codec string must be a valid audio codec string as specified in the WebCodecs Codec Registry.");
-  }
-  if (!Number.isInteger(metadata.decoderConfig.sampleRate) || metadata.decoderConfig.sampleRate <= 0) {
-    throw new TypeError("Audio chunk metadata decoder configuration must specify a valid sampleRate (positive integer).");
-  }
-  if (!Number.isInteger(metadata.decoderConfig.numberOfChannels) || metadata.decoderConfig.numberOfChannels <= 0) {
-    throw new TypeError("Audio chunk metadata decoder configuration must specify a valid numberOfChannels (positive integer).");
-  }
-  if (metadata.decoderConfig.description !== void 0) {
-    if (!isAllowSharedBufferSource(metadata.decoderConfig.description)) {
-      throw new TypeError("Audio chunk metadata decoder configuration description, when defined, must be an ArrayBuffer or an ArrayBuffer view.");
-    }
-  }
-  if (metadata.decoderConfig.codec.startsWith("mp4a") && metadata.decoderConfig.codec !== "mp4a.69" && metadata.decoderConfig.codec !== "mp4a.6B" && metadata.decoderConfig.codec !== "mp4a.6b") {
-    const validStrings = ["mp4a.40.2", "mp4a.40.02", "mp4a.40.5", "mp4a.40.05", "mp4a.40.29", "mp4a.67"];
-    if (!validStrings.includes(metadata.decoderConfig.codec)) {
-      throw new TypeError("Audio chunk metadata decoder configuration codec string for AAC must be a valid AAC codec string as specified in https://www.w3.org/TR/webcodecs-aac-codec-registration/.");
-    }
-    if (!metadata.decoderConfig.description) {
-      throw new TypeError("Audio chunk metadata decoder configuration for AAC must include a description, which is expected to be an AudioSpecificConfig as specified in ISO 14496-3.");
-    }
-  } else if (metadata.decoderConfig.codec.startsWith("mp3") || metadata.decoderConfig.codec.startsWith("mp4a")) {
-    if (metadata.decoderConfig.codec !== "mp3" && metadata.decoderConfig.codec !== "mp4a.69" && metadata.decoderConfig.codec !== "mp4a.6B" && metadata.decoderConfig.codec !== "mp4a.6b") {
-      throw new TypeError('Audio chunk metadata decoder configuration codec string for MP3 must be "mp3", "mp4a.69" or "mp4a.6B".');
-    }
-  } else if (metadata.decoderConfig.codec.startsWith("opus")) {
-    if (metadata.decoderConfig.codec !== "opus") {
-      throw new TypeError('Audio chunk metadata decoder configuration codec string for Opus must be "opus".');
-    }
-    if (metadata.decoderConfig.description && metadata.decoderConfig.description.byteLength < 18) {
-      throw new TypeError("Audio chunk metadata decoder configuration description, when specified, is expected to be an Identification Header as specified in Section 5.1 of RFC 7845.");
-    }
-  } else if (metadata.decoderConfig.codec.startsWith("vorbis")) {
-    if (metadata.decoderConfig.codec !== "vorbis") {
-      throw new TypeError('Audio chunk metadata decoder configuration codec string for Vorbis must be "vorbis".');
-    }
-    if (!metadata.decoderConfig.description) {
-      throw new TypeError("Audio chunk metadata decoder configuration for Vorbis must include a description, which is expected to adhere to the format described in https://www.w3.org/TR/webcodecs-vorbis-codec-registration/.");
-    }
-  } else if (metadata.decoderConfig.codec.startsWith("flac")) {
-    if (metadata.decoderConfig.codec !== "flac") {
-      throw new TypeError('Audio chunk metadata decoder configuration codec string for FLAC must be "flac".');
-    }
-    const minDescriptionSize = 4 + 4 + 34;
-    if (!metadata.decoderConfig.description || metadata.decoderConfig.description.byteLength < minDescriptionSize) {
-      throw new TypeError("Audio chunk metadata decoder configuration for FLAC must include a description, which is expected to adhere to the format described in https://www.w3.org/TR/webcodecs-flac-codec-registration/.");
-    }
-  } else if (metadata.decoderConfig.codec.startsWith("pcm") || metadata.decoderConfig.codec.startsWith("ulaw") || metadata.decoderConfig.codec.startsWith("alaw")) {
-    if (!PCM_AUDIO_CODECS.includes(metadata.decoderConfig.codec)) {
-      throw new TypeError(`Audio chunk metadata decoder configuration codec string for PCM must be one of the supported PCM codecs (${PCM_AUDIO_CODECS.join(", ")}).`);
-    }
-  }
-};
-
-// node_modules/mediabunny/dist/modules/src/muxer.js
-var Muxer = class {
-  constructor(output) {
-    this.mutex = new AsyncMutex();
-    this.firstMediaStreamTimestamp = null;
-    this.trackTimestampInfo = /* @__PURE__ */ new WeakMap();
-    this.output = output;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onTrackClose(track2) {
-  }
-  validateAndNormalizeTimestamp(track2, timestampInSeconds, isKeyFrame) {
-    timestampInSeconds += track2.source._timestampOffset;
-    let timestampInfo = this.trackTimestampInfo.get(track2);
-    if (!timestampInfo) {
-      if (!isKeyFrame) {
-        throw new Error("First frame must be a key frame.");
-      }
-      timestampInfo = {
-        maxTimestamp: timestampInSeconds,
-        maxTimestampBeforeLastKeyFrame: timestampInSeconds
-      };
-      this.trackTimestampInfo.set(track2, timestampInfo);
-    }
-    if (timestampInSeconds < 0) {
-      throw new Error(`Timestamps must be non-negative (got ${timestampInSeconds}s).`);
-    }
-    if (isKeyFrame) {
-      timestampInfo.maxTimestampBeforeLastKeyFrame = timestampInfo.maxTimestamp;
-    }
-    if (timestampInSeconds < timestampInfo.maxTimestampBeforeLastKeyFrame) {
-      throw new Error(`Timestamps cannot be smaller than the highest timestamp of the previous run (a run begins with a key frame and ends right before the next key frame). Got ${timestampInSeconds}s, but highest timestamp is ${timestampInfo.maxTimestampBeforeLastKeyFrame}s.`);
-    }
-    timestampInfo.maxTimestamp = Math.max(timestampInfo.maxTimestamp, timestampInSeconds);
-    return timestampInSeconds;
-  }
-};
-
-// node_modules/mediabunny/dist/modules/src/codec-data.js
-var parseOpusIdentificationHeader = (bytes) => {
-  const view = toDataView(bytes);
-  const outputChannelCount = view.getUint8(9);
-  const preSkip = view.getUint16(10, true);
-  const inputSampleRate = view.getUint32(12, true);
-  const outputGain = view.getInt16(16, true);
-  const channelMappingFamily = view.getUint8(18);
-  let channelMappingTable = null;
-  if (channelMappingFamily) {
-    channelMappingTable = bytes.subarray(19, 19 + 2 + outputChannelCount);
-  }
-  return {
-    outputChannelCount,
-    preSkip,
-    inputSampleRate,
-    outputGain,
-    channelMappingFamily,
-    channelMappingTable
-  };
-};
-var OPUS_FRAME_DURATION_TABLE = [
-  480,
-  960,
-  1920,
-  2880,
-  480,
-  960,
-  1920,
-  2880,
-  480,
-  960,
-  1920,
-  2880,
-  480,
-  960,
-  480,
-  960,
-  120,
-  240,
-  480,
-  960,
-  120,
-  240,
-  480,
-  960,
-  120,
-  240,
-  480,
-  960,
-  120,
-  240,
-  480,
-  960
-];
-var parseOpusTocByte = (packet) => {
-  const config = packet[0] >> 3;
-  return {
-    durationInSamples: OPUS_FRAME_DURATION_TABLE[config]
-  };
-};
-var parseModesFromVorbisSetupPacket = (setupHeader) => {
-  if (setupHeader.length < 7) {
-    throw new Error("Setup header is too short.");
-  }
-  if (setupHeader[0] !== 5) {
-    throw new Error("Wrong packet type in Setup header.");
-  }
-  const signature = String.fromCharCode(...setupHeader.slice(1, 7));
-  if (signature !== "vorbis") {
-    throw new Error("Invalid packet signature in Setup header.");
-  }
-  const bufSize = setupHeader.length;
-  const revBuffer = new Uint8Array(bufSize);
-  for (let i = 0; i < bufSize; i++) {
-    revBuffer[i] = setupHeader[bufSize - 1 - i];
-  }
-  const bitstream = new Bitstream(revBuffer);
-  let gotFramingBit = 0;
-  while (bitstream.getBitsLeft() > 97) {
-    if (bitstream.readBits(1) === 1) {
-      gotFramingBit = bitstream.pos;
-      break;
-    }
-  }
-  if (gotFramingBit === 0) {
-    throw new Error("Invalid Setup header: framing bit not found.");
-  }
-  let modeCount = 0;
-  let gotModeHeader = false;
-  let lastModeCount = 0;
-  while (bitstream.getBitsLeft() >= 97) {
-    const tempPos = bitstream.pos;
-    const a = bitstream.readBits(8);
-    const b = bitstream.readBits(16);
-    const c = bitstream.readBits(16);
-    if (a > 63 || b !== 0 || c !== 0) {
-      bitstream.pos = tempPos;
-      break;
-    }
-    bitstream.skipBits(1);
-    modeCount++;
-    if (modeCount > 64) {
-      break;
-    }
-    const bsClone = bitstream.clone();
-    const candidate = bsClone.readBits(6) + 1;
-    if (candidate === modeCount) {
-      gotModeHeader = true;
-      lastModeCount = modeCount;
-    }
-  }
-  if (!gotModeHeader) {
-    throw new Error("Invalid Setup header: mode header not found.");
-  }
-  if (lastModeCount > 63) {
-    throw new Error(`Unsupported mode count: ${lastModeCount}.`);
-  }
-  const finalModeCount = lastModeCount;
-  bitstream.pos = 0;
-  bitstream.skipBits(gotFramingBit);
-  const modeBlockflags = Array(finalModeCount).fill(0);
-  for (let i = finalModeCount - 1; i >= 0; i--) {
-    bitstream.skipBits(40);
-    modeBlockflags[i] = bitstream.readBits(1);
-  }
-  return { modeBlockflags };
-};
-
-// node_modules/mediabunny/dist/modules/src/writer.js
-var Writer = class {
-  constructor() {
-    this.ensureMonotonicity = false;
-    this.trackedWrites = null;
-    this.trackedStart = -1;
-    this.trackedEnd = -1;
-  }
-  start() {
-  }
-  maybeTrackWrites(data) {
-    if (!this.trackedWrites) {
-      return;
-    }
-    let pos = this.getPos();
-    if (pos < this.trackedStart) {
-      if (pos + data.byteLength <= this.trackedStart) {
-        return;
-      }
-      data = data.subarray(this.trackedStart - pos);
-      pos = 0;
-    }
-    const neededSize = pos + data.byteLength - this.trackedStart;
-    let newLength = this.trackedWrites.byteLength;
-    while (newLength < neededSize) {
-      newLength *= 2;
-    }
-    if (newLength !== this.trackedWrites.byteLength) {
-      const copy = new Uint8Array(newLength);
-      copy.set(this.trackedWrites, 0);
-      this.trackedWrites = copy;
-    }
-    this.trackedWrites.set(data, pos - this.trackedStart);
-    this.trackedEnd = Math.max(this.trackedEnd, pos + data.byteLength);
-  }
-  startTrackingWrites() {
-    this.trackedWrites = new Uint8Array(2 ** 10);
-    this.trackedStart = this.getPos();
-    this.trackedEnd = this.trackedStart;
-  }
-  stopTrackingWrites() {
-    if (!this.trackedWrites) {
-      throw new Error("Internal error: Can't get tracked writes since nothing was tracked.");
-    }
-    const slice2 = this.trackedWrites.subarray(0, this.trackedEnd - this.trackedStart);
-    const result = {
-      data: slice2,
-      start: this.trackedStart,
-      end: this.trackedEnd
-    };
-    this.trackedWrites = null;
-    return result;
-  }
-};
-var ARRAY_BUFFER_INITIAL_SIZE = 2 ** 16;
-var ARRAY_BUFFER_MAX_SIZE = 2 ** 32;
-var BufferTargetWriter = class extends Writer {
-  constructor(target) {
-    super();
-    this.pos = 0;
-    this.maxPos = 0;
-    this.target = target;
-    this.supportsResize = "resize" in new ArrayBuffer(0);
-    if (this.supportsResize) {
-      try {
-        this.buffer = new ArrayBuffer(ARRAY_BUFFER_INITIAL_SIZE, { maxByteLength: ARRAY_BUFFER_MAX_SIZE });
-      } catch {
-        this.buffer = new ArrayBuffer(ARRAY_BUFFER_INITIAL_SIZE);
-        this.supportsResize = false;
-      }
-    } else {
-      this.buffer = new ArrayBuffer(ARRAY_BUFFER_INITIAL_SIZE);
-    }
-    this.bytes = new Uint8Array(this.buffer);
-  }
-  ensureSize(size) {
-    let newLength = this.buffer.byteLength;
-    while (newLength < size)
-      newLength *= 2;
-    if (newLength === this.buffer.byteLength)
-      return;
-    if (newLength > ARRAY_BUFFER_MAX_SIZE) {
-      throw new Error(`ArrayBuffer exceeded maximum size of ${ARRAY_BUFFER_MAX_SIZE} bytes. Please consider using another target.`);
-    }
-    if (this.supportsResize) {
-      this.buffer.resize(newLength);
-    } else {
-      const newBuffer = new ArrayBuffer(newLength);
-      const newBytes = new Uint8Array(newBuffer);
-      newBytes.set(this.bytes, 0);
-      this.buffer = newBuffer;
-      this.bytes = newBytes;
-    }
-  }
-  write(data) {
-    this.maybeTrackWrites(data);
-    this.ensureSize(this.pos + data.byteLength);
-    this.bytes.set(data, this.pos);
-    this.target.onwrite?.(this.pos, this.pos + data.byteLength);
-    this.pos += data.byteLength;
-    this.maxPos = Math.max(this.maxPos, this.pos);
-  }
-  seek(newPos) {
-    this.pos = newPos;
-  }
-  getPos() {
-    return this.pos;
-  }
-  async flush() {
-  }
-  async finalize() {
-    this.ensureSize(this.pos);
-    this.target.buffer = this.buffer.slice(0, Math.max(this.maxPos, this.pos));
-  }
-  async close() {
-  }
-  getSlice(start, end) {
-    return this.bytes.slice(start, end);
-  }
-};
-var DEFAULT_CHUNK_SIZE = 2 ** 24;
-
-// node_modules/mediabunny/dist/modules/src/target.js
-var Target = class {
-  constructor() {
-    this._output = null;
-    this.onwrite = null;
-  }
-};
-var BufferTarget = class extends Target {
-  constructor() {
-    super(...arguments);
-    this.buffer = null;
-  }
-  /** @internal */
-  _createWriter() {
-    return new BufferTargetWriter(this);
-  }
-};
-
-// node_modules/mediabunny/dist/modules/src/ogg/ogg-misc.js
-var OGGS = 1399285583;
-var OGG_CRC_POLYNOMIAL = 79764919;
-var OGG_CRC_TABLE = new Uint32Array(256);
-for (let n = 0; n < 256; n++) {
-  let crc = n << 24;
-  for (let k = 0; k < 8; k++) {
-    crc = crc & 2147483648 ? crc << 1 ^ OGG_CRC_POLYNOMIAL : crc << 1;
-  }
-  OGG_CRC_TABLE[n] = crc >>> 0 & 4294967295;
-}
-var computeOggPageCrc = (bytes) => {
-  const view = toDataView(bytes);
-  const originalChecksum = view.getUint32(22, true);
-  view.setUint32(22, 0, true);
-  let crc = 0;
-  for (let i = 0; i < bytes.length; i++) {
-    const byte = bytes[i];
-    crc = (crc << 8 ^ OGG_CRC_TABLE[crc >>> 24 ^ byte]) >>> 0;
-  }
-  view.setUint32(22, originalChecksum, true);
-  return crc;
-};
-var extractSampleMetadata = (data, codecInfo, vorbisLastBlocksize) => {
-  let durationInSamples = 0;
-  let currentBlocksize = null;
-  if (data.length > 0) {
-    if (codecInfo.codec === "vorbis") {
-      assert(codecInfo.vorbisInfo);
-      const vorbisModeCount = codecInfo.vorbisInfo.modeBlockflags.length;
-      const bitCount = ilog(vorbisModeCount - 1);
-      const modeMask = (1 << bitCount) - 1 << 1;
-      const modeNumber = (data[0] & modeMask) >> 1;
-      if (modeNumber >= codecInfo.vorbisInfo.modeBlockflags.length) {
-        throw new Error("Invalid mode number.");
-      }
-      let prevBlocksize = vorbisLastBlocksize;
-      const blockflag = codecInfo.vorbisInfo.modeBlockflags[modeNumber];
-      currentBlocksize = codecInfo.vorbisInfo.blocksizes[blockflag];
-      if (blockflag === 1) {
-        const prevMask = (modeMask | 1) + 1;
-        const flag = data[0] & prevMask ? 1 : 0;
-        prevBlocksize = codecInfo.vorbisInfo.blocksizes[flag];
-      }
-      durationInSamples = prevBlocksize !== null ? prevBlocksize + currentBlocksize >> 2 : 0;
-    } else if (codecInfo.codec === "opus") {
-      const toc = parseOpusTocByte(data);
-      durationInSamples = toc.durationInSamples;
-    }
-  }
-  return {
-    durationInSamples,
-    vorbisBlockSize: currentBlocksize
-  };
-};
-var buildOggMimeType = (info) => {
-  let string = "audio/ogg";
-  if (info.codecStrings) {
-    const uniqueCodecMimeTypes = [...new Set(info.codecStrings)];
-    string += `; codecs="${uniqueCodecMimeTypes.join(", ")}"`;
-  }
-  return string;
-};
-
-// node_modules/mediabunny/dist/modules/src/ogg/ogg-reader.js
-var MAX_PAGE_HEADER_SIZE = 27 + 255;
-var MAX_PAGE_SIZE = MAX_PAGE_HEADER_SIZE + 255 * 255;
-
-// node_modules/mediabunny/dist/modules/src/ogg/ogg-muxer.js
-var PAGE_SIZE_TARGET = 8192;
-var OggMuxer = class extends Muxer {
-  constructor(output, format) {
-    super(output);
-    this.trackDatas = [];
-    this.bosPagesWritten = false;
-    this.allTracksKnown = promiseWithResolvers();
-    this.pageBytes = new Uint8Array(MAX_PAGE_SIZE);
-    this.pageView = new DataView(this.pageBytes.buffer);
-    this.format = format;
-    this.writer = output._writer;
-    this.writer.ensureMonotonicity = true;
-  }
-  async start() {
-  }
-  async getMimeType() {
-    await this.allTracksKnown.promise;
-    return buildOggMimeType({
-      codecStrings: this.trackDatas.map((x2) => x2.codecInfo.codec)
-    });
-  }
-  addEncodedVideoPacket() {
-    throw new Error("Video tracks are not supported.");
-  }
-  getTrackData(track2, meta) {
-    const existingTrackData = this.trackDatas.find((td) => td.track === track2);
-    if (existingTrackData) {
-      return existingTrackData;
-    }
-    let serialNumber;
-    do {
-      serialNumber = Math.floor(2 ** 32 * Math.random());
-    } while (this.trackDatas.some((td) => td.serialNumber === serialNumber));
-    assert(track2.source._codec === "vorbis" || track2.source._codec === "opus");
-    validateAudioChunkMetadata(meta);
-    assert(meta);
-    assert(meta.decoderConfig);
-    const newTrackData = {
-      track: track2,
-      serialNumber,
-      internalSampleRate: track2.source._codec === "opus" ? OPUS_INTERNAL_SAMPLE_RATE : meta.decoderConfig.sampleRate,
-      codecInfo: {
-        codec: track2.source._codec,
-        vorbisInfo: null,
-        opusInfo: null
-      },
-      vorbisLastBlocksize: null,
-      packetQueue: [],
-      currentTimestampInSamples: 0,
-      pagesWritten: 0,
-      currentGranulePosition: 0,
-      currentLacingValues: [],
-      currentPageData: [],
-      currentPageSize: 27,
-      currentPageStartsWithFreshPacket: true
-    };
-    this.queueHeaderPackets(newTrackData, meta);
-    this.trackDatas.push(newTrackData);
-    if (this.allTracksAreKnown()) {
-      this.allTracksKnown.resolve();
-    }
-    return newTrackData;
-  }
-  queueHeaderPackets(trackData, meta) {
-    assert(meta.decoderConfig);
-    if (trackData.track.source._codec === "vorbis") {
-      assert(meta.decoderConfig.description);
-      const bytes = toUint8Array(meta.decoderConfig.description);
-      if (bytes[0] !== 2) {
-        throw new TypeError("First byte of Vorbis decoder description must be 2.");
-      }
-      let pos = 1;
-      const readPacketLength = () => {
-        let length = 0;
-        while (true) {
-          const value = bytes[pos++];
-          if (value === void 0) {
-            throw new TypeError("Vorbis decoder description is too short.");
-          }
-          length += value;
-          if (value < 255) {
-            return length;
-          }
-        }
-      };
-      const identificationHeaderLength = readPacketLength();
-      const commentHeaderLength = readPacketLength();
-      const setupHeaderLength = bytes.length - pos;
-      if (setupHeaderLength <= 0) {
-        throw new TypeError("Vorbis decoder description is too short.");
-      }
-      const identificationHeader = bytes.subarray(pos, pos += identificationHeaderLength);
-      pos += commentHeaderLength;
-      const setupHeader = bytes.subarray(pos);
-      const commentHeaderHeader = new Uint8Array(7);
-      commentHeaderHeader[0] = 3;
-      commentHeaderHeader[1] = 118;
-      commentHeaderHeader[2] = 111;
-      commentHeaderHeader[3] = 114;
-      commentHeaderHeader[4] = 98;
-      commentHeaderHeader[5] = 105;
-      commentHeaderHeader[6] = 115;
-      const commentHeader = this.createVorbisComments(commentHeaderHeader);
-      trackData.packetQueue.push({
-        data: identificationHeader,
-        endGranulePosition: 0,
-        timestamp: 0,
-        forcePageFlush: true
-      }, {
-        data: commentHeader,
-        endGranulePosition: 0,
-        timestamp: 0,
-        forcePageFlush: false
-      }, {
-        data: setupHeader,
-        endGranulePosition: 0,
-        timestamp: 0,
-        forcePageFlush: true
-        // The last header packet must flush the page
-      });
-      const view = toDataView(identificationHeader);
-      const blockSizeByte = view.getUint8(28);
-      trackData.codecInfo.vorbisInfo = {
-        blocksizes: [
-          1 << (blockSizeByte & 15),
-          1 << (blockSizeByte >> 4)
-        ],
-        modeBlockflags: parseModesFromVorbisSetupPacket(setupHeader).modeBlockflags
-      };
-    } else if (trackData.track.source._codec === "opus") {
-      if (!meta.decoderConfig.description) {
-        throw new TypeError("For Ogg, Opus decoder description is required.");
-      }
-      const identificationHeader = toUint8Array(meta.decoderConfig.description);
-      const commentHeaderHeader = new Uint8Array(8);
-      const commentHeaderHeaderView = toDataView(commentHeaderHeader);
-      commentHeaderHeaderView.setUint32(0, 1332770163, false);
-      commentHeaderHeaderView.setUint32(4, 1415669619, false);
-      const commentHeader = this.createVorbisComments(commentHeaderHeader);
-      trackData.packetQueue.push({
-        data: identificationHeader,
-        endGranulePosition: 0,
-        timestamp: 0,
-        forcePageFlush: true
-      }, {
-        data: commentHeader,
-        endGranulePosition: 0,
-        timestamp: 0,
-        forcePageFlush: true
-        // The last header packet must flush the page
-      });
-      trackData.codecInfo.opusInfo = {
-        preSkip: parseOpusIdentificationHeader(identificationHeader).preSkip
-      };
-    }
-  }
-  createVorbisComments(headerBytes) {
-    const tags = this.output._metadataTags;
-    const commentHeaderParts = [
-      headerBytes
-    ];
-    let vendorString = "";
-    if (typeof tags.raw?.["vendor"] === "string") {
-      vendorString = tags.raw?.["vendor"];
-    }
-    const encodedVendorString = textEncoder.encode(vendorString);
-    let currentBuffer = new Uint8Array(4 + encodedVendorString.length);
-    let currentView = new DataView(currentBuffer.buffer);
-    currentView.setUint32(0, encodedVendorString.length, true);
-    currentBuffer.set(encodedVendorString, 4);
-    commentHeaderParts.push(currentBuffer);
-    const writtenTags = /* @__PURE__ */ new Set();
-    const addCommentTag = (key, value) => {
-      const joined = `${key}=${value}`;
-      const encoded = textEncoder.encode(joined);
-      currentBuffer = new Uint8Array(4 + encoded.length);
-      currentView = new DataView(currentBuffer.buffer);
-      currentView.setUint32(0, encoded.length, true);
-      currentBuffer.set(encoded, 4);
-      commentHeaderParts.push(currentBuffer);
-      writtenTags.add(key);
-    };
-    for (const { key, value } of keyValueIterator(tags)) {
-      switch (key) {
-        case "title":
-          {
-            addCommentTag("TITLE", value);
-          }
-          ;
-          break;
-        case "description":
-          {
-            addCommentTag("DESCRIPTION", value);
-          }
-          ;
-          break;
-        case "artist":
-          {
-            addCommentTag("ARTIST", value);
-          }
-          ;
-          break;
-        case "album":
-          {
-            addCommentTag("ALBUM", value);
-          }
-          ;
-          break;
-        case "albumArtist":
-          {
-            addCommentTag("ALBUMARTIST", value);
-          }
-          ;
-          break;
-        case "genre":
-          {
-            addCommentTag("GENRE", value);
-          }
-          ;
-          break;
-        case "date":
-          {
-            addCommentTag("DATE", value.toISOString().slice(0, 10));
-          }
-          ;
-          break;
-        case "comment":
-          {
-            addCommentTag("COMMENT", value);
-          }
-          ;
-          break;
-        case "lyrics":
-          {
-            addCommentTag("LYRICS", value);
-          }
-          ;
-          break;
-        case "trackNumber":
-          {
-            addCommentTag("TRACKNUMBER", value.toString());
-          }
-          ;
-          break;
-        case "tracksTotal":
-          {
-            addCommentTag("TRACKTOTAL", value.toString());
-          }
-          ;
-          break;
-        case "discNumber":
-          {
-            addCommentTag("DISCNUMBER", value.toString());
-          }
-          ;
-          break;
-        case "discsTotal":
-          {
-            addCommentTag("DISCTOTAL", value.toString());
-          }
-          ;
-          break;
-        case "images":
-          {
-            for (const image of value) {
-              const pictureType = image.kind === "coverFront" ? 3 : image.kind === "coverBack" ? 4 : 0;
-              const encodedMediaType = new Uint8Array(image.mimeType.length);
-              for (let i = 0; i < image.mimeType.length; i++) {
-                encodedMediaType[i] = image.mimeType.charCodeAt(i);
-              }
-              const encodedDescription = textEncoder.encode(image.description ?? "");
-              const buffer = new Uint8Array(4 + 4 + encodedMediaType.length + 4 + encodedDescription.length + 16 + 4 + image.data.length);
-              const view = toDataView(buffer);
-              view.setUint32(0, pictureType, false);
-              view.setUint32(4, encodedMediaType.length, false);
-              buffer.set(encodedMediaType, 8);
-              view.setUint32(8 + encodedMediaType.length, encodedDescription.length, false);
-              buffer.set(encodedDescription, 12 + encodedMediaType.length);
-              view.setUint32(28 + encodedMediaType.length + encodedDescription.length, image.data.length, false);
-              buffer.set(image.data, 32 + encodedMediaType.length + encodedDescription.length);
-              const encoded = bytesToBase64(buffer);
-              addCommentTag("METADATA_BLOCK_PICTURE", encoded);
-            }
-          }
-          ;
-          break;
-        case "raw":
-          {
-          }
-          ;
-          break;
-        default:
-          assertNever(key);
-      }
-    }
-    if (tags.raw) {
-      for (const key in tags.raw) {
-        const value = tags.raw[key];
-        if (key === "vendor" || value == null || writtenTags.has(key)) {
-          continue;
-        }
-        if (typeof value === "string") {
-          addCommentTag(key, value);
-        }
-      }
-    }
-    const listLengthBuffer = new Uint8Array(4);
-    toDataView(listLengthBuffer).setUint32(0, writtenTags.size, true);
-    commentHeaderParts.splice(2, 0, listLengthBuffer);
-    const commentHeaderLength = commentHeaderParts.reduce((a, b) => a + b.length, 0);
-    const commentHeader = new Uint8Array(commentHeaderLength);
-    let pos = 0;
-    for (const part of commentHeaderParts) {
-      commentHeader.set(part, pos);
-      pos += part.length;
-    }
-    return commentHeader;
-  }
-  async addEncodedAudioPacket(track2, packet, meta) {
-    const release = await this.mutex.acquire();
-    try {
-      const trackData = this.getTrackData(track2, meta);
-      this.validateAndNormalizeTimestamp(trackData.track, packet.timestamp, packet.type === "key");
-      const currentTimestampInSamples = trackData.currentTimestampInSamples;
-      const { durationInSamples, vorbisBlockSize } = extractSampleMetadata(packet.data, trackData.codecInfo, trackData.vorbisLastBlocksize);
-      trackData.currentTimestampInSamples += durationInSamples;
-      trackData.vorbisLastBlocksize = vorbisBlockSize;
-      trackData.packetQueue.push({
-        data: packet.data,
-        endGranulePosition: trackData.currentTimestampInSamples,
-        timestamp: currentTimestampInSamples / trackData.internalSampleRate,
-        forcePageFlush: false
-      });
-      await this.interleavePages();
-    } finally {
-      release();
-    }
-  }
-  addSubtitleCue() {
-    throw new Error("Subtitle tracks are not supported.");
-  }
-  allTracksAreKnown() {
-    for (const track2 of this.output._tracks) {
-      if (!track2.source._closed && !this.trackDatas.some((x2) => x2.track === track2)) {
-        return false;
-      }
-    }
-    return true;
-  }
-  async interleavePages(isFinalCall = false) {
-    if (!this.bosPagesWritten) {
-      if (!this.allTracksAreKnown()) {
-        return;
-      }
-      for (const trackData of this.trackDatas) {
-        while (trackData.packetQueue.length > 0) {
-          const packet = trackData.packetQueue.shift();
-          this.writePacket(trackData, packet, false);
-          if (packet.forcePageFlush) {
-            break;
-          }
-        }
-      }
-      this.bosPagesWritten = true;
-    }
-    outer: while (true) {
-      let trackWithMinTimestamp = null;
-      let minTimestamp = Infinity;
-      for (const trackData of this.trackDatas) {
-        if (!isFinalCall && trackData.packetQueue.length <= 1 && !trackData.track.source._closed) {
-          break outer;
-        }
-        if (trackData.packetQueue.length > 0 && trackData.packetQueue[0].timestamp < minTimestamp) {
-          trackWithMinTimestamp = trackData;
-          minTimestamp = trackData.packetQueue[0].timestamp;
-        }
-      }
-      if (!trackWithMinTimestamp) {
-        break;
-      }
-      const packet = trackWithMinTimestamp.packetQueue.shift();
-      const isFinalPacket = trackWithMinTimestamp.packetQueue.length === 0;
-      this.writePacket(trackWithMinTimestamp, packet, isFinalPacket);
-    }
-    if (!isFinalCall) {
-      await this.writer.flush();
-    }
-  }
-  writePacket(trackData, packet, isFinalPacket) {
-    let remainingLength = packet.data.length;
-    let dataStartOffset = 0;
-    let dataOffset = 0;
-    while (true) {
-      if (trackData.currentLacingValues.length === 0 && dataStartOffset > 0) {
-        trackData.currentPageStartsWithFreshPacket = false;
-      }
-      const segmentSize = Math.min(255, remainingLength);
-      trackData.currentLacingValues.push(segmentSize);
-      trackData.currentPageSize++;
-      dataOffset += segmentSize;
-      const segmentIsLastOfPacket = remainingLength < 255;
-      if (trackData.currentLacingValues.length === 255) {
-        const slice3 = packet.data.subarray(dataStartOffset, dataOffset);
-        dataStartOffset = dataOffset;
-        trackData.currentPageData.push(slice3);
-        trackData.currentPageSize += slice3.length;
-        this.writePage(trackData, isFinalPacket && segmentIsLastOfPacket);
-        if (segmentIsLastOfPacket) {
-          return;
-        }
-      }
-      if (segmentIsLastOfPacket) {
-        break;
-      }
-      remainingLength -= 255;
-    }
-    const slice2 = packet.data.subarray(dataStartOffset);
-    trackData.currentPageData.push(slice2);
-    trackData.currentPageSize += slice2.length;
-    trackData.currentGranulePosition = packet.endGranulePosition;
-    if (trackData.currentPageSize >= PAGE_SIZE_TARGET || packet.forcePageFlush) {
-      this.writePage(trackData, isFinalPacket);
-    }
-  }
-  writePage(trackData, isEos) {
-    this.pageView.setUint32(0, OGGS, true);
-    this.pageView.setUint8(4, 0);
-    let headerType = 0;
-    if (!trackData.currentPageStartsWithFreshPacket) {
-      headerType |= 1;
-    }
-    if (trackData.pagesWritten === 0) {
-      headerType |= 2;
-    }
-    if (isEos) {
-      headerType |= 4;
-    }
-    this.pageView.setUint8(5, headerType);
-    const granulePosition = trackData.currentLacingValues.every((x2) => x2 === 255) ? -1 : trackData.currentGranulePosition;
-    setInt64(this.pageView, 6, granulePosition, true);
-    this.pageView.setUint32(14, trackData.serialNumber, true);
-    this.pageView.setUint32(18, trackData.pagesWritten, true);
-    this.pageView.setUint32(22, 0, true);
-    this.pageView.setUint8(26, trackData.currentLacingValues.length);
-    this.pageBytes.set(trackData.currentLacingValues, 27);
-    let pos = 27 + trackData.currentLacingValues.length;
-    for (const data of trackData.currentPageData) {
-      this.pageBytes.set(data, pos);
-      pos += data.length;
-    }
-    const slice2 = this.pageBytes.subarray(0, pos);
-    const crc = computeOggPageCrc(slice2);
-    this.pageView.setUint32(22, crc, true);
-    trackData.pagesWritten++;
-    trackData.currentLacingValues.length = 0;
-    trackData.currentPageData.length = 0;
-    trackData.currentPageSize = 27;
-    trackData.currentPageStartsWithFreshPacket = true;
-    if (this.format._options.onPage) {
-      this.writer.startTrackingWrites();
-    }
-    this.writer.write(slice2);
-    if (this.format._options.onPage) {
-      const { data, start } = this.writer.stopTrackingWrites();
-      this.format._options.onPage(data, start, trackData.track.source);
-    }
-  }
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  async onTrackClose() {
-    const release = await this.mutex.acquire();
-    if (this.allTracksAreKnown()) {
-      this.allTracksKnown.resolve();
-    }
-    await this.interleavePages();
-    release();
-  }
-  async finalize() {
-    const release = await this.mutex.acquire();
-    this.allTracksKnown.resolve();
-    await this.interleavePages(true);
-    for (const trackData of this.trackDatas) {
-      if (trackData.currentLacingValues.length > 0) {
-        this.writePage(trackData, true);
-      }
-    }
-    release();
-  }
-};
-
-// node_modules/mediabunny/dist/modules/src/custom-coder.js
-var customAudioEncoders = [];
-
-// node_modules/mediabunny/dist/modules/src/packet.js
-var PLACEHOLDER_DATA = new Uint8Array(0);
-var EncodedPacket = class _EncodedPacket {
-  /** Creates a new {@link EncodedPacket} from raw bytes and timing information. */
-  constructor(data, type, timestamp, duration, sequenceNumber = -1, byteLength) {
-    this.data = data;
-    this.type = type;
-    this.timestamp = timestamp;
-    this.duration = duration;
-    this.sequenceNumber = sequenceNumber;
-    if (data === PLACEHOLDER_DATA && byteLength === void 0) {
-      throw new Error("Internal error: byteLength must be explicitly provided when constructing metadata-only packets.");
-    }
-    if (byteLength === void 0) {
-      byteLength = data.byteLength;
-    }
-    if (!(data instanceof Uint8Array)) {
-      throw new TypeError("data must be a Uint8Array.");
-    }
-    if (type !== "key" && type !== "delta") {
-      throw new TypeError('type must be either "key" or "delta".');
-    }
-    if (!Number.isFinite(timestamp)) {
-      throw new TypeError("timestamp must be a number.");
-    }
-    if (!Number.isFinite(duration) || duration < 0) {
-      throw new TypeError("duration must be a non-negative number.");
-    }
-    if (!Number.isFinite(sequenceNumber)) {
-      throw new TypeError("sequenceNumber must be a number.");
-    }
-    if (!Number.isInteger(byteLength) || byteLength < 0) {
-      throw new TypeError("byteLength must be a non-negative integer.");
-    }
-    this.byteLength = byteLength;
-  }
-  /** If this packet is a metadata-only packet. Metadata-only packets don't contain their packet data. */
-  get isMetadataOnly() {
-    return this.data === PLACEHOLDER_DATA;
-  }
-  /** The timestamp of this packet in microseconds. */
-  get microsecondTimestamp() {
-    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.timestamp);
-  }
-  /** The duration of this packet in microseconds. */
-  get microsecondDuration() {
-    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.duration);
-  }
-  /** Converts this packet to an EncodedVideoChunk for use with the WebCodecs API. */
-  toEncodedVideoChunk() {
-    if (this.isMetadataOnly) {
-      throw new TypeError("Metadata-only packets cannot be converted to a video chunk.");
-    }
-    if (typeof EncodedVideoChunk === "undefined") {
-      throw new Error("Your browser does not support EncodedVideoChunk.");
-    }
-    return new EncodedVideoChunk({
-      data: this.data,
-      type: this.type,
-      timestamp: this.microsecondTimestamp,
-      duration: this.microsecondDuration
-    });
-  }
-  /** Converts this packet to an EncodedAudioChunk for use with the WebCodecs API. */
-  toEncodedAudioChunk() {
-    if (this.isMetadataOnly) {
-      throw new TypeError("Metadata-only packets cannot be converted to an audio chunk.");
-    }
-    if (typeof EncodedAudioChunk === "undefined") {
-      throw new Error("Your browser does not support EncodedAudioChunk.");
-    }
-    return new EncodedAudioChunk({
-      data: this.data,
-      type: this.type,
-      timestamp: this.microsecondTimestamp,
-      duration: this.microsecondDuration
-    });
-  }
-  /**
-   * Creates an EncodedPacket from an EncodedVideoChunk or EncodedAudioChunk. This method is useful for converting
-   * chunks from the WebCodecs API to EncodedPackets.
-   */
-  static fromEncodedChunk(chunk) {
-    if (!(chunk instanceof EncodedVideoChunk || chunk instanceof EncodedAudioChunk)) {
-      throw new TypeError("chunk must be an EncodedVideoChunk or EncodedAudioChunk.");
-    }
-    const data = new Uint8Array(chunk.byteLength);
-    chunk.copyTo(data);
-    return new _EncodedPacket(data, chunk.type, chunk.timestamp / 1e6, (chunk.duration ?? 0) / 1e6);
-  }
-  /** Clones this packet while optionally updating timing information. */
-  clone(options) {
-    if (options !== void 0 && (typeof options !== "object" || options === null)) {
-      throw new TypeError("options, when provided, must be an object.");
-    }
-    if (options?.timestamp !== void 0 && !Number.isFinite(options.timestamp)) {
-      throw new TypeError("options.timestamp, when provided, must be a number.");
-    }
-    if (options?.duration !== void 0 && !Number.isFinite(options.duration)) {
-      throw new TypeError("options.duration, when provided, must be a number.");
-    }
-    return new _EncodedPacket(this.data, this.type, options?.timestamp ?? this.timestamp, options?.duration ?? this.duration, this.sequenceNumber, this.byteLength);
-  }
-};
-
-// node_modules/mediabunny/dist/modules/src/pcm.js
-var toUlaw = (s16) => {
-  const MULAW_MAX = 8191;
-  const MULAW_BIAS = 33;
-  let number = s16;
-  let mask = 4096;
-  let sign = 0;
-  let position = 12;
-  let lsb = 0;
-  if (number < 0) {
-    number = -number;
-    sign = 128;
-  }
-  number += MULAW_BIAS;
-  if (number > MULAW_MAX) {
-    number = MULAW_MAX;
-  }
-  while ((number & mask) !== mask && position >= 5) {
-    mask >>= 1;
-    position--;
-  }
-  lsb = number >> position - 4 & 15;
-  return ~(sign | position - 5 << 4 | lsb) & 255;
-};
-var toAlaw = (s16) => {
-  const ALAW_MAX = 4095;
-  let mask = 2048;
-  let sign = 0;
-  let position = 11;
-  let lsb = 0;
-  let number = s16;
-  if (number < 0) {
-    number = -number;
-    sign = 128;
-  }
-  if (number > ALAW_MAX) {
-    number = ALAW_MAX;
-  }
-  while ((number & mask) !== mask && position >= 5) {
-    mask >>= 1;
-    position--;
-  }
-  lsb = number >> (position === 4 ? 1 : position - 4) & 15;
-  return (sign | position - 4 << 4 | lsb) ^ 85;
-};
-
-// node_modules/mediabunny/dist/modules/src/sample.js
-var AUDIO_SAMPLE_FORMATS = /* @__PURE__ */ new Set(["f32", "f32-planar", "s16", "s16-planar", "s32", "s32-planar", "u8", "u8-planar"]);
-var AudioSample = class _AudioSample {
-  /** The presentation timestamp of the sample in microseconds. */
-  get microsecondTimestamp() {
-    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.timestamp);
-  }
-  /** The duration of the sample in microseconds. */
-  get microsecondDuration() {
-    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.duration);
-  }
-  /**
-   * Creates a new {@link AudioSample}, either from an existing
-   * [`AudioData`](https://developer.mozilla.org/en-US/docs/Web/API/AudioData) or from raw bytes specified in
-   * {@link AudioSampleInit}.
-   */
-  constructor(init) {
-    this._closed = false;
-    if (isAudioData(init)) {
-      if (init.format === null) {
-        throw new TypeError("AudioData with null format is not supported.");
-      }
-      this._data = init;
-      this.format = init.format;
-      this.sampleRate = init.sampleRate;
-      this.numberOfFrames = init.numberOfFrames;
-      this.numberOfChannels = init.numberOfChannels;
-      this.timestamp = init.timestamp / 1e6;
-      this.duration = init.numberOfFrames / init.sampleRate;
-    } else {
-      if (!init || typeof init !== "object") {
-        throw new TypeError("Invalid AudioDataInit: must be an object.");
-      }
-      if (!AUDIO_SAMPLE_FORMATS.has(init.format)) {
-        throw new TypeError("Invalid AudioDataInit: invalid format.");
-      }
-      if (!Number.isFinite(init.sampleRate) || init.sampleRate <= 0) {
-        throw new TypeError("Invalid AudioDataInit: sampleRate must be > 0.");
-      }
-      if (!Number.isInteger(init.numberOfChannels) || init.numberOfChannels === 0) {
-        throw new TypeError("Invalid AudioDataInit: numberOfChannels must be an integer > 0.");
-      }
-      if (!Number.isFinite(init?.timestamp)) {
-        throw new TypeError("init.timestamp must be a number.");
-      }
-      const numberOfFrames = init.data.byteLength / (getBytesPerSample(init.format) * init.numberOfChannels);
-      if (!Number.isInteger(numberOfFrames)) {
-        throw new TypeError("Invalid AudioDataInit: data size is not a multiple of frame size.");
-      }
-      this.format = init.format;
-      this.sampleRate = init.sampleRate;
-      this.numberOfFrames = numberOfFrames;
-      this.numberOfChannels = init.numberOfChannels;
-      this.timestamp = init.timestamp;
-      this.duration = numberOfFrames / init.sampleRate;
-      let dataBuffer;
-      if (init.data instanceof ArrayBuffer) {
-        dataBuffer = new Uint8Array(init.data);
-      } else if (ArrayBuffer.isView(init.data)) {
-        dataBuffer = new Uint8Array(init.data.buffer, init.data.byteOffset, init.data.byteLength);
-      } else {
-        throw new TypeError("Invalid AudioDataInit: data is not a BufferSource.");
-      }
-      const expectedSize = this.numberOfFrames * this.numberOfChannels * getBytesPerSample(this.format);
-      if (dataBuffer.byteLength < expectedSize) {
-        throw new TypeError("Invalid AudioDataInit: insufficient data size.");
-      }
-      this._data = dataBuffer;
-    }
-  }
-  /** Returns the number of bytes required to hold the audio sample's data as specified by the given options. */
-  allocationSize(options) {
-    if (!options || typeof options !== "object") {
-      throw new TypeError("options must be an object.");
-    }
-    if (!Number.isInteger(options.planeIndex) || options.planeIndex < 0) {
-      throw new TypeError("planeIndex must be a non-negative integer.");
-    }
-    if (options.format !== void 0 && !AUDIO_SAMPLE_FORMATS.has(options.format)) {
-      throw new TypeError("Invalid format.");
-    }
-    if (options.frameOffset !== void 0 && (!Number.isInteger(options.frameOffset) || options.frameOffset < 0)) {
-      throw new TypeError("frameOffset must be a non-negative integer.");
-    }
-    if (options.frameCount !== void 0 && (!Number.isInteger(options.frameCount) || options.frameCount < 0)) {
-      throw new TypeError("frameCount must be a non-negative integer.");
-    }
-    if (this._closed) {
-      throw new Error("AudioSample is closed.");
-    }
-    const destFormat = options.format ?? this.format;
-    const frameOffset = options.frameOffset ?? 0;
-    if (frameOffset >= this.numberOfFrames) {
-      throw new RangeError("frameOffset out of range");
-    }
-    const copyFrameCount = options.frameCount !== void 0 ? options.frameCount : this.numberOfFrames - frameOffset;
-    if (copyFrameCount > this.numberOfFrames - frameOffset) {
-      throw new RangeError("frameCount out of range");
-    }
-    const bytesPerSample = getBytesPerSample(destFormat);
-    const isPlanar = formatIsPlanar(destFormat);
-    if (isPlanar && options.planeIndex >= this.numberOfChannels) {
-      throw new RangeError("planeIndex out of range");
-    }
-    if (!isPlanar && options.planeIndex !== 0) {
-      throw new RangeError("planeIndex out of range");
-    }
-    const elementCount = isPlanar ? copyFrameCount : copyFrameCount * this.numberOfChannels;
-    return elementCount * bytesPerSample;
-  }
-  /** Copies the audio sample's data to an ArrayBuffer or ArrayBufferView as specified by the given options. */
-  copyTo(destination, options) {
-    if (!isAllowSharedBufferSource(destination)) {
-      throw new TypeError("destination must be an ArrayBuffer or an ArrayBuffer view.");
-    }
-    if (!options || typeof options !== "object") {
-      throw new TypeError("options must be an object.");
-    }
-    if (!Number.isInteger(options.planeIndex) || options.planeIndex < 0) {
-      throw new TypeError("planeIndex must be a non-negative integer.");
-    }
-    if (options.format !== void 0 && !AUDIO_SAMPLE_FORMATS.has(options.format)) {
-      throw new TypeError("Invalid format.");
-    }
-    if (options.frameOffset !== void 0 && (!Number.isInteger(options.frameOffset) || options.frameOffset < 0)) {
-      throw new TypeError("frameOffset must be a non-negative integer.");
-    }
-    if (options.frameCount !== void 0 && (!Number.isInteger(options.frameCount) || options.frameCount < 0)) {
-      throw new TypeError("frameCount must be a non-negative integer.");
-    }
-    if (this._closed) {
-      throw new Error("AudioSample is closed.");
-    }
-    const { planeIndex, format, frameCount: optFrameCount, frameOffset: optFrameOffset } = options;
-    const destFormat = format ?? this.format;
-    if (!destFormat)
-      throw new Error("Destination format not determined");
-    const numFrames = this.numberOfFrames;
-    const numChannels = this.numberOfChannels;
-    const frameOffset = optFrameOffset ?? 0;
-    if (frameOffset >= numFrames) {
-      throw new RangeError("frameOffset out of range");
-    }
-    const copyFrameCount = optFrameCount !== void 0 ? optFrameCount : numFrames - frameOffset;
-    if (copyFrameCount > numFrames - frameOffset) {
-      throw new RangeError("frameCount out of range");
-    }
-    const destBytesPerSample = getBytesPerSample(destFormat);
-    const destIsPlanar = formatIsPlanar(destFormat);
-    if (destIsPlanar && planeIndex >= numChannels) {
-      throw new RangeError("planeIndex out of range");
-    }
-    if (!destIsPlanar && planeIndex !== 0) {
-      throw new RangeError("planeIndex out of range");
-    }
-    const destElementCount = destIsPlanar ? copyFrameCount : copyFrameCount * numChannels;
-    const requiredSize = destElementCount * destBytesPerSample;
-    if (destination.byteLength < requiredSize) {
-      throw new RangeError("Destination buffer is too small");
-    }
-    const destView = toDataView(destination);
-    const writeFn = getWriteFunction(destFormat);
-    if (isAudioData(this._data)) {
-      if (destIsPlanar) {
-        if (destFormat === "f32-planar") {
-          this._data.copyTo(destination, {
-            planeIndex,
-            frameOffset,
-            frameCount: copyFrameCount,
-            format: "f32-planar"
-          });
-        } else {
-          const tempBuffer = new ArrayBuffer(copyFrameCount * 4);
-          const tempArray = new Float32Array(tempBuffer);
-          this._data.copyTo(tempArray, {
-            planeIndex,
-            frameOffset,
-            frameCount: copyFrameCount,
-            format: "f32-planar"
-          });
-          const tempView = new DataView(tempBuffer);
-          for (let i = 0; i < copyFrameCount; i++) {
-            const destOffset = i * destBytesPerSample;
-            const sample = tempView.getFloat32(i * 4, true);
-            writeFn(destView, destOffset, sample);
-          }
-        }
-      } else {
-        const numCh = numChannels;
-        const temp = new Float32Array(copyFrameCount);
-        for (let ch = 0; ch < numCh; ch++) {
-          this._data.copyTo(temp, {
-            planeIndex: ch,
-            frameOffset,
-            frameCount: copyFrameCount,
-            format: "f32-planar"
-          });
-          for (let i = 0; i < copyFrameCount; i++) {
-            const destIndex = i * numCh + ch;
-            const destOffset = destIndex * destBytesPerSample;
-            writeFn(destView, destOffset, temp[i]);
-          }
-        }
-      }
-    } else {
-      const uint8Data = this._data;
-      const srcView = new DataView(uint8Data.buffer, uint8Data.byteOffset, uint8Data.byteLength);
-      const srcFormat = this.format;
-      const readFn = getReadFunction(srcFormat);
-      const srcBytesPerSample = getBytesPerSample(srcFormat);
-      const srcIsPlanar = formatIsPlanar(srcFormat);
-      for (let i = 0; i < copyFrameCount; i++) {
-        if (destIsPlanar) {
-          const destOffset = i * destBytesPerSample;
-          let srcOffset;
-          if (srcIsPlanar) {
-            srcOffset = (planeIndex * numFrames + (i + frameOffset)) * srcBytesPerSample;
-          } else {
-            srcOffset = ((i + frameOffset) * numChannels + planeIndex) * srcBytesPerSample;
-          }
-          const normalized = readFn(srcView, srcOffset);
-          writeFn(destView, destOffset, normalized);
-        } else {
-          for (let ch = 0; ch < numChannels; ch++) {
-            const destIndex = i * numChannels + ch;
-            const destOffset = destIndex * destBytesPerSample;
-            let srcOffset;
-            if (srcIsPlanar) {
-              srcOffset = (ch * numFrames + (i + frameOffset)) * srcBytesPerSample;
-            } else {
-              srcOffset = ((i + frameOffset) * numChannels + ch) * srcBytesPerSample;
-            }
-            const normalized = readFn(srcView, srcOffset);
-            writeFn(destView, destOffset, normalized);
-          }
-        }
-      }
-    }
-  }
-  /** Clones this audio sample. */
-  clone() {
-    if (this._closed) {
-      throw new Error("AudioSample is closed.");
-    }
-    if (isAudioData(this._data)) {
-      const sample = new _AudioSample(this._data.clone());
-      sample.setTimestamp(this.timestamp);
-      return sample;
-    } else {
-      return new _AudioSample({
-        format: this.format,
-        sampleRate: this.sampleRate,
-        numberOfFrames: this.numberOfFrames,
-        numberOfChannels: this.numberOfChannels,
-        timestamp: this.timestamp,
-        data: this._data
-      });
-    }
-  }
-  /**
-   * Closes this audio sample, releasing held resources. Audio samples should be closed as soon as they are not
-   * needed anymore.
-   */
-  close() {
-    if (this._closed) {
-      return;
-    }
-    if (isAudioData(this._data)) {
-      this._data.close();
-    } else {
-      this._data = new Uint8Array(0);
-    }
-    this._closed = true;
-  }
-  /**
-   * Converts this audio sample to an AudioData for use with the WebCodecs API. The AudioData returned by this
-   * method *must* be closed separately from this audio sample.
-   */
-  toAudioData() {
-    if (this._closed) {
-      throw new Error("AudioSample is closed.");
-    }
-    if (isAudioData(this._data)) {
-      if (this._data.timestamp === this.microsecondTimestamp) {
-        return this._data.clone();
-      } else {
-        if (formatIsPlanar(this.format)) {
-          const size = this.allocationSize({ planeIndex: 0, format: this.format });
-          const data = new ArrayBuffer(size * this.numberOfChannels);
-          for (let i = 0; i < this.numberOfChannels; i++) {
-            this.copyTo(new Uint8Array(data, i * size, size), { planeIndex: i, format: this.format });
-          }
-          return new AudioData({
-            format: this.format,
-            sampleRate: this.sampleRate,
-            numberOfFrames: this.numberOfFrames,
-            numberOfChannels: this.numberOfChannels,
-            timestamp: this.microsecondTimestamp,
-            data
-          });
-        } else {
-          const data = new ArrayBuffer(this.allocationSize({ planeIndex: 0, format: this.format }));
-          this.copyTo(data, { planeIndex: 0, format: this.format });
-          return new AudioData({
-            format: this.format,
-            sampleRate: this.sampleRate,
-            numberOfFrames: this.numberOfFrames,
-            numberOfChannels: this.numberOfChannels,
-            timestamp: this.microsecondTimestamp,
-            data
-          });
-        }
-      }
-    } else {
-      return new AudioData({
-        format: this.format,
-        sampleRate: this.sampleRate,
-        numberOfFrames: this.numberOfFrames,
-        numberOfChannels: this.numberOfChannels,
-        timestamp: this.microsecondTimestamp,
-        data: this._data
-      });
-    }
-  }
-  /** Convert this audio sample to an AudioBuffer for use with the Web Audio API. */
-  toAudioBuffer() {
-    if (this._closed) {
-      throw new Error("AudioSample is closed.");
-    }
-    const audioBuffer = new AudioBuffer({
-      numberOfChannels: this.numberOfChannels,
-      length: this.numberOfFrames,
-      sampleRate: this.sampleRate
-    });
-    const dataBytes = new Float32Array(this.allocationSize({ planeIndex: 0, format: "f32-planar" }) / 4);
-    for (let i = 0; i < this.numberOfChannels; i++) {
-      this.copyTo(dataBytes, { planeIndex: i, format: "f32-planar" });
-      audioBuffer.copyToChannel(dataBytes, i);
-    }
-    return audioBuffer;
-  }
-  /** Sets the presentation timestamp of this audio sample, in seconds. */
-  setTimestamp(newTimestamp) {
-    if (!Number.isFinite(newTimestamp)) {
-      throw new TypeError("newTimestamp must be a number.");
-    }
-    this.timestamp = newTimestamp;
-  }
-  /** @internal */
-  static *_fromAudioBuffer(audioBuffer, timestamp) {
-    if (!(audioBuffer instanceof AudioBuffer)) {
-      throw new TypeError("audioBuffer must be an AudioBuffer.");
-    }
-    const MAX_FLOAT_COUNT = 48e3 * 5;
-    const numberOfChannels = audioBuffer.numberOfChannels;
-    const sampleRate = audioBuffer.sampleRate;
-    const totalFrames = audioBuffer.length;
-    const maxFramesPerChunk = Math.floor(MAX_FLOAT_COUNT / numberOfChannels);
-    let currentRelativeFrame = 0;
-    let remainingFrames = totalFrames;
-    while (remainingFrames > 0) {
-      const framesToCopy = Math.min(maxFramesPerChunk, remainingFrames);
-      const chunkData = new Float32Array(numberOfChannels * framesToCopy);
-      for (let channel = 0; channel < numberOfChannels; channel++) {
-        audioBuffer.copyFromChannel(chunkData.subarray(channel * framesToCopy, (channel + 1) * framesToCopy), channel, currentRelativeFrame);
-      }
-      yield new _AudioSample({
-        format: "f32-planar",
-        sampleRate,
-        numberOfFrames: framesToCopy,
-        numberOfChannels,
-        timestamp: timestamp + currentRelativeFrame / sampleRate,
-        data: chunkData
-      });
-      currentRelativeFrame += framesToCopy;
-      remainingFrames -= framesToCopy;
-    }
-  }
-  /**
-   * Creates AudioSamples from an AudioBuffer, starting at the given timestamp in seconds. Typically creates exactly
-   * one sample, but may create multiple if the AudioBuffer is exceedingly large.
-   */
-  static fromAudioBuffer(audioBuffer, timestamp) {
-    if (!(audioBuffer instanceof AudioBuffer)) {
-      throw new TypeError("audioBuffer must be an AudioBuffer.");
-    }
-    const MAX_FLOAT_COUNT = 48e3 * 5;
-    const numberOfChannels = audioBuffer.numberOfChannels;
-    const sampleRate = audioBuffer.sampleRate;
-    const totalFrames = audioBuffer.length;
-    const maxFramesPerChunk = Math.floor(MAX_FLOAT_COUNT / numberOfChannels);
-    let currentRelativeFrame = 0;
-    let remainingFrames = totalFrames;
-    const result = [];
-    while (remainingFrames > 0) {
-      const framesToCopy = Math.min(maxFramesPerChunk, remainingFrames);
-      const chunkData = new Float32Array(numberOfChannels * framesToCopy);
-      for (let channel = 0; channel < numberOfChannels; channel++) {
-        audioBuffer.copyFromChannel(chunkData.subarray(channel * framesToCopy, (channel + 1) * framesToCopy), channel, currentRelativeFrame);
-      }
-      const audioSample = new _AudioSample({
-        format: "f32-planar",
-        sampleRate,
-        numberOfFrames: framesToCopy,
-        numberOfChannels,
-        timestamp: timestamp + currentRelativeFrame / sampleRate,
-        data: chunkData
-      });
-      result.push(audioSample);
-      currentRelativeFrame += framesToCopy;
-      remainingFrames -= framesToCopy;
-    }
-    return result;
-  }
-};
-var getBytesPerSample = (format) => {
-  switch (format) {
-    case "u8":
-    case "u8-planar":
-      return 1;
-    case "s16":
-    case "s16-planar":
-      return 2;
-    case "s32":
-    case "s32-planar":
-      return 4;
-    case "f32":
-    case "f32-planar":
-      return 4;
-    default:
-      throw new Error("Unknown AudioSampleFormat");
-  }
-};
-var formatIsPlanar = (format) => {
-  switch (format) {
-    case "u8-planar":
-    case "s16-planar":
-    case "s32-planar":
-    case "f32-planar":
-      return true;
-    default:
-      return false;
-  }
-};
-var getReadFunction = (format) => {
-  switch (format) {
-    case "u8":
-    case "u8-planar":
-      return (view, offset) => (view.getUint8(offset) - 128) / 128;
-    case "s16":
-    case "s16-planar":
-      return (view, offset) => view.getInt16(offset, true) / 32768;
-    case "s32":
-    case "s32-planar":
-      return (view, offset) => view.getInt32(offset, true) / 2147483648;
-    case "f32":
-    case "f32-planar":
-      return (view, offset) => view.getFloat32(offset, true);
-  }
-};
-var getWriteFunction = (format) => {
-  switch (format) {
-    case "u8":
-    case "u8-planar":
-      return (view, offset, value) => view.setUint8(offset, clamp2((value + 1) * 127.5, 0, 255));
-    case "s16":
-    case "s16-planar":
-      return (view, offset, value) => view.setInt16(offset, clamp2(Math.round(value * 32767), -32768, 32767), true);
-    case "s32":
-    case "s32-planar":
-      return (view, offset, value) => view.setInt32(offset, clamp2(Math.round(value * 2147483647), -2147483648, 2147483647), true);
-    case "f32":
-    case "f32-planar":
-      return (view, offset, value) => view.setFloat32(offset, value, true);
-  }
-};
-var isAudioData = (x2) => {
-  return typeof AudioData !== "undefined" && x2 instanceof AudioData;
-};
-
-// node_modules/mediabunny/dist/modules/src/output-format.js
-var OutputFormat = class {
-  /** Returns a list of video codecs that this output format can contain. */
-  getSupportedVideoCodecs() {
-    return this.getSupportedCodecs().filter((codec) => VIDEO_CODECS.includes(codec));
-  }
-  /** Returns a list of audio codecs that this output format can contain. */
-  getSupportedAudioCodecs() {
-    return this.getSupportedCodecs().filter((codec) => AUDIO_CODECS.includes(codec));
-  }
-  /** Returns a list of subtitle codecs that this output format can contain. */
-  getSupportedSubtitleCodecs() {
-    return this.getSupportedCodecs().filter((codec) => SUBTITLE_CODECS.includes(codec));
-  }
-  /** @internal */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _codecUnsupportedHint(codec) {
-    return "";
-  }
-};
-var OggOutputFormat = class extends OutputFormat {
-  /** Creates a new {@link OggOutputFormat} configured with the specified `options`. */
-  constructor(options = {}) {
-    if (!options || typeof options !== "object") {
-      throw new TypeError("options must be an object.");
-    }
-    if (options.onPage !== void 0 && typeof options.onPage !== "function") {
-      throw new TypeError("options.onPage, when provided, must be a function.");
-    }
-    super();
-    this._options = options;
-  }
-  /** @internal */
-  _createMuxer(output) {
-    return new OggMuxer(output, this);
-  }
-  /** @internal */
-  get _name() {
-    return "Ogg";
-  }
-  getSupportedTrackCounts() {
-    return {
-      video: { min: 0, max: 0 },
-      audio: { min: 0, max: Infinity },
-      subtitle: { min: 0, max: 0 },
-      total: { min: 1, max: 2 ** 32 }
-    };
-  }
-  get fileExtension() {
-    return ".ogg";
-  }
-  get mimeType() {
-    return "application/ogg";
-  }
-  getSupportedCodecs() {
-    return [
-      ...AUDIO_CODECS.filter((codec) => ["vorbis", "opus"].includes(codec))
-    ];
-  }
-  get supportsVideoRotationMetadata() {
-    return false;
-  }
-};
-
-// node_modules/mediabunny/dist/modules/src/encode.js
-var validateAudioEncodingConfig = (config) => {
-  if (!config || typeof config !== "object") {
-    throw new TypeError("Encoding config must be an object.");
-  }
-  if (!AUDIO_CODECS.includes(config.codec)) {
-    throw new TypeError(`Invalid audio codec '${config.codec}'. Must be one of: ${AUDIO_CODECS.join(", ")}.`);
-  }
-  if (config.bitrate === void 0 && (!PCM_AUDIO_CODECS.includes(config.codec) || config.codec === "flac")) {
-    throw new TypeError("config.bitrate must be provided for compressed audio codecs.");
-  }
-  if (config.bitrate !== void 0 && !(config.bitrate instanceof Quality) && (!Number.isInteger(config.bitrate) || config.bitrate <= 0)) {
-    throw new TypeError("config.bitrate, when provided, must be a positive integer or a quality.");
-  }
-  if (config.onEncodedPacket !== void 0 && typeof config.onEncodedPacket !== "function") {
-    throw new TypeError("config.onEncodedChunk, when provided, must be a function.");
-  }
-  if (config.onEncoderConfig !== void 0 && typeof config.onEncoderConfig !== "function") {
-    throw new TypeError("config.onEncoderConfig, when provided, must be a function.");
-  }
-  validateAudioEncodingAdditionalOptions(config.codec, config);
-};
-var validateAudioEncodingAdditionalOptions = (codec, options) => {
-  if (!options || typeof options !== "object") {
-    throw new TypeError("Encoding options must be an object.");
-  }
-  if (options.bitrateMode !== void 0 && !["constant", "variable"].includes(options.bitrateMode)) {
-    throw new TypeError("bitrateMode, when provided, must be 'constant' or 'variable'.");
-  }
-  if (options.fullCodecString !== void 0 && typeof options.fullCodecString !== "string") {
-    throw new TypeError("fullCodecString, when provided, must be a string.");
-  }
-  if (options.fullCodecString !== void 0 && inferCodecFromCodecString(options.fullCodecString) !== codec) {
-    throw new TypeError(`fullCodecString, when provided, must be a string that matches the specified codec (${codec}).`);
-  }
-};
-var buildAudioEncoderConfig = (options) => {
-  const resolvedBitrate = options.bitrate instanceof Quality ? options.bitrate._toAudioBitrate(options.codec) : options.bitrate;
-  return {
-    codec: options.fullCodecString ?? buildAudioCodecString(options.codec, options.numberOfChannels, options.sampleRate),
-    numberOfChannels: options.numberOfChannels,
-    sampleRate: options.sampleRate,
-    bitrate: resolvedBitrate,
-    bitrateMode: options.bitrateMode,
-    ...getAudioEncoderConfigExtension(options.codec)
-  };
-};
-var Quality = class {
-  /** @internal */
-  constructor(factor) {
-    this._factor = factor;
-  }
-  /** @internal */
-  _toVideoBitrate(codec, width, height) {
-    const pixels = width * height;
-    const codecEfficiencyFactors = {
-      avc: 1,
-      // H.264/AVC (baseline)
-      hevc: 0.6,
-      // H.265/HEVC (~40% more efficient than AVC)
-      vp9: 0.6,
-      // Similar to HEVC
-      av1: 0.4,
-      // ~60% more efficient than AVC
-      vp8: 1.2
-      // Slightly less efficient than AVC
-    };
-    const referencePixels = 1920 * 1080;
-    const referenceBitrate = 3e6;
-    const scaleFactor = Math.pow(pixels / referencePixels, 0.95);
-    const baseBitrate = referenceBitrate * scaleFactor;
-    const codecAdjustedBitrate = baseBitrate * codecEfficiencyFactors[codec];
-    const finalBitrate = codecAdjustedBitrate * this._factor;
-    return Math.ceil(finalBitrate / 1e3) * 1e3;
-  }
-  /** @internal */
-  _toAudioBitrate(codec) {
-    if (PCM_AUDIO_CODECS.includes(codec) || codec === "flac") {
-      return void 0;
-    }
-    const baseRates = {
-      aac: 128e3,
-      // 128kbps base for AAC
-      opus: 64e3,
-      // 64kbps base for Opus
-      mp3: 16e4,
-      // 160kbps base for MP3
-      vorbis: 64e3
-      // 64kbps base for Vorbis
-    };
-    const baseBitrate = baseRates[codec];
-    if (!baseBitrate) {
-      throw new Error(`Unhandled codec: ${codec}`);
-    }
-    let finalBitrate = baseBitrate * this._factor;
-    if (codec === "aac") {
-      const validRates = [96e3, 128e3, 16e4, 192e3];
-      finalBitrate = validRates.reduce((prev, curr) => Math.abs(curr - finalBitrate) < Math.abs(prev - finalBitrate) ? curr : prev);
-    } else if (codec === "opus" || codec === "vorbis") {
-      finalBitrate = Math.max(6e3, finalBitrate);
-    } else if (codec === "mp3") {
-      const validRates = [
-        8e3,
-        16e3,
-        24e3,
-        32e3,
-        4e4,
-        48e3,
-        64e3,
-        8e4,
-        96e3,
-        112e3,
-        128e3,
-        16e4,
-        192e3,
-        224e3,
-        256e3,
-        32e4
-      ];
-      finalBitrate = validRates.reduce((prev, curr) => Math.abs(curr - finalBitrate) < Math.abs(prev - finalBitrate) ? curr : prev);
-    }
-    return Math.round(finalBitrate / 1e3) * 1e3;
-  }
-};
-var QUALITY_VERY_LOW = new Quality(0.3);
-var QUALITY_LOW = new Quality(0.6);
-var QUALITY_MEDIUM = new Quality(1);
-var QUALITY_HIGH = new Quality(2);
-var QUALITY_VERY_HIGH = new Quality(4);
-
-// node_modules/mediabunny/dist/modules/src/media-source.js
-var MediaSource = class {
-  constructor() {
-    this._connectedTrack = null;
-    this._closingPromise = null;
-    this._closed = false;
-    this._timestampOffset = 0;
-  }
-  /** @internal */
-  _ensureValidAdd() {
-    if (!this._connectedTrack) {
-      throw new Error("Source is not connected to an output track.");
-    }
-    if (this._connectedTrack.output.state === "canceled") {
-      throw new Error("Output has been canceled.");
-    }
-    if (this._connectedTrack.output.state === "finalizing" || this._connectedTrack.output.state === "finalized") {
-      throw new Error("Output has been finalized.");
-    }
-    if (this._connectedTrack.output.state === "pending") {
-      throw new Error("Output has not started.");
-    }
-    if (this._closed) {
-      throw new Error("Source is closed.");
-    }
-  }
-  /** @internal */
-  async _start() {
-  }
-  /** @internal */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async _flushAndClose(forceClose) {
-  }
-  /**
-   * Closes this source. This prevents future samples from being added and signals to the output file that no further
-   * samples will come in for this track. Calling `.close()` is optional but recommended after adding the
-   * last sample - for improved performance and reduced memory usage.
-   */
-  close() {
-    if (this._closingPromise) {
-      return;
-    }
-    const connectedTrack = this._connectedTrack;
-    if (!connectedTrack) {
-      throw new Error("Cannot call close without connecting the source to an output track.");
-    }
-    if (connectedTrack.output.state === "pending") {
-      throw new Error("Cannot call close before output has been started.");
-    }
-    this._closingPromise = (async () => {
-      await this._flushAndClose(false);
-      this._closed = true;
-      if (connectedTrack.output.state === "finalizing" || connectedTrack.output.state === "finalized") {
-        return;
-      }
-      connectedTrack.output._muxer.onTrackClose(connectedTrack);
-    })();
-  }
-  /** @internal */
-  async _flushOrWaitForOngoingClose(forceClose) {
-    if (this._closingPromise) {
-      return this._closingPromise;
-    } else {
-      return this._flushAndClose(forceClose);
-    }
-  }
-};
-var VideoSource = class extends MediaSource {
-  /** Internal constructor. */
-  constructor(codec) {
-    super();
-    this._connectedTrack = null;
-    if (!VIDEO_CODECS.includes(codec)) {
-      throw new TypeError(`Invalid video codec '${codec}'. Must be one of: ${VIDEO_CODECS.join(", ")}.`);
-    }
-    this._codec = codec;
-  }
-};
-var AudioSource = class extends MediaSource {
-  /** Internal constructor. */
-  constructor(codec) {
-    super();
-    this._connectedTrack = null;
-    if (!AUDIO_CODECS.includes(codec)) {
-      throw new TypeError(`Invalid audio codec '${codec}'. Must be one of: ${AUDIO_CODECS.join(", ")}.`);
-    }
-    this._codec = codec;
-  }
-};
-var AudioEncoderWrapper = class {
-  constructor(source, encodingConfig) {
-    this.source = source;
-    this.encodingConfig = encodingConfig;
-    this.ensureEncoderPromise = null;
-    this.encoderInitialized = false;
-    this.encoder = null;
-    this.muxer = null;
-    this.lastNumberOfChannels = null;
-    this.lastSampleRate = null;
-    this.isPcmEncoder = false;
-    this.outputSampleSize = null;
-    this.writeOutputValue = null;
-    this.customEncoder = null;
-    this.customEncoderCallSerializer = new CallSerializer();
-    this.customEncoderQueueSize = 0;
-    this.encoderError = null;
-  }
-  async add(audioSample, shouldClose) {
-    try {
-      this.checkForEncoderError();
-      this.source._ensureValidAdd();
-      if (this.lastNumberOfChannels !== null && this.lastSampleRate !== null) {
-        if (audioSample.numberOfChannels !== this.lastNumberOfChannels || audioSample.sampleRate !== this.lastSampleRate) {
-          throw new Error(`Audio parameters must remain constant. Expected ${this.lastNumberOfChannels} channels at ${this.lastSampleRate} Hz, got ${audioSample.numberOfChannels} channels at ${audioSample.sampleRate} Hz.`);
-        }
-      } else {
-        this.lastNumberOfChannels = audioSample.numberOfChannels;
-        this.lastSampleRate = audioSample.sampleRate;
-      }
-      if (!this.encoderInitialized) {
-        if (!this.ensureEncoderPromise) {
-          void this.ensureEncoder(audioSample);
-        }
-        if (!this.encoderInitialized) {
-          await this.ensureEncoderPromise;
-        }
-      }
-      assert(this.encoderInitialized);
-      if (this.customEncoder) {
-        this.customEncoderQueueSize++;
-        const clonedSample = audioSample.clone();
-        const promise = this.customEncoderCallSerializer.call(() => this.customEncoder.encode(clonedSample)).then(() => this.customEncoderQueueSize--).catch((error) => this.encoderError ??= error).finally(() => {
-          clonedSample.close();
-        });
-        if (this.customEncoderQueueSize >= 4) {
-          await promise;
-        }
-        await this.muxer.mutex.currentPromise;
-      } else if (this.isPcmEncoder) {
-        await this.doPcmEncoding(audioSample, shouldClose);
-      } else {
-        assert(this.encoder);
-        const audioData = audioSample.toAudioData();
-        this.encoder.encode(audioData);
-        audioData.close();
-        if (shouldClose) {
-          audioSample.close();
-        }
-        if (this.encoder.encodeQueueSize >= 4) {
-          await new Promise((resolve) => this.encoder.addEventListener("dequeue", resolve, { once: true }));
-        }
-        await this.muxer.mutex.currentPromise;
-      }
-    } finally {
-      if (shouldClose) {
-        audioSample.close();
-      }
-    }
-  }
-  async doPcmEncoding(audioSample, shouldClose) {
-    assert(this.outputSampleSize);
-    assert(this.writeOutputValue);
-    const { numberOfChannels, numberOfFrames, sampleRate, timestamp } = audioSample;
-    const CHUNK_SIZE = 2048;
-    const outputs = [];
-    for (let frame = 0; frame < numberOfFrames; frame += CHUNK_SIZE) {
-      const frameCount = Math.min(CHUNK_SIZE, audioSample.numberOfFrames - frame);
-      const outputSize = frameCount * numberOfChannels * this.outputSampleSize;
-      const outputBuffer = new ArrayBuffer(outputSize);
-      const outputView = new DataView(outputBuffer);
-      outputs.push({ frameCount, view: outputView });
-    }
-    const allocationSize = audioSample.allocationSize({ planeIndex: 0, format: "f32-planar" });
-    const floats = new Float32Array(allocationSize / Float32Array.BYTES_PER_ELEMENT);
-    for (let i = 0; i < numberOfChannels; i++) {
-      audioSample.copyTo(floats, { planeIndex: i, format: "f32-planar" });
-      for (let j = 0; j < outputs.length; j++) {
-        const { frameCount, view } = outputs[j];
-        for (let k = 0; k < frameCount; k++) {
-          this.writeOutputValue(view, (k * numberOfChannels + i) * this.outputSampleSize, floats[j * CHUNK_SIZE + k]);
-        }
-      }
-    }
-    if (shouldClose) {
-      audioSample.close();
-    }
-    const meta = {
-      decoderConfig: {
-        codec: this.encodingConfig.codec,
-        numberOfChannels,
-        sampleRate
-      }
-    };
-    for (let i = 0; i < outputs.length; i++) {
-      const { frameCount, view } = outputs[i];
-      const outputBuffer = view.buffer;
-      const startFrame = i * CHUNK_SIZE;
-      const packet = new EncodedPacket(new Uint8Array(outputBuffer), "key", timestamp + startFrame / sampleRate, frameCount / sampleRate);
-      this.encodingConfig.onEncodedPacket?.(packet, meta);
-      await this.muxer.addEncodedAudioPacket(this.source._connectedTrack, packet, meta);
-    }
-  }
-  ensureEncoder(audioSample) {
-    if (this.encoderInitialized) {
-      return;
-    }
-    const encoderError = new Error();
-    return this.ensureEncoderPromise = (async () => {
-      const { numberOfChannels, sampleRate } = audioSample;
-      const encoderConfig = buildAudioEncoderConfig({
-        numberOfChannels,
-        sampleRate,
-        ...this.encodingConfig
-      });
-      this.encodingConfig.onEncoderConfig?.(encoderConfig);
-      const MatchingCustomEncoder = customAudioEncoders.find((x2) => x2.supports(this.encodingConfig.codec, encoderConfig));
-      if (MatchingCustomEncoder) {
-        this.customEncoder = new MatchingCustomEncoder();
-        this.customEncoder.codec = this.encodingConfig.codec;
-        this.customEncoder.config = encoderConfig;
-        this.customEncoder.onPacket = (packet, meta) => {
-          if (!(packet instanceof EncodedPacket)) {
-            throw new TypeError("The first argument passed to onPacket must be an EncodedPacket.");
-          }
-          if (meta !== void 0 && (!meta || typeof meta !== "object")) {
-            throw new TypeError("The second argument passed to onPacket must be an object or undefined.");
-          }
-          this.encodingConfig.onEncodedPacket?.(packet, meta);
-          void this.muxer.addEncodedAudioPacket(this.source._connectedTrack, packet, meta);
-        };
-        await this.customEncoder.init();
-      } else if (PCM_AUDIO_CODECS.includes(this.encodingConfig.codec)) {
-        this.initPcmEncoder();
-      } else {
-        if (typeof AudioEncoder === "undefined") {
-          throw new Error("AudioEncoder is not supported by this browser.");
-        }
-        const support = await AudioEncoder.isConfigSupported(encoderConfig);
-        if (!support.supported) {
-          throw new Error(`This specific encoder configuration (${encoderConfig.codec}, ${encoderConfig.bitrate} bps, ${encoderConfig.numberOfChannels} channels, ${encoderConfig.sampleRate} Hz) is not supported by this browser. Consider using another codec or changing your audio parameters.`);
-        }
-        this.encoder = new AudioEncoder({
-          output: (chunk, meta) => {
-            const packet = EncodedPacket.fromEncodedChunk(chunk);
-            this.encodingConfig.onEncodedPacket?.(packet, meta);
-            void this.muxer.addEncodedAudioPacket(this.source._connectedTrack, packet, meta);
-          },
-          error: (error) => {
-            error.stack = encoderError.stack;
-            this.encoderError ??= error;
-          }
-        });
-        this.encoder.configure(encoderConfig);
-      }
-      assert(this.source._connectedTrack);
-      this.muxer = this.source._connectedTrack.output._muxer;
-      this.encoderInitialized = true;
-    })();
-  }
-  initPcmEncoder() {
-    this.isPcmEncoder = true;
-    const codec = this.encodingConfig.codec;
-    const { dataType, sampleSize, littleEndian } = parsePcmCodec(codec);
-    this.outputSampleSize = sampleSize;
-    switch (sampleSize) {
-      case 1:
-        {
-          if (dataType === "unsigned") {
-            this.writeOutputValue = (view, byteOffset, value) => view.setUint8(byteOffset, clamp2((value + 1) * 127.5, 0, 255));
-          } else if (dataType === "signed") {
-            this.writeOutputValue = (view, byteOffset, value) => {
-              view.setInt8(byteOffset, clamp2(Math.round(value * 128), -128, 127));
-            };
-          } else if (dataType === "ulaw") {
-            this.writeOutputValue = (view, byteOffset, value) => {
-              const int16 = clamp2(Math.floor(value * 32767), -32768, 32767);
-              view.setUint8(byteOffset, toUlaw(int16));
-            };
-          } else if (dataType === "alaw") {
-            this.writeOutputValue = (view, byteOffset, value) => {
-              const int16 = clamp2(Math.floor(value * 32767), -32768, 32767);
-              view.setUint8(byteOffset, toAlaw(int16));
-            };
-          } else {
-            assert(false);
-          }
-        }
-        ;
-        break;
-      case 2:
-        {
-          if (dataType === "unsigned") {
-            this.writeOutputValue = (view, byteOffset, value) => view.setUint16(byteOffset, clamp2((value + 1) * 32767.5, 0, 65535), littleEndian);
-          } else if (dataType === "signed") {
-            this.writeOutputValue = (view, byteOffset, value) => view.setInt16(byteOffset, clamp2(Math.round(value * 32767), -32768, 32767), littleEndian);
-          } else {
-            assert(false);
-          }
-        }
-        ;
-        break;
-      case 3:
-        {
-          if (dataType === "unsigned") {
-            this.writeOutputValue = (view, byteOffset, value) => setUint24(view, byteOffset, clamp2((value + 1) * 83886075e-1, 0, 16777215), littleEndian);
-          } else if (dataType === "signed") {
-            this.writeOutputValue = (view, byteOffset, value) => setInt24(view, byteOffset, clamp2(Math.round(value * 8388607), -8388608, 8388607), littleEndian);
-          } else {
-            assert(false);
-          }
-        }
-        ;
-        break;
-      case 4:
-        {
-          if (dataType === "unsigned") {
-            this.writeOutputValue = (view, byteOffset, value) => view.setUint32(byteOffset, clamp2((value + 1) * 21474836475e-1, 0, 4294967295), littleEndian);
-          } else if (dataType === "signed") {
-            this.writeOutputValue = (view, byteOffset, value) => view.setInt32(byteOffset, clamp2(Math.round(value * 2147483647), -2147483648, 2147483647), littleEndian);
-          } else if (dataType === "float") {
-            this.writeOutputValue = (view, byteOffset, value) => view.setFloat32(byteOffset, value, littleEndian);
-          } else {
-            assert(false);
-          }
-        }
-        ;
-        break;
-      case 8:
-        {
-          if (dataType === "float") {
-            this.writeOutputValue = (view, byteOffset, value) => view.setFloat64(byteOffset, value, littleEndian);
-          } else {
-            assert(false);
-          }
-        }
-        ;
-        break;
-      default:
-        {
-          assertNever(sampleSize);
-          assert(false);
-        }
-        ;
-    }
-  }
-  async flushAndClose(forceClose) {
-    if (!forceClose)
-      this.checkForEncoderError();
-    if (this.customEncoder) {
-      if (!forceClose) {
-        void this.customEncoderCallSerializer.call(() => this.customEncoder.flush());
-      }
-      await this.customEncoderCallSerializer.call(() => this.customEncoder.close());
-    } else if (this.encoder) {
-      if (!forceClose) {
-        await this.encoder.flush();
-      }
-      if (this.encoder.state !== "closed") {
-        this.encoder.close();
-      }
-    }
-    if (!forceClose)
-      this.checkForEncoderError();
-  }
-  getQueueSize() {
-    if (this.customEncoder) {
-      return this.customEncoderQueueSize;
-    } else if (this.isPcmEncoder) {
-      return 0;
-    } else {
-      return this.encoder?.encodeQueueSize ?? 0;
-    }
-  }
-  checkForEncoderError() {
-    if (this.encoderError) {
-      this.encoderError.stack = new Error().stack;
-      throw this.encoderError;
-    }
-  }
-};
-var AudioSampleSource = class extends AudioSource {
-  /**
-   * Creates a new {@link AudioSampleSource} whose samples are encoded according to the specified
-   * {@link AudioEncodingConfig}.
-   */
-  constructor(encodingConfig) {
-    validateAudioEncodingConfig(encodingConfig);
-    super(encodingConfig.codec);
-    this._encoder = new AudioEncoderWrapper(this, encodingConfig);
-  }
-  /**
-   * Encodes an audio sample and then adds it to the output.
-   *
-   * @returns A Promise that resolves once the output is ready to receive more samples. You should await this Promise
-   * to respect writer and encoder backpressure.
-   */
-  add(audioSample) {
-    if (!(audioSample instanceof AudioSample)) {
-      throw new TypeError("audioSample must be an AudioSample.");
-    }
-    return this._encoder.add(audioSample, false);
-  }
-  /** @internal */
-  _flushAndClose(forceClose) {
-    return this._encoder.flushAndClose(forceClose);
-  }
-};
-var SubtitleSource = class extends MediaSource {
-  /** Internal constructor. */
-  constructor(codec) {
-    super();
-    this._connectedTrack = null;
-    if (!SUBTITLE_CODECS.includes(codec)) {
-      throw new TypeError(`Invalid subtitle codec '${codec}'. Must be one of: ${SUBTITLE_CODECS.join(", ")}.`);
-    }
-    this._codec = codec;
-  }
-};
-
-// node_modules/mediabunny/dist/modules/src/output.js
-var ALL_TRACK_TYPES = ["video", "audio", "subtitle"];
-var validateBaseTrackMetadata = (metadata) => {
-  if (!metadata || typeof metadata !== "object") {
-    throw new TypeError("metadata must be an object.");
-  }
-  if (metadata.languageCode !== void 0 && !isIso639Dash2LanguageCode(metadata.languageCode)) {
-    throw new TypeError("metadata.languageCode, when provided, must be a three-letter, ISO 639-2/T language code.");
-  }
-  if (metadata.name !== void 0 && typeof metadata.name !== "string") {
-    throw new TypeError("metadata.name, when provided, must be a string.");
-  }
-};
-var Output = class {
-  /**
-   * Creates a new instance of {@link Output} which can then be used to create a new media file according to the
-   * specified {@link OutputOptions}.
-   */
-  constructor(options) {
-    this.state = "pending";
-    this._tracks = [];
-    this._startPromise = null;
-    this._cancelPromise = null;
-    this._finalizePromise = null;
-    this._mutex = new AsyncMutex();
-    this._metadataTags = {};
-    if (!options || typeof options !== "object") {
-      throw new TypeError("options must be an object.");
-    }
-    if (!(options.format instanceof OutputFormat)) {
-      throw new TypeError("options.format must be an OutputFormat.");
-    }
-    if (!(options.target instanceof Target)) {
-      throw new TypeError("options.target must be a Target.");
-    }
-    if (options.target._output) {
-      throw new Error("Target is already used for another output.");
-    }
-    options.target._output = this;
-    this.format = options.format;
-    this.target = options.target;
-    this._writer = options.target._createWriter();
-    this._muxer = options.format._createMuxer(this);
-  }
-  /** Adds a video track to the output with the given source. Must be called before output is started. */
-  addVideoTrack(source, metadata = {}) {
-    if (!(source instanceof VideoSource)) {
-      throw new TypeError("source must be a VideoSource.");
-    }
-    validateBaseTrackMetadata(metadata);
-    if (metadata.rotation !== void 0 && ![0, 90, 180, 270].includes(metadata.rotation)) {
-      throw new TypeError(`Invalid video rotation: ${metadata.rotation}. Has to be 0, 90, 180 or 270.`);
-    }
-    if (!this.format.supportsVideoRotationMetadata && metadata.rotation) {
-      throw new Error(`${this.format._name} does not support video rotation metadata.`);
-    }
-    if (metadata.frameRate !== void 0 && (!Number.isFinite(metadata.frameRate) || metadata.frameRate <= 0)) {
-      throw new TypeError(`Invalid video frame rate: ${metadata.frameRate}. Must be a positive number.`);
-    }
-    this._addTrack("video", source, metadata);
-  }
-  /** Adds an audio track to the output with the given source. Must be called before output is started. */
-  addAudioTrack(source, metadata = {}) {
-    if (!(source instanceof AudioSource)) {
-      throw new TypeError("source must be an AudioSource.");
-    }
-    validateBaseTrackMetadata(metadata);
-    this._addTrack("audio", source, metadata);
-  }
-  /** Adds a subtitle track to the output with the given source. Must be called before output is started. */
-  addSubtitleTrack(source, metadata = {}) {
-    if (!(source instanceof SubtitleSource)) {
-      throw new TypeError("source must be a SubtitleSource.");
-    }
-    validateBaseTrackMetadata(metadata);
-    this._addTrack("subtitle", source, metadata);
-  }
-  /**
-   * Sets descriptive metadata tags about the media file, such as title, author, date, or cover art. When called
-   * multiple times, only the metadata from the last call will be used.
-   *
-   * Must be called before output is started.
-   */
-  setMetadataTags(tags) {
-    validateMetadataTags(tags);
-    if (this.state !== "pending") {
-      throw new Error("Cannot set metadata tags after output has been started or canceled.");
-    }
-    this._metadataTags = tags;
-  }
-  /** @internal */
-  _addTrack(type, source, metadata) {
-    if (this.state !== "pending") {
-      throw new Error("Cannot add track after output has been started or canceled.");
-    }
-    if (source._connectedTrack) {
-      throw new Error("Source is already used for a track.");
-    }
-    const supportedTrackCounts = this.format.getSupportedTrackCounts();
-    const presentTracksOfThisType = this._tracks.reduce((count, track3) => count + (track3.type === type ? 1 : 0), 0);
-    const maxCount = supportedTrackCounts[type].max;
-    if (presentTracksOfThisType === maxCount) {
-      throw new Error(maxCount === 0 ? `${this.format._name} does not support ${type} tracks.` : `${this.format._name} does not support more than ${maxCount} ${type} track${maxCount === 1 ? "" : "s"}.`);
-    }
-    const maxTotalCount = supportedTrackCounts.total.max;
-    if (this._tracks.length === maxTotalCount) {
-      throw new Error(`${this.format._name} does not support more than ${maxTotalCount} tracks${maxTotalCount === 1 ? "" : "s"} in total.`);
-    }
-    const track2 = {
-      id: this._tracks.length + 1,
-      output: this,
-      type,
-      source,
-      metadata
-    };
-    if (track2.type === "video") {
-      const supportedVideoCodecs = this.format.getSupportedVideoCodecs();
-      if (supportedVideoCodecs.length === 0) {
-        throw new Error(`${this.format._name} does not support video tracks.` + this.format._codecUnsupportedHint(track2.source._codec));
-      } else if (!supportedVideoCodecs.includes(track2.source._codec)) {
-        throw new Error(`Codec '${track2.source._codec}' cannot be contained within ${this.format._name}. Supported video codecs are: ${supportedVideoCodecs.map((codec) => `'${codec}'`).join(", ")}.` + this.format._codecUnsupportedHint(track2.source._codec));
-      }
-    } else if (track2.type === "audio") {
-      const supportedAudioCodecs = this.format.getSupportedAudioCodecs();
-      if (supportedAudioCodecs.length === 0) {
-        throw new Error(`${this.format._name} does not support audio tracks.` + this.format._codecUnsupportedHint(track2.source._codec));
-      } else if (!supportedAudioCodecs.includes(track2.source._codec)) {
-        throw new Error(`Codec '${track2.source._codec}' cannot be contained within ${this.format._name}. Supported audio codecs are: ${supportedAudioCodecs.map((codec) => `'${codec}'`).join(", ")}.` + this.format._codecUnsupportedHint(track2.source._codec));
-      }
-    } else if (track2.type === "subtitle") {
-      const supportedSubtitleCodecs = this.format.getSupportedSubtitleCodecs();
-      if (supportedSubtitleCodecs.length === 0) {
-        throw new Error(`${this.format._name} does not support subtitle tracks.` + this.format._codecUnsupportedHint(track2.source._codec));
-      } else if (!supportedSubtitleCodecs.includes(track2.source._codec)) {
-        throw new Error(`Codec '${track2.source._codec}' cannot be contained within ${this.format._name}. Supported subtitle codecs are: ${supportedSubtitleCodecs.map((codec) => `'${codec}'`).join(", ")}.` + this.format._codecUnsupportedHint(track2.source._codec));
-      }
-    }
-    this._tracks.push(track2);
-    source._connectedTrack = track2;
-  }
-  /**
-   * Starts the creation of the output file. This method should be called after all tracks have been added. Only after
-   * the output has started can media samples be added to the tracks.
-   *
-   * @returns A promise that resolves when the output has successfully started and is ready to receive media samples.
-   */
-  async start() {
-    const supportedTrackCounts = this.format.getSupportedTrackCounts();
-    for (const trackType of ALL_TRACK_TYPES) {
-      const presentTracksOfThisType = this._tracks.reduce((count, track2) => count + (track2.type === trackType ? 1 : 0), 0);
-      const minCount = supportedTrackCounts[trackType].min;
-      if (presentTracksOfThisType < minCount) {
-        throw new Error(minCount === supportedTrackCounts[trackType].max ? `${this.format._name} requires exactly ${minCount} ${trackType} track${minCount === 1 ? "" : "s"}.` : `${this.format._name} requires at least ${minCount} ${trackType} track${minCount === 1 ? "" : "s"}.`);
-      }
-    }
-    const totalMinCount = supportedTrackCounts.total.min;
-    if (this._tracks.length < totalMinCount) {
-      throw new Error(totalMinCount === supportedTrackCounts.total.max ? `${this.format._name} requires exactly ${totalMinCount} track${totalMinCount === 1 ? "" : "s"}.` : `${this.format._name} requires at least ${totalMinCount} track${totalMinCount === 1 ? "" : "s"}.`);
-    }
-    if (this.state === "canceled") {
-      throw new Error("Output has been canceled.");
-    }
-    if (this._startPromise) {
-      console.warn("Output has already been started.");
-      return this._startPromise;
-    }
-    return this._startPromise = (async () => {
-      this.state = "started";
-      this._writer.start();
-      const release = await this._mutex.acquire();
-      await this._muxer.start();
-      const promises = this._tracks.map((track2) => track2.source._start());
-      await Promise.all(promises);
-      release();
-    })();
-  }
-  /**
-   * Resolves with the full MIME type of the output file, including track codecs.
-   *
-   * The returned promise will resolve only once the precise codec strings of all tracks are known.
-   */
-  getMimeType() {
-    return this._muxer.getMimeType();
-  }
-  /**
-   * Cancels the creation of the output file, releasing internal resources like encoders and preventing further
-   * samples from being added.
-   *
-   * @returns A promise that resolves once all internal resources have been released.
-   */
-  async cancel() {
-    if (this._cancelPromise) {
-      console.warn("Output has already been canceled.");
-      return this._cancelPromise;
-    } else if (this.state === "finalizing" || this.state === "finalized") {
-      console.warn("Output has already been finalized.");
-      return;
-    }
-    return this._cancelPromise = (async () => {
-      this.state = "canceled";
-      const release = await this._mutex.acquire();
-      const promises = this._tracks.map((x2) => x2.source._flushOrWaitForOngoingClose(true));
-      await Promise.all(promises);
-      await this._writer.close();
-      release();
-    })();
-  }
-  /**
-   * Finalizes the output file. This method must be called after all media samples across all tracks have been added.
-   * Once the Promise returned by this method completes, the output file is ready.
-   */
-  async finalize() {
-    if (this.state === "pending") {
-      throw new Error("Cannot finalize before starting.");
-    }
-    if (this.state === "canceled") {
-      throw new Error("Cannot finalize after canceling.");
-    }
-    if (this._finalizePromise) {
-      console.warn("Output has already been finalized.");
-      return this._finalizePromise;
-    }
-    return this._finalizePromise = (async () => {
-      this.state = "finalizing";
-      const release = await this._mutex.acquire();
-      const promises = this._tracks.map((x2) => x2.source._flushOrWaitForOngoingClose(false));
-      await Promise.all(promises);
-      await this._muxer.finalize();
-      await this._writer.flush();
-      await this._writer.finalize();
-      this.state = "finalized";
-      release();
-    })();
-  }
-};
-
-// src/audio/audio.ts
-function monoToStereo(mono) {
-  return {
-    sampleRate: mono.sampleRate,
-    channels: [mono.channels[0], new Float32Array(mono.channels[0])]
-  };
-}
-function signal(duration, f, sampleRate = 44100) {
-  const data = new Float32Array(
-    range(duration * sampleRate).map((x2) => f(x2 / sampleRate, x2))
-  );
-  return {
-    sampleRate,
-    channels: [data, new Float32Array(data)]
-  };
-}
-function envelope(duration, f, sampleRate = 44100) {
-  return signal(duration, (x2) => f(x2 / duration), sampleRate);
-}
-function sine(duration, freq, amp, phase = 0, sampleRate = 44100) {
-  return signal(
-    duration,
-    (x2) => Math.sin((x2 - phase) * Math.PI * 2 * freq) * amp
-  );
-}
-function square(duration, freq, amp, phase = 0, sampleRate = 44100) {
-  return signal(
-    duration,
-    (x2) => (x2 + 1 - phase % 1) % (1 / freq) * 2 * freq > 1 ? -amp : amp
-  );
-}
-function saw(duration, freq, amp, phase = 0, sampleRate = 44100) {
-  return signal(
-    duration,
-    (x2) => ((x2 + 1 - phase % 1) % (1 / freq) * freq * 2 - 1) * amp
-  );
-}
-function silence(duration, sampleRate = 44100) {
-  return constant(duration, 0, sampleRate);
-}
-function constant(duration, c, sampleRate = 44100) {
-  const data = new Float32Array(range(duration * sampleRate).map(() => c));
-  return {
-    sampleRate,
-    channels: [data, new Float32Array(data)]
-  };
-}
-function play(audio, audioContext) {
-  const actx = audioContext ?? new AudioContext();
-  const buf = actx.createBuffer(
-    audio.channels.length,
-    audio.channels[0].length,
-    audio.sampleRate
-  );
-  for (let i = 0; i < audio.channels.length; i++) {
-    buf.copyToChannel(audio.channels[i], i, 0);
-  }
-  const source = actx.createBufferSource();
-  source.buffer = buf;
-  source.connect(actx.destination);
-  source.start();
-}
-function resample2(audio, newSampleRate) {
-  let newSampleCount = audio.channels[0].length / audio.sampleRate * newSampleRate;
-  let channels = [];
-  for (const c of audio.channels) {
-    channels.push(
-      new Float32Array(
-        range(newSampleCount).map((i) => {
-          const oldIndex = clamp(
-            i / newSampleRate * audio.sampleRate,
-            0,
-            audio.channels[0].length
-          );
-          const lo = Math.floor(oldIndex);
-          const hi = Math.ceil(oldIndex);
-          const frac = oldIndex % 1;
-          return c[lo] * (1 - frac) + c[hi] * frac;
-        })
-      )
-    );
-  }
-  return {
-    sampleRate: newSampleRate,
-    channels
-  };
-}
-function modulateSampleTime(a, b) {
-  if (b.sampleRate !== a.sampleRate) {
-    b = resample2(b, a.sampleRate);
-  }
-  for (let ci = 0; ci < a.channels.length; ci++) {
-    const newChannel = new Float32Array(a.channels[ci].length);
-    for (let i = 0; i < b.channels[ci].length; i++) {
-      const index2 = Math.floor(b.channels[ci][i] * a.sampleRate);
-      newChannel[i] = a.channels[ci][Math.min(Math.max(index2, 0), a.channels[ci].length - 1)];
-    }
-    a.channels[ci] = newChannel;
-  }
-  return a;
-}
-function add(a, b, offsetB = 0) {
-  if (b.sampleRate !== a.sampleRate) {
-    b = resample2(b, a.sampleRate);
-  }
-  const offsetSamples = Math.floor(offsetB * a.sampleRate);
-  for (let ci = 0; ci < a.channels.length; ci++) {
-    for (let i = 0; i < b.channels[ci].length; i++) {
-      a.channels[ci][i + offsetSamples] += b.channels[ci][i];
-    }
-  }
-  return a;
-}
-function modulateGain(a, envelope2, offsetB = 0) {
-  if (envelope2.sampleRate !== a.sampleRate) {
-    envelope2 = resample2(envelope2, a.sampleRate);
-  }
-  const offsetSamples = Math.floor(offsetB * a.sampleRate);
-  for (let ci = 0; ci < a.channels.length; ci++) {
-    for (let i = 0; i < envelope2.channels[ci].length; i++) {
-      a.channels[ci][i + offsetSamples] *= envelope2.channels[ci][i];
-    }
-  }
-  return a;
-}
-function adsr(a, d, s, r, ag = 1, dg = 0.5, sg = 0.5, rg = 0, sampleRate = 44100) {
-  const duration = a + d + s + r;
-  return signal(
-    duration,
-    (x2) => {
-      if (x2 < a) {
-        return rescale(x2, 0, a, 0, ag);
-      }
-      if (x2 < a + d) {
-        return rescale(x2, a, a + d, ag, dg);
-      }
-      if (x2 < a + d + s) {
-        return rescale(x2, a + d, a + d + s, dg, sg);
-      }
-      return rescale(x2, a + d + s, a + d + s + r, sg, rg);
-    },
-    sampleRate
-  );
-}
-function scaleDuration(a, duration, newSampleRate = 44100) {
-  const sampleCount = duration * newSampleRate;
-  const channels = [];
-  for (const c of a.channels) {
-    channels.push(
-      new Float32Array(
-        range(sampleCount).map((i) => {
-          const idx = i / newSampleRate / duration * c.length;
-          const lo = Math.floor(idx);
-          const hi = Math.ceil(idx);
-          return lerp(idx % 1, c[lo], c[hi]);
-        })
-      )
-    );
-  }
-  return { channels, sampleRate: newSampleRate };
-}
-function slice(a, start, end) {
-  const lo = Math.floor(
-    clamp((start ?? 0) / a.sampleRate, 0, a.channels[0].length - 1)
-  );
-  const hi = Math.ceil(
-    clamp(
-      (end ?? a.channels[0].length) / a.sampleRate,
-      0,
-      a.channels[0].length - 1
-    )
-  );
-  return {
-    sampleRate: a.sampleRate,
-    channels: a.channels.map((c) => c.slice(lo, hi))
-  };
-}
-function convolve(a, kernel) {
-  return {
-    channels: range(a.channels.length).map(
-      (i) => new Float32Array(
-        fftConvolution(
-          a.channels[i],
-          kernel.channels[i].length % 2 == 0 ? [...kernel.channels[i], 0] : kernel.channels[i]
-        )
-      )
-    ),
-    sampleRate: a.sampleRate
-  };
-}
-function graphAudio(a, width, height) {
-  const canvas = document.createElement("canvas");
-  const channelWidth = width;
-  const channelHeight = height / a.channels.length;
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  let ci = 0;
-  for (const c of a.channels) {
-    ctx?.beginPath();
-    let miny = channelHeight * ci;
-    let maxy = channelHeight * (ci + 1);
-    for (let i = 0; i < c.length; i++) {
-      let x2 = i / c.length * width;
-      let y2 = rescale(c[i], 1, -1, miny, maxy);
-      ctx?.lineTo(x2, y2);
-    }
-    ctx?.stroke();
-    ci++;
-  }
-  return canvas;
-}
-async function getOgg(a) {
-  const output = new Output({
-    format: new OggOutputFormat(),
-    target: new BufferTarget()
-  });
-  const sample = new AudioSample({
-    data: new Float32Array(a.channels.map((ch) => [...ch]).flat(1)),
-    format: "f32-planar",
-    numberOfChannels: 2,
-    sampleRate: a.sampleRate,
-    timestamp: 0
-  });
-  const src2 = new AudioSampleSource({
-    codec: "opus",
-    bitrate: 128e3
-  });
-  output.addAudioTrack(src2);
-  await output.start();
-  await src2.add(sample);
-  await output.finalize();
-  return new Blob([output.target.buffer], { type: "audio/ogg" });
-}
-
-// src/curve/quadratic-curve-to-svg.ts
-function quadraticCurveToPath(curve, sigfigs, offset) {
-  let startPoint = curve[0].a;
-  const str2 = (n) => n.toPrecision(sigfigs);
-  let output = `M ${str2(startPoint[0] + offset[0])} ${str2(
-    startPoint[1] + offset[1]
-  )}`;
-  let prevpoint = startPoint;
-  for (const b of curve) {
-    output += `q ${str2(b.b[0] - prevpoint[0])} ${str2(
-      b.b[1] - prevpoint[1]
-    )},${str2(b.c[0] - prevpoint[0])} ${str2(b.c[1] - prevpoint[1])}`;
-    prevpoint = b.c;
-  }
-  return output;
-}
-function quadraticCurveToSvgPath(curve, offset, color, sigfigs) {
-  const pathd = quadraticCurveToPath(curve, sigfigs, offset);
-  return `<path d="${pathd}" stroke="${color}" />`;
-}
-function islandsToSvg(width, height, islands, sigfigs) {
-  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${islands.map(
-    (i) => quadraticCurveToSvgPath(i.curve, i.topLeftInImage, i.color, sigfigs)
-  ).join("")}</svg>`;
-}
-
-// src/curve/points-on-curve.ts
-function equidistantPointsOnCurve(curve, interval) {
-  if (curve.length === 0) return [];
-  const outPoints = [curve[0]];
-  let accumDist = 0;
-  for (let i = 0; i < curve.length - 1; i++) {
-    const prevPoint = curve[i];
-    const currPoint = curve[i + 1];
-    const currLineDist = distance2(prevPoint, currPoint);
-    const initLength = interval - accumDist % interval;
-    accumDist += currLineDist;
-    const newPointCount = Math.floor(accumDist / interval);
-    for (let j = 0; j < newPointCount; j++) {
-      let distAcross = initLength + j * interval;
-      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
-    }
-    accumDist -= newPointCount * interval;
-  }
-  return outPoints;
-}
-function variableDistancePointsOnCurve(curve, nextDistance) {
-  if (curve.length === 0) return [];
-  const outPoints = [curve[0]];
-  let interval = nextDistance(curve[0]);
-  let accumDist = 0;
-  for (let i = 0; i < curve.length - 1; i++) {
-    const prevPoint = curve[i];
-    const currPoint = curve[i + 1];
-    const currLineDist = distance2(prevPoint, currPoint);
-    const initLength = interval - accumDist % interval;
-    accumDist += currLineDist;
-    const newPointCount = Math.floor(accumDist / interval);
-    let distAcross = initLength;
-    while (accumDist > interval) {
-      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
-      accumDist -= interval;
-      interval = nextDistance(outPoints.at(-1));
-      distAcross += interval;
-    }
-  }
-  return outPoints;
-}
-
-// src/curve/bezierify.ts
-function dotself2(x2) {
-  return dot2(x2, x2);
-}
-function clamp3(v, lo, hi) {
-  return [clamp(v[0], lo, hi), clamp(v[1], lo, hi), clamp(v[2], lo, hi)];
-}
-function sign2(a) {
-  return [Math.sign(a[0]), Math.sign(a[1])];
-}
-function abs2(a) {
-  return [Math.abs(a[0]), Math.abs(a[1])];
-}
-function pow2(a, b) {
-  return [Math.pow(a[0], b[0]), Math.pow(a[1], b[1])];
-}
-function sdBezier(pos, A, B, C) {
-  const a = sub2(B, A);
-  const b = add2(sub2(A, scale2(B, 2)), C);
-  const c = scale2(a, 2);
-  const d = sub2(A, pos);
-  const kk = 1 / dot2(b, b);
-  const kx = kk * dot2(a, b);
-  const ky = kk * (2 * dot2(a, a) + dot2(d, b)) / 3;
-  const kz = kk * dot2(d, a);
-  let res = 0;
-  const p = ky - kx * kx;
-  const p3 = p * p * p;
-  const q = kx * (2 * kx * kx - 3 * ky) + kz;
-  let h = q * q + 4 * p3;
-  if (h >= 0) {
-    h = Math.sqrt(h);
-    const x2 = scale2(sub2([h, -h], [q, q]), 1 / 2);
-    const uv = mul2(sign2(x2), pow2(abs2(x2), [1 / 3, 1 / 3]));
-    const t = clamp(uv[0] + uv[1] - kx, 0, 1);
-    res = dotself2(add2(d, scale2(add2(c, scale2(b, t)), t)));
-  } else {
-    const z2 = Math.sqrt(-p);
-    const v = Math.acos(q / (p * z2 * 2)) / 3;
-    const m = Math.cos(v);
-    const n = Math.sin(v) * 1.732050808;
-    const t = clamp3(
-      sub3(scale3([m + m, -n - m, n - m], z2), [kx, kx, kx]),
-      0,
-      1
-    );
-    res = Math.min(
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[0])), t[0]))),
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[1])), t[1])))
-    );
-    res = Math.min(
-      res,
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[2])), t[2])))
-    );
-  }
-  return Math.sqrt(res);
-}
-function gradient2(fn, pos, diff) {
-  const a = fn(pos);
-  const b = fn(add2(pos, [diff, 0]));
-  const c = fn(add2(pos, [0, diff]));
-  return [(a - b) / diff, (a - c) / diff];
-}
-function bezierifyFixedCount(path, count, learningRate, gradientDescentIters) {
-  const beziers = [];
-  for (let i = 0; i < count; i++) {
-    const startIndex = Math.floor(i / count * (path.length - 1));
-    const endIndex = Math.floor((i + 1) / count * (path.length - 1));
-    beziers.push(
-      generateBezierApproximation(
-        path,
-        startIndex,
-        endIndex,
-        learningRate,
-        gradientDescentIters
-      ).bezier
-    );
-  }
-  return beziers;
-}
-function bezierAdaptive(path, maxError, learningRate, gradientDescentIters) {
-  return bezierAdaptiveInner(
-    path,
-    maxError,
-    0,
-    path.length - 1,
-    learningRate,
-    gradientDescentIters
-  );
-}
-function bezierAdaptiveInner(path, maxError, startIndex, endIndex, learningRate, gradientDescentIters) {
-  const approx = generateBezierApproximation(
-    path,
-    startIndex,
-    endIndex,
-    learningRate,
-    gradientDescentIters
-  );
-  if (approx.error <= maxError || endIndex - startIndex < 3)
-    return [approx.bezier];
-  const mid = Math.floor((startIndex + endIndex) / 2);
-  return [
-    ...bezierAdaptiveInner(
-      path,
-      maxError,
-      startIndex,
-      mid,
-      learningRate,
-      gradientDescentIters
-    ),
-    ...bezierAdaptiveInner(
-      path,
-      maxError,
-      mid,
-      endIndex,
-      learningRate,
-      gradientDescentIters
-    )
-  ];
-}
-function generateBezierApproximation(path, startIndex, endIndex, learningRate, gradientDescentIters) {
-  const start = path[startIndex];
-  const end = path[endIndex];
-  let controlPoint = add2(
-    scale2(add2(path[startIndex], path[endIndex]), 0.5),
-    [1e-4, 1e-4]
-  );
-  const getError = (v) => {
-    let error = 0;
-    let count = 0;
-    for (let i = startIndex + 1; i < endIndex; i++) {
-      error += sdBezier(path[i], start, v, end) ** 2;
-      count++;
-    }
-    return error / count;
-  };
-  for (let i = 0; i < gradientDescentIters; i++) {
-    const gradient = gradient2(getError, controlPoint, 1e-3);
-    if (isNaN(gradient[0]) || isNaN(gradient[1])) {
-      continue;
-    }
-    controlPoint = add2(controlPoint, scale2(gradient, learningRate));
-  }
-  return {
-    bezier: { a: start, b: controlPoint, c: end },
-    error: getError(controlPoint)
-  };
-}
-function bezierPreview(beziers, size) {
-  const c = document.createElement("canvas");
-  const ctx = c.getContext("2d");
-  const points = beziers.flatMap((e) => [e.a, e.b, e.c]);
-  c.width = Math.max(...points.map((b) => b[0])) * size + size;
-  c.height = Math.max(...points.map((b) => b[1])) * size + size;
-  ctx?.beginPath();
-  for (const p of beziers) {
-    ctx.moveTo(p.a[0] * size, p.a[1] * size);
-    ctx.quadraticCurveTo(
-      p.b[0] * size,
-      p.b[1] * size,
-      p.c[0] * size,
-      p.c[1] * size
-    );
-  }
-  ctx.stroke();
-  return c;
-}
-
-// src/math/round.ts
-function roundUp(factor, x2) {
-  return Math.ceil(x2 / factor) * factor;
-}
-
-// src/webgpu/converters.ts
-var TEXTURE_FORMAT_TO_DEPTH_SAMPLER_TYPE = {
-  depth16unorm: "depth",
-  depth24plus: "depth",
-  "depth24plus-stencil8": "depth",
-  depth32float: "depth",
-  "depth32float-stencil8": "depth"
-};
-var TEXTURE_FORMAT_TO_NONDEPTH_SAMPLER_TYPE = {
-  depth16unorm: "unfilterable-float",
-  depth24plus: "unfilterable-float",
-  "depth24plus-stencil8": "unfilterable-float",
-  depth32float: "unfilterable-float",
-  "depth32float-stencil8": "unfilterable-float"
-};
-var TEXTURE_FORMAT_TO_STENCIL_SAMPLER_TYPE = {
-  stencil8: "uint",
-  "depth24plus-stencil8": "uint",
-  "depth32plus-stencil8": "uint"
-};
-var TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT = {
-  r8unorm: "float",
-  r8snorm: "float",
-  r8uint: "uint",
-  r8sint: "sint",
-  r16unorm: "float",
-  r16snorm: "float",
-  r16uint: "uint",
-  r16sint: "sint",
-  r16float: "float",
-  rg8unorm: "float",
-  rg8snorm: "float",
-  rg8uint: "uint",
-  rg8sint: "sint",
-  r32uint: "uint",
-  r32sint: "sint",
-  r32float: "float",
-  rg16unorm: "float",
-  rg16snorm: "float",
-  rg16uint: "uint",
-  rg16sint: "sint",
-  rg16float: "float",
-  rgba8unorm: "float",
-  "rgba8unorm-srgb": "float",
-  rgba8snorm: "float",
-  rgba8uint: "uint",
-  rgba8sint: "sint",
-  bgra8unorm: "float",
-  "bgra8unorm-srgb": "float",
-  rgb9e5ufloat: "float",
-  rgb10a2uint: "uint",
-  rgb10a2unorm: "float",
-  rg11b10ufloat: "float",
-  rg32uint: "uint",
-  rg32sint: "sint",
-  rg32float: "float",
-  rgba16unorm: "float",
-  rgba16snorm: "float",
-  rgba16uint: "uint",
-  rgba16sint: "sint",
-  rgba16float: "float",
-  rgba32uint: "uint",
-  rgba32sint: "sint",
-  rgba32float: "float",
-  stencil8: "uint",
-  depth16unorm: "depth",
-  depth24plus: "depth",
-  "depth24plus-stencil8": "depth",
-  depth32float: "depth",
-  "depth32float-stencil8": "depth",
-  "bc1-rgba-unorm": "float",
-  "bc1-rgba-unorm-srgb": "float",
-  "bc2-rgba-unorm": "float",
-  "bc2-rgba-unorm-srgb": "float",
-  "bc3-rgba-unorm": "float",
-  "bc3-rgba-unorm-srgb": "float",
-  "bc4-r-unorm": "float",
-  "bc4-r-snorm": "float",
-  "bc5-rg-unorm": "float",
-  "bc5-rg-snorm": "float",
-  "bc6h-rgb-ufloat": "float",
-  "bc6h-rgb-float": "float",
-  "bc7-rgba-unorm": "float",
-  "bc7-rgba-unorm-srgb": "float",
-  "etc2-rgb8unorm": "float",
-  "etc2-rgb8unorm-srgb": "float",
-  "etc2-rgb8a1unorm": "float",
-  "etc2-rgb8a1unorm-srgb": "float",
-  "etc2-rgba8unorm": "float",
-  "etc2-rgba8unorm-srgb": "float",
-  "eac-r11unorm": "f32",
-  "eac-r11snorm": "f32",
-  "eac-rg11unorm": "vec2f",
-  "eac-rg11snorm": "vec2f",
-  "astc-4x4-unorm": "float",
-  "astc-4x4-unorm-srgb": "float",
-  "astc-5x4-unorm": "float",
-  "astc-5x4-unorm-srgb": "float",
-  "astc-5x5-unorm": "float",
-  "astc-5x5-unorm-srgb": "float",
-  "astc-6x5-unorm": "float",
-  "astc-6x5-unorm-srgb": "float",
-  "astc-6x6-unorm": "float",
-  "astc-6x6-unorm-srgb": "float",
-  "astc-8x5-unorm": "float",
-  "astc-8x5-unorm-srgb": "float",
-  "astc-8x6-unorm": "float",
-  "astc-8x6-unorm-srgb": "float",
-  "astc-8x8-unorm": "float",
-  "astc-8x8-unorm-srgb": "float",
-  "astc-10x5-unorm": "float",
-  "astc-10x5-unorm-srgb": "float",
-  "astc-10x6-unorm": "float",
-  "astc-10x6-unorm-srgb": "float",
-  "astc-10x8-unorm": "float",
-  "astc-10x8-unorm-srgb": "float",
-  "astc-10x10-unorm": "float",
-  "astc-10x10-unorm-srgb": "float",
-  "astc-12x10-unorm": "float",
-  "astc-12x10-unorm-srgb": "float",
-  "astc-12x12-unorm": "float",
-  "astc-12x12-unorm-srgb": "float"
-};
-var TEXTURE_FORMAT_TO_WGSL_TYPE_LUT = {
-  r8unorm: "f32",
-  r8snorm: "f32",
-  r8uint: "u32",
-  r8sint: "i32",
-  r16unorm: "u32",
-  r16snorm: "i32",
-  r16uint: "u32",
-  r16sint: "i32",
-  r16float: "f32",
-  rg8unorm: "vec2f",
-  rg8snorm: "vec2f",
-  rg8uint: "vec2u",
-  rg8sint: "vec2i",
-  r32uint: "u32",
-  r32sint: "i32",
-  r32float: "f32",
-  rg16unorm: "vec2f",
-  rg16snorm: "vec2f",
-  rg16uint: "vec2u",
-  rg16sint: "vec2i",
-  rg16float: "vec2f",
-  rgba8unorm: "vec4f",
-  "rgba8unorm-srgb": "vec4f",
-  rgba8snorm: "vec4f",
-  rgba8uint: "vec4u",
-  rgba8sint: "vec4i",
-  bgra8unorm: "vec4f",
-  "bgra8unorm-srgb": "vec4f",
-  rgb9e5ufloat: "vec4f",
-  rgb10a2uint: "vec4u",
-  rgb10a2unorm: "vec4f",
-  rg11b10ufloat: "vec4f",
-  rg32uint: "vec2u",
-  rg32sint: "vec2i",
-  rg32float: "vec2f",
-  rgba16unorm: "vec4u",
-  rgba16snorm: "vec4i",
-  rgba16uint: "vec4u",
-  rgba16sint: "vec4i",
-  rgba16float: "vec4f",
-  rgba32uint: "vec4u",
-  rgba32sint: "vec4i",
-  rgba32float: "vec4f",
-  stencil8: "u32",
-  depth16unorm: "f32",
-  depth24plus: "f32",
-  "depth24plus-stencil8": "f32",
-  depth32float: "f32",
-  "depth32float-stencil8": "f32",
-  "bc1-rgba-unorm": "vec4f",
-  "bc1-rgba-unorm-srgb": "vec4f",
-  "bc2-rgba-unorm": "vec4f",
-  "bc2-rgba-unorm-srgb": "vec4f",
-  "bc3-rgba-unorm": "vec4f",
-  "bc3-rgba-unorm-srgb": "vec4f",
-  "bc4-r-unorm": "f32",
-  "bc4-r-snorm": "f32",
-  "bc5-rg-unorm": "vec2f",
-  "bc5-rg-snorm": "vec2f",
-  "bc6h-rgb-ufloat": "vec3f",
-  "bc6h-rgb-float": "vec3f",
-  "bc7-rgba-unorm": "vec4f",
-  "bc7-rgba-unorm-srgb": "vec4f",
-  "etc2-rgb8unorm": "vec3f",
-  "etc2-rgb8unorm-srgb": "vec3f",
-  "etc2-rgb8a1unorm": "vec4f",
-  "etc2-rgb8a1unorm-srgb": "vec4f",
-  "etc2-rgba8unorm": "vec4f",
-  "etc2-rgba8unorm-srgb": "vec4f",
-  "eac-r11unorm": "f32",
-  "eac-r11snorm": "f32",
-  "eac-rg11unorm": "vec2f",
-  "eac-rg11snorm": "vec2f",
-  "astc-4x4-unorm": "vec4f",
-  "astc-4x4-unorm-srgb": "vec4f",
-  "astc-5x4-unorm": "vec4f",
-  "astc-5x4-unorm-srgb": "vec4f",
-  "astc-5x5-unorm": "vec4f",
-  "astc-5x5-unorm-srgb": "vec4f",
-  "astc-6x5-unorm": "vec4f",
-  "astc-6x5-unorm-srgb": "vec4f",
-  "astc-6x6-unorm": "vec4f",
-  "astc-6x6-unorm-srgb": "vec4f",
-  "astc-8x5-unorm": "vec4f",
-  "astc-8x5-unorm-srgb": "vec4f",
-  "astc-8x6-unorm": "vec4f",
-  "astc-8x6-unorm-srgb": "vec4f",
-  "astc-8x8-unorm": "vec4f",
-  "astc-8x8-unorm-srgb": "vec4f",
-  "astc-10x5-unorm": "vec4f",
-  "astc-10x5-unorm-srgb": "vec4f",
-  "astc-10x6-unorm": "vec4f",
-  "astc-10x6-unorm-srgb": "vec4f",
-  "astc-10x8-unorm": "vec4f",
-  "astc-10x8-unorm-srgb": "vec4f",
-  "astc-10x10-unorm": "vec4f",
-  "astc-10x10-unorm-srgb": "vec4f",
-  "astc-12x10-unorm": "vec4f",
-  "astc-12x10-unorm-srgb": "vec4f",
-  "astc-12x12-unorm": "vec4f",
-  "astc-12x12-unorm-srgb": "vec4f"
-};
-function getCopyFootprintPerTexel(fmt, aspect = "all") {
-  if (aspect === "stencil-only") {
-    if (fmt === "depth24plus-stencil8" || fmt === "depth32float-stencil8") {
-      return 1;
-    }
-  } else if (aspect === "depth-only") {
-    if (fmt === "depth32float-stencil8") {
-      return 4;
-    }
-  }
-  return TEXEL_BLOCK_COPY_FOOTPRINTS[fmt];
-}
-var TEXEL_BLOCK_COPY_FOOTPRINTS = {
-  r8unorm: 1,
-  r8snorm: 1,
-  r8uint: 1,
-  r8sint: 1,
-  r16unorm: 2,
-  r16snorm: 2,
-  r16uint: 2,
-  r16sint: 2,
-  r16float: 2,
-  rg8unorm: 2,
-  rg8snorm: 2,
-  rg8uint: 2,
-  rg8sint: 2,
-  r32uint: 4,
-  r32sint: 4,
-  r32float: 4,
-  rg16unorm: 4,
-  rg16snorm: 4,
-  rg16uint: 4,
-  rg16sint: 4,
-  rg16float: 4,
-  rgba8unorm: 4,
-  "rgba8unorm-srgb": 4,
-  rgba8snorm: 4,
-  rgba8uint: 4,
-  rgba8sint: 4,
-  bgra8unorm: 4,
-  "bgra8unorm-srgb": 4,
-  rgb9e5ufloat: 4,
-  rgb10a2uint: 4,
-  rgb10a2unorm: 4,
-  rg11b10ufloat: 4,
-  rg32uint: 8,
-  rg32sint: 8,
-  rg32float: 8,
-  rgba16unorm: 8,
-  rgba16snorm: 8,
-  rgba16uint: 8,
-  rgba16sint: 8,
-  rgba16float: 8,
-  rgba32uint: 16,
-  rgba32sint: 16,
-  rgba32float: 16,
-  stencil8: 1,
-  depth16unorm: 2,
-  depth24plus: void 0,
-  "depth24plus-stencil8": void 0,
-  depth32float: void 0,
-  "depth32float-stencil8": void 0,
-  "bc1-rgba-unorm": 8,
-  "bc1-rgba-unorm-srgb": 8,
-  "bc2-rgba-unorm": 16,
-  "bc2-rgba-unorm-srgb": 16,
-  "bc3-rgba-unorm": 16,
-  "bc3-rgba-unorm-srgb": 16,
-  "bc4-r-unorm": 8,
-  "bc4-r-snorm": 8,
-  "bc5-rg-unorm": 16,
-  "bc5-rg-snorm": 16,
-  "bc6h-rgb-ufloat": 16,
-  "bc6h-rgb-float": 16,
-  "bc7-rgba-unorm": 16,
-  "bc7-rgba-unorm-srgb": 16,
-  "etc2-rgb8unorm": 8,
-  "etc2-rgb8unorm-srgb": 8,
-  "etc2-rgb8a1unorm": 8,
-  "etc2-rgb8a1unorm-srgb": 8,
-  "etc2-rgba8unorm": 16,
-  "etc2-rgba8unorm-srgb": 16,
-  "eac-r11unorm": 8,
-  "eac-r11snorm": 8,
-  "eac-rg11unorm": 16,
-  "eac-rg11snorm": 16,
-  "astc-4x4-unorm": 16,
-  "astc-4x4-unorm-srgb": 16,
-  "astc-5x4-unorm": 16,
-  "astc-5x4-unorm-srgb": 16,
-  "astc-5x5-unorm": 16,
-  "astc-5x5-unorm-srgb": 16,
-  "astc-6x5-unorm": 16,
-  "astc-6x5-unorm-srgb": 16,
-  "astc-6x6-unorm": 16,
-  "astc-6x6-unorm-srgb": 16,
-  "astc-8x5-unorm": 16,
-  "astc-8x5-unorm-srgb": 16,
-  "astc-8x6-unorm": 16,
-  "astc-8x6-unorm-srgb": 16,
-  "astc-8x8-unorm": 16,
-  "astc-8x8-unorm-srgb": 16,
-  "astc-10x5-unorm": 16,
-  "astc-10x5-unorm-srgb": 16,
-  "astc-10x6-unorm": 16,
-  "astc-10x6-unorm-srgb": 16,
-  "astc-10x8-unorm": 16,
-  "astc-10x8-unorm-srgb": 16,
-  "astc-10x10-unorm": 16,
-  "astc-10x10-unorm-srgb": 16,
-  "astc-12x10-unorm": 16,
-  "astc-12x10-unorm-srgb": 16,
-  "astc-12x12-unorm": 16,
-  "astc-12x12-unorm-srgb": 16
-};
-var SAMPLER_TYPE_TO_WGSL_TYPE = {
-  float: "f32",
-  uint: "u32",
-  sint: "i32",
-  depth: "f32"
-};
-var TEXTURE_DIMENSIONALITIES = {
-  texture_1d: "1d",
-  texture_storage_1d: "1d",
-  texture_2d: "2d",
-  texture_storage_2d: "2d",
-  texture_multisampled_2d: "2d",
-  texture_depth_2d: "2d",
-  texture_depth_multisampled_2d: "2d",
-  texture_2d_array: "2d-array",
-  texture_storage_2d_array: "2d-array",
-  texture_depth_2d_array: "2d-array",
-  texture_3d: "3d",
-  texture_storage_3d: "3d",
-  texture_cube: "cube",
-  texture_depth_cube: "cube",
-  texture_cube_array: "cube-array",
-  texture_depth_cube_array: "cube-array"
-};
-var WGSL_TYPE_SIZES = {
-  i32: 4,
-  u32: 4,
-  f32: 4,
-  f16: 2,
-  "atomic<u32>": 4,
-  "atomic<i32>": 4,
-  vec2i: 8,
-  vec2u: 8,
-  vec2f: 8,
-  vec2f16: 4,
-  vec3i: 12,
-  vec3u: 12,
-  vec3f: 12,
-  vec3f16: 6,
-  vec4i: 16,
-  vec4u: 16,
-  vec4f: 16,
-  vec4f16: 8,
-  mat2x2f: 16,
-  mat2x2f16: 8,
-  mat3x2f: 24,
-  mat3x2f16: 12,
-  mat4x2f: 32,
-  mat4x2f16: 16,
-  mat2x3f: 24,
-  mat2x3f16: 12,
-  mat3x3f: 48,
-  mat3x3f16: 24,
-  mat4x3f: 64,
-  mat4x3f16: 32,
-  mat2x4f: 32,
-  mat2x4f16: 16,
-  mat3x4f: 48,
-  mat3x4f16: 24,
-  mat4x4f: 64,
-  mat4x4f16: 32
-};
-var WGSL_TYPE_ALIGNMENTS = {
-  i32: 4,
-  u32: 4,
-  f32: 4,
-  f16: 2,
-  "atomic<u32>": 4,
-  "atomic<i32>": 4,
-  vec2i: 8,
-  vec2u: 8,
-  vec2f: 8,
-  vec2f16: 4,
-  vec3i: 16,
-  vec3u: 16,
-  vec3f: 16,
-  vec3f16: 8,
-  vec4i: 16,
-  vec4u: 16,
-  vec4f: 16,
-  vec4f16: 8,
-  mat2x2f: 8,
-  mat2x2f16: 4,
-  mat3x2f: 8,
-  mat3x2f16: 4,
-  mat4x2f: 8,
-  mat4x2f16: 4,
-  mat2x3f: 16,
-  mat2x3f16: 8,
-  mat3x3f: 16,
-  mat3x3f16: 8,
-  mat4x3f: 16,
-  mat4x3f16: 8,
-  mat2x4f: 16,
-  mat2x4f16: 8,
-  mat3x4f: 16,
-  mat3x4f16: 8,
-  mat4x4f: 16,
-  mat4x4f16: 8
-};
-var WGSL_TYPE_ELEMENT_COUNTS = {
-  i32: 1,
-  u32: 1,
-  f32: 1,
-  f16: 1,
-  "atomic<u32>": 1,
-  "atomic<i32>": 1,
-  vec2i: 2,
-  vec2u: 2,
-  vec2f: 2,
-  vec2f16: 2,
-  vec3i: 3,
-  vec3u: 3,
-  vec3f: 3,
-  vec3f16: 3,
-  vec4i: 4,
-  vec4u: 4,
-  vec4f: 4,
-  vec4f16: 4,
-  mat2x2f: 4,
-  mat2x2f16: 4,
-  mat3x2f: 6,
-  mat3x2f16: 6,
-  mat4x2f: 8,
-  mat4x2f16: 8,
-  mat2x3f: 6,
-  mat2x3f16: 6,
-  mat3x3f: 9,
-  mat3x3f16: 9,
-  mat4x3f: 12,
-  mat4x3f16: 12,
-  mat2x4f: 8,
-  mat2x4f16: 8,
-  mat3x4f: 12,
-  mat3x4f16: 12,
-  mat4x4f: 16,
-  mat4x4f16: 16
-};
-var WGSL_TYPE_DATATYPES = {
-  i32: "i32",
-  u32: "u32",
-  f32: "f32",
-  f16: "f16",
-  "atomic<u32>": "u32",
-  "atomic<i32>": "i32",
-  vec2i: "i32",
-  vec2u: "u32",
-  vec2f: "f32",
-  vec2f16: "f16",
-  vec3i: "i32",
-  vec3u: "u32",
-  vec3f: "f32",
-  vec3f16: "f16",
-  vec4i: "i32",
-  vec4u: "u32",
-  vec4f: "f32",
-  vec4f16: "f16",
-  mat2x2f: "f32",
-  mat2x2f16: "f16",
-  mat3x2f: "f32",
-  mat3x2f16: "f16",
-  mat4x2f: "f32",
-  mat4x2f16: "f16",
-  mat2x3f: "f32",
-  mat2x3f16: "f16",
-  mat3x3f: "f32",
-  mat3x3f16: "f16",
-  mat4x3f: "f32",
-  mat4x3f16: "f16",
-  mat2x4f: "f32",
-  mat2x4f16: "f16",
-  mat3x4f: "f32",
-  mat3x4f16: "f16",
-  mat4x4f: "f32",
-  mat4x4f16: "f16"
-};
-var WGSL_BASE_TYPE_TO_SAMPLER_TYPE = {
-  i32: "sint",
-  u32: "uint",
-  f32: "float",
-  f16: "float"
-};
-var VERTEX_FORMAT_TO_ELEMENT_SIZE = {
-  uint8: 1,
-  uint8x2: 1,
-  uint8x4: 1,
-  sint8: 1,
-  sint8x2: 1,
-  sint8x4: 1,
-  unorm8: 1,
-  unorm8x2: 1,
-  unorm8x4: 1,
-  snorm8: 1,
-  snorm8x2: 1,
-  snorm8x4: 1,
-  uint16: 2,
-  uint16x2: 2,
-  uint16x4: 2,
-  sint16: 2,
-  sint16x2: 2,
-  sint16x4: 2,
-  unorm16: 2,
-  unorm16x2: 2,
-  unorm16x4: 2,
-  snorm16: 2,
-  snorm16x2: 2,
-  snorm16x4: 2,
-  float16: 2,
-  float16x2: 2,
-  float16x4: 2,
-  float32: 4,
-  float32x2: 4,
-  float32x3: 4,
-  float32x4: 4,
-  uint32: 4,
-  uint32x2: 4,
-  uint32x3: 4,
-  uint32x4: 4,
-  sint32: 4,
-  sint32x2: 4,
-  sint32x3: 4,
-  sint32x4: 4,
-  "unorm10-10-10-2": 1,
-  "unorm8x4-bgra": 1
-};
-var VERTEX_FORMAT_TO_ELEMENT_COUNT = {
-  uint8: 1,
-  uint8x2: 2,
-  uint8x4: 4,
-  sint8: 1,
-  sint8x2: 2,
-  sint8x4: 4,
-  unorm8: 1,
-  unorm8x2: 2,
-  unorm8x4: 4,
-  snorm8: 1,
-  snorm8x2: 2,
-  snorm8x4: 4,
-  uint16: 1,
-  uint16x2: 2,
-  uint16x4: 4,
-  sint16: 1,
-  sint16x2: 2,
-  sint16x4: 4,
-  unorm16: 1,
-  unorm16x2: 2,
-  unorm16x4: 4,
-  snorm16: 1,
-  snorm16x2: 2,
-  snorm16x4: 4,
-  float16: 1,
-  float16x2: 2,
-  float16x4: 4,
-  float32: 1,
-  float32x2: 2,
-  float32x3: 3,
-  float32x4: 4,
-  uint32: 1,
-  uint32x2: 2,
-  uint32x3: 3,
-  uint32x4: 4,
-  sint32: 1,
-  sint32x2: 2,
-  sint32x3: 3,
-  sint32x4: 4,
-  "unorm10-10-10-2": 4,
-  "unorm8x4-bgra": 4
-};
-var VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR = {
-  uint8: Uint8Array,
-  uint8x2: Uint8Array,
-  uint8x4: Uint8Array,
-  sint8: Int8Array,
-  sint8x2: Int8Array,
-  sint8x4: Int8Array,
-  unorm8: Uint8Array,
-  unorm8x2: Uint8Array,
-  unorm8x4: Uint8Array,
-  snorm8: Int8Array,
-  snorm8x2: Int8Array,
-  snorm8x4: Int8Array,
-  uint16: Uint16Array,
-  uint16x2: Uint16Array,
-  uint16x4: Uint16Array,
-  sint16: Int16Array,
-  sint16x2: Int16Array,
-  sint16x4: Int16Array,
-  unorm16: Uint16Array,
-  unorm16x2: Uint16Array,
-  unorm16x4: Uint16Array,
-  snorm16: Int16Array,
-  snorm16x2: Int16Array,
-  snorm16x4: Int16Array,
-  float16: Float16Array,
-  float16x2: Float16Array,
-  float16x4: Float16Array,
-  float32: Float32Array,
-  float32x2: Float32Array,
-  float32x3: Float32Array,
-  float32x4: Float32Array,
-  uint32: Uint32Array,
-  uint32x2: Uint32Array,
-  uint32x3: Uint32Array,
-  uint32x4: Uint32Array,
-  sint32: Int32Array,
-  sint32x2: Int32Array,
-  sint32x3: Int32Array,
-  sint32x4: Int32Array,
-  "unorm10-10-10-2": Uint8Array,
-  "unorm8x4-bgra": Uint8Array
-};
-var VERTEX_FORMAT_TO_WGSL_BASE_TYPE = {
-  uint8: "u32",
-  uint8x2: "u32",
-  uint8x4: "u32",
-  sint8: "i32",
-  sint8x2: "i32",
-  sint8x4: "i32",
-  unorm8: "f32",
-  unorm8x2: "f32",
-  unorm8x4: "f32",
-  snorm8: "f32",
-  snorm8x2: "f32",
-  snorm8x4: "f32",
-  uint16: "u32",
-  uint16x2: "u32",
-  uint16x4: "u32",
-  sint16: "i32",
-  sint16x2: "i32",
-  sint16x4: "i32",
-  unorm16: "f32",
-  unorm16x2: "f32",
-  unorm16x4: "f32",
-  snorm16: "f32",
-  snorm16x2: "f32",
-  snorm16x4: "f32",
-  float16: "f32",
-  float16x2: "f32",
-  float16x4: "f32",
-  float32: "f32",
-  float32x2: "f32",
-  float32x3: "f32",
-  float32x4: "f32",
-  uint32: "u32",
-  uint32x2: "u32",
-  uint32x3: "u32",
-  uint32x4: "u32",
-  sint32: "i32",
-  sint32x2: "i32",
-  sint32x3: "i32",
-  sint32x4: "i32",
-  "unorm10-10-10-2": "f32",
-  "unorm8x4-bgra": "f32"
-};
-var WGSL_DATA_TYPES = {
-  f32: {
-    1: "f32",
-    2: "vec2f",
-    3: "vec3f",
-    4: "vec4f"
-  },
-  f16: {
-    1: "f16",
-    2: "vec2f16",
-    3: "vec3f16",
-    4: "vec4f16"
-  },
-  u32: {
-    1: "u32",
-    2: "vec2u",
-    3: "vec3u",
-    4: "vec4u"
-  },
-  i32: {
-    1: "i32",
-    2: "vec2i",
-    3: "vec3i",
-    4: "vec4i"
-  }
-};
-function vertexFormatToWgslType(vertexFormat) {
-  return WGSL_DATA_TYPES[VERTEX_FORMAT_TO_WGSL_BASE_TYPE[vertexFormat]][VERTEX_FORMAT_TO_ELEMENT_COUNT[vertexFormat]];
-}
-function vertexFormatStride(vformat) {
-  const elems = VERTEX_FORMAT_TO_ELEMENT_COUNT[vformat];
-  const sizePerElem = VERTEX_FORMAT_TO_ELEMENT_SIZE[vformat];
-  return elems * sizePerElem;
-}
-
-// src/webgpu/wgsl-struct-layout-generator.ts
-function struct(name, members) {
-  return {
-    type: "struct",
-    name,
-    // @ts-expect-error
-    members: Object.entries(members).map(([k, v]) => [
-      k,
-      typeof v === "string" ? { type: { type: v } } : { type: v }
-    ])
-  };
-}
-function array(count, member) {
-  return {
-    type: "array",
-    count,
-    // @ts-expect-error
-    member: typeof member === "string" ? { type: member } : member
-  };
-}
-function primitive(type) {
-  return { type };
-}
-function getAllStructs(specs) {
-  const ret = [];
-  function r(spec) {
-    if (spec.type === "struct") {
-      ret.push(spec);
-      for (const [n, m] of Array.isArray(spec.members) ? spec.members : Object.entries(spec.members)) {
-        r(m.type);
-      }
-    } else if (spec.type === "array") {
-      r(spec.member);
-    }
-  }
-  for (const s of specs) r(s);
-  return ret;
-}
-function makeCodeForType(type) {
-  if (type.type === "struct") return type.name;
-  if (type.type === "array")
-    return `array<${makeCodeForType(type.member)}${type.count ? ", " + type.count : ""}>`;
-  return type.type;
-}
-function structsCode(spec) {
-  let out = "";
-  const allTypesToDefine = getAllStructs(spec);
-  for (const t of allTypesToDefine) {
-    out += `struct ${t.name} {
-  ${(Array.isArray(t.members) ? t.members : Object.entries(t.members)).map((m) => `${m[0]}: ${makeCodeForType(m[1].type)},`).join("\n  ")}
-}`;
-  }
-  return out;
-}
-function generateLayouts(specs) {
-  const clone = structuredClone(specs);
-  const determineIndividualLayoutSizeAndAlignment = memo(
-    (spec) => {
-      if (spec.type === "struct") {
-        let currOffset = 0;
-        for (const [memberName, member] of spec.members) {
-          determineIndividualLayoutSizeAndAlignment(member.type);
-          member.offset = currOffset;
-          currOffset += roundUp(member.type.align, member.type.size);
-        }
-        const lastMember = spec.members.at(-1)[1];
-        const justPastLastMember = lastMember.offset + lastMember.type.size;
-        spec.align = Math.max(...spec.members.map((m) => m[1].type.align));
-        spec.size = roundUp(spec.align, justPastLastMember);
-      } else if (spec.type === "array") {
-        determineIndividualLayoutSizeAndAlignment(spec.member);
-        spec.size = spec.count * roundUp(spec.member.align, spec.member.size);
-        spec.align = spec.member.align;
-      } else {
-        spec.size = WGSL_TYPE_SIZES[spec.type];
-        spec.align = WGSL_TYPE_ALIGNMENTS[spec.type];
-      }
-    }
-  );
-  for (const e of clone) {
-    determineIndividualLayoutSizeAndAlignment(e);
-  }
-  return clone;
-}
-function wgslDataTypeToDataViewSetter(dt) {
-  return {
-    i32: "setInt32",
-    u32: "setUint32",
-    f32: "setFloat32",
-    f16: "setFloat16"
-  }[dt];
-}
-function wgslDataTypeToDataViewGetter(dt) {
-  return {
-    i32: "getInt32",
-    u32: "getUint32",
-    f32: "getFloat32",
-    f16: "getFloat16"
-  }[dt];
-}
-function createLayoutGenerator(spec) {
-  function createSetters(spec2, baseOffset, arrayNestingLevel, extraOffsets, accessor) {
-    if (spec2.type === "struct") {
-      return spec2.members.map(
-        ([name, member]) => createSetters(
-          member.type,
-          baseOffset + member.offset,
-          arrayNestingLevel,
-          extraOffsets,
-          accessor + `.${name}`
-        )
-      ).join("\n");
-    } else if (spec2.type === "array") {
-      const iname = `i${arrayNestingLevel}`;
-      const elemSize = roundUp(spec2.member.align, spec2.member.size);
-      return `for (let ${iname} = 0; ${iname} < ${spec2.count}; ${iname}++) {
-  ${createSetters(spec2.member, baseOffset, arrayNestingLevel + 1, [...extraOffsets, `${iname} * ${elemSize}`], accessor + `[${iname}]`)} 
-}`;
-    } else {
-      const iname = `i${arrayNestingLevel}`;
-      const primitiveCount = WGSL_TYPE_ELEMENT_COUNTS[spec2.type];
-      return `for (let ${iname} = 0; ${iname} < ${WGSL_TYPE_ELEMENT_COUNTS[spec2.type]}; ${iname}++) {
-  dst.${wgslDataTypeToDataViewSetter(WGSL_TYPE_DATATYPES[spec2.type])}(
-    ${baseOffset} + ${extraOffsets.join(" + ")} + ${iname} * ${WGSL_TYPE_SIZES[WGSL_TYPE_DATATYPES[spec2.type]]},
-    ${primitiveCount > 1 ? accessor + `[${iname}]` : accessor},
-    true
-  );
-}`;
-    }
-  }
-  const fnbody = createSetters(spec, 0, 0, [], "src");
-  return new Function("dst", "src", fnbody);
-}
-function readWgslLayout(spec, view, offset = 0) {
-  if (spec.type === "struct") {
-    return Object.fromEntries(
-      spec.members.map(([name, value]) => [
-        name,
-        readWgslLayout(value.type, view, offset + value.offset)
-      ])
-    );
-  } else if (spec.type === "array") {
-    const elemSize = roundUp(spec.member.align, spec.member.size);
-    return range(spec.count).map(
-      (i) => readWgslLayout(spec.member, view, offset + i * elemSize)
-    );
-  } else {
-    const count = WGSL_TYPE_ELEMENT_COUNTS[spec.type];
-    const elemType = WGSL_TYPE_DATATYPES[spec.type];
-    const getter = wgslDataTypeToDataViewGetter(elemType);
-    const elemSize = WGSL_TYPE_SIZES[elemType];
-    let arr = [];
-    for (let i = 0; i < count; i++) {
-      arr.push(view[getter](offset + i * elemSize, true));
-    }
-    return count === 1 ? arr[0] : arr;
-  }
-}
-function createWgslSerializers(...ss) {
-  const layouts = generateLayouts(ss);
-  const gens = layouts.map((l) => ({
-    dataLayout: l,
-    gen: createLayoutGenerator(l)
-  }));
-  return {
-    code: structsCode(layouts),
-    generators: gens
-  };
-}
-function typeName(spec) {
-  if (spec.type === "struct") return spec.name;
-  if (spec.type === "array")
-    return `array<${typeName(spec.member)}, ${spec.count}>`;
-  return spec.type;
-}
 
 // src/webgpu/wgsl-snippets.ts
 var WgslSnippets = {
@@ -30908,345 +22869,175 @@ fn perlinNoise3(P: vec3f) -> f32 {
     ).join("\n\n")
   }
 };
-function useWgslSnippetsRaw(ss) {
-  return "\n" + ss.map((s) => `// IMPORTED_SNIPPET: ${s}
-${WgslSnippets[s].src}`).join("\n\n");
-}
-function snippetWithDependencies(sn, deps = /* @__PURE__ */ new Set()) {
-  deps.add(sn);
-  for (const d of WgslSnippets[sn]?.deps ?? []) {
-    snippetWithDependencies(d, deps);
-  }
-  return deps;
-}
-function useWgslSnippets(str2) {
-  const snippetNames = str2.split(/\s+/g);
-  const withdeps = new Set(
-    snippetNames.flatMap((s) => [...snippetWithDependencies(s)])
-  );
-  return useWgslSnippetsRaw([...withdeps]);
+
+// src/math/round.ts
+function roundUp(factor, x) {
+  return Math.ceil(x / factor) * factor;
 }
 
-// raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/simple-filter.wgsl?raw
-var simple_filter_default = "/*TEXTURES*/\r\n\r\n/*TEXTURES*/\r\n\r\n\r\n/*GLOBALS*/\r\n\r\n/*GLOBALS*/\r\n\r\nstruct FragInput {\r\n  @builtin(position) position : vec4f,\r\n  @location(0) uv : vec2f,\r\n}\r\n\r\n@vertex\r\nfn VSMain(@builtin(vertex_index) vertexIndex: u32) -> FragInput {\r\n  var output: FragInput;\r\n\r\n  output.position = vec4(array(\r\n    vec2( 1.0,  1.0),\r\n    vec2( 1.0, -1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2( 1.0,  1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2(-1.0,  1.0),\r\n  )[vertexIndex], 0.5, 1.0);\r\n\r\n  output.uv = array(\r\n    vec2(1.0, 0.0),\r\n    vec2(1.0, 1.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(1.0, 0.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(0.0, 0.0),\r\n  )[vertexIndex];\r\n\r\n  return output;\r\n}\r\n\r\nstruct Output {\r\n/*OUTPUT_STRUCT*/\r\n\r\n/*OUTPUT_STRUCT*/\r\n}\r\n\r\n@fragment\r\nfn FSMain(@location(0) uv : vec2f) -> Output  {\r\n  /*FRAGMENT_BODY*/\r\n\r\n  /*FRAGMENT_BODY*/\r\n}";
+// src/webgpu/gpudoc/ui.tsx
+var import_react4 = __toESM(require_react());
+var import_client = __toESM(require_client());
 
-// src/webgpu/simple-filter.ts
-function createSimpleFilterShader(params) {
-  return makeDelimitedReplacements(simple_filter_default, [
-    {
-      delimiter: "/*TEXTURES*/",
-      replaceWith: params.textures
-    },
-    {
-      delimiter: "/*GLOBALS*/",
-      replaceWith: params.globals
-    },
-    {
-      delimiter: "/*OUTPUT_STRUCT*/",
-      replaceWith: params.outputStruct
-    },
-    {
-      delimiter: "/*FRAGMENT_BODY*/",
-      replaceWith: params.fragmentBody
-    }
-  ]);
-}
-function createSimpleFilterPipeline(device, spec) {
-  let fragmentBody = "";
-  let bindings = "";
-  let bindingIndex = 0;
-  const inputEntries = Object.entries(spec.inputs);
-  const samplers = [];
-  let hasInputs = inputEntries.length > 0;
-  if (hasInputs) {
-    for (const s of spec.samplers ?? [{}]) {
-      bindings += `@group(0) @binding(${bindingIndex})
-var sampler${bindingIndex}: sampler;
-`;
-      samplers.push(device.createSampler(s));
-      bindingIndex++;
-    }
-  }
-  bindingIndex = 0;
-  const nameToInputMap = /* @__PURE__ */ new Map();
-  const nameToOutputMap = /* @__PURE__ */ new Map();
-  let uniformBindGroupIndex = hasInputs ? 2 : 0;
-  for (const [name, value] of inputEntries) {
-    bindings += `@group(1) @binding(${bindingIndex}) 
-var tex_${name}: ${value.dimensionality ?? "texture_2d"}<${value.type ?? "f32"}>;`;
-    nameToInputMap.set(name, bindingIndex);
-    fragmentBody += !value.dimensionality ? `  var ${name} = textureSample(tex_${name}, sampler${value.sampleWith ?? 0}, uv);
-` : "";
-    bindingIndex++;
-  }
-  let outputStruct = "";
-  let outputBindingIndex = 0;
-  for (const [name, value] of Object.entries(spec.outputs)) {
-    outputStruct += `  @location(${outputBindingIndex}) ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]},
-`;
-    nameToOutputMap.set(name, outputBindingIndex);
-    fragmentBody += `  var ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]};
-`;
-    outputBindingIndex++;
-  }
-  fragmentBody += spec.source;
-  fragmentBody += `
-  var OUTPUT: Output;
-`;
-  const outputsEntries = Object.entries(spec.outputs);
-  for (const [name, value] of outputsEntries) {
-    fragmentBody += `  OUTPUT.${name} = ${name};
-`;
-  }
-  fragmentBody += "return OUTPUT;";
-  let globals = "";
-  globals += spec.globals ?? "";
-  if (spec.uniforms) {
-    globals += `@group(${uniformBindGroupIndex}) @binding(0) var<uniform> params : Params;
-struct Params {
-`;
-    for (const [uniformName, uniformType] of Object.entries(
-      spec.uniforms ?? {}
-    )) {
-      globals += `  ${uniformName}: ${uniformType},
-`;
-    }
-    globals += "}";
-  }
-  const shaderSource = createSimpleFilterShader({
-    textures: bindings,
-    globals,
-    outputStruct,
-    fragmentBody
-  });
-  const [uniformLayouts] = spec.uniforms ? (
+// src/ui/pan-and-zoom.tsx
+var import_react = __toESM(require_react());
+
+// src/ui/react-number-field.tsx
+var import_react2 = __toESM(require_react());
+
+// src/ui/react-draggable-window.tsx
+var import_react3 = __toESM(require_react());
+var DraggableWindowContext = (0, import_react3.createContext)(void 0);
+
+// src/webgpu/gpudoc/ui.tsx
+var GPUDocContext = (0, import_react4.createContext)(void 0);
+
+// src/ui/use-latest.tsx
+var import_react5 = __toESM(require_react());
+
+// src/ui/react-string-field.tsx
+var import_react6 = __toESM(require_react());
+
+// src/ui/react-object-field.tsx
+var import_react7 = __toESM(require_react());
+
+// src/ui/react-infinite-scroll.tsx
+var import_react8 = __toESM(require_react());
+
+// src/ui/progress-bar.tsx
+var import_react9 = __toESM(require_react());
+var import_client2 = __toESM(require_client());
+
+// src/webgpu/wgsl-struct-layout-generator.ts
+function struct(name, members) {
+  return {
+    type: "struct",
+    name,
     // @ts-expect-error
-    generateLayouts([struct("Params", spec.uniforms)])
-  ) : void 0;
-  const uniformGenerator = createLayoutGenerator(uniformLayouts);
-  const module = device.createShaderModule({
-    code: shaderSource
-  });
-  const pipeline = device.createRenderPipeline({
-    layout: "auto",
-    vertex: { module },
-    fragment: {
-      module,
-      targets: outputsEntries.map(([name, value]) => ({
-        format: value
-      }))
-    }
-  });
-  const samplerBindGroup = hasInputs ? device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: samplers.map((s, i) => ({
-      resource: s,
-      binding: i
-    }))
-  }) : void 0;
-  return {
-    pipeline,
-    makeUniformBuffer() {
-      const buffer = device.createBuffer({
-        size: 1024,
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
-      });
-      const bindGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
-        entries: [
-          {
-            resource: buffer,
-            binding: 0
-          }
-        ]
-      });
-      const ret = {
-        buffer,
-        bindGroup,
-        setBuffer(values) {
-          const buf = new ArrayBuffer(uniformLayouts.size);
-          uniformGenerator(new DataView(buf), values);
-          device.queue.writeBuffer(buffer, 0, buf);
-          return ret;
-        }
-      };
-      return ret;
-    },
-    withInputs(inputs) {
-      const inputTextureBindGroup = hasInputs ? device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(1),
-        entries: inputEntries.map(([name, value], i) => ({
-          resource: inputs[name],
-          binding: i
-        }))
-      }) : void 0;
-      return {
-        withDedicatedUniformBuffer(existingBufferInfo) {
-          const uniformBuffer = existingBufferInfo?.buffer ?? device.createBuffer({
-            size: uniformLayouts.size,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
-          });
-          const uniformBufferOffset = existingBufferInfo?.offset ?? 0;
-          const uniformBindGroup = device.createBindGroup({
-            layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
-            entries: [
-              {
-                binding: 0,
-                resource: uniformBuffer
-              }
-            ]
-          });
-          function record(bundleEncoder) {
-            bundleEncoder.setPipeline(pipeline);
-            if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
-            if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
-            bundleEncoder.setBindGroup(uniformBindGroupIndex, uniformBindGroup);
-            bundleEncoder.draw(6);
-          }
-          const defaultBundleEncoder = device.createRenderBundleEncoder({
-            colorFormats: outputsEntries.map((o) => o[1])
-          });
-          record(defaultBundleEncoder);
-          const bundle = defaultBundleEncoder.finish();
-          return {
-            run: (encoder, outputs) => {
-              const pass = encoder.beginRenderPass({
-                colorAttachments: outputsEntries.map(
-                  ([name, value]) => outputs[name] instanceof GPUTextureView ? {
-                    view: outputs[name],
-                    clearValue: [0, 0, 0, 1],
-                    loadOp: "clear",
-                    storeOp: "store"
-                  } : outputs[name]
-                )
-              });
-              pass.executeBundles([bundle]);
-              pass.end();
-            },
-            bundle,
-            runWithRenderPass: (pass) => {
-              pass.executeBundles([bundle]);
-            },
-            record,
-            setUniforms(values) {
-              const buf = new ArrayBuffer(uniformLayouts.size);
-              uniformGenerator(new DataView(buf), values);
-              device.queue.writeBuffer(uniformBuffer, uniformBufferOffset, buf);
-            }
-          };
-        },
-        withUniforms: (uniforms) => {
-          function record(bundleEncoder) {
-            bundleEncoder.setPipeline(pipeline);
-            if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
-            if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
-            if (uniforms)
-              bundleEncoder.setBindGroup(
-                uniformBindGroupIndex,
-                uniforms.bindGroup
-              );
-            bundleEncoder.draw(6);
-          }
-          const defaultBundleEncoder = device.createRenderBundleEncoder({
-            colorFormats: outputsEntries.map((o) => o[1])
-          });
-          record(defaultBundleEncoder);
-          const bundle = defaultBundleEncoder.finish();
-          return {
-            run: (encoder, outputs) => {
-              const pass = encoder.beginRenderPass({
-                colorAttachments: outputsEntries.map(
-                  ([name, value]) => outputs[name] instanceof GPUTextureView ? {
-                    view: outputs[name],
-                    clearValue: [0, 0, 0, 1],
-                    loadOp: "clear",
-                    storeOp: "store"
-                  } : outputs[name]
-                )
-              });
-              pass.executeBundles([bundle]);
-              pass.end();
-            },
-            bundle,
-            runWithRenderPass: (pass) => {
-              pass.executeBundles([bundle]);
-            },
-            record
-          };
-        }
-      };
-    }
+    members: Object.entries(members).map(([k, v]) => [
+      k,
+      typeof v === "string" ? { type: { type: v } } : { type: v }
+    ])
   };
 }
-
-// src/webgpu/readpixels.ts
-function readPixelsSizeReq(params) {
-  let { format, subregion } = params;
-  const copyFootprintPerTexel = getCopyFootprintPerTexel(format);
-  const area = sub3(subregion[1], subregion[0]);
-  return roundUp(256, copyFootprintPerTexel * area[0]) * area[1] * area[2];
-}
-async function readPixels(params) {
-  let { device, tex, buf, subregion, mipLevel, aspect, offsetInBuffer } = params;
-  const copyFootprintPerTexel = getCopyFootprintPerTexel(params.tex.format);
-  if (!subregion) {
-    subregion = [
-      [0, 0, 0],
-      [tex.width, tex.height, tex.depthOrArrayLayers]
-    ];
+function getAllStructs(specs) {
+  const ret = [];
+  function r(spec) {
+    if (spec.type === "struct") {
+      ret.push(spec);
+      for (const [n, m] of Array.isArray(spec.members) ? spec.members : Object.entries(spec.members)) {
+        r(m.type);
+      }
+    } else if (spec.type === "array") {
+      r(spec.member);
+    }
   }
-  const enc = device.createCommandEncoder();
-  const area = sub3(subregion[1], subregion[0]);
-  const bytesPerRow = roundUp(256, copyFootprintPerTexel * area[0]);
-  const rowsPerImage = area[1];
-  enc.copyTextureToBuffer(
-    {
-      texture: tex,
-      mipLevel,
-      aspect,
-      origin: subregion[0]
-    },
-    {
-      buffer: buf,
-      offset: offsetInBuffer,
-      bytesPerRow,
-      rowsPerImage
-    },
-    area
+  for (const s of specs) r(s);
+  return ret;
+}
+function makeCodeForType(type) {
+  if (type.type === "struct") return type.name;
+  if (type.type === "array")
+    return `array<${makeCodeForType(type.member)}${type.count ? ", " + type.count : ""}>`;
+  return type.type;
+}
+function structsCode(spec) {
+  let out = "";
+  const allTypesToDefine = getAllStructs(spec);
+  for (const t of allTypesToDefine) {
+    out += `struct ${t.name} {
+  ${(Array.isArray(t.members) ? t.members : Object.entries(t.members)).map((m) => `${m[0]}: ${makeCodeForType(m[1].type)},`).join("\n  ")}
+}`;
+  }
+  return out;
+}
+function generateLayouts(specs) {
+  const clone = structuredClone(specs);
+  const determineIndividualLayoutSizeAndAlignment = memo(
+    (spec) => {
+      if (spec.type === "struct") {
+        let currOffset = 0;
+        for (const [memberName, member] of spec.members) {
+          determineIndividualLayoutSizeAndAlignment(member.type);
+          member.offset = currOffset;
+          currOffset += roundUp(member.type.align, member.type.size);
+        }
+        const lastMember = spec.members.at(-1)[1];
+        const justPastLastMember = lastMember.offset + lastMember.type.size;
+        spec.align = Math.max(...spec.members.map((m) => m[1].type.align));
+        spec.size = roundUp(spec.align, justPastLastMember);
+      } else if (spec.type === "array") {
+        determineIndividualLayoutSizeAndAlignment(spec.member);
+        spec.size = spec.count * roundUp(spec.member.align, spec.member.size);
+        spec.align = spec.member.align;
+      } else {
+        spec.size = WGSL_TYPE_SIZES[spec.type];
+        spec.align = WGSL_TYPE_ALIGNMENTS[spec.type];
+      }
+    }
   );
-  device.queue.submit([enc.finish()]);
-  await device.queue.onSubmittedWorkDone();
-  await buf.mapAsync(GPUMapMode.READ);
-  const range2 = buf.getMappedRange();
+  for (const e of clone) {
+    determineIndividualLayoutSizeAndAlignment(e);
+  }
+  return clone;
+}
+function wgslDataTypeToDataViewSetter(dt) {
   return {
-    range: range2,
-    bytesPerRow,
-    rowsPerImage
+    i32: "setInt32",
+    u32: "setUint32",
+    f32: "setFloat32",
+    f16: "setFloat16"
+  }[dt];
+}
+function createLayoutGenerator(spec) {
+  function createSetters(spec2, baseOffset, arrayNestingLevel, extraOffsets, accessor) {
+    if (spec2.type === "struct") {
+      return spec2.members.map(
+        ([name, member]) => createSetters(
+          member.type,
+          baseOffset + member.offset,
+          arrayNestingLevel,
+          extraOffsets,
+          accessor + `.${name}`
+        )
+      ).join("\n");
+    } else if (spec2.type === "array") {
+      const iname = `i${arrayNestingLevel}`;
+      const elemSize = roundUp(spec2.member.align, spec2.member.size);
+      return `for (let ${iname} = 0; ${iname} < ${spec2.count}; ${iname}++) {
+  ${createSetters(spec2.member, baseOffset, arrayNestingLevel + 1, [...extraOffsets, `${iname} * ${elemSize}`], accessor + `[${iname}]`)} 
+}`;
+    } else {
+      const iname = `i${arrayNestingLevel}`;
+      const primitiveCount = WGSL_TYPE_ELEMENT_COUNTS[spec2.type];
+      return `for (let ${iname} = 0; ${iname} < ${WGSL_TYPE_ELEMENT_COUNTS[spec2.type]}; ${iname}++) {
+  dst.${wgslDataTypeToDataViewSetter(WGSL_TYPE_DATATYPES[spec2.type])}(
+    ${baseOffset} + ${extraOffsets.join(" + ")} + ${iname} * ${WGSL_TYPE_SIZES[WGSL_TYPE_DATATYPES[spec2.type]]},
+    ${primitiveCount > 1 ? accessor + `[${iname}]` : accessor},
+    true
+  );
+}`;
+    }
+  }
+  const fnbody = createSetters(spec, 0, 0, [], "src");
+  return new Function("dst", "src", fnbody);
+}
+function createWgslSerializers(...ss) {
+  const layouts = generateLayouts(ss);
+  const gens = layouts.map((l) => ({
+    dataLayout: l,
+    gen: createLayoutGenerator(l)
+  }));
+  return {
+    code: structsCode(layouts),
+    generators: gens
   };
 }
-async function readPixelsToCpuBuffer(params) {
-  const { tex } = params;
-  const size = readPixelsSizeReq({
-    format: tex.format,
-    subregion: params.subregion ?? [
-      [0, 0, 0],
-      [tex.width, tex.height, tex.depthOrArrayLayers]
-    ]
-  });
-  const cpuBuffer = params.cpuBuffer ?? new ArrayBuffer(size);
-  const mappedBuffer = await readPixels(params);
-  const mappedBufferContents = new Uint8Array(mappedBuffer.range);
-  const cpuBufferContents = new Uint8Array(cpuBuffer);
-  for (let i = 0; i < mappedBufferContents.length; i++) {
-    cpuBufferContents[i] = mappedBufferContents[i];
-  }
-  params.buf.unmap();
-  return {
-    cpuBuffer,
-    bytesPerRow: mappedBuffer.bytesPerRow,
-    rowsPerImage: mappedBuffer.rowsPerImage,
-    size
-  };
+function typeName(spec) {
+  if (spec.type === "struct") return spec.name;
+  if (spec.type === "array")
+    return `array<${typeName(spec.member)}, ${spec.count}>`;
+  return spec.type;
 }
 
 // src/webgpu/partial-pipelines.ts
@@ -31340,19 +23131,19 @@ function wrapDevice(device) {
             attr.name,
             new VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR[attr.format](cpubuf)
           ]);
-          let index2 = 0;
+          let index = 0;
           for (const d of data) {
             for (const a of params.types) {
               const view = attrViews[a.name];
               const elementSize = VERTEX_FORMAT_TO_ELEMENT_SIZE[a.format];
               const elementCount = VERTEX_FORMAT_TO_ELEMENT_COUNT[a.format];
               for (let i = 0; i < elementCount; i++) {
-                const byteOffset = index2 * size + a.offset;
+                const byteOffset = index * size + a.offset;
                 const elementOffset = byteOffset / elementSize + i;
                 view[elementOffset] = elementCount === 1 ? d[a.name] : d[a.name][i];
               }
             }
-            index2++;
+            index++;
           }
           console.log(attrViews, cpubuf);
           device.queue.writeBuffer(buf, 0, cpubuf);
@@ -31543,1042 +23334,6 @@ function wrapDevice(device) {
       return ppln;
     }
   };
-}
-
-// src/webgpu/math.ts
-function perspectiveWebgpu(fieldOfViewInRadians, aspectRatio, near, far) {
-  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
-  const rangeInv = 1 / (near - far);
-  return [
-    f / aspectRatio,
-    0,
-    0,
-    0,
-    0,
-    f,
-    0,
-    0,
-    0,
-    0,
-    far * rangeInv,
-    -1,
-    0,
-    0,
-    near * far * rangeInv,
-    0
-  ];
-}
-
-// src/webgpu/bind-group-generator.ts
-function getWgslPrimitiveDatatype(typename, formatname) {
-  if (formatname) return formatname;
-  if (typename === "f32" || typename === "i32" || typename === "u32" || typename === "f16")
-    return typename;
-  if (typename.startsWith("vec") || typename.startsWith("mat")) {
-    if (typename.endsWith("i")) {
-      return "i32";
-    } else if (typename.endsWith("u")) {
-      return "u32";
-    } else if (typename.endsWith("h")) {
-      return "f16";
-    }
-  }
-  return "f32";
-}
-function getWgslPrimitiveSize(typename) {
-  if (typename.startsWith("vec2")) return 2;
-  if (typename.startsWith("vec3")) return 3;
-  if (typename.startsWith("vec4")) return 4;
-  if (typename.startsWith("mat2x3")) return 6;
-  if (typename.startsWith("mat3x2")) return 6;
-  if (typename.startsWith("mat2x4")) return 8;
-  if (typename.startsWith("mat4x2")) return 8;
-  if (typename.startsWith("mat3x4")) return 12;
-  if (typename.startsWith("mat4x3")) return 12;
-  if (typename.startsWith("mat2")) return 4;
-  if (typename.startsWith("mat3")) return 9;
-  if (typename.startsWith("mat4")) return 16;
-  return 1;
-}
-function setWgslPrimitive(typename, formatname, view, offset, data) {
-  const datatype = getWgslPrimitiveDatatype(typename, formatname);
-  const size = getWgslPrimitiveSize(typename);
-  let stride = {
-    i32: 4,
-    f32: 4,
-    u32: 4,
-    f16: 2
-  }[datatype];
-  let method = {
-    i32: "setInt32",
-    f32: "setFloat32",
-    u32: "setUint32",
-    f16: "setFloat16"
-  }[datatype];
-  for (let i = 0; i < size; i++) {
-    view[method](offset + stride * i, data[i], true);
-  }
-}
-function generateUniformBufferInner(spec, values, view, offset) {
-  if (spec.members) {
-    for (const m of spec.members)
-      generateUniformBufferInner(
-        m.type,
-        values[m.name],
-        view,
-        offset + m.offset
-      );
-    return;
-  }
-  const typename = spec.name;
-  if (typename === "array") {
-    for (let i = 0; i < spec.count; i++) {
-      generateUniformBufferInner(
-        spec.format,
-        values[i],
-        view,
-        offset + spec.stride * i
-      );
-    }
-  } else {
-    setWgslPrimitive(
-      spec.name,
-      spec.format?.name,
-      view,
-      offset,
-      Array.isArray(values) ? values : [values]
-    );
-  }
-}
-function generateUniformBuffer(spec, values, buffer, byteOffset) {
-  const buf = buffer ?? new ArrayBuffer(spec.size);
-  const view = new DataView(buf, byteOffset);
-  generateUniformBufferInner(spec, values, view, 0);
-  return buf;
-}
-function getUniformBufferSize(spec, group, binding) {
-  return spec.bindGroups[group][binding].type.size;
-}
-function makeUniformBuffer(spec, group, binding, data, buffer, byteOffset) {
-  return generateUniformBuffer(
-    spec.bindGroups[group][binding].type,
-    data,
-    buffer,
-    byteOffset
-  );
-}
-
-// src/math/noise.ts
-function fract(x2) {
-  return x2 - Math.floor(x2);
-}
-function simpleRandVec2ToFloat(co) {
-  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
-}
-function simpleRandVec2ToVec2(co) {
-  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
-}
-function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
-  const fp = [Math.floor(p[0]), Math.floor(p[1])];
-  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
-  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
-  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
-  const v42 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
-  const o1 = sub2(p, fp);
-  const o2 = sub2(o1, [1, 0]);
-  const o3 = sub2(o1, [0, 1]);
-  const o4 = sub2(o1, [1, 1]);
-  const d1 = dot2(v1, o1);
-  const d2 = dot2(v2, o2);
-  const d3 = dot2(v3, o3);
-  const d4 = dot2(v42, o4);
-  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
-  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
-  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
-}
-function boxMullerTransform(u) {
-  const a = Math.sqrt(-2 * Math.log(u[0]));
-  const b = 2 * Math.PI * u[1];
-  return [a * Math.cos(b), a * Math.sin(b)];
-}
-
-// src/webgpu/gpudoc/ui.tsx
-var import_react4 = __toESM(require_react());
-var import_client = __toESM(require_client());
-
-// src/webgpu/gpudoc/display-texture.ts
-function create2dShaderFormat(device, samplerType, outputFormat) {
-  console.log("creating new pipeline", samplerType, outputFormat);
-  return createSimpleFilterPipeline(device, {
-    inputs: {
-      input: {
-        type: SAMPLER_TYPE_TO_WGSL_TYPE[samplerType],
-        dimensionality: samplerType === "depth" ? "texture_depth_2d" : "texture_2d"
-      }
-    },
-    outputs: {
-      dst: outputFormat
-    },
-    uniforms: {
-      cornerA: "vec2f",
-      cornerB: "vec2f",
-      blackEquiv: "vec4f",
-      whiteEquiv: "vec4f"
-    },
-    source: `
-let uv2 = mix(params.cornerA, params.cornerB, uv);
-
-let pixel = vec4f(textureSample(tex_input, sampler0, uv2));
-
-dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
-    `
-  });
-}
-function textureDisplayer(device) {
-  const getDisplayerPipeline = memo(
-    (samplerType, outputFormat) => create2dShaderFormat(device, samplerType, outputFormat)
-  );
-  return {
-    displayTexture2d(src2, dst, encoder) {
-      const pipeline = getDisplayerPipeline(src2.samplerType, dst.format);
-      const uniforms = pipeline.makeUniformBuffer().setBuffer({
-        cornerA: src2.cornerA,
-        cornerB: src2.cornerB,
-        blackEquiv: src2.blackEquiv,
-        whiteEquiv: src2.whiteEquiv
-      });
-      pipeline.withInputs({
-        input: src2.tex
-      }).withUniforms(uniforms).run(encoder, {
-        dst: dst.tex
-      });
-    }
-  };
-}
-
-// raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/gpudoc/gpudoc.css?raw
-var gpudoc_default = ':root {\r\n  --default-padding: 1rem;\r\n  --default-border: 1px solid #999;\r\n  --input-color: #000;\r\n  --red: #f66;\r\n  --green: #4f4;\r\n  --blue: #aaf;\r\n  --alpha: #bbb;\r\n}\r\n\r\n.gpudoc {\r\n  width: 100vw;\r\n  height: 100vh;\r\n  position: absolute;\r\n  top: 0;\r\n  left: 0;\r\n  z-index: 9999;\r\n  background-color: #121212;\r\n  color: white;\r\n  font-family: sans-serif;\r\n  border-right: var(--default-border);\r\n  display: grid;\r\n  grid-template-areas:\r\n    "tab-bar"\r\n    "tab";\r\n  grid-template-rows: max-content 1fr;\r\n  box-sizing: border-box;\r\n}\r\n\r\n.tex-thumbs {\r\n  display: grid;\r\n  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\r\n  list-style: none;\r\n}\r\n\r\n.tex-thumbs li {\r\n  display: flex;\r\n  align-items: center;\r\n  flex-direction: column;\r\n  max-width: 350px;\r\n  padding: var(--default-padding);\r\n}\r\n\r\n.tex-thumbs .name {\r\n  font-weight: bold;\r\n  margin-bottom: var(--default-padding);\r\n}\r\n\r\n.tex-thumbs .canvas,\r\n.tex-thumbs canvas {\r\n  width: 100%;\r\n}\r\n\r\n.tab-bar {\r\n  font-size: 0.9em;\r\n  padding: 0;\r\n  margin: 0;\r\n  display: flex;\r\n  flex-wrap: wrap;\r\n  border-bottom: var(--default-border);\r\n  list-style: none;\r\n  grid-area: tab-bar;\r\n}\r\n\r\n.tab-bar li {\r\n  padding: calc(var(--default-padding) * 0.5);\r\n  border-right: var(--default-border);\r\n}\r\n\r\n.tab-bar li.selected {\r\n  background-color: #333;\r\n}\r\n\r\n.gpudoc .tab {\r\n  grid-area: tab;\r\n  height: 100%;\r\n}\r\n\r\n.tex-inspector {\r\n  height: 100%;\r\n  display: grid;\r\n  grid-template-areas: "canvas ui";\r\n}\r\n\r\n.tex-inspector > div:has(canvas) {\r\n  height: 100%;\r\n  grid-area: canvas;\r\n  position: relative;\r\n  overflow: hidden;\r\n}\r\n\r\n.tex-inspector canvas {\r\n  height: 100%;\r\n  width: 100%;\r\n}\r\n\r\n.tex-inspector .ui {\r\n  grid-area: ui;\r\n}\r\n\r\n.color-sliders {\r\n  display: grid;\r\n  grid-template-areas:\r\n    "darklabel lightlabel"\r\n    "dark light";\r\n}\r\n\r\n.color-sliders .dark,\r\n.color-sliders .light {\r\n  display: flex;\r\n  flex-direction: column;\r\n}\r\n\r\n.dark-label {\r\n  grid-area: darklabel;\r\n}\r\n.light-label {\r\n  grid-area: lightlabel;\r\n}\r\n\r\n.color-sliders .dark {\r\n  grid-area: dark;\r\n}\r\n.color-sliders .light {\r\n  grid-area: light;\r\n}\r\n\r\n.color-sliders input {\r\n  border: var(--default-border);\r\n  background-color: var(--input-color);\r\n  width: 4rem;\r\n}\r\n\r\n.color-sliders input:nth-child(1) {\r\n  color: var(--red);\r\n}\r\n.color-sliders input:nth-child(2) {\r\n  color: var(--green);\r\n}\r\n.color-sliders input:nth-child(3) {\r\n  color: var(--blue);\r\n}\r\n.color-sliders input:nth-child(4) {\r\n  color: var(--alpha);\r\n}\r\n\r\n.texel-inspector-window {\r\n  border: var(--default-border);\r\n  background-color: #121212;\r\n}\r\n\r\n.texel-marker {\r\n  border-radius: 3px;\r\n  border: 1px solid black;\r\n  outline: 1px solid white;\r\n}\r\n\r\n.line-segment {\r\n  border-radius: 3px;\r\n  border: 1px solid white;\r\n  background-color: black;\r\n}\r\n\r\n.texel-dragger {\r\n  width: 20px;\r\n  height: 20px;\r\n  transform: translate(-10px, -10px);\r\n  border-radius: 10px;\r\n  background-color: #0003;\r\n  border: 1px solid #fff8;\r\n}\r\n\r\n.dragger {\r\n  cursor: grab;\r\n}\r\n\r\n.texel-components {\r\n  display: grid;\r\n  grid-template-columns: repeat(4, 1fr);\r\n}\r\n\r\n.red {\r\n  color: var(--red);\r\n}\r\n.green {\r\n  color: var(--green);\r\n}\r\n.blue {\r\n  color: var(--blue);\r\n}\r\n.alpha {\r\n  color: var(--alpha);\r\n}\r\n';
-
-// node_modules/uuid/dist/stringify.js
-var byteToHex = [];
-for (let i = 0; i < 256; ++i) {
-  byteToHex.push((i + 256).toString(16).slice(1));
-}
-function unsafeStringify(arr, offset = 0) {
-  return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
-}
-
-// node_modules/uuid/dist/rng.js
-var getRandomValues;
-var rnds8 = new Uint8Array(16);
-function rng() {
-  if (!getRandomValues) {
-    if (typeof crypto === "undefined" || !crypto.getRandomValues) {
-      throw new Error("crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported");
-    }
-    getRandomValues = crypto.getRandomValues.bind(crypto);
-  }
-  return getRandomValues(rnds8);
-}
-
-// node_modules/uuid/dist/native.js
-var randomUUID = typeof crypto !== "undefined" && crypto.randomUUID && crypto.randomUUID.bind(crypto);
-var native_default = { randomUUID };
-
-// node_modules/uuid/dist/v4.js
-function _v4(options, buf, offset) {
-  options = options || {};
-  const rnds = options.random ?? options.rng?.() ?? rng();
-  if (rnds.length < 16) {
-    throw new Error("Random bytes length must be >= 16");
-  }
-  rnds[6] = rnds[6] & 15 | 64;
-  rnds[8] = rnds[8] & 63 | 128;
-  if (buf) {
-    offset = offset || 0;
-    if (offset < 0 || offset + 16 > buf.length) {
-      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
-    }
-    for (let i = 0; i < 16; ++i) {
-      buf[offset + i] = rnds[i];
-    }
-    return buf;
-  }
-  return unsafeStringify(rnds);
-}
-function v4(options, buf, offset) {
-  if (native_default.randomUUID && !buf && !options) {
-    return native_default.randomUUID();
-  }
-  return _v4(options, buf, offset);
-}
-var v4_default = v4;
-
-// src/ui/pan-and-zoom.tsx
-var import_react = __toESM(require_react());
-function panAndZoomMatrix(rect, containerWidth, containerHeight) {
-  const scaleX = 1 / (rect.b[0] - rect.a[0]) * containerWidth;
-  const scaleY = 1 / (rect.b[1] - rect.a[1]) * containerHeight;
-  const translateX = -rect.a[0] * scaleX;
-  const translateY = -rect.a[1] * scaleY;
-  return [scaleX, 0, 0, scaleY, translateX, translateY];
-}
-function panAndZoomCanvas2d(canvas, ctx, rect) {
-  ctx.transform(...panAndZoomMatrix(rect, canvas.width, canvas.height));
-}
-function TransformHTML(props) {
-  const coords = props.coords;
-  const eref = (0, import_react.useRef)(null);
-  (0, import_react.useEffect)(() => {
-    const e = eref.current;
-    if (!e || !e.parentElement) return;
-    const rect = e.parentElement.getBoundingClientRect();
-    e.style.transformOrigin = "top left";
-    e.style.transform = `scale(${1 / rect.width}, ${1 / rect.height}) matrix(${panAndZoomMatrix(coords, rect.width, rect.height)})`;
-    e.style.position = "relative";
-  }, [props.coords]);
-  return /* @__PURE__ */ import_react.default.createElement("div", { ref: eref }, props.children);
-}
-function PanAndZoom(props) {
-  const scrollSensitivity = props.scrollSensitivity ?? 1;
-  const scrollDecay = props.scrollDecay ?? 0.01;
-  const scrollSnapToZero = props.scrollSnapToZero ?? 1e-3;
-  const scrollVel = (0, import_react.useRef)(0);
-  const mouseDown = (0, import_react.useRef)(false);
-  const normalizedMousePos = (0, import_react.useRef)({ x: 0, y: 0 });
-  (0, import_react.useEffect)(() => {
-    let stopped = false;
-    let lastTime = performance.now();
-    const cb2 = (time) => {
-      if (stopped) return;
-      const deltaTime = time - lastTime;
-      lastTime = time;
-      scrollVel.current *= Math.pow(scrollDecay, deltaTime / 1e3);
-      if (Math.abs(scrollVel.current) > scrollSnapToZero) {
-        props.setCoords((c) => {
-          const targetOriginX = lerp(
-            normalizedMousePos.current.x,
-            c.a[0],
-            c.b[0]
-          );
-          const targetOriginY = lerp(
-            normalizedMousePos.current.y,
-            c.a[1],
-            c.b[1]
-          );
-          const scrollAmount = scrollVel.current * deltaTime / 1e3;
-          return {
-            a: [
-              lerp(scrollAmount, c.a[0], targetOriginX),
-              lerp(scrollAmount, c.a[1], targetOriginY)
-            ],
-            b: [
-              lerp(scrollAmount, c.b[0], targetOriginX),
-              lerp(scrollAmount, c.b[1], targetOriginY)
-            ]
-          };
-        });
-        props.onUpdate?.();
-      }
-      requestAnimationFrame(cb2);
-    };
-    requestAnimationFrame(cb2);
-    return () => {
-      stopped = true;
-    };
-  }, []);
-  const divref = (0, import_react.useRef)(null);
-  return /* @__PURE__ */ import_react.default.createElement(
-    "div",
-    {
-      style: {
-        width: "fit-content",
-        display: "flex"
-      },
-      ref: divref,
-      onWheel: (e) => {
-        e.preventDefault();
-        scrollVel.current += Math.sign(e.deltaY) * scrollSensitivity * (props.swapScroll ? -1 : 1);
-      },
-      onMouseDown: (e) => {
-        mouseDown.current = true;
-      },
-      onMouseUp: (e) => {
-        mouseDown.current = false;
-      },
-      onMouseMove: (e) => {
-        const rect = divref.current?.getBoundingClientRect();
-        if (!rect) return;
-        normalizedMousePos.current = {
-          x: rescale(e.nativeEvent.offsetX, 0, rect.width, 0, 1),
-          y: rescale(e.nativeEvent.offsetY, 0, rect.height, 0, 1)
-        };
-        if (!mouseDown.current) return;
-        props.setCoords((c) => {
-          const dx = -rescale(e.movementX, 0, rect.width, 0, c.b[0] - c.a[0]);
-          const dy = -rescale(e.movementY, 0, rect.height, 0, c.b[1] - c.a[1]);
-          return {
-            a: [c.a[0] + dx, c.a[1] + dy],
-            b: [c.b[0] + dx, c.b[1] + dy]
-          };
-        });
-        props.onUpdate?.();
-      }
-    },
-    props.children
-  );
-}
-
-// src/ui/react-number-field.tsx
-var import_react2 = __toESM(require_react());
-function stringifyNumber(x2) {
-  return x2.toLocaleString("fullwide", {
-    useGrouping: false,
-    maximumFractionDigits: 10
-  });
-}
-function roundAndClamp(x2, min, max, step, offset) {
-  x2 = Math.max(Math.min(x2, max), min);
-  if (step === 0) return x2;
-  return Math.round((x2 - offset) / step) * step + offset;
-}
-function NumberField(propsOpt) {
-  const props = {
-    scale: "log",
-    sensitivity: 0.01,
-    min: -Infinity,
-    max: Infinity,
-    step: 0,
-    offset: 0,
-    displayPrecision: 3,
-    defaultIfNaN: 0,
-    jumpstartDragFromZero: 0,
-    ...propsOpt
-  };
-  const value = isNaN(props.value) ? props.defaultIfNaN : props.value;
-  const [valueTemp, _setValueTemp] = (0, import_react2.useState)(stringifyNumber(value));
-  const lastNumberRef = (0, import_react2.useRef)(value);
-  function constrain(n) {
-    return roundAndClamp(n, props.min, props.max, props.step, props.offset);
-  }
-  function setValueTemp(vt, forceConstrain) {
-    if (!forceConstrain) _setValueTemp(vt);
-    const num = Number(vt);
-    if (!isNaN(num)) {
-      const cn = constrain(num);
-      props.setValue(cn);
-      lastNumberRef.current = cn;
-      if (forceConstrain) {
-        _setValueTemp(stringifyNumber(cn));
-      }
-    }
-  }
-  function setValueTempNum(n, forceConstrain) {
-    return setValueTemp(
-      stringifyNumber(forceConstrain ? constrain(n) : n),
-      forceConstrain
-    );
-  }
-  (0, import_react2.useEffect)(() => {
-    if (lastNumberRef.current !== value) {
-      lastNumberRef.current = value;
-      _setValueTemp(stringifyNumber(value));
-    }
-  }, [value]);
-  return /* @__PURE__ */ import_react2.default.createElement(
-    "input",
-    {
-      value: valueTemp,
-      onInput: (e) => {
-        setValueTemp(e.currentTarget.value, false);
-      },
-      ref: (e) => {
-        e?.addEventListener("change", () => {
-          setValueTemp(e.value, true);
-        });
-      },
-      onMouseDown: async (e) => {
-        const elem = e.currentTarget;
-        await e.currentTarget.requestPointerLock();
-        let dragnum = value;
-        const mousemoveListener = (e2) => {
-          const x2 = e2.movementX;
-          if (props.scale === "log") {
-            if (dragnum === 0) {
-              dragnum = props.jumpstartDragFromZero * Math.sign(x2);
-            } else {
-              dragnum = dragnum * (2 ** props.sensitivity) ** x2;
-            }
-          } else {
-            dragnum += x2 * props.sensitivity;
-          }
-          setValueTempNum(dragnum, true);
-        };
-        const mouseupListener = (e2) => {
-          document.removeEventListener("mousemove", mousemoveListener);
-          document.removeEventListener("mouseup", mouseupListener);
-          document.exitPointerLock();
-        };
-        document.addEventListener("mousemove", mousemoveListener);
-        document.addEventListener("mouseup", mouseupListener);
-      }
-    }
-  );
-}
-
-// src/ui/react-draggable-window.tsx
-var import_react3 = __toESM(require_react());
-var DraggableWindowContext = (0, import_react3.createContext)(void 0);
-function useParentDims(getParent) {
-  const [parentDims, setParentDims] = (0, import_react3.useState)([1, 1]);
-  const elemRef = (0, import_react3.useRef)(null);
-  function updateParentDims() {
-    if (!elemRef.current) return;
-    const parent = getParent(elemRef.current);
-    if (!parent) return;
-    const rect = parent.getBoundingClientRect();
-    setParentDims([rect.width, rect.height]);
-  }
-  (0, import_react3.useEffect)(() => {
-    if (!elemRef.current) return;
-    const parent = getParent(elemRef.current);
-    if (!parent) return;
-    updateParentDims();
-  }, []);
-  (0, import_react3.useEffect)(() => {
-    if (!elemRef.current) return;
-    const parent = getParent(elemRef.current);
-    if (!parent) return;
-    const observer = new ResizeObserver(() => {
-      updateParentDims();
-    });
-    observer.observe(parent);
-    return () => {
-      observer.disconnect();
-    };
-  });
-  return [elemRef, parentDims];
-}
-function DraggableWindow(props) {
-  const transformedX = rescale(
-    props.pos[0],
-    props.transform.a[0],
-    props.transform.b[0],
-    0,
-    100
-  );
-  const transformedY = rescale(
-    props.pos[1],
-    props.transform.a[1],
-    props.transform.b[1],
-    0,
-    100
-  );
-  const [elemRef, parentDims] = useParentDims((e) => e.parentElement);
-  return /* @__PURE__ */ import_react3.default.createElement(
-    DraggableWindowContext.Provider,
-    {
-      value: {
-        pos: props.pos,
-        setPos: props.setPos,
-        currentScaleFactors: div2(
-          sub2(props.transform.b, props.transform.a),
-          parentDims
-          // [100, 100]
-        )
-      }
-    },
-    /* @__PURE__ */ import_react3.default.createElement(
-      "div",
-      {
-        ref: elemRef,
-        className: "draggable-window",
-        style: {
-          position: "absolute",
-          top: `${transformedY}%`,
-          left: `${transformedX}%`
-        }
-      },
-      props.children
-    )
-  );
-}
-function LineSeg(props) {
-  const [elemRef, parentDims] = useParentDims((e) => e.parentElement);
-  const remappedEndpointA = remap2(
-    props.endpoints.a,
-    props.transform.a,
-    props.transform.b,
-    [0, 0],
-    parentDims
-  );
-  const remappedEndpointB = remap2(
-    props.endpoints.b,
-    props.transform.a,
-    props.transform.b,
-    [0, 0],
-    parentDims
-  );
-  const [dist, dir] = cart2Polar(sub2(remappedEndpointB, remappedEndpointA));
-  return /* @__PURE__ */ import_react3.default.createElement(
-    "div",
-    {
-      ref: elemRef,
-      className: "line-segment",
-      style: {
-        position: "absolute",
-        transformOrigin: "top left",
-        height: "1px",
-        width: `${dist}px`,
-        transform: `rotate(${dir}rad)`,
-        left: `${remappedEndpointA[0]}px`,
-        top: `${remappedEndpointA[1]}px`
-      }
-    }
-  );
-}
-function Dragger(props) {
-  const { pos, setPos, currentScaleFactors } = (0, import_react3.useContext)(
-    DraggableWindowContext
-  );
-  const elemRef = (0, import_react3.useRef)(null);
-  const [isHeld, setIsHeld] = (0, import_react3.useState)(false);
-  const tempPosRef = (0, import_react3.useRef)([0, 0]);
-  (0, import_react3.useEffect)(() => {
-    if (!isHeld) return;
-    const elem = elemRef.current;
-    if (!elem) return;
-    const mousemove = (evt) => {
-      tempPosRef.current = add2(
-        tempPosRef.current,
-        mul2([evt.movementX, evt.movementY], currentScaleFactors)
-      );
-      setPos(tempPosRef.current);
-      evt.stopPropagation();
-    };
-    document.addEventListener("mousemove", mousemove);
-    return () => {
-      document.removeEventListener("mousemove", mousemove);
-    };
-  }, [isHeld]);
-  (0, import_react3.useEffect)(() => {
-    const elem = elemRef.current;
-    if (!elem) return;
-    const mouseup = (evt) => {
-      setIsHeld(false);
-      elem.style.userSelect = "";
-    };
-    const mousedown = (evt) => {
-      setIsHeld(true);
-      tempPosRef.current = pos;
-      elem.style.userSelect = "none";
-      evt.stopPropagation();
-    };
-    elem.addEventListener("mousedown", mousedown);
-    document.addEventListener("mouseup", mouseup);
-    return () => {
-      elem.removeEventListener("mousedown", mousedown);
-      document.removeEventListener("mouseup", mouseup);
-    };
-  }, [pos, currentScaleFactors]);
-  return /* @__PURE__ */ import_react3.default.createElement("div", { className: "dragger", ref: elemRef }, props.children);
-}
-
-// src/webgpu/gpudoc/ui.tsx
-var GPUDocContext = (0, import_react4.createContext)(void 0);
-function gpuDebugWindow(params) {
-  const d = document.createElement("div");
-  const root = (0, import_client.createRoot)(d).render(
-    /* @__PURE__ */ import_react4.default.createElement(
-      GpudocDebugWindow,
-      {
-        device: params.device,
-        textures: params.textures,
-        buffers: params.buffers
-      }
-    )
-  );
-  return d;
-}
-function GpudocDebugWindow(props) {
-  const displayer = (0, import_react4.useMemo)(
-    () => textureDisplayer(props.device),
-    [props.device]
-  );
-  const [tabs, setTabs] = (0, import_react4.useState)([
-    {
-      type: "search-texture",
-      search: "",
-      id: v4_default()
-    }
-  ]);
-  const [currentTabIndex, setCurrentTabIndex] = (0, import_react4.useState)(0);
-  const currentTab = tabs[currentTabIndex];
-  return /* @__PURE__ */ import_react4.default.createElement(
-    GPUDocContext.Provider,
-    {
-      value: {
-        displayer,
-        device: props.device,
-        tabs,
-        currentTabIndex,
-        setCurrentTabIndex,
-        setTabs,
-        textures: props.textures,
-        buffers: props.buffers
-      }
-    },
-    /* @__PURE__ */ import_react4.default.createElement("style", null, gpudoc_default),
-    /* @__PURE__ */ import_react4.default.createElement("div", { className: "gpudoc" }, /* @__PURE__ */ import_react4.default.createElement(GpudocTabBar, null), /* @__PURE__ */ import_react4.default.createElement("div", { className: "tab" }, /* @__PURE__ */ import_react4.default.createElement(
-      GpudocTab,
-      {
-        tab: currentTab,
-        setTab: (newtab) => setTabs(
-          (oldtabs) => oldtabs.map((t, i) => i === currentTabIndex ? newtab(t) : t)
-        )
-      }
-    )))
-  );
-}
-function GpudocTab(props) {
-  const tab = props.tab;
-  const { textures, tabs } = useGpudoc();
-  if (tab.type === "search-texture") {
-    return /* @__PURE__ */ import_react4.default.createElement("ul", { className: "tex-thumbs" }, [...textures].map((t) => /* @__PURE__ */ import_react4.default.createElement(TextureThumbnail, { tex: t.tex, key: t.id })));
-  } else {
-    return /* @__PURE__ */ import_react4.default.createElement(
-      "div",
-      {
-        className: "tex-inspector",
-        ref: (elem) => {
-          const listener = (e) => {
-            e.preventDefault();
-          };
-          elem.addEventListener("wheel", listener);
-          return () => {
-            elem.removeEventListener("wheel", listener);
-          };
-        }
-      },
-      /* @__PURE__ */ import_react4.default.createElement("div", { className: "ui" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "color-sliders" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "dark-label" }, "Dark"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "light-label" }, "Light"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "dark" }, range(4).map((i) => /* @__PURE__ */ import_react4.default.createElement(
-        NumberField,
-        {
-          key: i,
-          value: tab.dark[i],
-          setValue: (v) => props.setTab(
-            (oldtab) => xray(oldtab).dark.$i(i).$(v).$v
-          ),
-          jumpstartDragFromZero: 0.01
-        }
-      ))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "light" }, range(4).map((i) => /* @__PURE__ */ import_react4.default.createElement(
-        NumberField,
-        {
-          key: i,
-          value: tab.light[i],
-          setValue: (v) => props.setTab(
-            (oldtab) => xray(oldtab).light.$i(i).$(v).$v
-          ),
-          jumpstartDragFromZero: 0.01
-        }
-      ))))),
-      /* @__PURE__ */ import_react4.default.createElement(
-        PanAndZoom,
-        {
-          coords: tab.coords,
-          setCoords: (coords) => {
-            props.setTab((oldtab) => ({
-              ...oldtab,
-              // @ts-expect-error
-              coords: coords(oldtab.coords)
-            }));
-          }
-        },
-        tab.texelInspectorWindows.map((t, i) => /* @__PURE__ */ import_react4.default.createElement(
-          TexelInspectorWindow,
-          {
-            tab,
-            key: t.id,
-            win: t,
-            setWin: (w2) => props.setTab(
-              (oldtab) => xray(oldtab).texelInspectorWindows.$i(i).$(w2).$v
-            )
-          }
-        )),
-        /* @__PURE__ */ import_react4.default.createElement(
-          TextureCanvas,
-          {
-            tex: tab.tex,
-            useCalculatedSize: true,
-            cornerA: tab.coords.a,
-            cornerB: tab.coords.b,
-            dark: tab.dark,
-            light: tab.light
-          }
-        )
-      )
-    );
-  }
-}
-function TexelInspectorWindow(props) {
-  const { win, tab } = props;
-  const { device } = useGpudoc();
-  const texelCoords = [
-    clamp(Math.floor(win.samplePos[0] * tab.tex.width), 0, tab.tex.width - 1),
-    clamp(Math.floor(win.samplePos[1] * tab.tex.height), 0, tab.tex.height - 1),
-    clamp(win.layer, 0, tab.tex.depthOrArrayLayers - 1)
-  ];
-  const roundedSamplePos = [
-    texelCoords[0] / tab.tex.width,
-    texelCoords[1] / tab.tex.height
-  ];
-  const texelMarkerX = rescale(
-    roundedSamplePos[0],
-    tab.coords.a[0],
-    tab.coords.b[0],
-    0,
-    100
-  );
-  const texelMarkerY = rescale(
-    roundedSamplePos[1],
-    tab.coords.a[1],
-    tab.coords.b[1],
-    0,
-    100
-  );
-  const area = sub2(tab.coords.b, tab.coords.a);
-  const lineseg = {
-    b: [
-      roundedSamplePos[0] + 0.5 / tab.tex.width,
-      roundedSamplePos[1] + 0.5 / tab.tex.height
-    ],
-    a: win.pos
-  };
-  const segEndpointA = sampleLineSegment(
-    lineseg,
-    lineIntersectRectClosest(lineseg, {
-      a: roundedSamplePos,
-      b: [
-        roundedSamplePos[0] + 1 / tab.tex.width,
-        roundedSamplePos[1] + 1 / tab.tex.height
-      ]
-    })
-  );
-  const [pixel, setPixel] = (0, import_react4.useState)([0, 0, 0, 0]);
-  (0, import_react4.useEffect)(() => {
-    (async () => {
-      const tempBuf = device.createBuffer({
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-        size: 16
-      });
-      const b = await readPixelsToCpuBuffer({
-        tex: tab.tex,
-        aspect: "all",
-        buf: tempBuf,
-        subregion: [texelCoords, add3(texelCoords, [1, 1, 1])],
-        device
-      });
-      const ui8a = new Uint8Array(b.cpuBuffer);
-      setPixel([ui8a[0], ui8a[1], ui8a[2], ui8a[3]]);
-    })();
-  }, [win.samplePos]);
-  return /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement(
-    "div",
-    {
-      className: "texel-marker",
-      style: {
-        position: "absolute",
-        left: `${texelMarkerX}%`,
-        top: `${texelMarkerY}%`,
-        width: `${100 / area[0] / tab.tex.width}%`,
-        height: `${100 / area[1] / tab.tex.height}%`
-      }
-    }
-  ), /* @__PURE__ */ import_react4.default.createElement(
-    LineSeg,
-    {
-      transform: props.tab.coords,
-      endpoints: {
-        a: segEndpointA,
-        b: win.pos
-      }
-    }
-  ), /* @__PURE__ */ import_react4.default.createElement(
-    DraggableWindow,
-    {
-      transform: props.tab.coords,
-      pos: win.samplePos,
-      setPos: (p) => props.setWin(xray(win).samplePos.$(p).$v)
-    },
-    /* @__PURE__ */ import_react4.default.createElement(Dragger, null, /* @__PURE__ */ import_react4.default.createElement("div", { className: "texel-dragger" }))
-  ), /* @__PURE__ */ import_react4.default.createElement(
-    DraggableWindow,
-    {
-      transform: props.tab.coords,
-      pos: win.pos,
-      setPos: (p) => props.setWin(xray(win).pos.$(p).$v)
-    },
-    /* @__PURE__ */ import_react4.default.createElement("div", { className: "texel-inspector-window" }, /* @__PURE__ */ import_react4.default.createElement(Dragger, null, "Texel (", texelCoords[0], ", ", texelCoords[1], ")"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "texel-components" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "red" }, pixel[0]), /* @__PURE__ */ import_react4.default.createElement("div", { className: "green" }, pixel[1]), /* @__PURE__ */ import_react4.default.createElement("div", { className: "blue" }, pixel[2]), /* @__PURE__ */ import_react4.default.createElement("div", { className: "alpha" }, pixel[3])))
-  ));
-}
-function GpudocTabBar() {
-  const { tabs, currentTabIndex, setCurrentTabIndex, setTabs } = useGpudoc();
-  return /* @__PURE__ */ import_react4.default.createElement("ul", { className: "tab-bar" }, tabs.map((t, i) => /* @__PURE__ */ import_react4.default.createElement(
-    "li",
-    {
-      onClick: () => {
-        setCurrentTabIndex(i);
-      },
-      key: t.id,
-      className: currentTabIndex === i ? "selected" : ""
-    },
-    /* @__PURE__ */ import_react4.default.createElement(GpudocTabThumbDisplay, { tab: t })
-  )));
-}
-function GpudocTabThumbDisplay(props) {
-  const tab = props.tab;
-  if (tab.type === "search-texture") {
-    return /* @__PURE__ */ import_react4.default.createElement("div", null, "Search Texture");
-  } else {
-    return /* @__PURE__ */ import_react4.default.createElement("div", null, "Texture: ", tab.tex.label);
-  }
-}
-function TextureThumbnail(props) {
-  const { tabs, setTabs, setCurrentTabIndex } = useGpudoc();
-  return /* @__PURE__ */ import_react4.default.createElement(
-    "li",
-    {
-      onClick: () => {
-        setTabs([
-          ...tabs,
-          {
-            type: "inspect-texture",
-            tex: props.tex,
-            id: v4_default(),
-            coords: { a: [0, 0], b: [1, 1] },
-            dark: [0, 0, 0, 0],
-            light: [1, 1, 1, 1],
-            texelInspectorWindows: [
-              {
-                samplePos: [0.5, 0.5],
-                layer: 0,
-                pos: [0.5, 0.5],
-                id: v4_default()
-              }
-            ]
-          }
-        ]);
-        setCurrentTabIndex(tabs.length);
-      }
-    },
-    /* @__PURE__ */ import_react4.default.createElement("div", { className: "name" }, props.tex.label),
-    /* @__PURE__ */ import_react4.default.createElement("div", { className: "canvas" }, /* @__PURE__ */ import_react4.default.createElement(TextureCanvas, { tex: props.tex }))
-  );
-}
-function useGpudoc() {
-  return (0, import_react4.useContext)(GPUDocContext);
-}
-function setCanvasDims(canvas, dims) {
-  const [width, height] = [Math.round(dims[0]), Math.round(dims[1])];
-  if (width !== canvas.width) canvas.width = width;
-  if (height !== canvas.height) canvas.height = height;
-}
-function TextureCanvas(props) {
-  const canvasRef = (0, import_react4.useRef)(null);
-  const { displayer, device } = useGpudoc();
-  (0, import_react4.useEffect)(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-    const ctx = canvas.getContext("webgpu");
-    ctx.configure({
-      device,
-      format: canvasFormat
-    });
-  }, [device]);
-  function rerender() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-    const ctx = canvas.getContext("webgpu");
-    const encoder = device.createCommandEncoder();
-    const textureWgslType = TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[props.tex.format];
-    const wgslBaseType = WGSL_TYPE_DATATYPES[textureWgslType];
-    const samplerType = WGSL_BASE_TYPE_TO_SAMPLER_TYPE[wgslBaseType];
-    displayer.displayTexture2d(
-      {
-        tex: props.tex.createView(),
-        samplerType,
-        cornerA: props.cornerA ?? [0, 0],
-        cornerB: props.cornerB ?? [1, 1],
-        blackEquiv: props.dark ?? [0, 0, 0, 0],
-        whiteEquiv: props.light ?? [1, 1, 1, 1]
-      },
-      {
-        tex: ctx.getCurrentTexture().createView(),
-        format: canvasFormat
-      },
-      encoder
-    );
-    device.queue.submit([encoder.finish()]);
-  }
-  (0, import_react4.useEffect)(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const tex = props.tex;
-    const dims = [tex.width, tex.height, tex.depthOrArrayLayers];
-    if (!props.useCalculatedSize) {
-      if (props.canvasDims) {
-        setCanvasDims(canvas, props.canvasDims);
-      } else {
-        setCanvasDims(canvas, dims);
-      }
-    }
-    rerender();
-  }, [
-    props.tex,
-    device,
-    props.canvasDims,
-    props.cornerA,
-    props.cornerB,
-    props.dark,
-    props.light
-  ]);
-  (0, import_react4.useEffect)(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !props.useCalculatedSize) return;
-    const observer = new ResizeObserver(() => {
-      const rect = canvas.getBoundingClientRect();
-      setCanvasDims(canvas, [
-        rect.width * window.devicePixelRatio,
-        rect.height * window.devicePixelRatio
-      ]);
-      rerender();
-    });
-    observer.observe(canvas);
-    return () => observer.disconnect();
-  }, [props.useCalculatedSize]);
-  return /* @__PURE__ */ import_react4.default.createElement("canvas", { ref: canvasRef });
-}
-
-// src/webgpu/gpudoc/gpudoc.ts
-function hookGPUDevice(device, passthrough = false) {
-  if (passthrough) return device;
-  const textures = /* @__PURE__ */ new Set();
-  const buffers = /* @__PURE__ */ new Set();
-  let texId = 0;
-  let bufId = 0;
-  const oldCreateTexture = device.createTexture.bind(device);
-  device.createTexture = (descriptor) => {
-    const desc2 = { ...descriptor };
-    desc2.usage |= GPUTextureUsage.COPY_SRC;
-    const tex = oldCreateTexture(desc2);
-    textures.add({ tex, id: texId++ });
-    return tex;
-  };
-  device.getDebugView = () => {
-    return gpuDebugWindow({ textures, buffers, device });
-  };
-  return device;
 }
 
 // src/webgpu/pipelines/line-renderer.ts
@@ -32884,966 +23639,8 @@ async function lineRenderer(device, outputFormat) {
     }
   };
 }
-
-// src/ui/use-latest.tsx
-var import_react5 = __toESM(require_react());
-function useLatest(t) {
-  const tref = (0, import_react5.useRef)(t);
-  (0, import_react5.useEffect)(() => {
-    tref.current = t;
-  }, [t]);
-  return tref;
-}
-
-// src/ui/upload-image.tsx
-var pretendThisIsAModule = {};
-
-// src/ui/react-string-field.tsx
-var import_react6 = __toESM(require_react());
-function StringField(props) {
-  if (props.isTextarea) {
-    return /* @__PURE__ */ import_react6.default.createElement(
-      "textarea",
-      {
-        value: props.value,
-        onInput: (e) => {
-          props.setValue(e.currentTarget.value);
-        }
-      }
-    );
-  }
-  return /* @__PURE__ */ import_react6.default.createElement(
-    "input",
-    {
-      value: props.value,
-      onInput: (e) => {
-        props.setValue(e.currentTarget.value);
-      }
-    }
-  );
-}
-
-// src/ui/react-object-field.tsx
-var import_react7 = __toESM(require_react());
-function objectFieldDataToNativeObject(t) {
-  return Object.fromEntries(Object.entries(t).map(([k, v]) => [k, v.value]));
-}
-function ObjectField(props) {
-  return /* @__PURE__ */ import_react7.default.createElement("ul", null, Object.entries(props.value).map(([k, v]) => {
-    const Comp = props.components[v.ui];
-    return /* @__PURE__ */ import_react7.default.createElement("li", { key: k }, v.label ? /* @__PURE__ */ import_react7.default.createElement("label", null, v.label) : /* @__PURE__ */ import_react7.default.createElement(import_react7.default.Fragment, null), /* @__PURE__ */ import_react7.default.createElement(
-      Comp,
-      {
-        value: v.value,
-        setValue: (val) => {
-          props.setValue({
-            ...props.value,
-            [k]: {
-              ...props.value[k],
-              value: val
-            }
-          });
-        },
-        ...v.props
-      }
-    ), v.description ? /* @__PURE__ */ import_react7.default.createElement("div", null, v.description) : /* @__PURE__ */ import_react7.default.createElement(import_react7.default.Fragment, null));
-  }));
-}
-function useObjectFieldLayout() {
-  return function(t) {
-    return (0, import_react7.useState)(t);
-  };
-}
-
-// src/ui/react-infinite-scroll.tsx
-var import_react8 = __toESM(require_react());
-function useAsyncSequence(callback, init, dependencies) {
-  const [seq2, setSeq] = (0, import_react8.useState)(init);
-  const batchIndex = (0, import_react8.useRef)(0);
-  const isRunning = (0, import_react8.useRef)(true);
-  (0, import_react8.useEffect)(() => {
-    let isLoopCurrent = true;
-    batchIndex.current += 1;
-    const thisBatch = batchIndex.current;
-    let seqTemp = init;
-    setSeq(init);
-    const f = async () => {
-      if (isRunning.current) {
-        if (!isLoopCurrent) return;
-        const res = await callback(seqTemp);
-        if (!isLoopCurrent) return;
-        if (batchIndex.current === thisBatch) {
-          seqTemp = res(seqTemp);
-          setSeq(seqTemp);
-        }
-      } else if (!isLoopCurrent) {
-        return;
-      }
-      setTimeout(f);
-    };
-    f();
-    return () => {
-      isLoopCurrent = false;
-    };
-  }, dependencies);
-  return {
-    seq: seq2,
-    isRunning
-  };
-}
-function useInfiniteScroll(props) {
-  const itemsLoaded = useAsyncSequence(
-    async (s) => {
-      if (s.done) {
-        return (s2) => s2;
-      }
-      const more = await props.getMore(s.index);
-      const done = await props.done(s.index, s.items, more);
-      return (s2) => {
-        if (done) {
-          return { ...s2, done: true };
-        } else {
-          return {
-            items: s2.items.concat(more),
-            index: s2.index + 1,
-            done: false
-          };
-        }
-      };
-    },
-    { index: 0, items: [], done: false },
-    [...props.dependencies]
-  );
-  return {
-    items: itemsLoaded.seq.items,
-    index: itemsLoaded.seq.index,
-    done: itemsLoaded.seq.done,
-    ScrollDetector: () => {
-      return /* @__PURE__ */ import_react8.default.createElement(
-        "div",
-        {
-          ref: (e) => {
-            if (!e) return;
-            const observer = new IntersectionObserver(
-              (e2) => {
-                itemsLoaded.isRunning.current = e2.at(-1)?.isIntersecting ?? true;
-              },
-              {
-                rootMargin: props.rootMargin
-              }
-            );
-            observer.observe(e);
-            return () => {
-              observer.disconnect();
-            };
-          }
-        }
-      );
-    }
-  };
-}
-
-// src/ui/progress-bar.tsx
-var import_react9 = __toESM(require_react());
-var import_client2 = __toESM(require_client());
-function ProgressBar(props) {
-  const { tasks } = props;
-  const [currTaskIndex, setCurrTaskIndex] = (0, import_react9.useState)(0);
-  const [caption, setCaption] = (0, import_react9.useState)("Progress");
-  (0, import_react9.useEffect)(() => {
-    const currTask = tasks.at(currTaskIndex);
-    if (currTask !== void 0) {
-      if (typeof currTask == "string") {
-        setCaption(currTask);
-        setCurrTaskIndex((c) => c + 1);
-      } else {
-        currTask().finally(() => {
-          setCurrTaskIndex((c) => c + 1);
-        });
-      }
-    }
-  }, [currTaskIndex]);
-  return /* @__PURE__ */ import_react9.default.createElement("div", null, /* @__PURE__ */ import_react9.default.createElement("div", { style: { fontSize: "48px" } }, caption), /* @__PURE__ */ import_react9.default.createElement(
-    "div",
-    {
-      style: {
-        width: "50vw",
-        height: "3rem",
-        border: "1px solid black"
-      }
-    },
-    /* @__PURE__ */ import_react9.default.createElement(
-      "div",
-      {
-        style: {
-          height: "100%",
-          width: `${100 * (currTaskIndex / tasks.length)}%`,
-          backgroundColor: "black"
-        }
-      }
-    )
-  ));
-}
-function simpleProgressBar(tasks) {
-  return new Promise((resolve, reject) => {
-    const progressBarContainer = document.createElement("div");
-    document.body.appendChild(progressBarContainer);
-    (0, import_client2.createRoot)(progressBarContainer).render(
-      /* @__PURE__ */ import_react9.default.createElement(
-        ProgressBar,
-        {
-          tasks: [...tasks, "Finished!", async () => resolve()]
-        }
-      )
-    );
-  });
-}
 export {
-  ALL,
-  ArrayMap,
-  AudioBuilder,
-  AudioStream,
-  DraggableWindow,
-  Dragger,
-  LineSeg,
-  NumberField,
-  ObjectField,
-  OneDimensionalSpatialHashTable,
-  PanAndZoom,
-  ProgressBar,
-  SAMPLER_TYPE_TO_WGSL_TYPE,
-  StringField,
-  TEXEL_BLOCK_COPY_FOOTPRINTS,
-  TEXTURE_DIMENSIONALITIES,
-  TEXTURE_FORMAT_TO_DEPTH_SAMPLER_TYPE,
-  TEXTURE_FORMAT_TO_NONDEPTH_SAMPLER_TYPE,
-  TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT,
-  TEXTURE_FORMAT_TO_STENCIL_SAMPLER_TYPE,
-  TEXTURE_FORMAT_TO_WGSL_TYPE_LUT,
-  TransformHTML,
-  VERTEX_FORMAT_TO_ELEMENT_COUNT,
-  VERTEX_FORMAT_TO_ELEMENT_SIZE,
-  VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR,
-  VERTEX_FORMAT_TO_WGSL_BASE_TYPE,
-  WGSL_BASE_TYPE_TO_SAMPLER_TYPE,
-  WGSL_DATA_TYPES,
-  WGSL_TYPE_ALIGNMENTS,
-  WGSL_TYPE_DATATYPES,
-  WGSL_TYPE_ELEMENT_COUNTS,
-  WGSL_TYPE_SIZES,
-  WgslSnippets,
-  add,
-  add2,
-  add3,
-  add4,
-  addEdge,
-  addVertex,
-  adsr,
-  alterElements,
-  applyUniform,
-  applyUniforms,
-  argmax,
-  argmin,
-  array,
-  arrayToMapKeys,
-  arrayToMapValues,
-  arrayToObjEntries,
-  arrayToObjKeys,
-  arrayToObjValues,
-  bezierAdaptive,
-  bezierAdaptiveInner,
-  bezierPreview,
-  bezierifyFixedCount,
-  bifurcate,
-  blobToDataURL,
-  boxMullerTransform,
-  canvasToBlob,
-  cart2Polar,
-  cartesianProduct,
-  chainParser,
-  circleIntersectLine,
-  clamp,
-  clampToArray,
-  closestApproachOfLineSegmentToPoint,
-  componentwise2,
-  componentwise3,
-  componentwise4,
-  compose,
-  constant,
-  convolve,
-  createBufferWithLayout,
-  createCombinedRoundRobinThreadpool,
-  createEvalbox,
-  createGraph,
-  createGraphFromData,
-  createLayoutGenerator,
-  createLookupOptimizedSHTGenerator,
-  createRoundRobinThread,
-  createRoundRobinThreadpool,
-  createScene,
-  createSignal,
-  createSimpleFilterPipeline,
-  createTrack,
-  createTrackSpec,
-  createTrackSpecForNote,
-  createTrackSpecForNoteSequence,
-  createWgslSerializers,
-  createWorkerReceiver,
-  createWorkerWithInterface,
-  cross,
-  curry,
-  debounce,
-  deleteEdge,
-  delimitedSequenceRegex,
-  displayAudio,
-  displayAudioSamples,
-  distance2,
-  distance3,
-  distance4,
-  div2,
-  div3,
-  div4,
-  domQuery,
-  domQueryAll,
-  domQueryObj,
-  dot2,
-  dot3,
-  dot4,
-  download,
-  downloadText,
-  envelope,
-  equidistantPointsOnCurve,
-  err,
-  eventEmitter,
-  findEndpoint,
-  fullscreenQuadBuffer,
-  generateLayouts,
-  generateUniformBuffer,
-  get,
-  getBeatCount,
-  getClamped,
-  getConnectedComponents,
-  getCopyFootprintPerTexel,
-  getDepthFirstTraversalOrder,
-  getEqualAngularDivisionsOfLineSegment,
-  getLinesAndCols,
-  getMaximumAngleDifference,
-  getOgg,
-  getPerformanceStatistics,
-  getSmallestAngleDifference,
-  getUniformBufferSize,
-  glRenderToQuad,
-  gpuDebugWindow,
-  gradient2,
-  graph2json,
-  graphAudio,
-  groupBy,
-  hookGPUDevice,
-  id,
-  inCircle,
-  inMainThread,
-  incidentEdges,
-  index,
-  initBufferStreamerWorklet,
-  injectElementsAt,
-  injectFunction,
-  innerTextRegex,
-  interleave,
-  interp2,
-  interp3,
-  interp4,
-  isWorklet,
-  islandsToSvg,
-  json2graph,
-  kurry,
-  lazy,
-  length2,
-  length3,
-  length4,
-  lens,
-  lensInner,
-  lerp,
-  lineIntersectLine,
-  lineIntersectRect,
-  lineIntersectRectClosest,
-  lineRenderer,
-  lineSegmentIntersectLineSegment,
-  listenForNoSelector,
-  listenForSelector,
-  loadImg,
-  lookupQuadtree,
-  makeDelimitedReplacements,
-  makeDitherKernel,
-  makeQuadtree,
-  makeUniformBuffer,
-  map2obj,
-  mapMapEntries,
-  mapMapKeys,
-  mapMapValues,
-  mapObjEntries,
-  mapObjKeys,
-  mapObjValues,
-  max2,
-  max3,
-  max4,
-  memo,
-  memoWithTimedInvalidation,
-  min2,
-  min3,
-  min4,
-  mix2,
-  mix3,
-  mix4,
-  modulateGain,
-  modulateSampleTime,
-  modulo,
-  monoToStereo,
-  move,
-  mul2,
-  mul3,
-  mul4,
-  mulMat2,
-  mulMat2ByMat3x2,
-  mulMat2ByMat4x2,
-  mulMat2ByVec2,
-  mulMat2x3ByMat2,
-  mulMat2x3ByMat3x2,
-  mulMat2x3ByMat4x2,
-  mulMat2x3ByVec2,
-  mulMat2x4ByMat2,
-  mulMat2x4ByMat3x2,
-  mulMat2x4ByMat4x2,
-  mulMat2x4ByVec2,
-  mulMat3,
-  mulMat3ByMat2x3,
-  mulMat3ByMat4x3,
-  mulMat3ByVec3,
-  mulMat3x2ByMat2x3,
-  mulMat3x2ByMat3,
-  mulMat3x2ByMat4x3,
-  mulMat3x2ByVec3,
-  mulMat3x4ByMat2x3,
-  mulMat3x4ByMat3,
-  mulMat3x4ByMat4x3,
-  mulMat3x4ByVec3,
-  mulMat4,
-  mulMat4ByMat2x4,
-  mulMat4ByMat3x4,
-  mulMat4ByVec4,
-  mulMat4x2ByMat2x4,
-  mulMat4x2ByMat3x4,
-  mulMat4x2ByMat4,
-  mulMat4x2ByVec4,
-  mulMat4x3ByMat2x4,
-  mulMat4x3ByMat3x4,
-  mulMat4x3ByMat4,
-  mulMat4x3ByVec4,
-  mulScalarByVec2,
-  mulScalarByVec3,
-  mulScalarByVec4,
-  mulVec2ByMat2,
-  mulVec2ByMat3x2,
-  mulVec2ByMat4x2,
-  mulVec2ByScalar,
-  mulVec2ByVec2,
-  mulVec2ByVec3,
-  mulVec2ByVec4,
-  mulVec3ByMat2x3,
-  mulVec3ByMat3,
-  mulVec3ByMat4x3,
-  mulVec3ByScalar,
-  mulVec3ByVec2,
-  mulVec3ByVec3,
-  mulVec3ByVec4,
-  mulVec4ByMat2x4,
-  mulVec4ByMat3x4,
-  mulVec4ByMat4,
-  mulVec4ByScalar,
-  mulVec4ByVec2,
-  mulVec4ByVec3,
-  mulVec4ByVec4,
-  multiDelimit,
-  multicast,
-  neg2,
-  neg3,
-  neg4,
-  nestedMap,
-  normalize2,
-  normalize3,
-  normalize4,
-  note2freq,
-  obj2map,
-  objectFieldDataToNativeObject,
-  ok,
-  orElse,
-  ortho,
-  panAndZoomCanvas2d,
-  panAndZoomMatrix,
-  parametric2D,
-  parseNotes,
-  parseSpatialHashTable,
-  parser,
-  perlin2d,
-  permute,
-  perspective,
-  perspectiveWebgpu,
-  pickrand,
-  pipelineRenderpass,
-  play,
-  playStereo,
-  pointTo,
-  polar2Cart,
-  polarVec2Cart,
-  powerSet,
-  pretendThisIsAModule,
-  primitive,
-  quadraticCurveToPath,
-  quadraticCurveToSvgPath,
-  rand,
-  randUnicode,
-  range,
-  rangeFrom,
-  rangeIntersects,
-  rayIntersectLine,
-  readPixels,
-  readPixelsSizeReq,
-  readPixelsToCpuBuffer,
-  readWgslLayout,
-  rectIntersects,
-  regexMatch,
-  registerStorageItem,
-  remap2,
-  remap3,
-  remap4,
-  resample2 as resample,
-  rescale,
-  rescale2,
-  rescale3,
-  rescale4,
-  rescaleClamped,
-  ring,
-  rodrigues,
-  rotate,
-  roundUp,
-  sampleLineSegment,
-  saw,
-  scale,
-  scale2,
-  scale3,
-  scale4,
-  scaleDuration,
-  sdBezier,
-  serializeSpatialHashTable,
-  setDeep,
-  shaders2program,
-  signal,
-  silence,
-  simpleProgressBar,
-  simpleRandVec2ToFloat,
-  simpleRandVec2ToVec2,
-  sine,
-  slice,
-  smartAsyncReplaceAll,
-  smartRange,
-  smartRangeMap,
-  smartRangeStringMapJoin,
-  smoothstep,
-  source2shader,
-  sources2program,
-  spatialHashTable,
-  splitBy,
-  square,
-  str2float,
-  str2html,
-  str2int,
-  streamAudioToWorklet,
-  stringField,
-  stringMapJoin,
-  stringRangeMapJoin,
-  struct,
-  sub2,
-  sub3,
-  sub4,
-  subdivideEdges,
-  subdivideEdgesAtCuts,
-  subdivideEdgesAtCutsSimple,
-  subdivideEdgesByDistance,
-  subdivideEdgesByMaximumAngleDifference,
-  sum2,
-  sum3,
-  sum4,
-  table,
-  tableWithData,
-  textureDisplayer,
-  throttle,
-  torus,
-  translate,
-  typeName,
-  ud,
-  unclampedSmoothstep,
-  unlerp,
-  useAsyncSequence,
-  useInfiniteScroll,
-  useLatest,
-  useObjectFieldLayout,
-  useParentDims,
-  useWgslSnippets,
-  uvSphere,
-  variableDistancePointsOnCurve,
-  variadify,
-  vertexFormatStride,
-  vertexFormatToWgslType,
-  w,
-  wait,
-  waitForCond,
-  waitUntil,
-  workerifyClient,
-  workerifyClientIframe,
-  workerifyServer,
-  workerifyServerIframe,
-  wrapDevice,
-  ww,
-  www,
-  wwww,
-  wwwx,
-  wwwy,
-  wwwz,
-  wwx,
-  wwxw,
-  wwxx,
-  wwxy,
-  wwxz,
-  wwy,
-  wwyw,
-  wwyx,
-  wwyy,
-  wwyz,
-  wwz,
-  wwzw,
-  wwzx,
-  wwzy,
-  wwzz,
-  wx,
-  wxw,
-  wxww,
-  wxwx,
-  wxwy,
-  wxwz,
-  wxx,
-  wxxw,
-  wxxx,
-  wxxy,
-  wxxz,
-  wxy,
-  wxyw,
-  wxyx,
-  wxyy,
-  wxyz,
-  wxz,
-  wxzw,
-  wxzx,
-  wxzy,
-  wxzz,
-  wy,
-  wyw,
-  wyww,
-  wywx,
-  wywy,
-  wywz,
-  wyx,
-  wyxw,
-  wyxx,
-  wyxy,
-  wyxz,
-  wyy,
-  wyyw,
-  wyyx,
-  wyyy,
-  wyyz,
-  wyz,
-  wyzw,
-  wyzx,
-  wyzy,
-  wyzz,
-  wz,
-  wzw,
-  wzww,
-  wzwx,
-  wzwy,
-  wzwz,
-  wzx,
-  wzxw,
-  wzxx,
-  wzxy,
-  wzxz,
-  wzy,
-  wzyw,
-  wzyx,
-  wzyy,
-  wzyz,
-  wzz,
-  wzzw,
-  wzzx,
-  wzzy,
-  wzzz,
-  x,
-  xray,
-  xrayInner,
-  xw,
-  xww,
-  xwww,
-  xwwx,
-  xwwy,
-  xwwz,
-  xwx,
-  xwxw,
-  xwxx,
-  xwxy,
-  xwxz,
-  xwy,
-  xwyw,
-  xwyx,
-  xwyy,
-  xwyz,
-  xwz,
-  xwzw,
-  xwzx,
-  xwzy,
-  xwzz,
-  xx,
-  xxw,
-  xxww,
-  xxwx,
-  xxwy,
-  xxwz,
-  xxx,
-  xxxw,
-  xxxx,
-  xxxy,
-  xxxz,
-  xxy,
-  xxyw,
-  xxyx,
-  xxyy,
-  xxyz,
-  xxz,
-  xxzw,
-  xxzx,
-  xxzy,
-  xxzz,
-  xy,
-  xyw,
-  xyww,
-  xywx,
-  xywy,
-  xywz,
-  xyx,
-  xyxw,
-  xyxx,
-  xyxy,
-  xyxz,
-  xyy,
-  xyyw,
-  xyyx,
-  xyyy,
-  xyyz,
-  xyz,
-  xyzw,
-  xyzx,
-  xyzy,
-  xyzz,
-  xz,
-  xzw,
-  xzww,
-  xzwx,
-  xzwy,
-  xzwz,
-  xzx,
-  xzxw,
-  xzxx,
-  xzxy,
-  xzxz,
-  xzy,
-  xzyw,
-  xzyx,
-  xzyy,
-  xzyz,
-  xzz,
-  xzzw,
-  xzzx,
-  xzzy,
-  xzzz,
-  y,
-  yw,
-  yww,
-  ywww,
-  ywwx,
-  ywwy,
-  ywwz,
-  ywx,
-  ywxw,
-  ywxx,
-  ywxy,
-  ywxz,
-  ywy,
-  ywyw,
-  ywyx,
-  ywyy,
-  ywyz,
-  ywz,
-  ywzw,
-  ywzx,
-  ywzy,
-  ywzz,
-  yx,
-  yxw,
-  yxww,
-  yxwx,
-  yxwy,
-  yxwz,
-  yxx,
-  yxxw,
-  yxxx,
-  yxxy,
-  yxxz,
-  yxy,
-  yxyw,
-  yxyx,
-  yxyy,
-  yxyz,
-  yxz,
-  yxzw,
-  yxzx,
-  yxzy,
-  yxzz,
-  yy,
-  yyw,
-  yyww,
-  yywx,
-  yywy,
-  yywz,
-  yyx,
-  yyxw,
-  yyxx,
-  yyxy,
-  yyxz,
-  yyy,
-  yyyw,
-  yyyx,
-  yyyy,
-  yyyz,
-  yyz,
-  yyzw,
-  yyzx,
-  yyzy,
-  yyzz,
-  yz,
-  yzw,
-  yzww,
-  yzwx,
-  yzwy,
-  yzwz,
-  yzx,
-  yzxw,
-  yzxx,
-  yzxy,
-  yzxz,
-  yzy,
-  yzyw,
-  yzyx,
-  yzyy,
-  yzyz,
-  yzz,
-  yzzw,
-  yzzx,
-  yzzy,
-  yzzz,
-  z,
-  zip,
-  zw,
-  zww,
-  zwww,
-  zwwx,
-  zwwy,
-  zwwz,
-  zwx,
-  zwxw,
-  zwxx,
-  zwxy,
-  zwxz,
-  zwy,
-  zwyw,
-  zwyx,
-  zwyy,
-  zwyz,
-  zwz,
-  zwzw,
-  zwzx,
-  zwzy,
-  zwzz,
-  zx,
-  zxw,
-  zxww,
-  zxwx,
-  zxwy,
-  zxwz,
-  zxx,
-  zxxw,
-  zxxx,
-  zxxy,
-  zxxz,
-  zxy,
-  zxyw,
-  zxyx,
-  zxyy,
-  zxyz,
-  zxz,
-  zxzw,
-  zxzx,
-  zxzy,
-  zxzz,
-  zy,
-  zyw,
-  zyww,
-  zywx,
-  zywy,
-  zywz,
-  zyx,
-  zyxw,
-  zyxx,
-  zyxy,
-  zyxz,
-  zyy,
-  zyyw,
-  zyyx,
-  zyyy,
-  zyyz,
-  zyz,
-  zyzw,
-  zyzx,
-  zyzy,
-  zyzz,
-  zz,
-  zzw,
-  zzww,
-  zzwx,
-  zzwy,
-  zzwz,
-  zzx,
-  zzxw,
-  zzxx,
-  zzxy,
-  zzxz,
-  zzy,
-  zzyw,
-  zzyx,
-  zzyy,
-  zzyz,
-  zzz,
-  zzzw,
-  zzzx,
-  zzzy,
-  zzzz
+  lineRenderer
 };
 /*! Bundled license information:
 
@@ -33889,32 +23686,5 @@ react-dom/cjs/react-dom-client.development.js:
    *
    * This source code is licensed under the MIT license found in the
    * LICENSE file in the root directory of this source tree.
-   *)
-
-mediabunny/dist/modules/src/misc.js:
-mediabunny/dist/modules/src/tags.js:
-mediabunny/dist/modules/src/codec.js:
-mediabunny/dist/modules/src/muxer.js:
-mediabunny/dist/modules/src/codec-data.js:
-mediabunny/dist/modules/src/writer.js:
-mediabunny/dist/modules/src/target.js:
-mediabunny/dist/modules/src/ogg/ogg-misc.js:
-mediabunny/dist/modules/src/ogg/ogg-reader.js:
-mediabunny/dist/modules/src/ogg/ogg-muxer.js:
-mediabunny/dist/modules/src/custom-coder.js:
-mediabunny/dist/modules/src/packet.js:
-mediabunny/dist/modules/src/pcm.js:
-mediabunny/dist/modules/src/sample.js:
-mediabunny/dist/modules/src/output-format.js:
-mediabunny/dist/modules/src/encode.js:
-mediabunny/dist/modules/src/media-source.js:
-mediabunny/dist/modules/src/output.js:
-mediabunny/dist/modules/src/index.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
    *)
 */

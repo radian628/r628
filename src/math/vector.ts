@@ -1784,6 +1784,34 @@ export function sub3(a: Vec3, b: Vec3): Vec3 {
 export function sub4(a: Vec4, b: Vec4): Vec4 {
   return [a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]]
 }
+export function min2(a: Vec2, b: Vec2): Vec2 {
+  return [Math.min(a[0], b[0]), Math.min(a[1], b[1])]
+}
+export function min3(a: Vec3, b: Vec3): Vec3 {
+  return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.min(a[2], b[2])]
+}
+export function min4(a: Vec4, b: Vec4): Vec4 {
+  return [
+    Math.min(a[0], b[0]),
+    Math.min(a[1], b[1]),
+    Math.min(a[2], b[2]),
+    Math.min(a[3], b[3]),
+  ]
+}
+export function max2(a: Vec2, b: Vec2): Vec2 {
+  return [Math.max(a[0], b[0]), Math.max(a[1], b[1])]
+}
+export function max3(a: Vec3, b: Vec3): Vec3 {
+  return [Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.max(a[2], b[2])]
+}
+export function max4(a: Vec4, b: Vec4): Vec4 {
+  return [
+    Math.max(a[0], b[0]),
+    Math.max(a[1], b[1]),
+    Math.max(a[2], b[2]),
+    Math.max(a[3], b[3]),
+  ]
+}
 export function neg2(a: Vec2): Vec2 {
   return [-a[0], -a[1]]
 }

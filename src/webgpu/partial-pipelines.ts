@@ -7,16 +7,77 @@ import {
   ListAppend,
   LinkedList,
   ListTail,
+  ToKvPairs,
 } from "../typelevel";
 import {
+  TEXTURE_FORMAT_TO_WGSL_TYPE_LUT,
   VERTEX_FORMAT_TO_JS_TYPE,
   VERTEX_FORMAT_TO_TYPEDARRAY_TYPE,
+  TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT,
   vertexFormatStride,
+  AllowedTextureFormats,
+  vertexFormatToWgslType,
+  VERTEX_FORMAT_TO_ELEMENT_COUNT,
+  VERTEX_FORMAT_TO_ELEMENT_SIZE,
+  VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR,
 } from "./converters";
+import {
+  createLayoutGenerator,
+  createWgslSerializers,
+  generateLayouts,
+  typeName,
+  WGSLStructSpec,
+  WGSLStructValues,
+} from "./wgsl-struct-layout-generator";
+import { Vec2, Vec3 } from "../math/vector";
+import { arrayToObjEntries, arrayToObjValues } from "../object-utils";
 
-type WrappedBindGroupTexture = {
+type WrappedBindGroupTexture<
+  Format extends GPUTextureFormat,
+  ViewDimension extends GPUTextureViewDimension,
+  Multisampled extends boolean,
+> = {
+  format: Format;
   name: string;
   type: "texture";
+  multisampled: Multisampled;
+  viewDimension: ViewDimension;
+  visibility: number;
+  // instantiate<
+  //   Fmt extends AllowedTextureFormats<SampleType>,
+  //   Dim extends "1d" | "2d" | "3d",
+  // >(
+  //   format: Fmt,
+  //   dimensionality: Dim
+  // ): GPUTexture & {
+  //   format: Fmt;
+  //   dimensionality: Dim;
+  //   sampleType: SampleType;
+  // };
+};
+
+type WrappedBindGroupSampler = {
+  type: "comparison" | "filtering" | "non-filtering";
+};
+
+type WrappedBindGroupUniformBuffer<Spec extends WGSLStructSpec> = {
+  type: "uniform-buffer";
+  name: string;
+  format: Spec;
+  visibility: number;
+  instantiate(count: number): GPUBuffer & {
+    format: {
+      type: "uniform";
+      data: Spec;
+    };
+  };
+  wgsl: (groupIndex: number, bindingIndex: number) => string;
+  quickCreate(data: WGSLStructValues<Spec>): GPUBuffer & {
+    format: {
+      type: "uniform";
+      data: Spec;
+    };
+  };
 };
 
 type Attribute = {
@@ -25,15 +86,49 @@ type Attribute = {
   name: string;
 };
 
-type WrappedBindGroupVertexBuffer<
+export type WrappedBindGroupVertexBufferGeneric = WrappedBindGroupVertexBuffer<
+  string,
+  number,
+  Attribute[],
+  GPUVertexStepMode
+>;
+
+export type WrappedBindGroupVertexBuffer<
+  Name extends string,
   ArrayStride extends number,
   Attrs extends Attribute[],
+  StepMode extends GPUVertexStepMode,
 > = {
   type: "vertex-buffer";
-  name: string;
+  name: Name;
   arrayStride: ArrayStride;
+  stepMode: StepMode;
   attributes: Attrs;
-  instantiate(count: number): GPUBuffer;
+  quickCreate(
+    data: FromEntries<{
+      [N in keyof Attrs]: [
+        Attrs[N]["name"],
+        VERTEX_FORMAT_TO_JS_TYPE[Attrs[N]["format"]],
+      ];
+    }>[]
+  ): GPUBuffer & {
+    format: {
+      type: "vertex";
+      data: {
+        arrayStride: ArrayStride;
+        attributes: Attrs;
+      };
+    };
+  };
+  instantiate(count: number): GPUBuffer & {
+    format: {
+      type: "vertex";
+      data: {
+        arrayStride: ArrayStride;
+        attributes: Attrs;
+      };
+    };
+  };
   interleave(
     src: FromEntries<{
       [N in keyof Attrs]: [
@@ -45,63 +140,149 @@ type WrappedBindGroupVertexBuffer<
     offset?: number
   ): ArrayBuffer;
   parametric(fn: (i: number) => VBufferParametric<Attrs>);
+  reinterpret: (buf: GPUBuffer) => GPUBuffer & {
+    format: {
+      type: "vertex";
+      data: {
+        arrayStride: ArrayStride;
+        attributes: Attrs;
+      };
+    };
+  };
+  visibility: number;
+  readonly: boolean;
 };
 
 type WrappedBuffer<
   ArrayStride extends number,
   Attrs extends Attribute[],
 > = GPUBuffer & {
-  arrayStride: ArrayStride;
-  attributes: Attrs;
+  format:
+    | {
+        type: "vertex";
+        data: {
+          arrayStride: ArrayStride;
+          attributes: Attrs;
+        };
+      }
+    | {
+        type: "uniform";
+        data: WGSLStructSpec;
+      };
 };
 
 type WrappedBufferGeneric = WrappedBuffer<number, Attribute[]>;
 
-type WrappedOutput = {
-  format: GPUTextureFormat;
+type WrappedTexture<Fmt extends GPUTextureFormat> = GPUTexture & {
+  format: Fmt;
+  sampleType: (typeof TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT)[Fmt];
+  dimensionality: "1d" | "2d" | "3d";
 };
 
 type WrappedPipeline<
-  BindGroups extends (WrappedBindGroup | undefined)[],
+  BindGroups extends (WrappedBindGroupLayoutGeneric | undefined)[],
   Shader extends WrappedShader,
-  Inputs extends WrappedBindGroupVertexBuffer<number, Attribute[]>[],
-  Outputs extends WrappedOutput,
-> = {
+  Inputs extends WrappedBindGroupVertexBuffer<
+    string,
+    number,
+    Attribute[],
+    GPUVertexStepMode
+  >[],
+  Outputs extends Record<string, OutputFormat>,
+> = GPURenderPipeline & {
   bindGroups: BindGroups;
   shader: Shader;
   inputs: Inputs;
   outputs: Outputs;
 };
 
+type WrappedRenderPass = {};
+
+type WrappedBindGroup = GPUBindGroup & {
+  entries: WrappedBindGroupEntry[];
+};
+
+type VertexFormatsToBuffers<Buffers> =
+  Buffers extends Record<
+    string,
+    WrappedBindGroupVertexBuffer<string, number, Attribute[], GPUVertexStepMode>
+  >
+    ? {
+        [K in keyof Buffers]:
+          | WrappedBuffer<Buffers[K]["arrayStride"], Buffers[K]["attributes"]>
+          | [
+              WrappedBuffer<
+                Buffers[K]["arrayStride"],
+                Buffers[K]["attributes"]
+              >,
+              number,
+            ];
+      }
+    : never;
+
+type BindGroupFormatsToBindGroups<Groups> =
+  Groups extends Record<string, WrappedBindGroupLayoutGeneric>
+    ? {
+        [K in keyof Groups]: GPUBindGroup & {
+          entries: Groups[K]["entries"];
+        };
+      }
+    : never;
+
+type WrappedPipelineBindings<
+  BindGroups extends (WrappedBindGroupLayoutGeneric | undefined)[],
+  Inputs extends WrappedBindGroupVertexBuffer<
+    string,
+    number,
+    Attribute[],
+    GPUVertexStepMode
+  >[],
+> =
+  | VertexFormatsToBuffers<FromEntries<ToKvPairs<Inputs, "name">>>
+  | BindGroupFormatsToBindGroups<FromEntries<ToKvPairs<BindGroups, "name">>>;
+
+// type SODJFH = WrappedPipelineBindings<
+//   [
+//     {
+//       name: "perObject";
+//       entries: [
+//         {
+//           type: "uniform-buffer";
+//           name: "uniforms";
+//           format: {
+//             type: "struct";
+//             name: "PerObjectUniforms";
+//             members: {
+//               mvp: { type: { type: "mat4x4f" } };
+//             };
+//           };
+//         },
+//       ];
+//     },
+//   ],
+//   [
+//     {
+//       type: "vertex-buffer";
+//       name: "position";
+//       arrayStride: 12;
+//       attributes: [];
+//     } & WrappedBindGroupVertexBuffer<12, []>,
+//   ]
+// >;
+
 type WrappedPipelineGeneric = WrappedPipeline<
-  (WrappedBindGroup | undefined)[],
+  (WrappedBindGroupLayoutGeneric | undefined)[],
   WrappedShader,
-  WrappedBindGroupVertexBuffer<number, Attribute[]>[],
-  WrappedOutput
+  WrappedBindGroupVertexBuffer<
+    string,
+    number,
+    Attribute[],
+    GPUVertexStepMode
+  >[],
+  Record<string, OutputFormat>
 >;
 
 type WithKeys<A, B> = Omit<A, keyof B> & B;
-
-type RenderPassBindings = {
-  pipeline?: LinkedList<GPURenderPipeline | null>;
-  indexBuffer?: LinkedList<GPUBuffer>;
-  indexFormat?: LinkedList<"uint32" | "uint16">;
-} & {
-  [K in `bindGroup${number}`]?: LinkedList<GPUBindGroup | null>;
-} & {
-  [K in `vertexBuffer${number}`]?: LinkedList<GPUBuffer | null>;
-};
-
-type CurrentBindings<RPB extends RenderPassBindings> = {
-  [K in keyof RPB]: RPB[K] extends LinkedList<any> ? ListTail<RPB[K]> : never;
-};
-
-type InitRenderPassEncoder = WrappedRenderPassEncoder<{}>;
-
-type RenderPassEncoderDrawFunctions = Pick<
-  GPURenderPassEncoder,
-  "draw" | "drawIndexed" | "drawIndexedIndirect" | "drawIndirect"
->;
 
 type RenderPassEncoderDrawErrors<Errs> = {
   draw: Errs;
@@ -115,197 +296,74 @@ type EqOrError<A, B, Err> = Eq<A, B> extends true ? [] : [Err];
 type AllEqOrError<As extends any[], Bs extends any[], Err> =
   AllEq<As, Bs> extends true ? [] : [Err];
 
-type TypecheckAttr<
-  Expected extends Attribute,
-  Actual extends Attribute,
-  BufferIndex extends number,
-> = AllEqOrError<
-  [Expected["format"], Expected["offset"]],
-  [Actual["format"], Expected["offset"]],
-  `Pipeline expects attribute '${Expected["name"]}' in buffer ${BufferIndex} to have a format of '${Expected["format"]}' at offset ${Expected["offset"]}; however, no such attribute exists in the currently bound buffer.`
->;
-
-type TypecheckAttrsInner<
-  Expected extends Attribute[],
-  Actual extends Attribute[],
-  BufferIndex extends number,
-> = Expected extends [
-  infer ExpectedAttr extends Attribute,
-  ...infer ExpectedRest extends Attribute[],
-]
-  ? Actual extends [
-      infer ActualAttr extends Attribute,
-      ...infer ActualRest extends Attribute[],
-    ]
-    ? [
-        TypecheckAttr<ExpectedAttr, ActualAttr, BufferIndex>,
-        ...TypecheckAttrsInner<ExpectedRest, ActualRest, BufferIndex>,
-      ]
-    : [
-        `Pipeline expects attribute '${ExpectedAttr["name"]}' in buffer ${BufferIndex} to have a format of '${ExpectedAttr["format"]}' at offset ${ExpectedAttr["offset"]}; however, no such attribute exists in the currently bound buffer.`,
-      ]
-  : [];
-
-type TypecheckAttrs<
-  Pipeline extends WrappedPipelineGeneric,
-  Index extends number,
-  BufferFmt extends WrappedBufferGeneric,
-> = TypecheckAttrsInner<
-  Pipeline["inputs"][Index]["attributes"],
-  BufferFmt["attributes"],
-  Index
->;
-
-type TypecheckVertexBuffer<
-  Pipeline extends WrappedPipelineGeneric,
-  Index extends number,
-  BufferFmt extends WrappedBufferGeneric,
-> = Pipeline["inputs"][Index] extends undefined
-  ? []
-  : [
-      ...EqOrError<
-        Pipeline["inputs"][Index]["arrayStride"],
-        BufferFmt["arrayStride"],
-        `Currently bound vertex buffer ${Index} has array stride ${BufferFmt["arrayStride"]} but currently bound pipeline expects ${Pipeline["inputs"][Index]["arrayStride"]}`
-      >,
-      ...TypecheckAttrs<Pipeline, Index, BufferFmt>,
-    ];
-
-type TypecheckRenderPassInputs<Bindings> = Bindings extends RenderPassBindings
-  ? []
-  : never;
-
-type GatherRenderPassErrors<Bindings> = Bindings extends RenderPassBindings
-  ? Bindings["pipeline"] extends undefined
-    ? ["Cannot draw with no pipeline."]
-    : Bindings["pipeline"] extends WrappedPipelineGeneric
-      ? []
-      : ["Expected a typed pipeline; received", Bindings["pipeline"]]
-  : ["Expected render pass bindings, received", Bindings];
-
-type WrappedRenderPassEncoderDrawFunctions<Bindings> =
-  GatherRenderPassErrors<Bindings> extends []
-    ? RenderPassEncoderDrawFunctions
-    : RenderPassEncoderDrawErrors<GatherRenderPassErrors<Bindings>>;
-
-const enc: InitRenderPassEncoder = undefined as any;
-
-enc.bindings;
-
-enc.setPipeline(undefined as unknown as GPURenderPipeline);
-
-enc.draw;
-enc.bindings.pipeline;
-enc.setPipeline(undefined as unknown as GPURenderPipeline);
-
-enc.bindings.pipeline;
-enc.setPipeline(undefined as unknown as null);
-enc.bindings.pipeline;
-enc.setPipeline(undefined as unknown as GPURenderPipeline);
-enc.bindings.pipeline;
-enc.setPipeline(undefined as unknown as GPURenderPipeline);
-enc.bindings.pipeline;
-type Errstest = WrappedRenderPassEncoderDrawFunctions<{
-  pipeline: GPURenderPipeline;
-}>;
-
-// type SKLDFJ = ListAppend<
-//   {
-//     data: GPURenderPipeline
-//   },
-//   null
-// >
-
-type WrappedRenderPassEncoder<Bindings> = Bindings extends RenderPassBindings
-  ? {
-      bindings: Bindings;
-      setPipeline<P extends GPURenderPipeline | null>(
-        p: P
-      ): asserts this is WrappedRenderPassEncoder<{
-        pipeline: ListAppend<
-          Bindings extends {
-            pipeline: infer P2 extends LinkedList<GPURenderPipeline>;
-          }
-            ? P2
-            : undefined,
-          P
-        >;
-      }>;
-
-      setBindGroup<N extends number, Group extends GPUBindGroup | null>(
-        index: N,
-        bindGroup: Group,
-        dynamicOffsets?: Uint32Array | number[],
-        dynamicOffsetsStart?: number,
-        dynamicOffsetsEnd?: number
-      ): asserts this is WrappedRenderPassEncoder<
-        WithKeys<
-          Bindings,
-          {
-            [B in N as `bindGroup${B}`]: Group;
-          }
-        >
-      >;
-      setVertexBuffer<N extends number, Buffer extends GPUBuffer | null>(
-        slot: N,
-        buffer: Buffer,
-        offset?: number,
-        size?: number
-      ): asserts this is WrappedRenderPassEncoder<
-        WithKeys<
-          Bindings,
-          {
-            [B in N as `vertexBuffer${B}`]: Buffer;
-          }
-        >
-      >;
-      setIndexBuffer<Buffer extends GPUBuffer, Fmt extends "uint32" | "uint16">(
-        buffer: Buffer,
-        indexFormat: Fmt,
-        offset?: number,
-        size?: number
-      ): asserts this is WrappedRenderPassEncoder<
-        WithKeys<
-          Bindings,
-          {
-            indexBuffer: Buffer;
-            indexFormat: Fmt;
-          }
-        >
-      >;
-    } & Omit<
-      GPURenderPassEncoder,
-      | "setPipeline"
-      | "setBindGroup"
-      | "setVertexBuffer"
-      | "setIndexBuffer"
-      | "draw"
-      | "drawIndirect"
-      | "drawIndexed"
-      | "drawIndexedIndirect"
-    > &
-      WrappedRenderPassEncoderDrawFunctions<CurrentBindings<Bindings>>
-  : TypeLevelError<["Unrecognized render pass bindings."]>;
-
-const rpe: InitRenderPassEncoder =
-  undefined as unknown as InitRenderPassEncoder;
-
-class Test1 {
-  assert(): asserts this is { a: "hello" } {
-    return;
-  }
-}
-
 type VBufferParametric<A extends Attribute[]> = FromEntries<{
   [N in keyof A]: [A[N]["name"], VERTEX_FORMAT_TO_JS_TYPE[A[N]["format"]]];
 }>;
 
-type WrappedBindGroupEntry = WrappedBindGroupTexture;
+type WrappedBindGroupEntry =
+  | WrappedBindGroupTexture<any, any, any>
+  | WrappedBindGroupUniformBuffer<WGSLStructSpec>
+  | WrappedBindGroupVertexBuffer<
+      string,
+      number,
+      Attribute[],
+      GPUVertexStepMode
+    >;
 
-type WrappedBindGroup = {
-  name: string;
-  entries: WrappedBindGroupEntry[];
-};
+type BindGroupEntryToBindGroup<Entry extends WrappedBindGroupEntry> =
+  Entry extends WrappedBindGroupUniformBuffer<infer Format>
+    ? GPUBuffer & {
+        format: { type: "uniform"; data: Format };
+      }
+    : Entry extends WrappedBindGroupVertexBuffer<
+          infer Name,
+          infer ArrayStride,
+          infer Attributes,
+          infer StepMode
+        >
+      ? GPUBuffer & {
+          format: {
+            type: "vertex";
+            data: {
+              arrayStride: ArrayStride;
+              attributes: Attributes;
+              stepMode: StepMode;
+            };
+          };
+        }
+      : Entry extends WrappedBindGroupTexture<
+            infer SampleType,
+            infer ViewDimension,
+            infer Multisampled
+          >
+        ? GPUTexture & {
+            sampleType: SampleType;
+          }
+        : never;
+
+type BindGroupEntriesToBindGroups<Entries> =
+  Entries extends Record<string, WrappedBindGroupEntry>
+    ? {
+        [K in keyof Entries]: BindGroupEntryToBindGroup<Entries[K]>;
+      }
+    : never;
+
+type WrappedBindGroupLayout<Entries extends WrappedBindGroupEntry[]> =
+  GPUBindGroupLayout & {
+    name: string;
+    entries: Entries;
+    instantiate(
+      params: BindGroupEntriesToBindGroups<
+        FromEntries<ToKvPairs<Entries, "name">>
+      >
+    ): GPUBindGroup & {
+      entries: Entries;
+    };
+  };
+
+export type WrappedBindGroupLayoutGeneric = WrappedBindGroupLayout<
+  WrappedBindGroupEntry[]
+>;
 
 type WrappedShader = {
   module: GPUShaderModule;
@@ -343,60 +401,288 @@ type TypesToAttrs<Types extends [string, GPUVertexFormat][]> = Types extends [
     ]
   : [];
 
-export function wrapDevice(device: GPUDevice) {
-  return {
-    vertexBuffer<Types extends [string, GPUVertexFormat][]>(
-      ...types: Types
-    ): {
-      type: "vertex-buffer";
-      arrayStride: number;
-      attributes: TypesToAttrs<Types>;
-    } {
-      let size = 0;
+export type OutputFormat =
+  | GPUTextureFormat
+  | GPUColorTargetState
+  | WrappedBindGroupTexture<any, any, any>;
 
-      let attributes: {
-        format: GPUVertexFormat;
-        offset: number;
-        name: string;
-      }[] = [];
+export function pipelineRenderpass<Pipeline extends WrappedPipelineGeneric>(
+  pipeline: Pipeline,
+  pass: GPURenderPassEncoder | GPURenderBundleEncoder
+): (
+  bindings: Partial<
+    WrappedPipelineBindings<Pipeline["bindGroups"], Pipeline["inputs"]>
+  >
+) => void {
+  const bindGroupNameToIndex = new Map(
+    pipeline.bindGroups.map((b, i) => [b.name, i])
+  );
+  const inputNameToIndex = new Map(pipeline.inputs.map((b, i) => [b.name, i]));
 
-      for (const [name, format] of types) {
-        const stride = vertexFormatStride(format);
-
-        attributes.push({
-          format,
-          name,
-          offset: size,
-        });
-
-        size += stride;
+  return (bindings) => {
+    console.log(bindGroupNameToIndex, bindings);
+    for (const [k, v] of Object.entries(bindings)) {
+      const bindGroupIndex = bindGroupNameToIndex.get(k);
+      if (bindGroupIndex !== undefined) {
+        pass.setBindGroup(bindGroupIndex, v as GPUBindGroup);
+        continue;
       }
 
+      const inputIndex = inputNameToIndex.get(k);
+      if (inputIndex !== undefined) {
+        pass.setVertexBuffer(
+          inputIndex,
+          // @ts-expect-error
+          ...(Array.isArray(v) ? v : [v as GPUBuffer])
+        );
+        continue;
+      }
+
+      throw new Error(`Bound pipeline does not have attribute '${k}'.`);
+    }
+  };
+}
+
+export function wrapDevice(device: GPUDevice) {
+  return {
+    uniformBuffer<Name extends string, Spec extends WGSLStructSpec>(
+      name: Name,
+      spec: Spec
+    ) {
+      const [withLayouts] = generateLayouts([spec]);
+      const gen = createLayoutGenerator(withLayouts);
+
       return {
+        type: "uniform-buffer" as const,
+        name,
+        format: spec,
+        visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
+        quickCreate(data: WGSLStructValues<Spec>) {
+          const gpubuf = this.instantiate();
+          const arrayBuf = new ArrayBuffer(withLayouts.size);
+          gen(new DataView(arrayBuf), data);
+          device.queue.writeBuffer(gpubuf, 0, arrayBuf);
+          return gpubuf;
+        },
+        instantiate(): GPUBuffer & {
+          format: {
+            type: "uniform";
+            data: Spec;
+          };
+        } {
+          const buf = device.createBuffer({
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            size: withLayouts.size,
+          });
+
+          // @ts-expect-error
+          buf.format = {
+            type: "uniform",
+            data: spec,
+          };
+
+          // @ts-expect-error
+          return buf;
+        },
+        fill(buf: GPUBuffer, offset: number, data: WGSLStructValues<Spec>) {
+          const cpubuf = new ArrayBuffer(withLayouts.size);
+          gen(new DataView(cpubuf), data);
+          device.queue.writeBuffer(buf, offset, cpubuf);
+        },
+        wgsl(groupIndex: number, bindingIndex: number): string {
+          return `@group(${groupIndex}) @binding(${bindingIndex}) var<uniform> ${name} : ${typeName(spec)};`;
+        },
+      };
+    },
+    vertexBuffer<
+      Name extends string,
+      ArrayStride extends number,
+      Types extends Attribute[],
+      StepMode extends GPUVertexStepMode,
+    >(
+      name: Name,
+      params: {
+        stride: ArrayStride;
+        types: Types;
+        stepMode: StepMode;
+      }
+    ): WrappedBindGroupVertexBuffer<Name, ArrayStride, Types, StepMode> {
+      let size = params.stride;
+
+      // let attributes: {
+      //   format: GPUVertexFormat;
+      //   offset: number;
+      //   name: string;
+      // }[] = [];
+
+      // for (const [name, format] of types) {
+      //   const stride = vertexFormatStride(format);
+
+      //   attributes.push({
+      //     format,
+      //     name,
+      //     offset: size,
+      //   });
+
+      //   size += stride;
+      // }
+
+      return {
+        name,
+        stepMode: params.stepMode,
         type: "vertex-buffer",
         arrayStride: size,
+        attributes: params.types,
         // @ts-expect-error
-        attributes,
+        reinterpret(buf) {
+          return buf;
+        },
+        // @ts-expect-error
+        instantiate(count) {
+          const buf = device.createBuffer({
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            size: count * size,
+          });
+          return buf;
+        },
+        quickCreate(data) {
+          const buf = this.instantiate(data.length);
+          const cpubuf = new ArrayBuffer(size * data.length);
+          const attrViews = arrayToObjEntries(params.types, (attr) => [
+            attr.name,
+            new VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR[attr.format](cpubuf),
+          ]);
+
+          let index = 0;
+          for (const d of data) {
+            for (const a of params.types) {
+              const view = attrViews[a.name];
+              const elementSize = VERTEX_FORMAT_TO_ELEMENT_SIZE[a.format];
+              const elementCount = VERTEX_FORMAT_TO_ELEMENT_COUNT[a.format];
+              for (let i = 0; i < elementCount; i++) {
+                const byteOffset = index * size + a.offset;
+                const elementOffset = byteOffset / elementSize + i;
+                view[elementOffset] =
+                  elementCount === 1 ? d[a.name] : d[a.name][i];
+              }
+            }
+            index++;
+          }
+
+          console.log(attrViews, cpubuf);
+
+          device.queue.writeBuffer(buf, 0, cpubuf);
+          return buf;
+        },
       };
     },
-    bindGroup<Entries extends WrappedBindGroupEntry[]>(
+    bindGroup<Name extends string, Entries extends WrappedBindGroupEntry[]>(
+      name: Name,
       ...entries: Entries
-    ): {
+    ): GPUBindGroupLayout & {
       entries: Entries;
-    } {
-      return {
-        entries,
-      };
-    },
-    texture<Name extends string>(
-      name: Name
-    ): {
-      type: "texture";
       name: Name;
+      instantiate(
+        params: BindGroupEntriesToBindGroups<
+          FromEntries<ToKvPairs<Entries, "name">>
+        >
+      ): GPUBindGroup & {
+        entries: Entries;
+      };
+    } {
+      const layout = device.createBindGroupLayout({
+        entries: entries.map((e, i) => {
+          if (e.type === "texture") {
+            return {
+              binding: i,
+              visibility: e.visibility,
+              layout: {
+                texture: {
+                  sampleType: TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT[e.format],
+                  multisampled: e.multisampled,
+                  viewDimension: e.viewDimension,
+                },
+              },
+            };
+          } else if (e.type === "uniform-buffer") {
+            return {
+              binding: i,
+              visibility: e.visibility,
+              buffer: {
+                type: "uniform",
+              },
+            };
+          } else if (e.type === "vertex-buffer") {
+            return {
+              binding: i,
+              visibility: e.visibility,
+              buffer: {
+                type: e.readonly ? "read-only-storage" : "storage",
+              },
+            };
+          }
+        }),
+      });
+
+      // @ts-expect-error
+      layout.entries = entries;
+      // @ts-expect-error
+      layout.name = name;
+      // @ts-expect-error
+      layout.instantiate = (params) => {
+        const bg = device.createBindGroup({
+          layout,
+          entries: entries.map((e, i) => ({
+            binding: i,
+            resource: params[e.name],
+          })),
+        });
+        return bg;
+      };
+
+      // @ts-expect-error
+      return layout;
+    },
+    texture<
+      Name extends string,
+      Format extends GPUTextureFormat,
+      ViewDimension extends GPUTextureViewDimension | undefined,
+      Multisampled extends boolean | undefined,
+    >(
+      name: Name,
+      params: {
+        multisampled?: Multisampled;
+        visibility?: GPUShaderStageFlags;
+        viewDimension?: ViewDimension;
+        format: Format;
+      }
+    ): WrappedBindGroupTexture<
+      Format,
+      GPUTextureViewDimension extends ViewDimension ? "2d" : ViewDimension,
+      boolean extends Multisampled ? false : Multisampled
+    > & {
+      name: Name;
+      instantiate: (
+        resolution: Vec2 | Vec3,
+        usage: GPUTextureUsageFlags
+      ) => GPUTexture;
     } {
       return {
         name,
         type: "texture",
+        format: params.format,
+        visibility: params.visibility,
+        // @ts-expect-error
+        viewDimension: params.viewDimension ?? "2d",
+        // @ts-expect-error
+        multisampled: params.multisampled ?? false,
+        instantiate(resolution, usage) {
+          return device.createTexture({
+            size: resolution,
+            usage,
+            format: params.format,
+          });
+        },
       };
     },
     shader(code: string, stages: ShaderStage[] = ["vertex", "fragment"]) {
@@ -405,10 +691,178 @@ export function wrapDevice(device: GPUDevice) {
       });
       return { module, stages };
     },
-    pipeline<
-      BindGroups extends WrappedBindGroup[],
+    async pipeline<
+      BindGroups extends WrappedBindGroupLayoutGeneric[],
+      Inputs extends WrappedBindGroupVertexBuffer<any, any, Attribute[], any>[],
+      Outputs extends Record<string, OutputFormat>,
+    >(params: {
+      bindGroups: BindGroups;
+      inputs: Inputs;
+      outputs: Outputs;
+      globals?: string;
+      vertex: string;
+      fragment?: {
+        function: string;
+        struct: string;
+      };
+      depthStencil?: GPUDepthStencilState;
+    }): Promise<WrappedPipeline<BindGroups, any, Inputs, Outputs>> {
+      const requiredStructDefs = params.bindGroups.flatMap((bg) =>
+        bg.entries.flatMap((e) => {
+          if (e.type === "uniform-buffer") {
+            return [e.format];
+          } else {
+            return [];
+          }
+        })
+      );
+
+      const requiredBindings = params.bindGroups
+        .flatMap((bg, groupIndex) =>
+          bg.entries.flatMap((e, bindingIndex) => {
+            if (e.type === "uniform-buffer") {
+              return e.wgsl(groupIndex, bindingIndex);
+            } else {
+              return "";
+            }
+          })
+        )
+        .join("\n");
+
+      let shaderLoc = 0;
+
+      const vertexStruct =
+        params.inputs.length > 0
+          ? `struct Vertex {
+        ${params.inputs.flatMap((i) => i.attributes.map((attr) => `@location(${shaderLoc++}) ${attr.name}: ${vertexFormatToWgslType(attr.format)}`)).join(",\n")}
+      }`
+          : "";
+
+      return this.pipelineRaw({
+        bindGroups: params.bindGroups,
+        inputs: params.inputs,
+        outputs: params.outputs,
+        depthStencil: params.depthStencil,
+        shader: this.shader(
+          `
+        ${createWgslSerializers(...requiredStructDefs).code}
+        ${requiredBindings}
+        ${params.globals ?? ""}
+        ${vertexStruct}
+
+        struct FragInput {
+          ${params.fragment?.struct ?? ""}
+        }
+
+        struct FragOutput {
+          ${Object.entries(params.outputs)
+            .map(
+              ([name, value], i) =>
+                `@location(${i}) ${name} : ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[typeof value === "string" ? value : value.format]}`
+            )
+            .join(",\n  ")}
+        }
+
+        @vertex
+        fn VSMain(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32, ${vertexStruct ? "vertex: Vertex" : ""}) -> FragInput {
+          ${params.vertex} 
+        }
+
+      ${
+        params.fragment
+          ? `@fragment
+        fn FSMain(input : FragInput) -> FragOutput {
+          ${params.fragment.function}
+        }`
+          : ""
+      }
+        `,
+          params.fragment ? ["vertex", "fragment"] : ["vertex"]
+        ),
+      });
+
+      // ${params.depthStencil?.depthWriteEnabled ? `,\n  @builtin(frag_depth) depth : f32` : ""}
+    },
+    async pipelineRaw<
+      BindGroups extends WrappedBindGroupLayoutGeneric[],
       Shader extends WrappedShader,
-      Inputs extends WrappedBindGroupVertexBuffer<any, any>[],
-    >(params: { bindGroups: BindGroups; shader: Shader; inputs: Inputs }) {},
+      Inputs extends WrappedBindGroupVertexBuffer<any, any, any, any>[],
+      Outputs extends Record<string, OutputFormat>,
+    >(params: {
+      bindGroups: BindGroups;
+      shader: Shader;
+      inputs: Inputs;
+      outputs: Outputs;
+      depthStencil?: GPUDepthStencilState;
+    }): Promise<WrappedPipeline<BindGroups, Shader, Inputs, Outputs>> {
+      let vertex = undefined;
+
+      if (params.shader.stages.includes("vertex")) {
+        const buffers = [];
+
+        let shaderLoc = 0;
+
+        for (const b of params.inputs) {
+          let currBuffer = {
+            arrayStride: b.arrayStride,
+            stepMode: b.stepMode,
+            attributes: [],
+          };
+          buffers.push(currBuffer);
+
+          for (const a of b.attributes) {
+            currBuffer.attributes.push({
+              format: a.format,
+              offset: a.offset,
+              shaderLocation: shaderLoc,
+            });
+
+            shaderLoc++;
+          }
+        }
+
+        vertex = {
+          module: params.shader.module,
+          buffers,
+        };
+      }
+
+      let fragment: GPUFragmentState | undefined = undefined;
+
+      if (params.shader.stages.includes("fragment")) {
+        fragment = {
+          module: params.shader.module,
+          targets: Object.values(params.outputs).map(
+            (e) =>
+              (typeof e === "string"
+                ? { format: e }
+                : (e as any)?.type === "texture"
+                  ? {
+                      format: e.format,
+                    }
+                  : e) as GPUColorTargetState
+          ),
+        };
+      }
+
+      const ppln = await device.createRenderPipelineAsync({
+        vertex,
+        fragment,
+        depthStencil: params.depthStencil,
+        layout: device.createPipelineLayout({
+          bindGroupLayouts: params.bindGroups.map((bg, i) => bg),
+        }),
+      });
+
+      // @ts-expect-error
+      ppln.bindGroups = params.bindGroups;
+      // @ts-expect-error
+      ppln.shader = params.shader;
+      // @ts-expect-error
+      ppln.inputs = params.inputs;
+
+      // @ts-expect-error
+      return ppln;
+    },
   };
 }
