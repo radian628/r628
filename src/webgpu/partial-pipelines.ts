@@ -72,6 +72,7 @@ type WrappedBindGroupUniformBuffer<Spec extends WGSLStructSpec> = {
     };
   };
   wgsl: (groupIndex: number, bindingIndex: number) => string;
+  wgslStorage: (groupIndex: number, bindingIndex: number) => string;
   quickCreate(data: WGSLStructValues<Spec>): GPUBuffer & {
     format: {
       type: "uniform";
@@ -80,7 +81,7 @@ type WrappedBindGroupUniformBuffer<Spec extends WGSLStructSpec> = {
   };
 };
 
-type Attribute = {
+export type Attribute = {
   format: GPUVertexFormat;
   offset: number;
   name: string;
@@ -110,7 +111,7 @@ export type WrappedBindGroupVertexBuffer<
         Attrs[N]["name"],
         VERTEX_FORMAT_TO_JS_TYPE[Attrs[N]["format"]],
       ];
-    }>[]
+    }>[],
   ): GPUBuffer & {
     format: {
       type: "vertex";
@@ -137,7 +138,7 @@ export type WrappedBindGroupVertexBuffer<
       ];
     }>,
     dst?: ArrayBuffer,
-    offset?: number
+    offset?: number,
   ): ArrayBuffer;
   parametric(fn: (i: number) => VBufferParametric<Attrs>);
   reinterpret: (buf: GPUBuffer) => GPUBuffer & {
@@ -149,6 +150,7 @@ export type WrappedBindGroupVertexBuffer<
       };
     };
   };
+  wgslStorage: (groupIndex: number, bindingIndex: number) => string;
   visibility: number;
   readonly: boolean;
 };
@@ -355,7 +357,7 @@ type WrappedBindGroupLayout<Entries extends WrappedBindGroupEntry[]> =
     instantiate(
       params: BindGroupEntriesToBindGroups<
         FromEntries<ToKvPairs<Entries, "name">>
-      >
+      >,
     ): GPUBindGroup & {
       entries: Entries;
     };
@@ -408,14 +410,14 @@ export type OutputFormat =
 
 export function pipelineRenderpass<Pipeline extends WrappedPipelineGeneric>(
   pipeline: Pipeline,
-  pass: GPURenderPassEncoder | GPURenderBundleEncoder
+  pass: GPURenderPassEncoder | GPURenderBundleEncoder,
 ): (
   bindings: Partial<
     WrappedPipelineBindings<Pipeline["bindGroups"], Pipeline["inputs"]>
-  >
+  >,
 ) => void {
   const bindGroupNameToIndex = new Map(
-    pipeline.bindGroups.map((b, i) => [b.name, i])
+    pipeline.bindGroups.map((b, i) => [b.name, i]),
   );
   const inputNameToIndex = new Map(pipeline.inputs.map((b, i) => [b.name, i]));
 
@@ -433,7 +435,7 @@ export function pipelineRenderpass<Pipeline extends WrappedPipelineGeneric>(
         pass.setVertexBuffer(
           inputIndex,
           // @ts-expect-error
-          ...(Array.isArray(v) ? v : [v as GPUBuffer])
+          ...(Array.isArray(v) ? v : [v as GPUBuffer]),
         );
         continue;
       }
@@ -447,7 +449,7 @@ export function wrapDevice(device: GPUDevice) {
   return {
     uniformBuffer<Name extends string, Spec extends WGSLStructSpec>(
       name: Name,
-      spec: Spec
+      spec: Spec,
     ) {
       const [withLayouts] = generateLayouts([spec]);
       const gen = createLayoutGenerator(withLayouts);
@@ -492,6 +494,9 @@ export function wrapDevice(device: GPUDevice) {
         wgsl(groupIndex: number, bindingIndex: number): string {
           return `@group(${groupIndex}) @binding(${bindingIndex}) var<uniform> ${name} : ${typeName(spec)};`;
         },
+        wgslStorage(groupIndex: number, bindingIndex: number): string {
+          return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage> ${name} : array<${typeName(spec)}>;`;
+        },
       };
     },
     vertexBuffer<
@@ -505,7 +510,7 @@ export function wrapDevice(device: GPUDevice) {
         stride: ArrayStride;
         types: Types;
         stepMode: StepMode;
-      }
+      },
     ): WrappedBindGroupVertexBuffer<Name, ArrayStride, Types, StepMode> {
       let size = params.stride;
 
@@ -585,7 +590,7 @@ export function wrapDevice(device: GPUDevice) {
       instantiate(
         params: BindGroupEntriesToBindGroups<
           FromEntries<ToKvPairs<Entries, "name">>
-        >
+        >,
       ): GPUBindGroup & {
         entries: Entries;
       };
@@ -655,7 +660,7 @@ export function wrapDevice(device: GPUDevice) {
         visibility?: GPUShaderStageFlags;
         viewDimension?: ViewDimension;
         format: Format;
-      }
+      },
     ): WrappedBindGroupTexture<
       Format,
       GPUTextureViewDimension extends ViewDimension ? "2d" : ViewDimension,
@@ -664,7 +669,7 @@ export function wrapDevice(device: GPUDevice) {
       name: Name;
       instantiate: (
         resolution: Vec2 | Vec3,
-        usage: GPUTextureUsageFlags
+        usage: GPUTextureUsageFlags,
       ) => GPUTexture;
     } {
       return {
@@ -714,7 +719,7 @@ export function wrapDevice(device: GPUDevice) {
           } else {
             return [];
           }
-        })
+        }),
       );
 
       const requiredBindings = params.bindGroups
@@ -725,7 +730,7 @@ export function wrapDevice(device: GPUDevice) {
             } else {
               return "";
             }
-          })
+          }),
         )
         .join("\n");
 
@@ -758,7 +763,7 @@ export function wrapDevice(device: GPUDevice) {
           ${Object.entries(params.outputs)
             .map(
               ([name, value], i) =>
-                `@location(${i}) ${name} : ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[typeof value === "string" ? value : value.format]}`
+                `@location(${i}) ${name} : ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[typeof value === "string" ? value : value.format]}`,
             )
             .join(",\n  ")}
         }
@@ -777,7 +782,7 @@ export function wrapDevice(device: GPUDevice) {
           : ""
       }
         `,
-          params.fragment ? ["vertex", "fragment"] : ["vertex"]
+          params.fragment ? ["vertex", "fragment"] : ["vertex"],
         ),
       });
 
@@ -840,7 +845,7 @@ export function wrapDevice(device: GPUDevice) {
                   ? {
                       format: e.format,
                     }
-                  : e) as GPUColorTargetState
+                  : e) as GPUColorTargetState,
           ),
         };
       }

@@ -169,12 +169,7 @@ export async function lineRenderer(
       var pixel: FragOutput;
 
       if (length(input.signedUv) > 1.0) { discard; }
-      let dist = length(input.signedUv);
-      let antialiasThreshold = 1.0 - 1.0 / (params.viewportSize * input.size) * 2.0;
-      var col = input.color;
-      let alpha = -(dist - 1.0) / (1.0 - antialiasThreshold);
-      col.a = min(1.0, max(0.0, alpha));
-      pixel.color = col;
+      pixel.color = input.color;
 
       return pixel;`,
       struct: `@builtin(position) position : vec4f,
@@ -243,14 +238,7 @@ export async function lineRenderer(
     fragment: {
       function: `
       var pixel: FragOutput;
-      
-      let dist = abs(input.signedUv.y); 
-      let antialiasThreshold = 1.0 - 1.0 / (params.viewportSize * input.size) * 2.0;
-      var col = input.color;
-      let alpha = -(dist - 1.0) / (1.0 - antialiasThreshold);
-      col.a = min(1.0, max(0.0, alpha));
-      pixel.color = col;
-      
+      pixel.color = input.color;
       return pixel;`,
       struct: `@location(0) color : vec4f,
 @builtin(position) position : vec4f,
