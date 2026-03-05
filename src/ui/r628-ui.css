@@ -1,0 +1,94 @@
+@import url("https://rsms.me/inter/inter.css");
+
+:root {
+  --bg: #121212;
+  --bg-lighter: #333;
+  --fg: #eee;
+  --border-color: #444;
+  --border: 1px solid var(--border-color);
+  --shadow: #0007;
+  --gap: 2px;
+  --font: "InterVariable", sans-serif;
+}
+
+input {
+  color: var(--fg);
+  border-radius: 5px;
+  border-width: 1px;
+  background-color: var(--bg-lighter);
+  border: none;
+}
+
+.ui-container {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+}
+
+.ui-array {
+  list-style: none;
+  padding-inline-start: 0;
+  margin-block: 0;
+}
+
+.ui-is-being-dragged > :not(.drag-destination) {
+  opacity: 0.5;
+}
+
+.ui-array-draggable > li {
+  position: relative;
+  padding-bottom: var(--gap);
+}
+
+.ui-array-draggable > li > .drag-source {
+  display: flex;
+  cursor: grab;
+}
+
+.ui-array-draggable .drag-destination {
+  width: 100%;
+  height: 0px;
+}
+
+.ui-array-draggable .ui-drag-dst {
+  width: 100%;
+  height: 0px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.ui-array-draggable .drag-float {
+  pointer-events: none;
+}
+
+.ui-drag-src {
+  width: 20px;
+  margin-right: var(--gap);
+
+  background-image: radial-gradient(
+    #555 0%,
+    #555 10%,
+    transparent 40%,
+    transparent 100%
+  );
+  background-size: 20% 20%;
+  background-position: center;
+}
+
+.ui-array-draggable .drag-active.drag-destination .ui-drag-dst {
+  height: 100%;
+  transform: translateY(-50%);
+}
+
+.ui-array-draggable .drag-active.drag-destination .ui-drag-dst:hover {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 40%,
+    orange 40%,
+    orange 60%,
+    transparent 60%,
+    transparent 100%
+  );
+}

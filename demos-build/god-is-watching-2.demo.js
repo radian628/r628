@@ -800,8 +800,11 @@
   }
 
   // demos-src/god-is-watching-2.demo.ts
-  var LINE_COUNT = 500;
   var POINTS_PER_LINE = 20;
+  var SIZE = 2560;
+  var LINE_COUNT = Math.round(SIZE / 3);
+  var PUPIL_DENSITY = Math.round(3e7 * (SIZE ** 2 / 2048 ** 2));
+  var IRIS_DENSITY = Math.round(15e6 * (SIZE ** 2 / 2048 ** 2));
   function pointDrawer(canvas, ctx) {
     const dims = [canvas.width, canvas.height];
     return {
@@ -810,7 +813,9 @@
       },
       pointUnscaled(pos) {
         const [x, y] = pos;
-        ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1);
+        const OFFSET = 0.3;
+        const RECTSIZE = 1;
+        ctx.fillRect(x, y, RECTSIZE, RECTSIZE);
       }
     };
   }
@@ -937,7 +942,7 @@
           const eyePos = isMainThread ? eyeball.pos : [eyeballSize, eyeballSize];
           {
             ctx.fillStyle = "black";
-            const pointCount = Math.floor(3e7 * e.pupilRadius ** 2);
+            const pointCount = Math.floor(PUPIL_DENSITY * e.pupilRadius ** 2);
             for (const i of range(pointCount)) {
               const randomPointInCircle = [
                 rand(eyePos[0] - e.pupilRadius, eyePos[0] + e.pupilRadius),
@@ -952,7 +957,7 @@
           }
           {
             ctx.fillStyle = "black";
-            const pointCount = Math.floor(2e7 * e.irisRadius ** 2);
+            const pointCount = Math.floor(IRIS_DENSITY * e.irisRadius ** 2);
             const seed = [Math.random() * 100, Math.random() * 100];
             const randgen = (v) => simpleRandVec2ToVec2(add2(v, seed));
             for (const i of range(pointCount)) {
@@ -1146,8 +1151,8 @@
     const canvas = document.createElement("canvas");
     canvas.id = "canvas";
     document.body.appendChild(canvas);
-    canvas.width = 3e3;
-    canvas.height = 3e3;
+    canvas.width = SIZE;
+    canvas.height = SIZE;
     const ctx = canvas.getContext("2d");
     const draw = pointDrawer(canvas, ctx);
     addEyeballs(mainThreadEyeballs, 100, -1.1, -1.4, 0);
@@ -1162,7 +1167,10 @@
       Promise.all(
         [...mainThreadEyeballs.all()].map(async (e) => {
           await enqueueAnimationFrame(async () => {
-            const r = await tp.send.drawEyeballOffscreen(e, [3e3, 3e3]);
+            const r = await tp.send.drawEyeballOffscreen(e, [
+              canvas.width,
+              canvas.height
+            ]);
             if (r) {
               ctx.drawImage(
                 r.image,
@@ -1222,7 +1230,7 @@
                   );
                   if (isNaN(d)) d = 0;
                   const normd = clamp(d + rand(-0.5, 0.5), 0, 1);
-                  return lerp(normd, 1 / 2e3, 1 / 300);
+                  return lerp(normd, 1 / 4e3, 1 / 600);
                 }
               );
               console.log(toDraw.length);

@@ -5,8 +5,8 @@
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __getProtoOf = Object.getPrototypeOf;
   var __hasOwnProp = Object.prototype.hasOwnProperty;
-  var __commonJS = (cb2, mod) => function __require() {
-    return mod || (0, cb2[__getOwnPropNames(cb2)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  var __commonJS = (cb, mod) => function __require() {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
   };
   var __copyProps = (to, from, except, desc) => {
     if (from && typeof from === "object" || typeof from === "function") {
@@ -24,1401 +24,6 @@
     isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
     mod
   ));
-
-  // node_modules/fft.js/lib/fft.js
-  var require_fft = __commonJS({
-    "node_modules/fft.js/lib/fft.js"(exports, module) {
-      "use strict";
-      function FFT3(size) {
-        this.size = size | 0;
-        if (this.size <= 1 || (this.size & this.size - 1) !== 0)
-          throw new Error("FFT size must be a power of two and bigger than 1");
-        this._csize = size << 1;
-        var table = new Array(this.size * 2);
-        for (var i = 0; i < table.length; i += 2) {
-          const angle = Math.PI * i / this.size;
-          table[i] = Math.cos(angle);
-          table[i + 1] = -Math.sin(angle);
-        }
-        this.table = table;
-        var power = 0;
-        for (var t = 1; this.size > t; t <<= 1)
-          power++;
-        this._width = power % 2 === 0 ? power - 1 : power;
-        this._bitrev = new Array(1 << this._width);
-        for (var j = 0; j < this._bitrev.length; j++) {
-          this._bitrev[j] = 0;
-          for (var shift = 0; shift < this._width; shift += 2) {
-            var revShift = this._width - shift - 2;
-            this._bitrev[j] |= (j >>> shift & 3) << revShift;
-          }
-        }
-        this._out = null;
-        this._data = null;
-        this._inv = 0;
-      }
-      module.exports = FFT3;
-      FFT3.prototype.fromComplexArray = function fromComplexArray(complex, storage) {
-        var res = storage || new Array(complex.length >>> 1);
-        for (var i = 0; i < complex.length; i += 2)
-          res[i >>> 1] = complex[i];
-        return res;
-      };
-      FFT3.prototype.createComplexArray = function createComplexArray() {
-        const res = new Array(this._csize);
-        for (var i = 0; i < res.length; i++)
-          res[i] = 0;
-        return res;
-      };
-      FFT3.prototype.toComplexArray = function toComplexArray(input, storage) {
-        var res = storage || this.createComplexArray();
-        for (var i = 0; i < res.length; i += 2) {
-          res[i] = input[i >>> 1];
-          res[i + 1] = 0;
-        }
-        return res;
-      };
-      FFT3.prototype.completeSpectrum = function completeSpectrum(spectrum) {
-        var size = this._csize;
-        var half = size >>> 1;
-        for (var i = 2; i < half; i += 2) {
-          spectrum[size - i] = spectrum[i];
-          spectrum[size - i + 1] = -spectrum[i + 1];
-        }
-      };
-      FFT3.prototype.transform = function transform(out, data) {
-        if (out === data)
-          throw new Error("Input and output buffers must be different");
-        this._out = out;
-        this._data = data;
-        this._inv = 0;
-        this._transform4();
-        this._out = null;
-        this._data = null;
-      };
-      FFT3.prototype.realTransform = function realTransform(out, data) {
-        if (out === data)
-          throw new Error("Input and output buffers must be different");
-        this._out = out;
-        this._data = data;
-        this._inv = 0;
-        this._realTransform4();
-        this._out = null;
-        this._data = null;
-      };
-      FFT3.prototype.inverseTransform = function inverseTransform(out, data) {
-        if (out === data)
-          throw new Error("Input and output buffers must be different");
-        this._out = out;
-        this._data = data;
-        this._inv = 1;
-        this._transform4();
-        for (var i = 0; i < out.length; i++)
-          out[i] /= this.size;
-        this._out = null;
-        this._data = null;
-      };
-      FFT3.prototype._transform4 = function _transform4() {
-        var out = this._out;
-        var size = this._csize;
-        var width = this._width;
-        var step = 1 << width;
-        var len = size / step << 1;
-        var outOff;
-        var t;
-        var bitrev = this._bitrev;
-        if (len === 4) {
-          for (outOff = 0, t = 0; outOff < size; outOff += len, t++) {
-            const off = bitrev[t];
-            this._singleTransform2(outOff, off, step);
-          }
-        } else {
-          for (outOff = 0, t = 0; outOff < size; outOff += len, t++) {
-            const off = bitrev[t];
-            this._singleTransform4(outOff, off, step);
-          }
-        }
-        var inv = this._inv ? -1 : 1;
-        var table = this.table;
-        for (step >>= 2; step >= 2; step >>= 2) {
-          len = size / step << 1;
-          var quarterLen = len >>> 2;
-          for (outOff = 0; outOff < size; outOff += len) {
-            var limit = outOff + quarterLen;
-            for (var i = outOff, k = 0; i < limit; i += 2, k += step) {
-              const A = i;
-              const B = A + quarterLen;
-              const C = B + quarterLen;
-              const D = C + quarterLen;
-              const Ar = out[A];
-              const Ai = out[A + 1];
-              const Br = out[B];
-              const Bi = out[B + 1];
-              const Cr = out[C];
-              const Ci = out[C + 1];
-              const Dr = out[D];
-              const Di = out[D + 1];
-              const MAr = Ar;
-              const MAi = Ai;
-              const tableBr = table[k];
-              const tableBi = inv * table[k + 1];
-              const MBr = Br * tableBr - Bi * tableBi;
-              const MBi = Br * tableBi + Bi * tableBr;
-              const tableCr = table[2 * k];
-              const tableCi = inv * table[2 * k + 1];
-              const MCr = Cr * tableCr - Ci * tableCi;
-              const MCi = Cr * tableCi + Ci * tableCr;
-              const tableDr = table[3 * k];
-              const tableDi = inv * table[3 * k + 1];
-              const MDr = Dr * tableDr - Di * tableDi;
-              const MDi = Dr * tableDi + Di * tableDr;
-              const T0r = MAr + MCr;
-              const T0i = MAi + MCi;
-              const T1r = MAr - MCr;
-              const T1i = MAi - MCi;
-              const T2r = MBr + MDr;
-              const T2i = MBi + MDi;
-              const T3r = inv * (MBr - MDr);
-              const T3i = inv * (MBi - MDi);
-              const FAr = T0r + T2r;
-              const FAi = T0i + T2i;
-              const FCr = T0r - T2r;
-              const FCi = T0i - T2i;
-              const FBr = T1r + T3i;
-              const FBi = T1i - T3r;
-              const FDr = T1r - T3i;
-              const FDi = T1i + T3r;
-              out[A] = FAr;
-              out[A + 1] = FAi;
-              out[B] = FBr;
-              out[B + 1] = FBi;
-              out[C] = FCr;
-              out[C + 1] = FCi;
-              out[D] = FDr;
-              out[D + 1] = FDi;
-            }
-          }
-        }
-      };
-      FFT3.prototype._singleTransform2 = function _singleTransform2(outOff, off, step) {
-        const out = this._out;
-        const data = this._data;
-        const evenR = data[off];
-        const evenI = data[off + 1];
-        const oddR = data[off + step];
-        const oddI = data[off + step + 1];
-        const leftR = evenR + oddR;
-        const leftI = evenI + oddI;
-        const rightR = evenR - oddR;
-        const rightI = evenI - oddI;
-        out[outOff] = leftR;
-        out[outOff + 1] = leftI;
-        out[outOff + 2] = rightR;
-        out[outOff + 3] = rightI;
-      };
-      FFT3.prototype._singleTransform4 = function _singleTransform4(outOff, off, step) {
-        const out = this._out;
-        const data = this._data;
-        const inv = this._inv ? -1 : 1;
-        const step2 = step * 2;
-        const step3 = step * 3;
-        const Ar = data[off];
-        const Ai = data[off + 1];
-        const Br = data[off + step];
-        const Bi = data[off + step + 1];
-        const Cr = data[off + step2];
-        const Ci = data[off + step2 + 1];
-        const Dr = data[off + step3];
-        const Di = data[off + step3 + 1];
-        const T0r = Ar + Cr;
-        const T0i = Ai + Ci;
-        const T1r = Ar - Cr;
-        const T1i = Ai - Ci;
-        const T2r = Br + Dr;
-        const T2i = Bi + Di;
-        const T3r = inv * (Br - Dr);
-        const T3i = inv * (Bi - Di);
-        const FAr = T0r + T2r;
-        const FAi = T0i + T2i;
-        const FBr = T1r + T3i;
-        const FBi = T1i - T3r;
-        const FCr = T0r - T2r;
-        const FCi = T0i - T2i;
-        const FDr = T1r - T3i;
-        const FDi = T1i + T3r;
-        out[outOff] = FAr;
-        out[outOff + 1] = FAi;
-        out[outOff + 2] = FBr;
-        out[outOff + 3] = FBi;
-        out[outOff + 4] = FCr;
-        out[outOff + 5] = FCi;
-        out[outOff + 6] = FDr;
-        out[outOff + 7] = FDi;
-      };
-      FFT3.prototype._realTransform4 = function _realTransform4() {
-        var out = this._out;
-        var size = this._csize;
-        var width = this._width;
-        var step = 1 << width;
-        var len = size / step << 1;
-        var outOff;
-        var t;
-        var bitrev = this._bitrev;
-        if (len === 4) {
-          for (outOff = 0, t = 0; outOff < size; outOff += len, t++) {
-            const off = bitrev[t];
-            this._singleRealTransform2(outOff, off >>> 1, step >>> 1);
-          }
-        } else {
-          for (outOff = 0, t = 0; outOff < size; outOff += len, t++) {
-            const off = bitrev[t];
-            this._singleRealTransform4(outOff, off >>> 1, step >>> 1);
-          }
-        }
-        var inv = this._inv ? -1 : 1;
-        var table = this.table;
-        for (step >>= 2; step >= 2; step >>= 2) {
-          len = size / step << 1;
-          var halfLen = len >>> 1;
-          var quarterLen = halfLen >>> 1;
-          var hquarterLen = quarterLen >>> 1;
-          for (outOff = 0; outOff < size; outOff += len) {
-            for (var i = 0, k = 0; i <= hquarterLen; i += 2, k += step) {
-              var A = outOff + i;
-              var B = A + quarterLen;
-              var C = B + quarterLen;
-              var D = C + quarterLen;
-              var Ar = out[A];
-              var Ai = out[A + 1];
-              var Br = out[B];
-              var Bi = out[B + 1];
-              var Cr = out[C];
-              var Ci = out[C + 1];
-              var Dr = out[D];
-              var Di = out[D + 1];
-              var MAr = Ar;
-              var MAi = Ai;
-              var tableBr = table[k];
-              var tableBi = inv * table[k + 1];
-              var MBr = Br * tableBr - Bi * tableBi;
-              var MBi = Br * tableBi + Bi * tableBr;
-              var tableCr = table[2 * k];
-              var tableCi = inv * table[2 * k + 1];
-              var MCr = Cr * tableCr - Ci * tableCi;
-              var MCi = Cr * tableCi + Ci * tableCr;
-              var tableDr = table[3 * k];
-              var tableDi = inv * table[3 * k + 1];
-              var MDr = Dr * tableDr - Di * tableDi;
-              var MDi = Dr * tableDi + Di * tableDr;
-              var T0r = MAr + MCr;
-              var T0i = MAi + MCi;
-              var T1r = MAr - MCr;
-              var T1i = MAi - MCi;
-              var T2r = MBr + MDr;
-              var T2i = MBi + MDi;
-              var T3r = inv * (MBr - MDr);
-              var T3i = inv * (MBi - MDi);
-              var FAr = T0r + T2r;
-              var FAi = T0i + T2i;
-              var FBr = T1r + T3i;
-              var FBi = T1i - T3r;
-              out[A] = FAr;
-              out[A + 1] = FAi;
-              out[B] = FBr;
-              out[B + 1] = FBi;
-              if (i === 0) {
-                var FCr = T0r - T2r;
-                var FCi = T0i - T2i;
-                out[C] = FCr;
-                out[C + 1] = FCi;
-                continue;
-              }
-              if (i === hquarterLen)
-                continue;
-              var ST0r = T1r;
-              var ST0i = -T1i;
-              var ST1r = T0r;
-              var ST1i = -T0i;
-              var ST2r = -inv * T3i;
-              var ST2i = -inv * T3r;
-              var ST3r = -inv * T2i;
-              var ST3i = -inv * T2r;
-              var SFAr = ST0r + ST2r;
-              var SFAi = ST0i + ST2i;
-              var SFBr = ST1r + ST3i;
-              var SFBi = ST1i - ST3r;
-              var SA = outOff + quarterLen - i;
-              var SB = outOff + halfLen - i;
-              out[SA] = SFAr;
-              out[SA + 1] = SFAi;
-              out[SB] = SFBr;
-              out[SB + 1] = SFBi;
-            }
-          }
-        }
-      };
-      FFT3.prototype._singleRealTransform2 = function _singleRealTransform2(outOff, off, step) {
-        const out = this._out;
-        const data = this._data;
-        const evenR = data[off];
-        const oddR = data[off + step];
-        const leftR = evenR + oddR;
-        const rightR = evenR - oddR;
-        out[outOff] = leftR;
-        out[outOff + 1] = 0;
-        out[outOff + 2] = rightR;
-        out[outOff + 3] = 0;
-      };
-      FFT3.prototype._singleRealTransform4 = function _singleRealTransform4(outOff, off, step) {
-        const out = this._out;
-        const data = this._data;
-        const inv = this._inv ? -1 : 1;
-        const step2 = step * 2;
-        const step3 = step * 3;
-        const Ar = data[off];
-        const Br = data[off + step];
-        const Cr = data[off + step2];
-        const Dr = data[off + step3];
-        const T0r = Ar + Cr;
-        const T1r = Ar - Cr;
-        const T2r = Br + Dr;
-        const T3r = inv * (Br - Dr);
-        const FAr = T0r + T2r;
-        const FBr = T1r;
-        const FBi = -T3r;
-        const FCr = T0r - T2r;
-        const FDr = T1r;
-        const FDi = T3r;
-        out[outOff] = FAr;
-        out[outOff + 1] = 0;
-        out[outOff + 2] = FBr;
-        out[outOff + 3] = FBi;
-        out[outOff + 4] = FCr;
-        out[outOff + 5] = 0;
-        out[outOff + 6] = FDr;
-        out[outOff + 7] = FDi;
-      };
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Lexer.js
-  var require_Lexer = __commonJS({
-    "node_modules/typescript-parsec/lib/Lexer.js"(exports) {
-      "use strict";
-      var __extends = exports && exports.__extends || /* @__PURE__ */ function() {
-        var extendStatics = function(d, b) {
-          extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
-            d2.__proto__ = b2;
-          } || function(d2, b2) {
-            for (var p in b2) if (b2.hasOwnProperty(p)) d2[p] = b2[p];
-          };
-          return extendStatics(d, b);
-        };
-        return function(d, b) {
-          extendStatics(d, b);
-          function __() {
-            this.constructor = d;
-          }
-          d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-        };
-      }();
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.buildLexer = exports.extractByTokenRange = exports.extractByPositionRange = exports.TokenRangeError = exports.TokenError = void 0;
-      function posToString(pos) {
-        return pos === void 0 ? "<END-OF-FILE>" : JSON.stringify(pos);
-      }
-      var TokenError = (
-        /** @class */
-        function(_super) {
-          __extends(TokenError2, _super);
-          function TokenError2(pos, errorMessage) {
-            var _this = _super.call(this, posToString(pos) + ": " + errorMessage) || this;
-            _this.pos = pos;
-            _this.errorMessage = errorMessage;
-            return _this;
-          }
-          return TokenError2;
-        }(Error)
-      );
-      exports.TokenError = TokenError;
-      var TokenRangeError = (
-        /** @class */
-        function(_super) {
-          __extends(TokenRangeError2, _super);
-          function TokenRangeError2(first, next, errorMessage) {
-            var _this = _super.call(this, posToString(first) + " - " + posToString(next) + ": " + errorMessage) || this;
-            _this.first = first;
-            _this.next = next;
-            _this.errorMessage = errorMessage;
-            return _this;
-          }
-          return TokenRangeError2;
-        }(Error)
-      );
-      exports.TokenRangeError = TokenRangeError;
-      function extractByPositionRange(input, first, next) {
-        var firstIndex = first === void 0 ? input.length : first.index;
-        var nextIndex = next === void 0 ? input.length : next.index;
-        if (firstIndex >= nextIndex) {
-          return "";
-        }
-        return input.substring(firstIndex, nextIndex);
-      }
-      exports.extractByPositionRange = extractByPositionRange;
-      function extractByTokenRange(input, first, next) {
-        return extractByPositionRange(input, first === void 0 ? void 0 : first.pos, next === void 0 ? void 0 : next.pos);
-      }
-      exports.extractByTokenRange = extractByTokenRange;
-      var TokenImpl = (
-        /** @class */
-        function() {
-          function TokenImpl2(lexer, input, kind, text, pos, keep) {
-            this.lexer = lexer;
-            this.input = input;
-            this.kind = kind;
-            this.text = text;
-            this.pos = pos;
-            this.keep = keep;
-          }
-          Object.defineProperty(TokenImpl2.prototype, "next", {
-            get: function() {
-              if (this.nextToken === void 0) {
-                this.nextToken = this.lexer.parseNextAvailable(this.input, this.pos.index + this.text.length, this.pos.rowEnd, this.pos.columnEnd);
-                if (this.nextToken === void 0) {
-                  this.nextToken = null;
-                }
-              }
-              return this.nextToken === null ? void 0 : this.nextToken;
-            },
-            enumerable: false,
-            configurable: true
-          });
-          return TokenImpl2;
-        }()
-      );
-      var LexerImpl = (
-        /** @class */
-        function() {
-          function LexerImpl2(rules) {
-            this.rules = rules;
-            for (var _i = 0, _a = this.rules; _i < _a.length; _i++) {
-              var rule2 = _a[_i];
-              if (rule2[1].source[0] !== "^") {
-                throw new Error('Regular expression patterns for a tokenizer should start with "^": ' + rule2[1].source);
-              }
-              if (!rule2[1].global) {
-                throw new Error("Regular expression patterns for a tokenizer should be global: " + rule2[1].source);
-              }
-            }
-          }
-          LexerImpl2.prototype.parse = function(input) {
-            return this.parseNextAvailable(input, 0, 1, 1);
-          };
-          LexerImpl2.prototype.parseNext = function(input, indexStart, rowBegin, columnBegin) {
-            if (indexStart === input.length) {
-              return void 0;
-            }
-            var subString = input.substr(indexStart);
-            var result;
-            for (var _i = 0, _a = this.rules; _i < _a.length; _i++) {
-              var _b = _a[_i], keep = _b[0], regexp = _b[1], kind = _b[2];
-              regexp.lastIndex = 0;
-              if (regexp.test(subString)) {
-                var text = subString.substr(0, regexp.lastIndex);
-                var rowEnd = rowBegin;
-                var columnEnd = columnBegin;
-                for (var _c = 0, text_1 = text; _c < text_1.length; _c++) {
-                  var c = text_1[_c];
-                  switch (c) {
-                    case "\r":
-                      break;
-                    case "\n":
-                      rowEnd++;
-                      columnEnd = 1;
-                      break;
-                    default:
-                      columnEnd++;
-                  }
-                }
-                var newResult = new TokenImpl(this, input, kind, text, { index: indexStart, rowBegin, columnBegin, rowEnd, columnEnd }, keep);
-                if (result === void 0 || result.text.length < newResult.text.length) {
-                  result = newResult;
-                }
-              }
-            }
-            if (result === void 0) {
-              throw new TokenError({ index: indexStart, rowBegin, columnBegin, rowEnd: rowBegin, columnEnd: columnBegin }, "Unable to tokenize the rest of the input: " + input.substr(indexStart));
-            } else {
-              return result;
-            }
-          };
-          LexerImpl2.prototype.parseNextAvailable = function(input, index, rowBegin, columnBegin) {
-            var token;
-            while (true) {
-              token = this.parseNext(input, token === void 0 ? index : token.pos.index + token.text.length, token === void 0 ? rowBegin : token.pos.rowEnd, token === void 0 ? columnBegin : token.pos.columnEnd);
-              if (token === void 0) {
-                return void 0;
-              } else if (token.keep) {
-                return token;
-              }
-            }
-          };
-          return LexerImpl2;
-        }()
-      );
-      function buildLexer2(rules) {
-        return new LexerImpl(rules);
-      }
-      exports.buildLexer = buildLexer2;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Parsers/ParserInterface.js
-  var require_ParserInterface = __commonJS({
-    "node_modules/typescript-parsec/lib/Parsers/ParserInterface.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.unableToConsumeToken = exports.resultOrError = exports.betterError = void 0;
-      function betterError(e1, e2) {
-        if (e1 === void 0) {
-          return e2;
-        }
-        if (e2 === void 0) {
-          return e1;
-        }
-        if (e1.pos === void 0) {
-          return e1;
-        }
-        if (e2.pos === void 0) {
-          return e2;
-        }
-        if (e1.pos.index < e2.pos.index) {
-          return e2;
-        } else if (e1.pos.index > e2.pos.index) {
-          return e1;
-        } else {
-          return e1;
-        }
-      }
-      exports.betterError = betterError;
-      function resultOrError(result, error, successful) {
-        if (successful) {
-          return {
-            candidates: result,
-            successful: true,
-            error
-          };
-        } else {
-          return {
-            successful: false,
-            error
-          };
-        }
-      }
-      exports.resultOrError = resultOrError;
-      function unableToConsumeToken(token) {
-        return {
-          kind: "Error",
-          pos: token === void 0 ? void 0 : token.pos,
-          message: "Unable to consume token: " + (token === void 0 ? "<END-OF-FILE>" : token.text)
-        };
-      }
-      exports.unableToConsumeToken = unableToConsumeToken;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Parsers/TokenParser.js
-  var require_TokenParser = __commonJS({
-    "node_modules/typescript-parsec/lib/Parsers/TokenParser.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.tok = exports.str = exports.fail = exports.succ = exports.nil = void 0;
-      var ParserInterface_1 = require_ParserInterface();
-      function nil2() {
-        return {
-          parse: function(token) {
-            return {
-              candidates: [{
-                firstToken: token,
-                nextToken: token,
-                result: void 0
-              }],
-              successful: true,
-              error: void 0
-            };
-          }
-        };
-      }
-      exports.nil = nil2;
-      function succ(value) {
-        return {
-          parse: function(token) {
-            return {
-              candidates: [{
-                firstToken: token,
-                nextToken: token,
-                result: value
-              }],
-              successful: true,
-              error: void 0
-            };
-          }
-        };
-      }
-      exports.succ = succ;
-      function fail(errorMessage) {
-        return {
-          parse: function(token) {
-            return {
-              successful: false,
-              error: {
-                kind: "Error",
-                pos: token === null || token === void 0 ? void 0 : token.pos,
-                message: errorMessage
-              }
-            };
-          }
-        };
-      }
-      exports.fail = fail;
-      function str2(toMatch) {
-        return {
-          parse: function(token) {
-            if (token === void 0 || token.text !== toMatch) {
-              return {
-                successful: false,
-                error: ParserInterface_1.unableToConsumeToken(token)
-              };
-            }
-            return {
-              candidates: [{
-                firstToken: token,
-                nextToken: token.next,
-                result: token
-              }],
-              successful: true,
-              error: void 0
-            };
-          }
-        };
-      }
-      exports.str = str2;
-      function tok2(toMatch) {
-        return {
-          parse: function(token) {
-            if (token === void 0 || token.kind !== toMatch) {
-              return {
-                successful: false,
-                error: ParserInterface_1.unableToConsumeToken(token)
-              };
-            }
-            return {
-              candidates: [{
-                firstToken: token,
-                nextToken: token.next,
-                result: token
-              }],
-              successful: true,
-              error: void 0
-            };
-          }
-        };
-      }
-      exports.tok = tok2;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Parsers/MonadicSequencialParser.js
-  var require_MonadicSequencialParser = __commonJS({
-    "node_modules/typescript-parsec/lib/Parsers/MonadicSequencialParser.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.combine = void 0;
-      var ParserInterface_1 = require_ParserInterface();
-      function combine(first) {
-        var continuations = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-          continuations[_i - 1] = arguments[_i];
-        }
-        return {
-          parse: function(token) {
-            var firstOutput = first.parse(token);
-            if (!firstOutput.successful) {
-              return firstOutput;
-            }
-            var result = firstOutput.candidates;
-            var error = firstOutput.error;
-            for (var _i2 = 0, continuations_1 = continuations; _i2 < continuations_1.length; _i2++) {
-              var c = continuations_1[_i2];
-              if (result.length === 0) {
-                break;
-              }
-              var steps = result;
-              result = [];
-              for (var _a = 0, steps_1 = steps; _a < steps_1.length; _a++) {
-                var step = steps_1[_a];
-                var output = c(step.result).parse(step.nextToken);
-                error = ParserInterface_1.betterError(error, output.error);
-                if (output.successful) {
-                  for (var _b = 0, _c = output.candidates; _b < _c.length; _b++) {
-                    var candidate = _c[_b];
-                    result.push({
-                      firstToken: step.firstToken,
-                      nextToken: candidate.nextToken,
-                      result: candidate.result
-                    });
-                  }
-                }
-              }
-            }
-            return ParserInterface_1.resultOrError(result, error, result.length !== 0);
-          }
-        };
-      }
-      exports.combine = combine;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Parsers/SequencialParser.js
-  var require_SequencialParser = __commonJS({
-    "node_modules/typescript-parsec/lib/Parsers/SequencialParser.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.seq = void 0;
-      var ParserInterface_1 = require_ParserInterface();
-      function seq2() {
-        var ps = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-          ps[_i] = arguments[_i];
-        }
-        return {
-          parse: function(token) {
-            var error;
-            var result = [{ firstToken: token, nextToken: token, result: [] }];
-            for (var _i2 = 0, ps_1 = ps; _i2 < ps_1.length; _i2++) {
-              var p = ps_1[_i2];
-              if (result.length === 0) {
-                break;
-              }
-              var steps = result;
-              result = [];
-              for (var _a = 0, steps_1 = steps; _a < steps_1.length; _a++) {
-                var step = steps_1[_a];
-                var output = p.parse(step.nextToken);
-                error = ParserInterface_1.betterError(error, output.error);
-                if (output.successful) {
-                  for (var _b = 0, _c = output.candidates; _b < _c.length; _b++) {
-                    var candidate = _c[_b];
-                    result.push({
-                      firstToken: step.firstToken,
-                      nextToken: candidate.nextToken,
-                      result: step.result.concat([candidate.result])
-                    });
-                  }
-                }
-              }
-            }
-            return ParserInterface_1.resultOrError(result, error, result.length !== 0);
-          }
-        };
-      }
-      exports.seq = seq2;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Parsers/AlternativeParser.js
-  var require_AlternativeParser = __commonJS({
-    "node_modules/typescript-parsec/lib/Parsers/AlternativeParser.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.alt = void 0;
-      var ParserInterface_1 = require_ParserInterface();
-      function alt() {
-        var ps = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-          ps[_i] = arguments[_i];
-        }
-        return {
-          parse: function(token) {
-            var error;
-            var result = [];
-            var successful = false;
-            for (var _i2 = 0, ps_1 = ps; _i2 < ps_1.length; _i2++) {
-              var p = ps_1[_i2];
-              var output = p.parse(token);
-              error = ParserInterface_1.betterError(error, output.error);
-              if (output.successful) {
-                result = result.concat(output.candidates);
-                successful = true;
-              }
-            }
-            return ParserInterface_1.resultOrError(result, error, successful);
-          }
-        };
-      }
-      exports.alt = alt;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Parsers/AlternativeScParser.js
-  var require_AlternativeScParser = __commonJS({
-    "node_modules/typescript-parsec/lib/Parsers/AlternativeScParser.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.alt_sc = void 0;
-      var ParserInterface_1 = require_ParserInterface();
-      function alt_sc2() {
-        var ps = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-          ps[_i] = arguments[_i];
-        }
-        return {
-          parse: function(token) {
-            var error;
-            for (var _i2 = 0, ps_1 = ps; _i2 < ps_1.length; _i2++) {
-              var p = ps_1[_i2];
-              var output = p.parse(token);
-              error = ParserInterface_1.betterError(error, output.error);
-              if (output.successful) {
-                return ParserInterface_1.resultOrError(output.candidates, error, true);
-              }
-            }
-            return {
-              successful: false,
-              error
-            };
-          }
-        };
-      }
-      exports.alt_sc = alt_sc2;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Parsers/OptionalParser.js
-  var require_OptionalParser = __commonJS({
-    "node_modules/typescript-parsec/lib/Parsers/OptionalParser.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.opt_sc = exports.opt = void 0;
-      var AlternativeParser_1 = require_AlternativeParser();
-      var TokenParser_1 = require_TokenParser();
-      function opt(p) {
-        return AlternativeParser_1.alt(p, TokenParser_1.nil());
-      }
-      exports.opt = opt;
-      function opt_sc(p) {
-        return {
-          parse: function(token) {
-            var output = p.parse(token);
-            if (output.successful) {
-              return output;
-            } else {
-              return {
-                candidates: [{
-                  firstToken: token,
-                  nextToken: token,
-                  result: void 0
-                }],
-                successful: true,
-                error: output.error
-              };
-            }
-          }
-        };
-      }
-      exports.opt_sc = opt_sc;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Parsers/ApplyParser.js
-  var require_ApplyParser = __commonJS({
-    "node_modules/typescript-parsec/lib/Parsers/ApplyParser.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.kmid = exports.kright = exports.kleft = exports.apply = void 0;
-      var SequencialParser_1 = require_SequencialParser();
-      function apply2(p, callback) {
-        return {
-          parse: function(token) {
-            var output = p.parse(token);
-            if (output.successful) {
-              return {
-                candidates: output.candidates.map(function(value) {
-                  return {
-                    firstToken: token,
-                    nextToken: value.nextToken,
-                    result: callback(value.result, [token, value.nextToken])
-                  };
-                }),
-                successful: true,
-                error: output.error
-              };
-            } else {
-              return output;
-            }
-          }
-        };
-      }
-      exports.apply = apply2;
-      function kleft2(p1, p2) {
-        return apply2(SequencialParser_1.seq(p1, p2), function(value) {
-          return value[0];
-        });
-      }
-      exports.kleft = kleft2;
-      function kright(p1, p2) {
-        return apply2(SequencialParser_1.seq(p1, p2), function(value) {
-          return value[1];
-        });
-      }
-      exports.kright = kright;
-      function kmid2(p1, p2, p3) {
-        return apply2(SequencialParser_1.seq(p1, p2, p3), function(value) {
-          return value[1];
-        });
-      }
-      exports.kmid = kmid2;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Parsers/RepeativeParser.js
-  var require_RepeativeParser = __commonJS({
-    "node_modules/typescript-parsec/lib/Parsers/RepeativeParser.js"(exports) {
-      "use strict";
-      var __spreadArrays = exports && exports.__spreadArrays || function() {
-        for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
-        for (var r = Array(s), k = 0, i = 0; i < il; i++)
-          for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
-            r[k] = a[j];
-        return r;
-      };
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.lrec_sc = exports.lrec = exports.list_n = exports.list_sc = exports.list = exports.rep_n = exports.repr = exports.rep_sc = exports.rep = void 0;
-      var ApplyParser_1 = require_ApplyParser();
-      var ParserInterface_1 = require_ParserInterface();
-      var SequencialParser_1 = require_SequencialParser();
-      var TokenParser_1 = require_TokenParser();
-      function rep(p) {
-        var reprParser = repr(p);
-        return {
-          parse: function(token) {
-            var output = reprParser.parse(token);
-            if (output.successful) {
-              return {
-                candidates: output.candidates.reverse(),
-                successful: true,
-                error: output.error
-              };
-            } else {
-              return output;
-            }
-          }
-        };
-      }
-      exports.rep = rep;
-      function rep_sc2(p) {
-        return {
-          parse: function(token) {
-            var error;
-            var result = [{ firstToken: token, nextToken: token, result: [] }];
-            while (true) {
-              var steps = result;
-              result = [];
-              for (var _i = 0, steps_1 = steps; _i < steps_1.length; _i++) {
-                var step = steps_1[_i];
-                var output = p.parse(step.nextToken);
-                error = ParserInterface_1.betterError(error, output.error);
-                if (output.successful) {
-                  for (var _a = 0, _b = output.candidates; _a < _b.length; _a++) {
-                    var candidate = _b[_a];
-                    if (candidate.nextToken !== step.nextToken) {
-                      result.push({
-                        firstToken: step.firstToken,
-                        nextToken: candidate.nextToken,
-                        result: step.result.concat([candidate.result])
-                      });
-                    }
-                  }
-                }
-              }
-              if (result.length === 0) {
-                result = steps;
-                break;
-              }
-            }
-            return ParserInterface_1.resultOrError(result, error, true);
-          }
-        };
-      }
-      exports.rep_sc = rep_sc2;
-      function repr(p) {
-        return {
-          parse: function(token) {
-            var error;
-            var result = [{ firstToken: token, nextToken: token, result: [] }];
-            for (var i = 0; i < result.length; i++) {
-              var step = result[i];
-              var output = p.parse(step.nextToken);
-              error = ParserInterface_1.betterError(error, output.error);
-              if (output.successful) {
-                for (var _i = 0, _a = output.candidates; _i < _a.length; _i++) {
-                  var candidate = _a[_i];
-                  if (candidate.nextToken !== step.nextToken) {
-                    result.push({
-                      firstToken: step.firstToken,
-                      nextToken: candidate.nextToken,
-                      result: step.result.concat([candidate.result])
-                    });
-                  }
-                }
-              }
-            }
-            return ParserInterface_1.resultOrError(result, error, true);
-          }
-        };
-      }
-      exports.repr = repr;
-      function rep_n(p, count) {
-        return {
-          parse: function(token) {
-            var error;
-            var candidates = [{ firstToken: token, nextToken: token, result: [] }];
-            for (var i = 0; i < count; i++) {
-              var newCandidates = [];
-              for (var _i = 0, candidates_1 = candidates; _i < candidates_1.length; _i++) {
-                var step = candidates_1[_i];
-                var output = p.parse(step.nextToken);
-                error = ParserInterface_1.betterError(error, output.error);
-                if (output.successful) {
-                  for (var _a = 0, _b = output.candidates; _a < _b.length; _a++) {
-                    var candidate = _b[_a];
-                    newCandidates.push({
-                      firstToken: step.firstToken,
-                      nextToken: candidate.nextToken,
-                      result: step.result.concat([candidate.result])
-                    });
-                  }
-                }
-              }
-              if (newCandidates.length === 0) {
-                return {
-                  successful: false,
-                  error
-                };
-              } else {
-                candidates = newCandidates;
-              }
-            }
-            return ParserInterface_1.resultOrError(candidates, error, true);
-          }
-        };
-      }
-      exports.rep_n = rep_n;
-      function applyList(_a) {
-        var first = _a[0], tail = _a[1];
-        return __spreadArrays([first], tail);
-      }
-      function list(p, s) {
-        return ApplyParser_1.apply(SequencialParser_1.seq(p, rep(ApplyParser_1.kright(s, p))), applyList);
-      }
-      exports.list = list;
-      function list_sc(p, s) {
-        return ApplyParser_1.apply(SequencialParser_1.seq(p, rep_sc2(ApplyParser_1.kright(s, p))), applyList);
-      }
-      exports.list_sc = list_sc;
-      function list_n(p, s, count) {
-        if (count < 1) {
-          return TokenParser_1.succ([]);
-        } else if (count === 1) {
-          return ApplyParser_1.apply(p, function(value) {
-            return [value];
-          });
-        } else {
-          return ApplyParser_1.apply(SequencialParser_1.seq(p, rep_n(ApplyParser_1.kright(s, p), count - 1)), applyList);
-        }
-      }
-      exports.list_n = list_n;
-      function applyLrec(callback) {
-        return function(value) {
-          var result = value[0];
-          for (var _i = 0, _a = value[1]; _i < _a.length; _i++) {
-            var tail = _a[_i];
-            result = callback(result, tail);
-          }
-          return result;
-        };
-      }
-      function lrec(p, q, callback) {
-        return ApplyParser_1.apply(SequencialParser_1.seq(p, rep(q)), applyLrec(callback));
-      }
-      exports.lrec = lrec;
-      function lrec_sc2(p, q, callback) {
-        return ApplyParser_1.apply(SequencialParser_1.seq(p, rep_sc2(q)), applyLrec(callback));
-      }
-      exports.lrec_sc = lrec_sc2;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Parsers/AmbiguousParser.js
-  var require_AmbiguousParser = __commonJS({
-    "node_modules/typescript-parsec/lib/Parsers/AmbiguousParser.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.amb = void 0;
-      function amb(p) {
-        return {
-          parse: function(token) {
-            var branches = p.parse(token);
-            if (!branches.successful) {
-              return branches;
-            }
-            var group = /* @__PURE__ */ new Map();
-            for (var _i = 0, _a = branches.candidates; _i < _a.length; _i++) {
-              var r = _a[_i];
-              var rs = group.get(r.nextToken);
-              if (rs === void 0) {
-                group.set(r.nextToken, [r]);
-              } else {
-                rs.push(r);
-              }
-            }
-            return {
-              candidates: Array.from(group.values()).map(function(rs2) {
-                return {
-                  firstToken: rs2[0].firstToken,
-                  nextToken: rs2[0].nextToken,
-                  result: rs2.map(function(r2) {
-                    return r2.result;
-                  })
-                };
-              }),
-              successful: true,
-              error: branches.error
-            };
-          }
-        };
-      }
-      exports.amb = amb;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Parsers/ErrorParser.js
-  var require_ErrorParser = __commonJS({
-    "node_modules/typescript-parsec/lib/Parsers/ErrorParser.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.errd = exports.err = void 0;
-      function err2(p, errorMessage) {
-        return {
-          parse: function(token) {
-            var branches = p.parse(token);
-            if (branches.successful) {
-              return branches;
-            }
-            return {
-              successful: false,
-              error: {
-                kind: "Error",
-                pos: branches.error.pos,
-                message: errorMessage
-              }
-            };
-          }
-        };
-      }
-      exports.err = err2;
-      function errd(p, errorMessage, defaultValue) {
-        return {
-          parse: function(token) {
-            var branches = p.parse(token);
-            if (branches.successful) {
-              return branches;
-            }
-            return {
-              successful: true,
-              candidates: [{
-                firstToken: token,
-                nextToken: token,
-                result: defaultValue
-              }],
-              error: {
-                kind: "Error",
-                pos: branches.error.pos,
-                message: errorMessage
-              }
-            };
-          }
-        };
-      }
-      exports.errd = errd;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/Parsers/Rule.js
-  var require_Rule = __commonJS({
-    "node_modules/typescript-parsec/lib/Parsers/Rule.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.expectSingleResult = exports.expectEOF = exports.rule = void 0;
-      var Lexer_1 = require_Lexer();
-      var ParserInterface_1 = require_ParserInterface();
-      var RuleImpl = (
-        /** @class */
-        function() {
-          function RuleImpl2() {
-          }
-          RuleImpl2.prototype.setPattern = function(parser) {
-            this.parser = parser;
-          };
-          RuleImpl2.prototype.parse = function(token) {
-            if (this.parser === void 0) {
-              throw new Error("Rule has not been initialized. setPattern is required before calling parse.");
-            }
-            return this.parser.parse(token);
-          };
-          return RuleImpl2;
-        }()
-      );
-      function rule2() {
-        return new RuleImpl();
-      }
-      exports.rule = rule2;
-      function expectEOF2(output) {
-        if (!output.successful) {
-          return output;
-        }
-        if (output.candidates.length === 0) {
-          return {
-            successful: false,
-            error: {
-              kind: "Error",
-              pos: void 0,
-              message: "No result is returned."
-            }
-          };
-        }
-        var filtered = [];
-        var error = output.error;
-        for (var _i = 0, _a = output.candidates; _i < _a.length; _i++) {
-          var candidate = _a[_i];
-          if (candidate.nextToken === void 0) {
-            filtered.push(candidate);
-          } else {
-            error = ParserInterface_1.betterError(error, {
-              kind: "Error",
-              pos: candidate.nextToken === void 0 ? void 0 : candidate.nextToken.pos,
-              message: 'The parser cannot reach the end of file, stops at "' + candidate.nextToken.text + '" at position ' + JSON.stringify(candidate.nextToken.pos) + "."
-            });
-          }
-        }
-        return ParserInterface_1.resultOrError(filtered, error, filtered.length !== 0);
-      }
-      exports.expectEOF = expectEOF2;
-      function expectSingleResult2(output) {
-        if (!output.successful) {
-          throw new Lexer_1.TokenError(output.error.pos, output.error.message);
-        }
-        if (output.candidates.length === 0) {
-          throw new Lexer_1.TokenError(void 0, "No result is returned.");
-        }
-        if (output.candidates.length !== 1) {
-          throw new Lexer_1.TokenError(void 0, "Multiple results are returned.");
-        }
-        return output.candidates[0].result;
-      }
-      exports.expectSingleResult = expectSingleResult2;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/ParserModule.js
-  var require_ParserModule = __commonJS({
-    "node_modules/typescript-parsec/lib/ParserModule.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.makeParserModule = exports.lazy = void 0;
-      function lazy(thunk) {
-        return {
-          parse: function(token) {
-            return thunk().parse(token);
-          }
-        };
-      }
-      exports.lazy = lazy;
-      var defineReadOnly = function(target, propName, value) {
-        return Object.defineProperty(target, propName, {
-          configurable: true,
-          writable: false,
-          enumerable: true,
-          value
-        });
-      };
-      function makeParserModule(definitions) {
-        var parserModule = /* @__PURE__ */ Object.create(null);
-        var _loop_1 = function(key2, parserThunk2) {
-          parserModule = defineReadOnly(parserModule, key2, lazy(function() {
-            return parserThunk2(parserModule);
-          }));
-        };
-        for (var _i = 0, _a = Object.entries(definitions); _i < _a.length; _i++) {
-          var _b = _a[_i], key = _b[0], parserThunk = _b[1];
-          _loop_1(key, parserThunk);
-        }
-        return parserModule;
-      }
-      exports.makeParserModule = makeParserModule;
-    }
-  });
-
-  // node_modules/typescript-parsec/lib/index.js
-  var require_lib = __commonJS({
-    "node_modules/typescript-parsec/lib/index.js"(exports) {
-      "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0) k2 = k;
-        Object.defineProperty(o, k2, { enumerable: true, get: function() {
-          return m[k];
-        } });
-      } : function(o, m, k, k2) {
-        if (k2 === void 0) k2 = k;
-        o[k2] = m[k];
-      });
-      var __exportStar = exports && exports.__exportStar || function(m, exports2) {
-        for (var p in m) if (p !== "default" && !exports2.hasOwnProperty(p)) __createBinding(exports2, m, p);
-      };
-      Object.defineProperty(exports, "__esModule", { value: true });
-      __exportStar(require_Lexer(), exports);
-      __exportStar(require_ParserInterface(), exports);
-      __exportStar(require_TokenParser(), exports);
-      __exportStar(require_MonadicSequencialParser(), exports);
-      __exportStar(require_SequencialParser(), exports);
-      __exportStar(require_AlternativeParser(), exports);
-      __exportStar(require_AlternativeScParser(), exports);
-      __exportStar(require_OptionalParser(), exports);
-      __exportStar(require_RepeativeParser(), exports);
-      __exportStar(require_ApplyParser(), exports);
-      __exportStar(require_AmbiguousParser(), exports);
-      __exportStar(require_ErrorParser(), exports);
-      __exportStar(require_Rule(), exports);
-      __exportStar(require_ParserModule(), exports);
-    }
-  });
-
-  // node_modules/next-power-of-two/index.js
-  var require_next_power_of_two = __commonJS({
-    "node_modules/next-power-of-two/index.js"(exports, module) {
-      module.exports = nextPowerOfTwo2;
-      function nextPowerOfTwo2(n) {
-        if (n === 0) return 1;
-        n--;
-        n |= n >> 1;
-        n |= n >> 2;
-        n |= n >> 4;
-        n |= n >> 8;
-        n |= n >> 16;
-        return n + 1;
-      }
-    }
-  });
 
   // node_modules/react/cjs/react.development.js
   var require_react_development = __commonJS({
@@ -1579,8 +184,8 @@
           componentName = this.props.ref;
           return void 0 !== componentName ? componentName : null;
         }
-        function ReactElement(type, key, self2, source, owner, props, debugStack, debugTask) {
-          self2 = props.ref;
+        function ReactElement(type, key, self, source, owner, props, debugStack, debugTask) {
+          self = props.ref;
           type = {
             $$typeof: REACT_ELEMENT_TYPE,
             type,
@@ -1588,7 +193,7 @@
             props,
             _owner: owner
           };
-          null !== (void 0 !== self2 ? self2 : null) ? Object.defineProperty(type, "ref", {
+          null !== (void 0 !== self ? self : null) ? Object.defineProperty(type, "ref", {
             enumerable: false,
             get: elementRefGetterWithDeprecationWarning
           }) : Object.defineProperty(type, "ref", { enumerable: false, value: null });
@@ -2695,7 +1300,7 @@
           return dispatcher;
         }
         "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-        var React13 = require_react(), Internals = {
+        var React3 = require_react(), Internals = {
           d: {
             f: noop,
             r: function() {
@@ -2713,7 +1318,7 @@
           },
           p: 0,
           findDOMNode: null
-        }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React13.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+        }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React3.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
         "function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error(
           "React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills"
         );
@@ -2908,9 +1513,9 @@
     "node_modules/react-dom/cjs/react-dom-client.development.js"(exports) {
       "use strict";
       (function() {
-        function findHook(fiber, id2) {
-          for (fiber = fiber.memoizedState; null !== fiber && 0 < id2; )
-            fiber = fiber.next, id2--;
+        function findHook(fiber, id) {
+          for (fiber = fiber.memoizedState; null !== fiber && 0 < id; )
+            fiber = fiber.next, id--;
           return fiber;
         }
         function copyWithSetImpl(obj, path, index, value) {
@@ -2980,16 +1585,16 @@
         function createFiber(tag, pendingProps, key, mode) {
           return new FiberNode(tag, pendingProps, key, mode);
         }
-        function scheduleRoot(root2, element) {
-          root2.context === emptyContextObject && (updateContainerImpl(root2.current, 2, element, root2, null, null), flushSyncWork$1());
+        function scheduleRoot(root3, element) {
+          root3.context === emptyContextObject && (updateContainerImpl(root3.current, 2, element, root3, null, null), flushSyncWork$1());
         }
-        function scheduleRefresh(root2, update) {
+        function scheduleRefresh(root3, update) {
           if (null !== resolveFamily) {
             var staleFamilies = update.staleFamilies;
             update = update.updatedFamilies;
             flushPendingEffects();
             scheduleFibersWithFamiliesRecursively(
-              root2.current,
+              root3.current,
               update,
               staleFamilies
             );
@@ -3305,7 +1910,7 @@
           contextFiberStackCursor.current === fiber && (pop(contextStackCursor, fiber), pop(contextFiberStackCursor, fiber));
           hostTransitionProviderCursor.current === fiber && (pop(hostTransitionProviderCursor, fiber), HostTransitionContext._currentValue = NotPendingTransition);
         }
-        function typeName2(value) {
+        function typeName(value) {
           return "function" === typeof Symbol && Symbol.toStringTag && value[Symbol.toStringTag] || value.constructor.name || "Object";
         }
         function willCoercionThrow(value) {
@@ -3323,7 +1928,7 @@
             return console.error(
               "The provided `%s` attribute is an unsupported type %s. This value must be coerced to a string before using it here.",
               attributeName,
-              typeName2(value)
+              typeName(value)
             ), testStringCoercion(value);
         }
         function checkCSSPropertyStringCoercion(value, propName) {
@@ -3331,14 +1936,14 @@
             return console.error(
               "The provided `%s` CSS property is an unsupported type %s. This value must be coerced to a string before using it here.",
               propName,
-              typeName2(value)
+              typeName(value)
             ), testStringCoercion(value);
         }
         function checkFormFieldValueStringCoercion(value) {
           if (willCoercionThrow(value))
             return console.error(
               "Form field values (value, checked, defaultValue, or defaultChecked props) must be strings, not %s. This value must be coerced to a string before using it here.",
-              typeName2(value)
+              typeName(value)
             ), testStringCoercion(value);
         }
         function injectInternals(internals) {
@@ -3351,8 +1956,8 @@
             ), true;
           try {
             rendererID = hook.inject(internals), injectedHook = hook;
-          } catch (err2) {
-            console.error("React instrumentation encountered an error: %s.", err2);
+          } catch (err) {
+            console.error("React instrumentation encountered an error: %s.", err);
           }
           return hook.checkDCE ? true : false;
         }
@@ -3361,10 +1966,10 @@
           if (injectedHook && "function" === typeof injectedHook.setStrictMode)
             try {
               injectedHook.setStrictMode(rendererID, newIsStrictMode);
-            } catch (err2) {
+            } catch (err) {
               hasLoggedError || (hasLoggedError = true, console.error(
                 "React instrumentation encountered an error: %s",
-                err2
+                err
               ));
             }
         }
@@ -3465,17 +2070,17 @@
               ), lanes;
           }
         }
-        function getNextLanes(root2, wipLanes, rootHasPendingCommit) {
-          var pendingLanes = root2.pendingLanes;
+        function getNextLanes(root3, wipLanes, rootHasPendingCommit) {
+          var pendingLanes = root3.pendingLanes;
           if (0 === pendingLanes) return 0;
-          var nextLanes = 0, suspendedLanes = root2.suspendedLanes, pingedLanes = root2.pingedLanes;
-          root2 = root2.warmLanes;
+          var nextLanes = 0, suspendedLanes = root3.suspendedLanes, pingedLanes = root3.pingedLanes;
+          root3 = root3.warmLanes;
           var nonIdlePendingLanes = pendingLanes & 134217727;
-          0 !== nonIdlePendingLanes ? (pendingLanes = nonIdlePendingLanes & ~suspendedLanes, 0 !== pendingLanes ? nextLanes = getHighestPriorityLanes(pendingLanes) : (pingedLanes &= nonIdlePendingLanes, 0 !== pingedLanes ? nextLanes = getHighestPriorityLanes(pingedLanes) : rootHasPendingCommit || (rootHasPendingCommit = nonIdlePendingLanes & ~root2, 0 !== rootHasPendingCommit && (nextLanes = getHighestPriorityLanes(rootHasPendingCommit))))) : (nonIdlePendingLanes = pendingLanes & ~suspendedLanes, 0 !== nonIdlePendingLanes ? nextLanes = getHighestPriorityLanes(nonIdlePendingLanes) : 0 !== pingedLanes ? nextLanes = getHighestPriorityLanes(pingedLanes) : rootHasPendingCommit || (rootHasPendingCommit = pendingLanes & ~root2, 0 !== rootHasPendingCommit && (nextLanes = getHighestPriorityLanes(rootHasPendingCommit))));
+          0 !== nonIdlePendingLanes ? (pendingLanes = nonIdlePendingLanes & ~suspendedLanes, 0 !== pendingLanes ? nextLanes = getHighestPriorityLanes(pendingLanes) : (pingedLanes &= nonIdlePendingLanes, 0 !== pingedLanes ? nextLanes = getHighestPriorityLanes(pingedLanes) : rootHasPendingCommit || (rootHasPendingCommit = nonIdlePendingLanes & ~root3, 0 !== rootHasPendingCommit && (nextLanes = getHighestPriorityLanes(rootHasPendingCommit))))) : (nonIdlePendingLanes = pendingLanes & ~suspendedLanes, 0 !== nonIdlePendingLanes ? nextLanes = getHighestPriorityLanes(nonIdlePendingLanes) : 0 !== pingedLanes ? nextLanes = getHighestPriorityLanes(pingedLanes) : rootHasPendingCommit || (rootHasPendingCommit = pendingLanes & ~root3, 0 !== rootHasPendingCommit && (nextLanes = getHighestPriorityLanes(rootHasPendingCommit))));
           return 0 === nextLanes ? 0 : 0 !== wipLanes && wipLanes !== nextLanes && 0 === (wipLanes & suspendedLanes) && (suspendedLanes = nextLanes & -nextLanes, rootHasPendingCommit = wipLanes & -wipLanes, suspendedLanes >= rootHasPendingCommit || 32 === suspendedLanes && 0 !== (rootHasPendingCommit & 4194048)) ? wipLanes : nextLanes;
         }
-        function checkIfRootIsPrerendering(root2, renderLanes2) {
-          return 0 === (root2.pendingLanes & ~(root2.suspendedLanes & ~root2.pingedLanes) & renderLanes2);
+        function checkIfRootIsPrerendering(root3, renderLanes2) {
+          return 0 === (root3.pendingLanes & ~(root3.suspendedLanes & ~root3.pingedLanes) & renderLanes2);
         }
         function computeExpirationTime(lane, currentTime) {
           switch (lane) {
@@ -3536,21 +2141,21 @@
           for (var laneMap = [], i = 0; 31 > i; i++) laneMap.push(initial);
           return laneMap;
         }
-        function markRootUpdated$1(root2, updateLane) {
-          root2.pendingLanes |= updateLane;
-          268435456 !== updateLane && (root2.suspendedLanes = 0, root2.pingedLanes = 0, root2.warmLanes = 0);
+        function markRootUpdated$1(root3, updateLane) {
+          root3.pendingLanes |= updateLane;
+          268435456 !== updateLane && (root3.suspendedLanes = 0, root3.pingedLanes = 0, root3.warmLanes = 0);
         }
-        function markRootFinished(root2, finishedLanes, remainingLanes, spawnedLane, updatedLanes, suspendedRetryLanes) {
-          var previouslyPendingLanes = root2.pendingLanes;
-          root2.pendingLanes = remainingLanes;
-          root2.suspendedLanes = 0;
-          root2.pingedLanes = 0;
-          root2.warmLanes = 0;
-          root2.expiredLanes &= remainingLanes;
-          root2.entangledLanes &= remainingLanes;
-          root2.errorRecoveryDisabledLanes &= remainingLanes;
-          root2.shellSuspendCounter = 0;
-          var entanglements = root2.entanglements, expirationTimes = root2.expirationTimes, hiddenUpdates = root2.hiddenUpdates;
+        function markRootFinished(root3, finishedLanes, remainingLanes, spawnedLane, updatedLanes, suspendedRetryLanes) {
+          var previouslyPendingLanes = root3.pendingLanes;
+          root3.pendingLanes = remainingLanes;
+          root3.suspendedLanes = 0;
+          root3.pingedLanes = 0;
+          root3.warmLanes = 0;
+          root3.expiredLanes &= remainingLanes;
+          root3.entangledLanes &= remainingLanes;
+          root3.errorRecoveryDisabledLanes &= remainingLanes;
+          root3.shellSuspendCounter = 0;
+          var entanglements = root3.entanglements, expirationTimes = root3.expirationTimes, hiddenUpdates = root3.hiddenUpdates;
           for (remainingLanes = previouslyPendingLanes & ~remainingLanes; 0 < remainingLanes; ) {
             var index = 31 - clz32(remainingLanes), lane = 1 << index;
             entanglements[index] = 0;
@@ -3563,21 +2168,21 @@
               }
             remainingLanes &= ~lane;
           }
-          0 !== spawnedLane && markSpawnedDeferredLane(root2, spawnedLane, 0);
-          0 !== suspendedRetryLanes && 0 === updatedLanes && 0 !== root2.tag && (root2.suspendedLanes |= suspendedRetryLanes & ~(previouslyPendingLanes & ~finishedLanes));
+          0 !== spawnedLane && markSpawnedDeferredLane(root3, spawnedLane, 0);
+          0 !== suspendedRetryLanes && 0 === updatedLanes && 0 !== root3.tag && (root3.suspendedLanes |= suspendedRetryLanes & ~(previouslyPendingLanes & ~finishedLanes));
         }
-        function markSpawnedDeferredLane(root2, spawnedLane, entangledLanes) {
-          root2.pendingLanes |= spawnedLane;
-          root2.suspendedLanes &= ~spawnedLane;
+        function markSpawnedDeferredLane(root3, spawnedLane, entangledLanes) {
+          root3.pendingLanes |= spawnedLane;
+          root3.suspendedLanes &= ~spawnedLane;
           var spawnedLaneIndex = 31 - clz32(spawnedLane);
-          root2.entangledLanes |= spawnedLane;
-          root2.entanglements[spawnedLaneIndex] = root2.entanglements[spawnedLaneIndex] | 1073741824 | entangledLanes & 4194090;
+          root3.entangledLanes |= spawnedLane;
+          root3.entanglements[spawnedLaneIndex] = root3.entanglements[spawnedLaneIndex] | 1073741824 | entangledLanes & 4194090;
         }
-        function markRootEntangled(root2, entangledLanes) {
-          var rootEntangledLanes = root2.entangledLanes |= entangledLanes;
-          for (root2 = root2.entanglements; rootEntangledLanes; ) {
+        function markRootEntangled(root3, entangledLanes) {
+          var rootEntangledLanes = root3.entangledLanes |= entangledLanes;
+          for (root3 = root3.entanglements; rootEntangledLanes; ) {
             var index = 31 - clz32(rootEntangledLanes), lane = 1 << index;
-            lane & entangledLanes | root2[index] & entangledLanes && (root2[index] |= entangledLanes);
+            lane & entangledLanes | root3[index] & entangledLanes && (root3[index] |= entangledLanes);
             rootEntangledLanes &= ~lane;
           }
         }
@@ -3620,25 +2225,25 @@
           }
           return lane;
         }
-        function addFiberToLanesMap(root2, fiber, lanes) {
+        function addFiberToLanesMap(root3, fiber, lanes) {
           if (isDevToolsPresent)
-            for (root2 = root2.pendingUpdatersLaneMap; 0 < lanes; ) {
+            for (root3 = root3.pendingUpdatersLaneMap; 0 < lanes; ) {
               var index = 31 - clz32(lanes), lane = 1 << index;
-              root2[index].add(fiber);
+              root3[index].add(fiber);
               lanes &= ~lane;
             }
         }
-        function movePendingFibersToMemoized(root2, lanes) {
+        function movePendingFibersToMemoized(root3, lanes) {
           if (isDevToolsPresent)
-            for (var pendingUpdatersLaneMap = root2.pendingUpdatersLaneMap, memoizedUpdaters = root2.memoizedUpdaters; 0 < lanes; ) {
+            for (var pendingUpdatersLaneMap = root3.pendingUpdatersLaneMap, memoizedUpdaters = root3.memoizedUpdaters; 0 < lanes; ) {
               var index = 31 - clz32(lanes);
-              root2 = 1 << index;
+              root3 = 1 << index;
               index = pendingUpdatersLaneMap[index];
               0 < index.size && (index.forEach(function(fiber) {
                 var alternate = fiber.alternate;
                 null !== alternate && memoizedUpdaters.has(alternate) || memoizedUpdaters.add(fiber);
               }), index.clear());
-              lanes &= ~root2;
+              lanes &= ~root3;
             }
         }
         function lanesToEventPriority(lanes) {
@@ -3699,9 +2304,9 @@
             return inst.stateNode;
           throw Error("getNodeFromInstance: Invalid argument.");
         }
-        function getResourcesFromRoot(root2) {
-          var resources = root2[internalRootNodeResourcesKey];
-          resources || (resources = root2[internalRootNodeResourcesKey] = { hoistableStyles: /* @__PURE__ */ new Map(), hoistableScripts: /* @__PURE__ */ new Map() });
+        function getResourcesFromRoot(root3) {
+          var resources = root3[internalRootNodeResourcesKey];
+          resources || (resources = root3[internalRootNodeResourcesKey] = { hoistableStyles: /* @__PURE__ */ new Map(), hoistableScripts: /* @__PURE__ */ new Map() });
           return resources;
         }
         function markNodeAsHoistable(node) {
@@ -4177,7 +2782,7 @@
             };
           }
         }
-        function track2(node) {
+        function track(node) {
           node._valueTracker || (node._valueTracker = trackValueOnNode(node));
         }
         function updateValueIfChanged(node) {
@@ -4255,7 +2860,7 @@
           "number" === type && getActiveElement(node.ownerDocument) === node || node.defaultValue === "" + value || (node.defaultValue = "" + value);
         }
         function validateOptionProps(element, props) {
-          null == props.value && ("object" === typeof props.children && null !== props.children ? React13.Children.forEach(props.children, function(child) {
+          null == props.value && ("object" === typeof props.children && null !== props.children ? React3.Children.forEach(props.children, function(child) {
             null == child || "string" === typeof child || "number" === typeof child || "bigint" === typeof child || didWarnInvalidChild || (didWarnInvalidChild = true, console.error(
               "Cannot infer the option value of complex children. Pass a `value` prop or use a plain string as children to <option>."
             ));
@@ -5291,7 +3896,7 @@
         }
         function getData() {
           if (fallbackText) return fallbackText;
-          var start, startValue = startText, startLength = startValue.length, end, endValue = "value" in root ? root.value : root.textContent, endLength = endValue.length;
+          var start, startValue = startText, startLength = startValue.length, end, endValue = "value" in root2 ? root2.value : root2.textContent, endLength = endValue.length;
           for (start = 0; start < startLength && startValue[start] === endValue[start]; start++) ;
           var minEnd = startLength - start;
           for (end = 1; end <= minEnd && startValue[startLength - end] === endValue[endLength - end]; end++) ;
@@ -5380,7 +3985,7 @@
         }
         function getFallbackBeforeInputChars(domEventName, nativeEvent) {
           if (isComposing)
-            return "compositionend" === domEventName || !canUseCompositionEvent && isFallbackCompositionEnd(domEventName, nativeEvent) ? (domEventName = getData(), fallbackText = startText = root = null, isComposing = false, domEventName) : null;
+            return "compositionend" === domEventName || !canUseCompositionEvent && isFallbackCompositionEnd(domEventName, nativeEvent) ? (domEventName = getData(), fallbackText = startText = root2 = null, isComposing = false, domEventName) : null;
           switch (domEventName) {
             case "paste":
               return null;
@@ -5479,15 +4084,15 @@
           for (; node && node.firstChild; ) node = node.firstChild;
           return node;
         }
-        function getNodeForCharacterOffset(root2, offset) {
-          var node = getLeafNode(root2);
-          root2 = 0;
+        function getNodeForCharacterOffset(root3, offset) {
+          var node = getLeafNode(root3);
+          root3 = 0;
           for (var nodeEnd; node; ) {
             if (3 === node.nodeType) {
-              nodeEnd = root2 + node.textContent.length;
-              if (root2 <= offset && nodeEnd >= offset)
-                return { node, offset: offset - root2 };
-              root2 = nodeEnd;
+              nodeEnd = root3 + node.textContent.length;
+              if (root3 <= offset && nodeEnd >= offset)
+                return { node, offset: offset - root3 };
+              root3 = nodeEnd;
             }
             a: {
               for (; node; ) {
@@ -5510,7 +4115,7 @@
           for (var element = getActiveElement(containerInfo.document); element instanceof containerInfo.HTMLIFrameElement; ) {
             try {
               var JSCompiler_inline_result = "string" === typeof element.contentWindow.location.href;
-            } catch (err2) {
+            } catch (err) {
               JSCompiler_inline_result = false;
             }
             if (JSCompiler_inline_result) containerInfo = element.contentWindow;
@@ -6030,7 +4635,7 @@
                 props.name,
                 true
               );
-              track2(didHydrate);
+              track(didHydrate);
               break;
             case "option":
               validateOptionProps(didHydrate, props);
@@ -6046,7 +4651,7 @@
                 props.value,
                 props.defaultValue,
                 props.children
-              ), track2(didHydrate);
+              ), track(didHydrate);
           }
           type = props.children;
           "string" !== typeof type && "number" !== typeof type && "bigint" !== typeof type || didHydrate.textContent === "" + type || true === props.suppressHydrationWarning || checkForUnmatchedText(didHydrate.textContent, type) ? (null != props.popover && (listenToNonDelegatedEvent("beforetoggle", didHydrate), listenToNonDelegatedEvent("toggle", didHydrate)), null != props.onScroll && listenToNonDelegatedEvent("scroll", didHydrate), null != props.onScrollEnd && listenToNonDelegatedEvent("scrollend", didHydrate), null != props.onClick && (didHydrate.onclick = noop$1), didHydrate = true) : didHydrate = false;
@@ -6549,14 +5154,14 @@
           enqueueUpdate$1(fiber, updateQueue, update, lane);
           return getRootForUpdatedFiber(fiber);
         }
-        function entangleTransitions(root2, fiber, lane) {
+        function entangleTransitions(root3, fiber, lane) {
           fiber = fiber.updateQueue;
           if (null !== fiber && (fiber = fiber.shared, 0 !== (lane & 4194048))) {
             var queueLanes = fiber.lanes;
-            queueLanes &= root2.pendingLanes;
+            queueLanes &= root3.pendingLanes;
             lane |= queueLanes;
             fiber.lanes = lane;
-            markRootEntangled(root2, lane);
+            markRootEntangled(root3, lane);
           }
         }
         function enqueueCapturedUpdate(workInProgress2, capturedUpdate) {
@@ -7274,8 +5879,8 @@
           }
         }
         function forceStoreRerender(fiber) {
-          var root2 = enqueueConcurrentRenderForLane(fiber, 2);
-          null !== root2 && scheduleUpdateOnFiber(root2, fiber, 2);
+          var root3 = enqueueConcurrentRenderForLane(fiber, 2);
+          null !== root3 && scheduleUpdateOnFiber(root3, fiber, 2);
         }
         function mountStateImpl(initialState) {
           var hook = mountWorkInProgressHook();
@@ -7907,10 +6512,10 @@
               case 3:
                 var lane = requestUpdateLane(provider);
                 fiber = createUpdate(lane);
-                var root2 = enqueueUpdate(provider, fiber, lane);
-                null !== root2 && (scheduleUpdateOnFiber(root2, provider, lane), entangleTransitions(root2, provider, lane));
+                var root3 = enqueueUpdate(provider, fiber, lane);
+                null !== root3 && (scheduleUpdateOnFiber(root3, provider, lane), entangleTransitions(root3, provider, lane));
                 provider = createCache();
-                null !== seedKey && void 0 !== seedKey && null !== root2 && console.error(
+                null !== seedKey && void 0 !== seedKey && null !== root3 && console.error(
                   "The seed argument is not enabled outside experimental channels."
                 );
                 fiber.payload = { cache: provider };
@@ -8012,13 +6617,13 @@
           null === pending ? update.next = update : (update.next = pending.next, pending.next = update);
           queue.pending = update;
         }
-        function entangleTransitionUpdate(root2, queue, lane) {
+        function entangleTransitionUpdate(root3, queue, lane) {
           if (0 !== (lane & 4194048)) {
             var queueLanes = queue.lanes;
-            queueLanes &= root2.pendingLanes;
+            queueLanes &= root3.pendingLanes;
             lane |= queueLanes;
             queue.lanes = lane;
-            markRootEntangled(root2, lane);
+            markRootEntangled(root3, lane);
           }
         }
         function pushDebugInfo(debugInfo) {
@@ -8895,7 +7500,7 @@
         function defaultOnRecoverableError(error) {
           reportGlobalError(error);
         }
-        function logUncaughtError(root2, errorInfo) {
+        function logUncaughtError(root3, errorInfo) {
           try {
             componentName = errorInfo.source ? getComponentNameFromFiber(errorInfo.source) : null;
             errorBoundaryName = null;
@@ -8903,7 +7508,7 @@
             if (null !== ReactSharedInternals.actQueue)
               ReactSharedInternals.thrownErrors.push(error);
             else {
-              var onUncaughtError = root2.onUncaughtError;
+              var onUncaughtError = root3.onUncaughtError;
               onUncaughtError(error, { componentStack: errorInfo.stack });
             }
           } catch (e$5) {
@@ -8912,11 +7517,11 @@
             });
           }
         }
-        function logCaughtError(root2, boundary, errorInfo) {
+        function logCaughtError(root3, boundary, errorInfo) {
           try {
             componentName = errorInfo.source ? getComponentNameFromFiber(errorInfo.source) : null;
             errorBoundaryName = getComponentNameFromFiber(boundary);
-            var onCaughtError = root2.onCaughtError;
+            var onCaughtError = root3.onCaughtError;
             onCaughtError(errorInfo.value, {
               componentStack: errorInfo.stack,
               errorBoundary: 1 === boundary.tag ? boundary.stateNode : null
@@ -8927,12 +7532,12 @@
             });
           }
         }
-        function createRootErrorUpdate(root2, errorInfo, lane) {
+        function createRootErrorUpdate(root3, errorInfo, lane) {
           lane = createUpdate(lane);
           lane.tag = CaptureUpdate;
           lane.payload = { element: null };
           lane.callback = function() {
-            runWithFiberInDEV(errorInfo.source, logUncaughtError, root2, errorInfo);
+            runWithFiberInDEV(errorInfo.source, logUncaughtError, root3, errorInfo);
           };
           return lane;
         }
@@ -8941,7 +7546,7 @@
           lane.tag = CaptureUpdate;
           return lane;
         }
-        function initializeClassErrorUpdate(update, root2, fiber, errorInfo) {
+        function initializeClassErrorUpdate(update, root3, fiber, errorInfo) {
           var getDerivedStateFromError = fiber.type.getDerivedStateFromError;
           if ("function" === typeof getDerivedStateFromError) {
             var error = errorInfo.value;
@@ -8953,7 +7558,7 @@
               runWithFiberInDEV(
                 errorInfo.source,
                 logCaughtError,
-                root2,
+                root3,
                 fiber,
                 errorInfo
               );
@@ -8965,7 +7570,7 @@
             runWithFiberInDEV(
               errorInfo.source,
               logCaughtError,
-              root2,
+              root3,
               fiber,
               errorInfo
             );
@@ -8977,9 +7582,9 @@
             );
           });
         }
-        function throwException(root2, returnFiber, sourceFiber, value, rootRenderLanes) {
+        function throwException(root3, returnFiber, sourceFiber, value, rootRenderLanes) {
           sourceFiber.flags |= 32768;
-          isDevToolsPresent && restorePendingUpdaters(root2, rootRenderLanes);
+          isDevToolsPresent && restorePendingUpdaters(root3, rootRenderLanes);
           if (null !== value && "object" === typeof value && "function" === typeof value.then) {
             returnFiber = sourceFiber.alternate;
             null !== returnFiber && propagateParentContextChanges(
@@ -8993,19 +7598,19 @@
             if (null !== sourceFiber) {
               switch (sourceFiber.tag) {
                 case 13:
-                  return null === shellBoundary ? renderDidSuspendDelayIfPossible() : null === sourceFiber.alternate && workInProgressRootExitStatus === RootInProgress && (workInProgressRootExitStatus = RootSuspended), sourceFiber.flags &= -257, sourceFiber.flags |= 65536, sourceFiber.lanes = rootRenderLanes, value === noopSuspenseyCommitThenable ? sourceFiber.flags |= 16384 : (returnFiber = sourceFiber.updateQueue, null === returnFiber ? sourceFiber.updateQueue = /* @__PURE__ */ new Set([value]) : returnFiber.add(value), attachPingListener(root2, value, rootRenderLanes)), false;
+                  return null === shellBoundary ? renderDidSuspendDelayIfPossible() : null === sourceFiber.alternate && workInProgressRootExitStatus === RootInProgress && (workInProgressRootExitStatus = RootSuspended), sourceFiber.flags &= -257, sourceFiber.flags |= 65536, sourceFiber.lanes = rootRenderLanes, value === noopSuspenseyCommitThenable ? sourceFiber.flags |= 16384 : (returnFiber = sourceFiber.updateQueue, null === returnFiber ? sourceFiber.updateQueue = /* @__PURE__ */ new Set([value]) : returnFiber.add(value), attachPingListener(root3, value, rootRenderLanes)), false;
                 case 22:
                   return sourceFiber.flags |= 65536, value === noopSuspenseyCommitThenable ? sourceFiber.flags |= 16384 : (returnFiber = sourceFiber.updateQueue, null === returnFiber ? (returnFiber = {
                     transitions: null,
                     markerInstances: null,
                     retryQueue: /* @__PURE__ */ new Set([value])
-                  }, sourceFiber.updateQueue = returnFiber) : (sourceFiber = returnFiber.retryQueue, null === sourceFiber ? returnFiber.retryQueue = /* @__PURE__ */ new Set([value]) : sourceFiber.add(value)), attachPingListener(root2, value, rootRenderLanes)), false;
+                  }, sourceFiber.updateQueue = returnFiber) : (sourceFiber = returnFiber.retryQueue, null === sourceFiber ? returnFiber.retryQueue = /* @__PURE__ */ new Set([value]) : sourceFiber.add(value)), attachPingListener(root3, value, rootRenderLanes)), false;
               }
               throw Error(
                 "Unexpected Suspense handler tag (" + sourceFiber.tag + "). This is a bug in React."
               );
             }
-            attachPingListener(root2, value, rootRenderLanes);
+            attachPingListener(root3, value, rootRenderLanes);
             renderDidSuspendDelayIfPossible();
             return false;
           }
@@ -9026,11 +7631,11 @@
                 ),
                 sourceFiber
               )
-            ), root2 = root2.current.alternate, root2.flags |= 65536, rootRenderLanes &= -rootRenderLanes, root2.lanes |= rootRenderLanes, value = createCapturedValueAtFiber(value, sourceFiber), rootRenderLanes = createRootErrorUpdate(
-              root2.stateNode,
+            ), root3 = root3.current.alternate, root3.flags |= 65536, rootRenderLanes &= -rootRenderLanes, root3.lanes |= rootRenderLanes, value = createCapturedValueAtFiber(value, sourceFiber), rootRenderLanes = createRootErrorUpdate(
+              root3.stateNode,
               value,
               rootRenderLanes
-            ), enqueueCapturedUpdate(root2, rootRenderLanes), workInProgressRootExitStatus !== RootSuspendedWithDelay && (workInProgressRootExitStatus = RootErrored)), false;
+            ), enqueueCapturedUpdate(root3, rootRenderLanes), workInProgressRootExitStatus !== RootSuspendedWithDelay && (workInProgressRootExitStatus = RootErrored)), false;
           var error = createCapturedValueAtFiber(
             Error(
               "There was an error during concurrent rendering but React was able to recover by instead synchronously rendering the entire root.",
@@ -9046,16 +7651,16 @@
           do {
             switch (sourceFiber.tag) {
               case 3:
-                return sourceFiber.flags |= 65536, root2 = rootRenderLanes & -rootRenderLanes, sourceFiber.lanes |= root2, root2 = createRootErrorUpdate(
+                return sourceFiber.flags |= 65536, root3 = rootRenderLanes & -rootRenderLanes, sourceFiber.lanes |= root3, root3 = createRootErrorUpdate(
                   sourceFiber.stateNode,
                   value,
-                  root2
-                ), enqueueCapturedUpdate(sourceFiber, root2), false;
+                  root3
+                ), enqueueCapturedUpdate(sourceFiber, root3), false;
               case 1:
                 if (returnFiber = sourceFiber.type, error = sourceFiber.stateNode, 0 === (sourceFiber.flags & 128) && ("function" === typeof returnFiber.getDerivedStateFromError || null !== error && "function" === typeof error.componentDidCatch && (null === legacyErrorBoundariesThatAlreadyFailed || !legacyErrorBoundariesThatAlreadyFailed.has(error))))
                   return sourceFiber.flags |= 65536, rootRenderLanes &= -rootRenderLanes, sourceFiber.lanes |= rootRenderLanes, rootRenderLanes = createClassErrorUpdate(rootRenderLanes), initializeClassErrorUpdate(
                     rootRenderLanes,
-                    root2,
+                    root3,
                     sourceFiber,
                     value
                   ), enqueueCapturedUpdate(sourceFiber, rootRenderLanes), false;
@@ -11302,12 +9907,12 @@
             else ref.current = null;
         }
         function commitProfiler(finishedWork, current2, commitStartTime2, effectDuration) {
-          var _finishedWork$memoize = finishedWork.memoizedProps, id2 = _finishedWork$memoize.id, onCommit = _finishedWork$memoize.onCommit;
+          var _finishedWork$memoize = finishedWork.memoizedProps, id = _finishedWork$memoize.id, onCommit = _finishedWork$memoize.onCommit;
           _finishedWork$memoize = _finishedWork$memoize.onRender;
           current2 = null === current2 ? "mount" : "update";
           currentUpdateIsNested && (current2 = "nested-update");
           "function" === typeof _finishedWork$memoize && _finishedWork$memoize(
-            id2,
+            id,
             current2,
             finishedWork.actualDuration,
             finishedWork.treeBaseDuration,
@@ -11462,19 +10067,19 @@
             captureCommitPhaseError(finishedWork, finishedWork.return, error);
           }
         }
-        function commitBeforeMutationEffects(root2, firstChild) {
-          root2 = root2.containerInfo;
+        function commitBeforeMutationEffects(root3, firstChild) {
+          root3 = root3.containerInfo;
           eventsEnabled = _enabled;
-          root2 = getActiveElementDeep(root2);
-          if (hasSelectionCapabilities(root2)) {
-            if ("selectionStart" in root2)
+          root3 = getActiveElementDeep(root3);
+          if (hasSelectionCapabilities(root3)) {
+            if ("selectionStart" in root3)
               var JSCompiler_temp = {
-                start: root2.selectionStart,
-                end: root2.selectionEnd
+                start: root3.selectionStart,
+                end: root3.selectionEnd
               };
             else
               a: {
-                JSCompiler_temp = (JSCompiler_temp = root2.ownerDocument) && JSCompiler_temp.defaultView || window;
+                JSCompiler_temp = (JSCompiler_temp = root3.ownerDocument) && JSCompiler_temp.defaultView || window;
                 var selection = JSCompiler_temp.getSelection && JSCompiler_temp.getSelection();
                 if (selection && 0 !== selection.rangeCount) {
                   JSCompiler_temp = selection.anchorNode;
@@ -11486,7 +10091,7 @@
                     JSCompiler_temp = null;
                     break a;
                   }
-                  var length = 0, start = -1, end = -1, indexWithinAnchor = 0, indexWithinFocus = 0, node = root2, parentNode = null;
+                  var length = 0, start = -1, end = -1, indexWithinAnchor = 0, indexWithinFocus = 0, node = root3, parentNode = null;
                   b: for (; ; ) {
                     for (var next; ; ) {
                       node !== JSCompiler_temp || 0 !== anchorOffset && 3 !== node.nodeType || (start = length + anchorOffset);
@@ -11497,7 +10102,7 @@
                       node = next;
                     }
                     for (; ; ) {
-                      if (node === root2) break b;
+                      if (node === root3) break b;
                       parentNode === JSCompiler_temp && ++indexWithinAnchor === anchorOffset && (start = length);
                       parentNode === focusNode && ++indexWithinFocus === selection && (end = length);
                       if (null !== (next = node.nextSibling)) break;
@@ -11512,40 +10117,40 @@
             JSCompiler_temp = JSCompiler_temp || { start: 0, end: 0 };
           } else JSCompiler_temp = null;
           selectionInformation = {
-            focusedElem: root2,
+            focusedElem: root3,
             selectionRange: JSCompiler_temp
           };
           _enabled = false;
           for (nextEffect = firstChild; null !== nextEffect; )
-            if (firstChild = nextEffect, root2 = firstChild.child, 0 !== (firstChild.subtreeFlags & 1024) && null !== root2)
-              root2.return = firstChild, nextEffect = root2;
+            if (firstChild = nextEffect, root3 = firstChild.child, 0 !== (firstChild.subtreeFlags & 1024) && null !== root3)
+              root3.return = firstChild, nextEffect = root3;
             else
               for (; null !== nextEffect; ) {
-                root2 = firstChild = nextEffect;
-                JSCompiler_temp = root2.alternate;
-                anchorOffset = root2.flags;
-                switch (root2.tag) {
+                root3 = firstChild = nextEffect;
+                JSCompiler_temp = root3.alternate;
+                anchorOffset = root3.flags;
+                switch (root3.tag) {
                   case 0:
                     break;
                   case 11:
                   case 15:
                     break;
                   case 1:
-                    0 !== (anchorOffset & 1024) && null !== JSCompiler_temp && commitClassSnapshot(root2, JSCompiler_temp);
+                    0 !== (anchorOffset & 1024) && null !== JSCompiler_temp && commitClassSnapshot(root3, JSCompiler_temp);
                     break;
                   case 3:
                     if (0 !== (anchorOffset & 1024)) {
-                      if (root2 = root2.stateNode.containerInfo, JSCompiler_temp = root2.nodeType, 9 === JSCompiler_temp)
-                        clearContainerSparingly(root2);
+                      if (root3 = root3.stateNode.containerInfo, JSCompiler_temp = root3.nodeType, 9 === JSCompiler_temp)
+                        clearContainerSparingly(root3);
                       else if (1 === JSCompiler_temp)
-                        switch (root2.nodeName) {
+                        switch (root3.nodeName) {
                           case "HEAD":
                           case "HTML":
                           case "BODY":
-                            clearContainerSparingly(root2);
+                            clearContainerSparingly(root3);
                             break;
                           default:
-                            root2.textContent = "";
+                            root3.textContent = "";
                         }
                     }
                     break;
@@ -11562,10 +10167,10 @@
                         "This unit of work tag should not have side-effects. This error is likely caused by a bug in React. Please file an issue."
                       );
                 }
-                root2 = firstChild.sibling;
-                if (null !== root2) {
-                  root2.return = firstChild.return;
-                  nextEffect = root2;
+                root3 = firstChild.sibling;
+                if (null !== root3) {
+                  root3.return = firstChild.return;
+                  nextEffect = root3;
                   break;
                 }
                 nextEffect = firstChild.return;
@@ -11749,10 +10354,10 @@
           if (injectedHook && "function" === typeof injectedHook.onCommitFiberUnmount)
             try {
               injectedHook.onCommitFiberUnmount(rendererID, deletedFiber);
-            } catch (err2) {
+            } catch (err) {
               hasLoggedError || (hasLoggedError = true, console.error(
                 "React instrumentation encountered an error: %s",
-                err2
+                err
               ));
             }
           switch (deletedFiber.tag) {
@@ -11950,7 +10555,7 @@
           var deletions = parentFiber.deletions;
           if (null !== deletions)
             for (var i = 0; i < deletions.length; i++) {
-              var root2 = root$jscomp$0, returnFiber = parentFiber, deletedFiber = deletions[i], parent = returnFiber;
+              var root3 = root$jscomp$0, returnFiber = parentFiber, deletedFiber = deletions[i], parent = returnFiber;
               a: for (; null !== parent; ) {
                 switch (parent.tag) {
                   case 27:
@@ -11976,26 +10581,26 @@
                 throw Error(
                   "Expected to find a host parent. This error is likely caused by a bug in React. Please file an issue."
                 );
-              commitDeletionEffectsOnFiber(root2, returnFiber, deletedFiber);
+              commitDeletionEffectsOnFiber(root3, returnFiber, deletedFiber);
               hostParent = null;
               hostParentIsContainer = false;
-              root2 = deletedFiber;
-              returnFiber = root2.alternate;
+              root3 = deletedFiber;
+              returnFiber = root3.alternate;
               null !== returnFiber && (returnFiber.return = null);
-              root2.return = null;
+              root3.return = null;
             }
           if (parentFiber.subtreeFlags & 13878)
             for (parentFiber = parentFiber.child; null !== parentFiber; )
               commitMutationEffectsOnFiber(parentFiber, root$jscomp$0), parentFiber = parentFiber.sibling;
         }
-        function commitMutationEffectsOnFiber(finishedWork, root2) {
+        function commitMutationEffectsOnFiber(finishedWork, root3) {
           var current2 = finishedWork.alternate, flags = finishedWork.flags;
           switch (finishedWork.tag) {
             case 0:
             case 11:
             case 14:
             case 15:
-              recursivelyTraverseMutationEffects(root2, finishedWork);
+              recursivelyTraverseMutationEffects(root3, finishedWork);
               commitReconciliationEffects(finishedWork);
               flags & 4 && (commitHookEffectListUnmount(
                 Insertion | HasEffect,
@@ -12008,31 +10613,31 @@
               ));
               break;
             case 1:
-              recursivelyTraverseMutationEffects(root2, finishedWork);
+              recursivelyTraverseMutationEffects(root3, finishedWork);
               commitReconciliationEffects(finishedWork);
               flags & 512 && (offscreenSubtreeWasHidden || null === current2 || safelyDetachRef(current2, current2.return));
               flags & 64 && offscreenSubtreeIsHidden && (finishedWork = finishedWork.updateQueue, null !== finishedWork && (flags = finishedWork.callbacks, null !== flags && (current2 = finishedWork.shared.hiddenCallbacks, finishedWork.shared.hiddenCallbacks = null === current2 ? flags : current2.concat(flags))));
               break;
             case 26:
               var hoistableRoot = currentHoistableRoot;
-              recursivelyTraverseMutationEffects(root2, finishedWork);
+              recursivelyTraverseMutationEffects(root3, finishedWork);
               commitReconciliationEffects(finishedWork);
               flags & 512 && (offscreenSubtreeWasHidden || null === current2 || safelyDetachRef(current2, current2.return));
               if (flags & 4)
-                if (root2 = null !== current2 ? current2.memoizedState : null, flags = finishedWork.memoizedState, null === current2)
+                if (root3 = null !== current2 ? current2.memoizedState : null, flags = finishedWork.memoizedState, null === current2)
                   if (null === flags)
                     if (null === finishedWork.stateNode) {
                       a: {
                         flags = finishedWork.type;
                         current2 = finishedWork.memoizedProps;
-                        root2 = hoistableRoot.ownerDocument || hoistableRoot;
+                        root3 = hoistableRoot.ownerDocument || hoistableRoot;
                         b: switch (flags) {
                           case "title":
-                            hoistableRoot = root2.getElementsByTagName("title")[0];
+                            hoistableRoot = root3.getElementsByTagName("title")[0];
                             if (!hoistableRoot || hoistableRoot[internalHoistableMarker] || hoistableRoot[internalInstanceKey] || hoistableRoot.namespaceURI === SVG_NAMESPACE || hoistableRoot.hasAttribute("itemprop"))
-                              hoistableRoot = root2.createElement(flags), root2.head.insertBefore(
+                              hoistableRoot = root3.createElement(flags), root3.head.insertBefore(
                                 hoistableRoot,
-                                root2.querySelector("head > title")
+                                root3.querySelector("head > title")
                               );
                             setInitialProperties(hoistableRoot, flags, current2);
                             hoistableRoot[internalInstanceKey] = finishedWork;
@@ -12043,7 +10648,7 @@
                             var maybeNodes = getHydratableHoistableCache(
                               "link",
                               "href",
-                              root2
+                              root3
                             ).get(flags + (current2.href || ""));
                             if (maybeNodes) {
                               for (var i = 0; i < maybeNodes.length; i++)
@@ -12052,15 +10657,15 @@
                                   break b;
                                 }
                             }
-                            hoistableRoot = root2.createElement(flags);
+                            hoistableRoot = root3.createElement(flags);
                             setInitialProperties(hoistableRoot, flags, current2);
-                            root2.head.appendChild(hoistableRoot);
+                            root3.head.appendChild(hoistableRoot);
                             break;
                           case "meta":
                             if (maybeNodes = getHydratableHoistableCache(
                               "meta",
                               "content",
-                              root2
+                              root3
                             ).get(flags + (current2.content || ""))) {
                               for (i = 0; i < maybeNodes.length; i++)
                                 if (hoistableRoot = maybeNodes[i], checkAttributeStringCoercion(
@@ -12071,9 +10676,9 @@
                                   break b;
                                 }
                             }
-                            hoistableRoot = root2.createElement(flags);
+                            hoistableRoot = root3.createElement(flags);
                             setInitialProperties(hoistableRoot, flags, current2);
-                            root2.head.appendChild(hoistableRoot);
+                            root3.head.appendChild(hoistableRoot);
                             break;
                           default:
                             throw Error(
@@ -12098,7 +10703,7 @@
                       finishedWork.memoizedProps
                     );
                 else
-                  root2 !== flags ? (null === root2 ? null !== current2.stateNode && (current2 = current2.stateNode, current2.parentNode.removeChild(current2)) : root2.count--, null === flags ? mountHoistable(
+                  root3 !== flags ? (null === root3 ? null !== current2.stateNode && (current2 = current2.stateNode, current2.parentNode.removeChild(current2)) : root3.count--, null === flags ? mountHoistable(
                     hoistableRoot,
                     finishedWork.type,
                     finishedWork.stateNode
@@ -12113,7 +10718,7 @@
                   );
               break;
             case 27:
-              recursivelyTraverseMutationEffects(root2, finishedWork);
+              recursivelyTraverseMutationEffects(root3, finishedWork);
               commitReconciliationEffects(finishedWork);
               flags & 512 && (offscreenSubtreeWasHidden || null === current2 || safelyDetachRef(current2, current2.return));
               null !== current2 && flags & 4 && commitHostUpdate(
@@ -12123,28 +10728,28 @@
               );
               break;
             case 5:
-              recursivelyTraverseMutationEffects(root2, finishedWork);
+              recursivelyTraverseMutationEffects(root3, finishedWork);
               commitReconciliationEffects(finishedWork);
               flags & 512 && (offscreenSubtreeWasHidden || null === current2 || safelyDetachRef(current2, current2.return));
               if (finishedWork.flags & 32) {
-                root2 = finishedWork.stateNode;
+                root3 = finishedWork.stateNode;
                 try {
-                  runWithFiberInDEV(finishedWork, resetTextContent, root2);
+                  runWithFiberInDEV(finishedWork, resetTextContent, root3);
                 } catch (error) {
                   captureCommitPhaseError(finishedWork, finishedWork.return, error);
                 }
               }
-              flags & 4 && null != finishedWork.stateNode && (root2 = finishedWork.memoizedProps, commitHostUpdate(
+              flags & 4 && null != finishedWork.stateNode && (root3 = finishedWork.memoizedProps, commitHostUpdate(
                 finishedWork,
-                root2,
-                null !== current2 ? current2.memoizedProps : root2
+                root3,
+                null !== current2 ? current2.memoizedProps : root3
               ));
               flags & 1024 && (needsFormReset = true, "form" !== finishedWork.type && console.error(
                 "Unexpected host component type. Expected a form. This is a bug in React."
               ));
               break;
             case 6:
-              recursivelyTraverseMutationEffects(root2, finishedWork);
+              recursivelyTraverseMutationEffects(root3, finishedWork);
               commitReconciliationEffects(finishedWork);
               if (flags & 4) {
                 if (null === finishedWork.stateNode)
@@ -12153,12 +10758,12 @@
                   );
                 flags = finishedWork.memoizedProps;
                 current2 = null !== current2 ? current2.memoizedProps : flags;
-                root2 = finishedWork.stateNode;
+                root3 = finishedWork.stateNode;
                 try {
                   runWithFiberInDEV(
                     finishedWork,
                     commitTextUpdate,
-                    root2,
+                    root3,
                     current2,
                     flags
                   );
@@ -12171,8 +10776,8 @@
               hoistableRoot = pushNestedEffectDurations();
               tagCaches = null;
               maybeNodes = currentHoistableRoot;
-              currentHoistableRoot = getHoistableRoot(root2.containerInfo);
-              recursivelyTraverseMutationEffects(root2, finishedWork);
+              currentHoistableRoot = getHoistableRoot(root3.containerInfo);
+              recursivelyTraverseMutationEffects(root3, finishedWork);
               currentHoistableRoot = maybeNodes;
               commitReconciliationEffects(finishedWork);
               if (flags & 4 && null !== current2 && current2.memoizedState.isDehydrated)
@@ -12180,31 +10785,31 @@
                   runWithFiberInDEV(
                     finishedWork,
                     commitHydratedContainer,
-                    root2.containerInfo
+                    root3.containerInfo
                   );
                 } catch (error) {
                   captureCommitPhaseError(finishedWork, finishedWork.return, error);
                 }
               needsFormReset && (needsFormReset = false, recursivelyResetForms(finishedWork));
-              root2.effectDuration += popNestedEffectDurations(hoistableRoot);
+              root3.effectDuration += popNestedEffectDurations(hoistableRoot);
               break;
             case 4:
               flags = currentHoistableRoot;
               currentHoistableRoot = getHoistableRoot(
                 finishedWork.stateNode.containerInfo
               );
-              recursivelyTraverseMutationEffects(root2, finishedWork);
+              recursivelyTraverseMutationEffects(root3, finishedWork);
               commitReconciliationEffects(finishedWork);
               currentHoistableRoot = flags;
               break;
             case 12:
               flags = pushNestedEffectDurations();
-              recursivelyTraverseMutationEffects(root2, finishedWork);
+              recursivelyTraverseMutationEffects(root3, finishedWork);
               commitReconciliationEffects(finishedWork);
               finishedWork.stateNode.effectDuration += bubbleNestedEffectDurations(flags);
               break;
             case 13:
-              recursivelyTraverseMutationEffects(root2, finishedWork);
+              recursivelyTraverseMutationEffects(root3, finishedWork);
               commitReconciliationEffects(finishedWork);
               finishedWork.child.flags & 8192 && null !== finishedWork.memoizedState !== (null !== current2 && null !== current2.memoizedState) && (globalMostRecentFallbackTime = now$1());
               flags & 4 && (flags = finishedWork.updateQueue, null !== flags && (finishedWork.updateQueue = null, attachSuspenseRetryListeners(finishedWork, flags)));
@@ -12214,15 +10819,15 @@
               var wasHidden = null !== current2 && null !== current2.memoizedState, prevOffscreenSubtreeIsHidden = offscreenSubtreeIsHidden, prevOffscreenSubtreeWasHidden = offscreenSubtreeWasHidden;
               offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden || hoistableRoot;
               offscreenSubtreeWasHidden = prevOffscreenSubtreeWasHidden || wasHidden;
-              recursivelyTraverseMutationEffects(root2, finishedWork);
+              recursivelyTraverseMutationEffects(root3, finishedWork);
               offscreenSubtreeWasHidden = prevOffscreenSubtreeWasHidden;
               offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden;
               commitReconciliationEffects(finishedWork);
               if (flags & 8192)
-                a: for (root2 = finishedWork.stateNode, root2._visibility = hoistableRoot ? root2._visibility & ~OffscreenVisible : root2._visibility | OffscreenVisible, hoistableRoot && (null === current2 || wasHidden || offscreenSubtreeIsHidden || offscreenSubtreeWasHidden || recursivelyTraverseDisappearLayoutEffects(finishedWork)), current2 = null, root2 = finishedWork; ; ) {
-                  if (5 === root2.tag || 26 === root2.tag) {
+                a: for (root3 = finishedWork.stateNode, root3._visibility = hoistableRoot ? root3._visibility & ~OffscreenVisible : root3._visibility | OffscreenVisible, hoistableRoot && (null === current2 || wasHidden || offscreenSubtreeIsHidden || offscreenSubtreeWasHidden || recursivelyTraverseDisappearLayoutEffects(finishedWork)), current2 = null, root3 = finishedWork; ; ) {
+                  if (5 === root3.tag || 26 === root3.tag) {
                     if (null === current2) {
-                      wasHidden = current2 = root2;
+                      wasHidden = current2 = root3;
                       try {
                         maybeNodes = wasHidden.stateNode, hoistableRoot ? runWithFiberInDEV(wasHidden, hideInstance, maybeNodes) : runWithFiberInDEV(
                           wasHidden,
@@ -12234,9 +10839,9 @@
                         captureCommitPhaseError(wasHidden, wasHidden.return, error);
                       }
                     }
-                  } else if (6 === root2.tag) {
+                  } else if (6 === root3.tag) {
                     if (null === current2) {
-                      wasHidden = root2;
+                      wasHidden = root3;
                       try {
                         i = wasHidden.stateNode, hoistableRoot ? runWithFiberInDEV(wasHidden, hideTextInstance, i) : runWithFiberInDEV(
                           wasHidden,
@@ -12248,26 +10853,26 @@
                         captureCommitPhaseError(wasHidden, wasHidden.return, error);
                       }
                     }
-                  } else if ((22 !== root2.tag && 23 !== root2.tag || null === root2.memoizedState || root2 === finishedWork) && null !== root2.child) {
-                    root2.child.return = root2;
-                    root2 = root2.child;
+                  } else if ((22 !== root3.tag && 23 !== root3.tag || null === root3.memoizedState || root3 === finishedWork) && null !== root3.child) {
+                    root3.child.return = root3;
+                    root3 = root3.child;
                     continue;
                   }
-                  if (root2 === finishedWork) break a;
-                  for (; null === root2.sibling; ) {
-                    if (null === root2.return || root2.return === finishedWork)
+                  if (root3 === finishedWork) break a;
+                  for (; null === root3.sibling; ) {
+                    if (null === root3.return || root3.return === finishedWork)
                       break a;
-                    current2 === root2 && (current2 = null);
-                    root2 = root2.return;
+                    current2 === root3 && (current2 = null);
+                    root3 = root3.return;
                   }
-                  current2 === root2 && (current2 = null);
-                  root2.sibling.return = root2.return;
-                  root2 = root2.sibling;
+                  current2 === root3 && (current2 = null);
+                  root3.sibling.return = root3.return;
+                  root3 = root3.sibling;
                 }
               flags & 4 && (flags = finishedWork.updateQueue, null !== flags && (current2 = flags.retryQueue, null !== current2 && (flags.retryQueue = null, attachSuspenseRetryListeners(finishedWork, current2))));
               break;
             case 19:
-              recursivelyTraverseMutationEffects(root2, finishedWork);
+              recursivelyTraverseMutationEffects(root3, finishedWork);
               commitReconciliationEffects(finishedWork);
               flags & 4 && (flags = finishedWork.updateQueue, null !== flags && (finishedWork.updateQueue = null, attachSuspenseRetryListeners(finishedWork, flags)));
               break;
@@ -12276,7 +10881,7 @@
             case 21:
               break;
             default:
-              recursivelyTraverseMutationEffects(root2, finishedWork), commitReconciliationEffects(finishedWork);
+              recursivelyTraverseMutationEffects(root3, finishedWork), commitReconciliationEffects(finishedWork);
           }
         }
         function commitReconciliationEffects(finishedWork) {
@@ -12300,10 +10905,10 @@
               parentFiber = parentFiber.sibling;
             }
         }
-        function recursivelyTraverseLayoutEffects(root2, parentFiber) {
+        function recursivelyTraverseLayoutEffects(root3, parentFiber) {
           if (parentFiber.subtreeFlags & 8772)
             for (parentFiber = parentFiber.child; null !== parentFiber; )
-              commitLayoutEffectOnFiber(root2, parentFiber.alternate, parentFiber), parentFiber = parentFiber.sibling;
+              commitLayoutEffectOnFiber(root3, parentFiber.alternate, parentFiber), parentFiber = parentFiber.sibling;
         }
         function disappearLayoutEffects(finishedWork) {
           switch (finishedWork.tag) {
@@ -12486,11 +11091,11 @@
           finishedWork = finishedWork.memoizedState.cache;
           finishedWork !== current2 && (retainCache(finishedWork), null != current2 && releaseCache(current2));
         }
-        function recursivelyTraversePassiveMountEffects(root2, parentFiber, committedLanes, committedTransitions) {
+        function recursivelyTraversePassiveMountEffects(root3, parentFiber, committedLanes, committedTransitions) {
           if (parentFiber.subtreeFlags & 10256)
             for (parentFiber = parentFiber.child; null !== parentFiber; )
               commitPassiveMountOnFiber(
-                root2,
+                root3,
                 parentFiber,
                 committedLanes,
                 committedTransitions
@@ -12910,29 +11515,29 @@
           null !== suspenseHandler && (suspenseHandler.flags |= 32);
           return workInProgressDeferredLane;
         }
-        function scheduleUpdateOnFiber(root2, fiber, lane) {
+        function scheduleUpdateOnFiber(root3, fiber, lane) {
           isRunningInsertionEffect && console.error("useInsertionEffect must not schedule updates.");
           isFlushingPassiveEffects && (didScheduleUpdateDuringPassiveEffects = true);
-          if (root2 === workInProgressRoot && (workInProgressSuspendedReason === SuspendedOnData || workInProgressSuspendedReason === SuspendedOnAction) || null !== root2.cancelPendingCommit)
-            prepareFreshStack(root2, 0), markRootSuspended(
-              root2,
+          if (root3 === workInProgressRoot && (workInProgressSuspendedReason === SuspendedOnData || workInProgressSuspendedReason === SuspendedOnAction) || null !== root3.cancelPendingCommit)
+            prepareFreshStack(root3, 0), markRootSuspended(
+              root3,
               workInProgressRootRenderLanes,
               workInProgressDeferredLane,
               false
             );
-          markRootUpdated$1(root2, lane);
-          if (0 !== (executionContext & RenderContext) && root2 === workInProgressRoot) {
+          markRootUpdated$1(root3, lane);
+          if (0 !== (executionContext & RenderContext) && root3 === workInProgressRoot) {
             if (isRendering)
               switch (fiber.tag) {
                 case 0:
                 case 11:
                 case 15:
-                  root2 = workInProgress && getComponentNameFromFiber(workInProgress) || "Unknown";
-                  didWarnAboutUpdateInRenderForAnotherComponent.has(root2) || (didWarnAboutUpdateInRenderForAnotherComponent.add(root2), fiber = getComponentNameFromFiber(fiber) || "Unknown", console.error(
+                  root3 = workInProgress && getComponentNameFromFiber(workInProgress) || "Unknown";
+                  didWarnAboutUpdateInRenderForAnotherComponent.has(root3) || (didWarnAboutUpdateInRenderForAnotherComponent.add(root3), fiber = getComponentNameFromFiber(fiber) || "Unknown", console.error(
                     "Cannot update a component (`%s`) while rendering a different component (`%s`). To locate the bad setState() call inside `%s`, follow the stack trace as described in https://react.dev/link/setstate-in-render",
                     fiber,
-                    root2,
-                    root2
+                    root3,
+                    root3
                   ));
                   break;
                 case 1:
@@ -12941,38 +11546,38 @@
                   ), didWarnAboutUpdateInRender = true);
               }
           } else
-            isDevToolsPresent && addFiberToLanesMap(root2, fiber, lane), warnIfUpdatesNotWrappedWithActDEV(fiber), root2 === workInProgressRoot && ((executionContext & RenderContext) === NoContext && (workInProgressRootInterleavedUpdatedLanes |= lane), workInProgressRootExitStatus === RootSuspendedWithDelay && markRootSuspended(
-              root2,
+            isDevToolsPresent && addFiberToLanesMap(root3, fiber, lane), warnIfUpdatesNotWrappedWithActDEV(fiber), root3 === workInProgressRoot && ((executionContext & RenderContext) === NoContext && (workInProgressRootInterleavedUpdatedLanes |= lane), workInProgressRootExitStatus === RootSuspendedWithDelay && markRootSuspended(
+              root3,
               workInProgressRootRenderLanes,
               workInProgressDeferredLane,
               false
-            )), ensureRootIsScheduled(root2);
+            )), ensureRootIsScheduled(root3);
         }
-        function performWorkOnRoot(root2, lanes, forceSync) {
+        function performWorkOnRoot(root3, lanes, forceSync) {
           if ((executionContext & (RenderContext | CommitContext)) !== NoContext)
             throw Error("Should not already be working.");
-          var shouldTimeSlice = !forceSync && 0 === (lanes & 124) && 0 === (lanes & root2.expiredLanes) || checkIfRootIsPrerendering(root2, lanes), exitStatus = shouldTimeSlice ? renderRootConcurrent(root2, lanes) : renderRootSync(root2, lanes, true), renderWasConcurrent = shouldTimeSlice;
+          var shouldTimeSlice = !forceSync && 0 === (lanes & 124) && 0 === (lanes & root3.expiredLanes) || checkIfRootIsPrerendering(root3, lanes), exitStatus = shouldTimeSlice ? renderRootConcurrent(root3, lanes) : renderRootSync(root3, lanes, true), renderWasConcurrent = shouldTimeSlice;
           do {
             if (exitStatus === RootInProgress) {
-              workInProgressRootIsPrerendering && !shouldTimeSlice && markRootSuspended(root2, lanes, 0, false);
+              workInProgressRootIsPrerendering && !shouldTimeSlice && markRootSuspended(root3, lanes, 0, false);
               break;
             } else {
-              forceSync = root2.current.alternate;
+              forceSync = root3.current.alternate;
               if (renderWasConcurrent && !isRenderConsistentWithExternalStores(forceSync)) {
-                exitStatus = renderRootSync(root2, lanes, false);
+                exitStatus = renderRootSync(root3, lanes, false);
                 renderWasConcurrent = false;
                 continue;
               }
               if (exitStatus === RootErrored) {
                 renderWasConcurrent = lanes;
-                if (root2.errorRecoveryDisabledLanes & renderWasConcurrent)
+                if (root3.errorRecoveryDisabledLanes & renderWasConcurrent)
                   var errorRetryLanes = 0;
                 else
-                  errorRetryLanes = root2.pendingLanes & -536870913, errorRetryLanes = 0 !== errorRetryLanes ? errorRetryLanes : errorRetryLanes & 536870912 ? 536870912 : 0;
+                  errorRetryLanes = root3.pendingLanes & -536870913, errorRetryLanes = 0 !== errorRetryLanes ? errorRetryLanes : errorRetryLanes & 536870912 ? 536870912 : 0;
                 if (0 !== errorRetryLanes) {
                   lanes = errorRetryLanes;
                   a: {
-                    exitStatus = root2;
+                    exitStatus = root3;
                     var errorRetryLanes$jscomp$0 = errorRetryLanes;
                     errorRetryLanes = workInProgressRootConcurrentErrors;
                     var wasRootDehydrated = exitStatus.current.memoizedState.isDehydrated;
@@ -13006,12 +11611,12 @@
                 }
               }
               if (exitStatus === RootFatalErrored) {
-                prepareFreshStack(root2, 0);
-                markRootSuspended(root2, lanes, 0, true);
+                prepareFreshStack(root3, 0);
+                markRootSuspended(root3, lanes, 0, true);
                 break;
               }
               a: {
-                shouldTimeSlice = root2;
+                shouldTimeSlice = root3;
                 switch (exitStatus) {
                   case RootInProgress:
                   case RootFatalErrored:
@@ -13099,17 +11704,17 @@
             }
             break;
           } while (1);
-          ensureRootIsScheduled(root2);
+          ensureRootIsScheduled(root3);
         }
-        function commitRootWhenReady(root2, finishedWork, recoverableErrors, transitions, didIncludeRenderPhaseUpdate, lanes, spawnedLane, updatedLanes, suspendedRetryLanes, didSkipSuspendedSiblings, exitStatus, suspendedCommitReason, completedRenderStartTime, completedRenderEndTime) {
-          root2.timeoutHandle = noTimeout;
+        function commitRootWhenReady(root3, finishedWork, recoverableErrors, transitions, didIncludeRenderPhaseUpdate, lanes, spawnedLane, updatedLanes, suspendedRetryLanes, didSkipSuspendedSiblings, exitStatus, suspendedCommitReason, completedRenderStartTime, completedRenderEndTime) {
+          root3.timeoutHandle = noTimeout;
           suspendedCommitReason = finishedWork.subtreeFlags;
           if (suspendedCommitReason & 8192 || 16785408 === (suspendedCommitReason & 16785408)) {
             if (suspendedState = { stylesheets: null, count: 0, unsuspend: noop }, accumulateSuspenseyCommitOnFiber(finishedWork), suspendedCommitReason = waitForCommitToBeReady(), null !== suspendedCommitReason) {
-              root2.cancelPendingCommit = suspendedCommitReason(
+              root3.cancelPendingCommit = suspendedCommitReason(
                 commitRoot.bind(
                   null,
-                  root2,
+                  root3,
                   finishedWork,
                   lanes,
                   recoverableErrors,
@@ -13125,7 +11730,7 @@
                 )
               );
               markRootSuspended(
-                root2,
+                root3,
                 lanes,
                 spawnedLane,
                 !didSkipSuspendedSiblings
@@ -13134,7 +11739,7 @@
             }
           }
           commitRoot(
-            root2,
+            root3,
             finishedWork,
             lanes,
             recoverableErrors,
@@ -13173,19 +11778,19 @@
           }
           return true;
         }
-        function markRootSuspended(root2, suspendedLanes, spawnedLane, didAttemptEntireTree) {
+        function markRootSuspended(root3, suspendedLanes, spawnedLane, didAttemptEntireTree) {
           suspendedLanes &= ~workInProgressRootPingedLanes;
           suspendedLanes &= ~workInProgressRootInterleavedUpdatedLanes;
-          root2.suspendedLanes |= suspendedLanes;
-          root2.pingedLanes &= ~suspendedLanes;
-          didAttemptEntireTree && (root2.warmLanes |= suspendedLanes);
-          didAttemptEntireTree = root2.expirationTimes;
+          root3.suspendedLanes |= suspendedLanes;
+          root3.pingedLanes &= ~suspendedLanes;
+          didAttemptEntireTree && (root3.warmLanes |= suspendedLanes);
+          didAttemptEntireTree = root3.expirationTimes;
           for (var lanes = suspendedLanes; 0 < lanes; ) {
             var index = 31 - clz32(lanes), lane = 1 << index;
             didAttemptEntireTree[index] = -1;
             lanes &= ~lane;
           }
-          0 !== spawnedLane && markSpawnedDeferredLane(root2, spawnedLane, suspendedLanes);
+          0 !== spawnedLane && markSpawnedDeferredLane(root3, spawnedLane, suspendedLanes);
         }
         function flushSyncWork$1() {
           return (executionContext & (RenderContext | CommitContext)) === NoContext ? (flushSyncWorkAcrossRoots_impl(0, false), false) : true;
@@ -13201,30 +11806,30 @@
             workInProgress = null;
           }
         }
-        function prepareFreshStack(root2, lanes) {
-          var timeoutHandle = root2.timeoutHandle;
-          timeoutHandle !== noTimeout && (root2.timeoutHandle = noTimeout, cancelTimeout(timeoutHandle));
-          timeoutHandle = root2.cancelPendingCommit;
-          null !== timeoutHandle && (root2.cancelPendingCommit = null, timeoutHandle());
+        function prepareFreshStack(root3, lanes) {
+          var timeoutHandle = root3.timeoutHandle;
+          timeoutHandle !== noTimeout && (root3.timeoutHandle = noTimeout, cancelTimeout(timeoutHandle));
+          timeoutHandle = root3.cancelPendingCommit;
+          null !== timeoutHandle && (root3.cancelPendingCommit = null, timeoutHandle());
           resetWorkInProgressStack();
-          workInProgressRoot = root2;
-          workInProgress = timeoutHandle = createWorkInProgress(root2.current, null);
+          workInProgressRoot = root3;
+          workInProgress = timeoutHandle = createWorkInProgress(root3.current, null);
           workInProgressRootRenderLanes = lanes;
           workInProgressSuspendedReason = NotSuspended;
           workInProgressThrownValue = null;
           workInProgressRootDidSkipSuspendedSiblings = false;
-          workInProgressRootIsPrerendering = checkIfRootIsPrerendering(root2, lanes);
+          workInProgressRootIsPrerendering = checkIfRootIsPrerendering(root3, lanes);
           workInProgressRootDidAttachPingListener = false;
           workInProgressRootExitStatus = RootInProgress;
           workInProgressSuspendedRetryLanes = workInProgressDeferredLane = workInProgressRootPingedLanes = workInProgressRootInterleavedUpdatedLanes = workInProgressRootSkippedLanes = 0;
           workInProgressRootRecoverableErrors = workInProgressRootConcurrentErrors = null;
           workInProgressRootDidIncludeRecursiveRenderUpdate = false;
           0 !== (lanes & 8) && (lanes |= lanes & 32);
-          var allEntangledLanes = root2.entangledLanes;
+          var allEntangledLanes = root3.entangledLanes;
           if (0 !== allEntangledLanes)
-            for (root2 = root2.entanglements, allEntangledLanes &= lanes; 0 < allEntangledLanes; ) {
+            for (root3 = root3.entanglements, allEntangledLanes &= lanes; 0 < allEntangledLanes; ) {
               var index = 31 - clz32(allEntangledLanes), lane = 1 << index;
-              lanes |= root2[index];
+              lanes |= root3[index];
               allEntangledLanes &= ~lane;
             }
           entangledRenderLanes = lanes;
@@ -13234,7 +11839,7 @@
           ReactStrictModeWarnings.discardPendingWarnings();
           return timeoutHandle;
         }
-        function handleThrow(root2, thrownValue) {
+        function handleThrow(root3, thrownValue) {
           currentlyRenderingFiber = null;
           ReactSharedInternals.H = ContextOnlyDispatcher;
           ReactSharedInternals.getCurrentStack = null;
@@ -13245,8 +11850,8 @@
           var erroredWork = workInProgress;
           if (null === erroredWork)
             workInProgressRootExitStatus = RootFatalErrored, logUncaughtError(
-              root2,
-              createCapturedValueAtFiber(thrownValue, root2.current)
+              root3,
+              createCapturedValueAtFiber(thrownValue, root3.current)
             );
           else
             switch (erroredWork.mode & ProfileMode && stopProfilerTimerIfRunningAndRecordDuration(erroredWork), markComponentRenderStopped(), workInProgressSuspendedReason) {
@@ -13289,18 +11894,18 @@
             false
           );
         }
-        function renderRootSync(root2, lanes, shouldYieldForPrerendering) {
+        function renderRootSync(root3, lanes, shouldYieldForPrerendering) {
           var prevExecutionContext = executionContext;
           executionContext |= RenderContext;
           var prevDispatcher = pushDispatcher(), prevAsyncDispatcher = pushAsyncDispatcher();
-          if (workInProgressRoot !== root2 || workInProgressRootRenderLanes !== lanes) {
+          if (workInProgressRoot !== root3 || workInProgressRootRenderLanes !== lanes) {
             if (isDevToolsPresent) {
-              var memoizedUpdaters = root2.memoizedUpdaters;
-              0 < memoizedUpdaters.size && (restorePendingUpdaters(root2, workInProgressRootRenderLanes), memoizedUpdaters.clear());
-              movePendingFibersToMemoized(root2, lanes);
+              var memoizedUpdaters = root3.memoizedUpdaters;
+              0 < memoizedUpdaters.size && (restorePendingUpdaters(root3, workInProgressRootRenderLanes), memoizedUpdaters.clear());
+              movePendingFibersToMemoized(root3, lanes);
             }
             workInProgressTransitions = null;
-            prepareFreshStack(root2, lanes);
+            prepareFreshStack(root3, lanes);
           }
           markRenderStarted(lanes);
           lanes = false;
@@ -13322,24 +11927,24 @@
                     var reason = workInProgressSuspendedReason;
                     workInProgressSuspendedReason = NotSuspended;
                     workInProgressThrownValue = null;
-                    throwAndUnwindWorkLoop(root2, unitOfWork, thrownValue, reason);
+                    throwAndUnwindWorkLoop(root3, unitOfWork, thrownValue, reason);
                     if (shouldYieldForPrerendering && workInProgressRootIsPrerendering) {
                       memoizedUpdaters = RootInProgress;
                       break a;
                     }
                     break;
                   default:
-                    reason = workInProgressSuspendedReason, workInProgressSuspendedReason = NotSuspended, workInProgressThrownValue = null, throwAndUnwindWorkLoop(root2, unitOfWork, thrownValue, reason);
+                    reason = workInProgressSuspendedReason, workInProgressSuspendedReason = NotSuspended, workInProgressThrownValue = null, throwAndUnwindWorkLoop(root3, unitOfWork, thrownValue, reason);
                 }
               }
               workLoopSync();
               memoizedUpdaters = workInProgressRootExitStatus;
               break;
             } catch (thrownValue$8) {
-              handleThrow(root2, thrownValue$8);
+              handleThrow(root3, thrownValue$8);
             }
           while (1);
-          lanes && root2.shellSuspendCounter++;
+          lanes && root3.shellSuspendCounter++;
           resetContextDependencies();
           executionContext = prevExecutionContext;
           ReactSharedInternals.H = prevDispatcher;
@@ -13351,22 +11956,22 @@
         function workLoopSync() {
           for (; null !== workInProgress; ) performUnitOfWork(workInProgress);
         }
-        function renderRootConcurrent(root2, lanes) {
+        function renderRootConcurrent(root3, lanes) {
           var prevExecutionContext = executionContext;
           executionContext |= RenderContext;
           var prevDispatcher = pushDispatcher(), prevAsyncDispatcher = pushAsyncDispatcher();
-          if (workInProgressRoot !== root2 || workInProgressRootRenderLanes !== lanes) {
+          if (workInProgressRoot !== root3 || workInProgressRootRenderLanes !== lanes) {
             if (isDevToolsPresent) {
-              var memoizedUpdaters = root2.memoizedUpdaters;
-              0 < memoizedUpdaters.size && (restorePendingUpdaters(root2, workInProgressRootRenderLanes), memoizedUpdaters.clear());
-              movePendingFibersToMemoized(root2, lanes);
+              var memoizedUpdaters = root3.memoizedUpdaters;
+              0 < memoizedUpdaters.size && (restorePendingUpdaters(root3, workInProgressRootRenderLanes), memoizedUpdaters.clear());
+              movePendingFibersToMemoized(root3, lanes);
             }
             workInProgressTransitions = null;
             workInProgressRootRenderTargetTime = now$1() + RENDER_TIMEOUT_MS;
-            prepareFreshStack(root2, lanes);
+            prepareFreshStack(root3, lanes);
           } else
             workInProgressRootIsPrerendering = checkIfRootIsPrerendering(
-              root2,
+              root3,
               lanes
             );
           markRenderStarted(lanes);
@@ -13378,7 +11983,7 @@
                     workInProgressSuspendedReason = NotSuspended;
                     workInProgressThrownValue = null;
                     throwAndUnwindWorkLoop(
-                      root2,
+                      root3,
                       lanes,
                       memoizedUpdaters,
                       SuspendedOnError
@@ -13393,8 +11998,8 @@
                       break;
                     }
                     lanes = function() {
-                      workInProgressSuspendedReason !== SuspendedOnData && workInProgressSuspendedReason !== SuspendedOnAction || workInProgressRoot !== root2 || (workInProgressSuspendedReason = SuspendedAndReadyToContinue);
-                      ensureRootIsScheduled(root2);
+                      workInProgressSuspendedReason !== SuspendedOnData && workInProgressSuspendedReason !== SuspendedOnAction || workInProgressRoot !== root3 || (workInProgressSuspendedReason = SuspendedAndReadyToContinue);
+                      ensureRootIsScheduled(root3);
                     };
                     memoizedUpdaters.then(lanes, lanes);
                     break a;
@@ -13406,7 +12011,7 @@
                     break a;
                   case SuspendedAndReadyToContinue:
                     isThenableResolved(memoizedUpdaters) ? (workInProgressSuspendedReason = NotSuspended, workInProgressThrownValue = null, replaySuspendedUnitOfWork(lanes)) : (workInProgressSuspendedReason = NotSuspended, workInProgressThrownValue = null, throwAndUnwindWorkLoop(
-                      root2,
+                      root3,
                       lanes,
                       memoizedUpdaters,
                       SuspendedAndReadyToContinue
@@ -13440,7 +12045,7 @@
                     workInProgressSuspendedReason = NotSuspended;
                     workInProgressThrownValue = null;
                     throwAndUnwindWorkLoop(
-                      root2,
+                      root3,
                       lanes,
                       memoizedUpdaters,
                       SuspendedOnInstanceAndReadyToContinue
@@ -13450,7 +12055,7 @@
                     workInProgressSuspendedReason = NotSuspended;
                     workInProgressThrownValue = null;
                     throwAndUnwindWorkLoop(
-                      root2,
+                      root3,
                       lanes,
                       memoizedUpdaters,
                       SuspendedOnDeprecatedThrowPromise
@@ -13468,7 +12073,7 @@
               null !== ReactSharedInternals.actQueue ? workLoopSync() : workLoopConcurrentByScheduler();
               break;
             } catch (thrownValue$9) {
-              handleThrow(root2, thrownValue$9);
+              handleThrow(root3, thrownValue$9);
             }
           while (1);
           resetContextDependencies();
@@ -13543,7 +12148,7 @@
           isProfilingMode && stopProfilerTimerIfRunningAndRecordDuration(unitOfWork);
           return current2;
         }
-        function throwAndUnwindWorkLoop(root2, unitOfWork, thrownValue, suspendedReason) {
+        function throwAndUnwindWorkLoop(root3, unitOfWork, thrownValue, suspendedReason) {
           resetContextDependencies();
           resetHooksOnUnwind(unitOfWork);
           thenableState = null;
@@ -13551,7 +12156,7 @@
           var returnFiber = unitOfWork.return;
           try {
             if (throwException(
-              root2,
+              root3,
               returnFiber,
               unitOfWork,
               thrownValue,
@@ -13559,8 +12164,8 @@
             )) {
               workInProgressRootExitStatus = RootFatalErrored;
               logUncaughtError(
-                root2,
-                createCapturedValueAtFiber(thrownValue, root2.current)
+                root3,
+                createCapturedValueAtFiber(thrownValue, root3.current)
               );
               workInProgress = null;
               return;
@@ -13569,19 +12174,19 @@
             if (null !== returnFiber) throw workInProgress = returnFiber, error;
             workInProgressRootExitStatus = RootFatalErrored;
             logUncaughtError(
-              root2,
-              createCapturedValueAtFiber(thrownValue, root2.current)
+              root3,
+              createCapturedValueAtFiber(thrownValue, root3.current)
             );
             workInProgress = null;
             return;
           }
           if (unitOfWork.flags & 32768) {
-            if (isHydrating || suspendedReason === SuspendedOnError) root2 = true;
+            if (isHydrating || suspendedReason === SuspendedOnError) root3 = true;
             else if (workInProgressRootIsPrerendering || 0 !== (workInProgressRootRenderLanes & 536870912))
-              root2 = false;
-            else if (workInProgressRootDidSkipSuspendedSiblings = root2 = true, suspendedReason === SuspendedOnData || suspendedReason === SuspendedOnAction || suspendedReason === SuspendedOnImmediate || suspendedReason === SuspendedOnDeprecatedThrowPromise)
+              root3 = false;
+            else if (workInProgressRootDidSkipSuspendedSiblings = root3 = true, suspendedReason === SuspendedOnData || suspendedReason === SuspendedOnAction || suspendedReason === SuspendedOnImmediate || suspendedReason === SuspendedOnDeprecatedThrowPromise)
               suspendedReason = suspenseHandlerStackCursor.current, null !== suspendedReason && 13 === suspendedReason.tag && (suspendedReason.flags |= 16384);
-            unwindUnitOfWork(unitOfWork, root2);
+            unwindUnitOfWork(unitOfWork, root3);
           } else completeUnitOfWork(unitOfWork);
         }
         function completeUnitOfWork(unitOfWork) {
@@ -13644,8 +12249,8 @@
           workInProgressRootExitStatus = RootSuspendedAtTheShell;
           workInProgress = null;
         }
-        function commitRoot(root2, finishedWork, lanes, recoverableErrors, transitions, didIncludeRenderPhaseUpdate, spawnedLane, updatedLanes, suspendedRetryLanes) {
-          root2.cancelPendingCommit = null;
+        function commitRoot(root3, finishedWork, lanes, recoverableErrors, transitions, didIncludeRenderPhaseUpdate, spawnedLane, updatedLanes, suspendedRetryLanes) {
+          root3.cancelPendingCommit = null;
           do
             flushPendingEffects();
           while (pendingEffectsStatus !== NO_PENDING_EFFECTS);
@@ -13659,31 +12264,31 @@
             0 === lanes && console.error(
               "finishedLanes should not be empty during a commit. This is a bug in React."
             );
-            if (finishedWork === root2.current)
+            if (finishedWork === root3.current)
               throw Error(
                 "Cannot commit the same tree as before. This error is likely caused by a bug in React. Please file an issue."
               );
             didIncludeRenderPhaseUpdate = finishedWork.lanes | finishedWork.childLanes;
             didIncludeRenderPhaseUpdate |= concurrentlyUpdatedLanes;
             markRootFinished(
-              root2,
+              root3,
               lanes,
               didIncludeRenderPhaseUpdate,
               spawnedLane,
               updatedLanes,
               suspendedRetryLanes
             );
-            root2 === workInProgressRoot && (workInProgress = workInProgressRoot = null, workInProgressRootRenderLanes = 0);
+            root3 === workInProgressRoot && (workInProgress = workInProgressRoot = null, workInProgressRootRenderLanes = 0);
             pendingFinishedWork = finishedWork;
-            pendingEffectsRoot = root2;
+            pendingEffectsRoot = root3;
             pendingEffectsLanes = lanes;
             pendingEffectsRemainingLanes = didIncludeRenderPhaseUpdate;
             pendingPassiveTransitions = transitions;
             pendingRecoverableErrors = recoverableErrors;
-            0 !== (finishedWork.subtreeFlags & 10256) || 0 !== (finishedWork.flags & 10256) ? (root2.callbackNode = null, root2.callbackPriority = 0, scheduleCallback$1(NormalPriority$1, function() {
+            0 !== (finishedWork.subtreeFlags & 10256) || 0 !== (finishedWork.flags & 10256) ? (root3.callbackNode = null, root3.callbackPriority = 0, scheduleCallback$1(NormalPriority$1, function() {
               flushPassiveEffects(true);
               return null;
-            })) : (root2.callbackNode = null, root2.callbackPriority = 0);
+            })) : (root3.callbackNode = null, root3.callbackPriority = 0);
             commitStartTime = now();
             recoverableErrors = 0 !== (finishedWork.flags & 13878);
             if (0 !== (finishedWork.subtreeFlags & 13878) || recoverableErrors) {
@@ -13694,7 +12299,7 @@
               spawnedLane = executionContext;
               executionContext |= CommitContext;
               try {
-                commitBeforeMutationEffects(root2, finishedWork, lanes);
+                commitBeforeMutationEffects(root3, finishedWork, lanes);
               } finally {
                 executionContext = spawnedLane, ReactDOMSharedInternals.p = transitions, ReactSharedInternals.T = recoverableErrors;
               }
@@ -13708,7 +12313,7 @@
         function flushMutationEffects() {
           if (pendingEffectsStatus === PENDING_MUTATION_PHASE) {
             pendingEffectsStatus = NO_PENDING_EFFECTS;
-            var root2 = pendingEffectsRoot, finishedWork = pendingFinishedWork, lanes = pendingEffectsLanes, rootMutationHasEffect = 0 !== (finishedWork.flags & 13878);
+            var root3 = pendingEffectsRoot, finishedWork = pendingFinishedWork, lanes = pendingEffectsLanes, rootMutationHasEffect = 0 !== (finishedWork.flags & 13878);
             if (0 !== (finishedWork.subtreeFlags & 13878) || rootMutationHasEffect) {
               rootMutationHasEffect = ReactSharedInternals.T;
               ReactSharedInternals.T = null;
@@ -13718,11 +12323,11 @@
               executionContext |= CommitContext;
               try {
                 inProgressLanes = lanes;
-                inProgressRoot = root2;
-                commitMutationEffectsOnFiber(finishedWork, root2);
+                inProgressRoot = root3;
+                commitMutationEffectsOnFiber(finishedWork, root3);
                 inProgressRoot = inProgressLanes = null;
                 lanes = selectionInformation;
-                var curFocusedElem = getActiveElementDeep(root2.containerInfo), priorFocusedElem = lanes.focusedElem, priorSelectionRange = lanes.selectionRange;
+                var curFocusedElem = getActiveElementDeep(root3.containerInfo), priorFocusedElem = lanes.focusedElem, priorSelectionRange = lanes.selectionRange;
                 if (curFocusedElem !== priorFocusedElem && priorFocusedElem && priorFocusedElem.ownerDocument && containsNode(
                   priorFocusedElem.ownerDocument.documentElement,
                   priorFocusedElem
@@ -13751,10 +12356,10 @@
                           end$jscomp$0
                         );
                         if (startMarker && endMarker && (1 !== selection.rangeCount || selection.anchorNode !== startMarker.node || selection.anchorOffset !== startMarker.offset || selection.focusNode !== endMarker.node || selection.focusOffset !== endMarker.offset)) {
-                          var range2 = doc.createRange();
-                          range2.setStart(startMarker.node, startMarker.offset);
+                          var range = doc.createRange();
+                          range.setStart(startMarker.node, startMarker.offset);
                           selection.removeAllRanges();
-                          start$jscomp$0 > end$jscomp$0 ? (selection.addRange(range2), selection.extend(endMarker.node, endMarker.offset)) : (range2.setEnd(endMarker.node, endMarker.offset), selection.addRange(range2));
+                          start$jscomp$0 > end$jscomp$0 ? (selection.addRange(range), selection.extend(endMarker.node, endMarker.offset)) : (range.setEnd(endMarker.node, endMarker.offset), selection.addRange(range));
                         }
                       }
                     }
@@ -13779,14 +12384,14 @@
                 executionContext = prevExecutionContext, ReactDOMSharedInternals.p = previousPriority, ReactSharedInternals.T = rootMutationHasEffect;
               }
             }
-            root2.current = finishedWork;
+            root3.current = finishedWork;
             pendingEffectsStatus = PENDING_LAYOUT_PHASE;
           }
         }
         function flushLayoutEffects() {
           if (pendingEffectsStatus === PENDING_LAYOUT_PHASE) {
             pendingEffectsStatus = NO_PENDING_EFFECTS;
-            var root2 = pendingEffectsRoot, finishedWork = pendingFinishedWork, lanes = pendingEffectsLanes, rootHasLayoutEffect = 0 !== (finishedWork.flags & 8772);
+            var root3 = pendingEffectsRoot, finishedWork = pendingFinishedWork, lanes = pendingEffectsLanes, rootHasLayoutEffect = 0 !== (finishedWork.flags & 8772);
             if (0 !== (finishedWork.subtreeFlags & 8772) || rootHasLayoutEffect) {
               rootHasLayoutEffect = ReactSharedInternals.T;
               ReactSharedInternals.T = null;
@@ -13795,8 +12400,8 @@
               var prevExecutionContext = executionContext;
               executionContext |= CommitContext;
               try {
-                null !== injectedProfilingHooks && "function" === typeof injectedProfilingHooks.markLayoutEffectsStarted && injectedProfilingHooks.markLayoutEffectsStarted(lanes), inProgressLanes = lanes, inProgressRoot = root2, commitLayoutEffectOnFiber(
-                  root2,
+                null !== injectedProfilingHooks && "function" === typeof injectedProfilingHooks.markLayoutEffectsStarted && injectedProfilingHooks.markLayoutEffectsStarted(lanes), inProgressLanes = lanes, inProgressRoot = root3, commitLayoutEffectOnFiber(
+                  root3,
                   finishedWork.alternate,
                   finishedWork
                 ), inProgressRoot = inProgressLanes = null, null !== injectedProfilingHooks && "function" === typeof injectedProfilingHooks.markLayoutEffectsStopped && injectedProfilingHooks.markLayoutEffectsStopped();
@@ -13811,11 +12416,11 @@
           if (pendingEffectsStatus === PENDING_SPAWNED_WORK || pendingEffectsStatus === PENDING_AFTER_MUTATION_PHASE) {
             pendingEffectsStatus = NO_PENDING_EFFECTS;
             requestPaint();
-            var root2 = pendingEffectsRoot, finishedWork = pendingFinishedWork, lanes = pendingEffectsLanes, recoverableErrors = pendingRecoverableErrors, rootDidHavePassiveEffects = 0 !== (finishedWork.subtreeFlags & 10256) || 0 !== (finishedWork.flags & 10256);
-            rootDidHavePassiveEffects ? pendingEffectsStatus = PENDING_PASSIVE_PHASE : (pendingEffectsStatus = NO_PENDING_EFFECTS, pendingFinishedWork = pendingEffectsRoot = null, releaseRootPooledCache(root2, root2.pendingLanes), nestedPassiveUpdateCount = 0, rootWithPassiveNestedUpdates = null);
-            var remainingLanes = root2.pendingLanes;
+            var root3 = pendingEffectsRoot, finishedWork = pendingFinishedWork, lanes = pendingEffectsLanes, recoverableErrors = pendingRecoverableErrors, rootDidHavePassiveEffects = 0 !== (finishedWork.subtreeFlags & 10256) || 0 !== (finishedWork.flags & 10256);
+            rootDidHavePassiveEffects ? pendingEffectsStatus = PENDING_PASSIVE_PHASE : (pendingEffectsStatus = NO_PENDING_EFFECTS, pendingFinishedWork = pendingEffectsRoot = null, releaseRootPooledCache(root3, root3.pendingLanes), nestedPassiveUpdateCount = 0, rootWithPassiveNestedUpdates = null);
+            var remainingLanes = root3.pendingLanes;
             0 === remainingLanes && (legacyErrorBoundariesThatAlreadyFailed = null);
-            rootDidHavePassiveEffects || commitDoubleInvokeEffectsInDEV(root2);
+            rootDidHavePassiveEffects || commitDoubleInvokeEffectsInDEV(root3);
             rootDidHavePassiveEffects = lanesToEventPriority(lanes);
             finishedWork = finishedWork.stateNode;
             if (injectedHook && "function" === typeof injectedHook.onCommitFiberRoot)
@@ -13843,13 +12448,13 @@
                   schedulerPriority,
                   didError
                 );
-              } catch (err2) {
+              } catch (err) {
                 hasLoggedError || (hasLoggedError = true, console.error(
                   "React instrumentation encountered an error: %s",
-                  err2
+                  err
                 ));
               }
-            isDevToolsPresent && root2.memoizedUpdaters.clear();
+            isDevToolsPresent && root3.memoizedUpdaters.clear();
             onCommitRoot();
             if (null !== recoverableErrors) {
               didError = ReactSharedInternals.T;
@@ -13857,7 +12462,7 @@
               ReactDOMSharedInternals.p = DiscreteEventPriority;
               ReactSharedInternals.T = null;
               try {
-                var onRecoverableError = root2.onRecoverableError;
+                var onRecoverableError = root3.onRecoverableError;
                 for (finishedWork = 0; finishedWork < recoverableErrors.length; finishedWork++) {
                   var recoverableError = recoverableErrors[finishedWork], errorInfo = makeErrorInfo(recoverableError.stack);
                   runWithFiberInDEV(
@@ -13872,9 +12477,9 @@
               }
             }
             0 !== (pendingEffectsLanes & 3) && flushPendingEffects();
-            ensureRootIsScheduled(root2);
-            remainingLanes = root2.pendingLanes;
-            0 !== (lanes & 4194090) && 0 !== (remainingLanes & 42) ? (nestedUpdateScheduled = true, root2 === rootWithNestedUpdates ? nestedUpdateCount++ : (nestedUpdateCount = 0, rootWithNestedUpdates = root2)) : nestedUpdateCount = 0;
+            ensureRootIsScheduled(root3);
+            remainingLanes = root3.pendingLanes;
+            0 !== (lanes & 4194090) && 0 !== (remainingLanes & 42) ? (nestedUpdateScheduled = true, root3 === rootWithNestedUpdates ? nestedUpdateCount++ : (nestedUpdateCount = 0, rootWithNestedUpdates = root3)) : nestedUpdateCount = 0;
             flushSyncWorkAcrossRoots_impl(0, false);
             markCommitStopped();
           }
@@ -13890,8 +12495,8 @@
           });
           return componentStack;
         }
-        function releaseRootPooledCache(root2, remainingLanes) {
-          0 === (root2.pooledCacheLanes &= remainingLanes) && (remainingLanes = root2.pooledCache, null != remainingLanes && (root2.pooledCache = null, releaseCache(remainingLanes)));
+        function releaseRootPooledCache(root3, remainingLanes) {
+          0 === (root3.pooledCacheLanes &= remainingLanes) && (remainingLanes = root3.pooledCache, null != remainingLanes && (root3.pooledCache = null, releaseCache(remainingLanes)));
         }
         function flushPendingEffects(wasDelayedCommit) {
           flushMutationEffects();
@@ -13901,7 +12506,7 @@
         }
         function flushPassiveEffects() {
           if (pendingEffectsStatus !== PENDING_PASSIVE_PHASE) return false;
-          var root2 = pendingEffectsRoot, remainingLanes = pendingEffectsRemainingLanes;
+          var root3 = pendingEffectsRoot, remainingLanes = pendingEffectsRemainingLanes;
           pendingEffectsRemainingLanes = 0;
           var renderPriority = lanesToEventPriority(pendingEffectsLanes), priority = 0 === DefaultEventPriority || DefaultEventPriority > renderPriority ? DefaultEventPriority : renderPriority;
           renderPriority = ReactSharedInternals.T;
@@ -13938,10 +12543,10 @@
             if (injectedHook && "function" === typeof injectedHook.onPostCommitFiberRoot)
               try {
                 injectedHook.onPostCommitFiberRoot(rendererID, root$jscomp$0);
-              } catch (err2) {
+              } catch (err) {
                 hasLoggedError || (hasLoggedError = true, console.error(
                   "React instrumentation encountered an error: %s",
-                  err2
+                  err
                 ));
               }
             var stateNode = root$jscomp$0.current.stateNode;
@@ -13949,7 +12554,7 @@
             stateNode.passiveEffectDuration = 0;
             return true;
           } finally {
-            ReactDOMSharedInternals.p = previousPriority, ReactSharedInternals.T = renderPriority, releaseRootPooledCache(root2, remainingLanes);
+            ReactDOMSharedInternals.p = previousPriority, ReactSharedInternals.T = renderPriority, releaseRootPooledCache(root3, remainingLanes);
           }
         }
         function captureCommitPhaseErrorOnRoot(rootFiber, sourceFiber, error) {
@@ -13995,26 +12600,26 @@
             );
           }
         }
-        function attachPingListener(root2, wakeable, lanes) {
-          var pingCache = root2.pingCache;
+        function attachPingListener(root3, wakeable, lanes) {
+          var pingCache = root3.pingCache;
           if (null === pingCache) {
-            pingCache = root2.pingCache = new PossiblyWeakMap();
+            pingCache = root3.pingCache = new PossiblyWeakMap();
             var threadIDs = /* @__PURE__ */ new Set();
             pingCache.set(wakeable, threadIDs);
           } else
             threadIDs = pingCache.get(wakeable), void 0 === threadIDs && (threadIDs = /* @__PURE__ */ new Set(), pingCache.set(wakeable, threadIDs));
-          threadIDs.has(lanes) || (workInProgressRootDidAttachPingListener = true, threadIDs.add(lanes), pingCache = pingSuspendedRoot.bind(null, root2, wakeable, lanes), isDevToolsPresent && restorePendingUpdaters(root2, lanes), wakeable.then(pingCache, pingCache));
+          threadIDs.has(lanes) || (workInProgressRootDidAttachPingListener = true, threadIDs.add(lanes), pingCache = pingSuspendedRoot.bind(null, root3, wakeable, lanes), isDevToolsPresent && restorePendingUpdaters(root3, lanes), wakeable.then(pingCache, pingCache));
         }
-        function pingSuspendedRoot(root2, wakeable, pingedLanes) {
-          var pingCache = root2.pingCache;
+        function pingSuspendedRoot(root3, wakeable, pingedLanes) {
+          var pingCache = root3.pingCache;
           null !== pingCache && pingCache.delete(wakeable);
-          root2.pingedLanes |= root2.suspendedLanes & pingedLanes;
-          root2.warmLanes &= ~pingedLanes;
+          root3.pingedLanes |= root3.suspendedLanes & pingedLanes;
+          root3.warmLanes &= ~pingedLanes;
           isConcurrentActEnvironment() && null === ReactSharedInternals.actQueue && console.error(
             "A suspended resource finished loading inside a test, but the event was not wrapped in act(...).\n\nWhen testing, code that resolves suspended data should be wrapped into act(...):\n\nact(() => {\n  /* finish loading suspended data */\n});\n/* assert on the output */\n\nThis ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act"
           );
-          workInProgressRoot === root2 && (workInProgressRootRenderLanes & pingedLanes) === pingedLanes && (workInProgressRootExitStatus === RootSuspendedWithDelay || workInProgressRootExitStatus === RootSuspended && (workInProgressRootRenderLanes & 62914560) === workInProgressRootRenderLanes && now$1() - globalMostRecentFallbackTime < FALLBACK_THROTTLE_MS ? (executionContext & RenderContext) === NoContext && prepareFreshStack(root2, 0) : workInProgressRootPingedLanes |= pingedLanes, workInProgressSuspendedRetryLanes === workInProgressRootRenderLanes && (workInProgressSuspendedRetryLanes = 0));
-          ensureRootIsScheduled(root2);
+          workInProgressRoot === root3 && (workInProgressRootRenderLanes & pingedLanes) === pingedLanes && (workInProgressRootExitStatus === RootSuspendedWithDelay || workInProgressRootExitStatus === RootSuspended && (workInProgressRootRenderLanes & 62914560) === workInProgressRootRenderLanes && now$1() - globalMostRecentFallbackTime < FALLBACK_THROTTLE_MS ? (executionContext & RenderContext) === NoContext && prepareFreshStack(root3, 0) : workInProgressRootPingedLanes |= pingedLanes, workInProgressSuspendedRetryLanes === workInProgressRootRenderLanes && (workInProgressSuspendedRetryLanes = 0));
+          ensureRootIsScheduled(root3);
         }
         function retryTimedOutBoundary(boundaryFiber, retryLane) {
           0 === retryLane && (retryLane = claimNextRetryLane());
@@ -14051,48 +12656,48 @@
         function recursivelyTraverseAndDoubleInvokeEffectsInDEV(root$jscomp$0, parentFiber, isInStrictMode) {
           if (0 !== (parentFiber.subtreeFlags & 67117056))
             for (parentFiber = parentFiber.child; null !== parentFiber; ) {
-              var root2 = root$jscomp$0, fiber = parentFiber, isStrictModeFiber = fiber.type === REACT_STRICT_MODE_TYPE;
+              var root3 = root$jscomp$0, fiber = parentFiber, isStrictModeFiber = fiber.type === REACT_STRICT_MODE_TYPE;
               isStrictModeFiber = isInStrictMode || isStrictModeFiber;
               22 !== fiber.tag ? fiber.flags & 67108864 ? isStrictModeFiber && runWithFiberInDEV(
                 fiber,
                 doubleInvokeEffectsOnFiber,
-                root2,
+                root3,
                 fiber,
                 (fiber.mode & NoStrictPassiveEffectsMode) === NoMode
               ) : recursivelyTraverseAndDoubleInvokeEffectsInDEV(
-                root2,
+                root3,
                 fiber,
                 isStrictModeFiber
               ) : null === fiber.memoizedState && (isStrictModeFiber && fiber.flags & 8192 ? runWithFiberInDEV(
                 fiber,
                 doubleInvokeEffectsOnFiber,
-                root2,
+                root3,
                 fiber
               ) : fiber.subtreeFlags & 67108864 && runWithFiberInDEV(
                 fiber,
                 recursivelyTraverseAndDoubleInvokeEffectsInDEV,
-                root2,
+                root3,
                 fiber,
                 isStrictModeFiber
               ));
               parentFiber = parentFiber.sibling;
             }
         }
-        function doubleInvokeEffectsOnFiber(root2, fiber) {
+        function doubleInvokeEffectsOnFiber(root3, fiber) {
           var shouldDoubleInvokePassiveEffects = 2 < arguments.length && void 0 !== arguments[2] ? arguments[2] : true;
           setIsStrictModeForDevtools(true);
           try {
-            disappearLayoutEffects(fiber), shouldDoubleInvokePassiveEffects && disconnectPassiveEffect(fiber), reappearLayoutEffects(root2, fiber.alternate, fiber, false), shouldDoubleInvokePassiveEffects && reconnectPassiveEffects(root2, fiber, 0, null, false, 0);
+            disappearLayoutEffects(fiber), shouldDoubleInvokePassiveEffects && disconnectPassiveEffect(fiber), reappearLayoutEffects(root3, fiber.alternate, fiber, false), shouldDoubleInvokePassiveEffects && reconnectPassiveEffects(root3, fiber, 0, null, false, 0);
           } finally {
             setIsStrictModeForDevtools(false);
           }
         }
-        function commitDoubleInvokeEffectsInDEV(root2) {
+        function commitDoubleInvokeEffectsInDEV(root3) {
           var doubleInvokeEffects = true;
-          root2.current.mode & (StrictLegacyMode | StrictEffectsMode) || (doubleInvokeEffects = false);
+          root3.current.mode & (StrictLegacyMode | StrictEffectsMode) || (doubleInvokeEffects = false);
           recursivelyTraverseAndDoubleInvokeEffectsInDEV(
-            root2,
-            root2.current,
+            root3,
+            root3.current,
             doubleInvokeEffects
           );
         }
@@ -14113,9 +12718,9 @@
             }
           }
         }
-        function restorePendingUpdaters(root2, lanes) {
-          isDevToolsPresent && root2.memoizedUpdaters.forEach(function(schedulingFiber) {
-            addFiberToLanesMap(root2, schedulingFiber, lanes);
+        function restorePendingUpdaters(root3, lanes) {
+          isDevToolsPresent && root3.memoizedUpdaters.forEach(function(schedulingFiber) {
+            addFiberToLanesMap(root3, schedulingFiber, lanes);
           });
         }
         function scheduleCallback$1(priorityLevel, callback) {
@@ -14130,8 +12735,8 @@
             );
           });
         }
-        function ensureRootIsScheduled(root2) {
-          root2 !== lastScheduledRoot && null === root2.next && (null === lastScheduledRoot ? firstScheduledRoot = lastScheduledRoot = root2 : lastScheduledRoot = lastScheduledRoot.next = root2);
+        function ensureRootIsScheduled(root3) {
+          root3 !== lastScheduledRoot && null === root3.next && (null === lastScheduledRoot ? firstScheduledRoot = lastScheduledRoot = root3 : lastScheduledRoot = lastScheduledRoot.next = root3);
           mightHavePendingSyncWork = true;
           null !== ReactSharedInternals.actQueue ? didScheduleMicrotask_act || (didScheduleMicrotask_act = true, scheduleImmediateRootScheduleTask()) : didScheduleMicrotask || (didScheduleMicrotask = true, scheduleImmediateRootScheduleTask());
         }
@@ -14140,25 +12745,25 @@
             isFlushingWork = true;
             do {
               var didPerformSomeWork = false;
-              for (var root2 = firstScheduledRoot; null !== root2; ) {
+              for (var root3 = firstScheduledRoot; null !== root3; ) {
                 if (!onlyLegacy)
                   if (0 !== syncTransitionLanes) {
-                    var pendingLanes = root2.pendingLanes;
+                    var pendingLanes = root3.pendingLanes;
                     if (0 === pendingLanes) var nextLanes = 0;
                     else {
-                      var suspendedLanes = root2.suspendedLanes, pingedLanes = root2.pingedLanes;
+                      var suspendedLanes = root3.suspendedLanes, pingedLanes = root3.pingedLanes;
                       nextLanes = (1 << 31 - clz32(42 | syncTransitionLanes) + 1) - 1;
                       nextLanes &= pendingLanes & ~(suspendedLanes & ~pingedLanes);
                       nextLanes = nextLanes & 201326741 ? nextLanes & 201326741 | 1 : nextLanes ? nextLanes | 2 : 0;
                     }
-                    0 !== nextLanes && (didPerformSomeWork = true, performSyncWorkOnRoot(root2, nextLanes));
+                    0 !== nextLanes && (didPerformSomeWork = true, performSyncWorkOnRoot(root3, nextLanes));
                   } else
                     nextLanes = workInProgressRootRenderLanes, nextLanes = getNextLanes(
-                      root2,
-                      root2 === workInProgressRoot ? nextLanes : 0,
-                      null !== root2.cancelPendingCommit || root2.timeoutHandle !== noTimeout
-                    ), 0 === (nextLanes & 3) || checkIfRootIsPrerendering(root2, nextLanes) || (didPerformSomeWork = true, performSyncWorkOnRoot(root2, nextLanes));
-                root2 = root2.next;
+                      root3,
+                      root3 === workInProgressRoot ? nextLanes : 0,
+                      null !== root3.cancelPendingCommit || root3.timeoutHandle !== noTimeout
+                    ), 0 === (nextLanes & 3) || checkIfRootIsPrerendering(root3, nextLanes) || (didPerformSomeWork = true, performSyncWorkOnRoot(root3, nextLanes));
+                root3 = root3.next;
               }
             } while (didPerformSomeWork);
             isFlushingWork = false;
@@ -14171,38 +12776,38 @@
           mightHavePendingSyncWork = didScheduleMicrotask_act = didScheduleMicrotask = false;
           var syncTransitionLanes = 0;
           0 !== currentEventTransitionLane && (shouldAttemptEagerTransition() && (syncTransitionLanes = currentEventTransitionLane), currentEventTransitionLane = 0);
-          for (var currentTime = now$1(), prev = null, root2 = firstScheduledRoot; null !== root2; ) {
-            var next = root2.next, nextLanes = scheduleTaskForRootDuringMicrotask(root2, currentTime);
+          for (var currentTime = now$1(), prev = null, root3 = firstScheduledRoot; null !== root3; ) {
+            var next = root3.next, nextLanes = scheduleTaskForRootDuringMicrotask(root3, currentTime);
             if (0 === nextLanes)
-              root2.next = null, null === prev ? firstScheduledRoot = next : prev.next = next, null === next && (lastScheduledRoot = prev);
-            else if (prev = root2, 0 !== syncTransitionLanes || 0 !== (nextLanes & 3))
+              root3.next = null, null === prev ? firstScheduledRoot = next : prev.next = next, null === next && (lastScheduledRoot = prev);
+            else if (prev = root3, 0 !== syncTransitionLanes || 0 !== (nextLanes & 3))
               mightHavePendingSyncWork = true;
-            root2 = next;
+            root3 = next;
           }
           flushSyncWorkAcrossRoots_impl(syncTransitionLanes, false);
         }
-        function scheduleTaskForRootDuringMicrotask(root2, currentTime) {
-          for (var suspendedLanes = root2.suspendedLanes, pingedLanes = root2.pingedLanes, expirationTimes = root2.expirationTimes, lanes = root2.pendingLanes & -62914561; 0 < lanes; ) {
+        function scheduleTaskForRootDuringMicrotask(root3, currentTime) {
+          for (var suspendedLanes = root3.suspendedLanes, pingedLanes = root3.pingedLanes, expirationTimes = root3.expirationTimes, lanes = root3.pendingLanes & -62914561; 0 < lanes; ) {
             var index = 31 - clz32(lanes), lane = 1 << index, expirationTime = expirationTimes[index];
             if (-1 === expirationTime) {
               if (0 === (lane & suspendedLanes) || 0 !== (lane & pingedLanes))
                 expirationTimes[index] = computeExpirationTime(lane, currentTime);
-            } else expirationTime <= currentTime && (root2.expiredLanes |= lane);
+            } else expirationTime <= currentTime && (root3.expiredLanes |= lane);
             lanes &= ~lane;
           }
           currentTime = workInProgressRoot;
           suspendedLanes = workInProgressRootRenderLanes;
           suspendedLanes = getNextLanes(
-            root2,
-            root2 === currentTime ? suspendedLanes : 0,
-            null !== root2.cancelPendingCommit || root2.timeoutHandle !== noTimeout
+            root3,
+            root3 === currentTime ? suspendedLanes : 0,
+            null !== root3.cancelPendingCommit || root3.timeoutHandle !== noTimeout
           );
-          pingedLanes = root2.callbackNode;
-          if (0 === suspendedLanes || root2 === currentTime && (workInProgressSuspendedReason === SuspendedOnData || workInProgressSuspendedReason === SuspendedOnAction) || null !== root2.cancelPendingCommit)
-            return null !== pingedLanes && cancelCallback(pingedLanes), root2.callbackNode = null, root2.callbackPriority = 0;
-          if (0 === (suspendedLanes & 3) || checkIfRootIsPrerendering(root2, suspendedLanes)) {
+          pingedLanes = root3.callbackNode;
+          if (0 === suspendedLanes || root3 === currentTime && (workInProgressSuspendedReason === SuspendedOnData || workInProgressSuspendedReason === SuspendedOnAction) || null !== root3.cancelPendingCommit)
+            return null !== pingedLanes && cancelCallback(pingedLanes), root3.callbackNode = null, root3.callbackPriority = 0;
+          if (0 === (suspendedLanes & 3) || checkIfRootIsPrerendering(root3, suspendedLanes)) {
             currentTime = suspendedLanes & -suspendedLanes;
-            if (currentTime !== root2.callbackPriority || null !== ReactSharedInternals.actQueue && pingedLanes !== fakeActCallbackNode)
+            if (currentTime !== root3.callbackPriority || null !== ReactSharedInternals.actQueue && pingedLanes !== fakeActCallbackNode)
               cancelCallback(pingedLanes);
             else return currentTime;
             switch (lanesToEventPriority(suspendedLanes)) {
@@ -14219,44 +12824,44 @@
               default:
                 suspendedLanes = NormalPriority$1;
             }
-            pingedLanes = performWorkOnRootViaSchedulerTask.bind(null, root2);
+            pingedLanes = performWorkOnRootViaSchedulerTask.bind(null, root3);
             null !== ReactSharedInternals.actQueue ? (ReactSharedInternals.actQueue.push(pingedLanes), suspendedLanes = fakeActCallbackNode) : suspendedLanes = scheduleCallback$3(suspendedLanes, pingedLanes);
-            root2.callbackPriority = currentTime;
-            root2.callbackNode = suspendedLanes;
+            root3.callbackPriority = currentTime;
+            root3.callbackNode = suspendedLanes;
             return currentTime;
           }
           null !== pingedLanes && cancelCallback(pingedLanes);
-          root2.callbackPriority = 2;
-          root2.callbackNode = null;
+          root3.callbackPriority = 2;
+          root3.callbackNode = null;
           return 2;
         }
-        function performWorkOnRootViaSchedulerTask(root2, didTimeout) {
+        function performWorkOnRootViaSchedulerTask(root3, didTimeout) {
           nestedUpdateScheduled = currentUpdateIsNested = false;
           if (pendingEffectsStatus !== NO_PENDING_EFFECTS && pendingEffectsStatus !== PENDING_PASSIVE_PHASE)
-            return root2.callbackNode = null, root2.callbackPriority = 0, null;
-          var originalCallbackNode = root2.callbackNode;
-          if (flushPendingEffects(true) && root2.callbackNode !== originalCallbackNode)
+            return root3.callbackNode = null, root3.callbackPriority = 0, null;
+          var originalCallbackNode = root3.callbackNode;
+          if (flushPendingEffects(true) && root3.callbackNode !== originalCallbackNode)
             return null;
           var workInProgressRootRenderLanes$jscomp$0 = workInProgressRootRenderLanes;
           workInProgressRootRenderLanes$jscomp$0 = getNextLanes(
-            root2,
-            root2 === workInProgressRoot ? workInProgressRootRenderLanes$jscomp$0 : 0,
-            null !== root2.cancelPendingCommit || root2.timeoutHandle !== noTimeout
+            root3,
+            root3 === workInProgressRoot ? workInProgressRootRenderLanes$jscomp$0 : 0,
+            null !== root3.cancelPendingCommit || root3.timeoutHandle !== noTimeout
           );
           if (0 === workInProgressRootRenderLanes$jscomp$0) return null;
           performWorkOnRoot(
-            root2,
+            root3,
             workInProgressRootRenderLanes$jscomp$0,
             didTimeout
           );
-          scheduleTaskForRootDuringMicrotask(root2, now$1());
-          return null != root2.callbackNode && root2.callbackNode === originalCallbackNode ? performWorkOnRootViaSchedulerTask.bind(null, root2) : null;
+          scheduleTaskForRootDuringMicrotask(root3, now$1());
+          return null != root3.callbackNode && root3.callbackNode === originalCallbackNode ? performWorkOnRootViaSchedulerTask.bind(null, root3) : null;
         }
-        function performSyncWorkOnRoot(root2, lanes) {
+        function performSyncWorkOnRoot(root3, lanes) {
           if (flushPendingEffects()) return null;
           currentUpdateIsNested = nestedUpdateScheduled;
           nestedUpdateScheduled = false;
-          performWorkOnRoot(root2, lanes, true);
+          performWorkOnRoot(root3, lanes, true);
         }
         function cancelCallback(callbackNode) {
           callbackNode !== fakeActCallbackNode && null !== callbackNode && cancelCallback$1(callbackNode);
@@ -14768,7 +13373,7 @@
                 }
               else
                 isComposing ? isFallbackCompositionEnd(domEventName, nativeEvent) && (eventType = "onCompositionEnd") : "keydown" === domEventName && nativeEvent.keyCode === START_KEYCODE && (eventType = "onCompositionStart");
-              eventType && (useFallbackCompositionData && "ko" !== nativeEvent.locale && (isComposing || "onCompositionStart" !== eventType ? "onCompositionEnd" === eventType && isComposing && (fallbackData = getData()) : (root = nativeEventTarget, startText = "value" in root ? root.value : root.textContent, isComposing = true)), handleEventFunc = accumulateTwoPhaseListeners(
+              eventType && (useFallbackCompositionData && "ko" !== nativeEvent.locale && (isComposing || "onCompositionStart" !== eventType ? "onCompositionEnd" === eventType && isComposing && (fallbackData = getData()) : (root2 = nativeEventTarget, startText = "value" in root2 ? root2.value : root2.textContent, isComposing = true)), handleEventFunc = accumulateTwoPhaseListeners(
                 targetInst,
                 eventType
               ), 0 < handleEventFunc.length && (eventType = new SyntheticCompositionEvent(
@@ -14897,7 +13502,7 @@
         function normalizeMarkupForTextOrAttribute(markup) {
           willCoercionThrow(markup) && (console.error(
             "The provided HTML markup uses a value of unsupported type %s. This value must be coerced to a string before using it here.",
-            typeName2(markup)
+            typeName(markup)
           ), testStringCoercion(markup));
           return ("string" === typeof markup ? markup : "" + markup).replace(NORMALIZE_NEWLINES_REGEX, "\n").replace(NORMALIZE_NULL_AND_REPLACEMENT_REGEX, "");
         }
@@ -15375,7 +13980,7 @@
                 hasSrcSet,
                 false
               );
-              track2(domElement);
+              track(domElement);
               return;
             case "select":
               checkControlledValueProps("select", props);
@@ -15442,7 +14047,7 @@
                   }
               validateTextareaProps(domElement, props);
               initTextarea(domElement, hasSrc, hasSrcSet, propKey);
-              track2(domElement);
+              track(domElement);
               return;
             case "option":
               validateOptionProps(domElement, props);
@@ -16967,8 +15572,8 @@
             return state.loading |= Errored;
           }), setInitialProperties(key, "link", preloadProps), markNodeAsHoistable(key), ownerDocument.head.appendChild(key));
         }
-        function getScriptKey(src2) {
-          return '[src="' + escapeSelectorAttributeValueInsideDoubleQuotes(src2) + '"]';
+        function getScriptKey(src) {
+          return '[src="' + escapeSelectorAttributeValueInsideDoubleQuotes(src) + '"]';
         }
         function getScriptSelectorFromKey(key) {
           return "script[async]" + key;
@@ -17040,15 +15645,15 @@
             "stylesheet" === resource.type && (resource.state.loading & Inserted) === NotLoaded && (instance = resource.instance, resource.state.loading |= Inserted, insertStylesheet(instance, props.precedence, hoistableRoot));
           return resource.instance;
         }
-        function insertStylesheet(instance, precedence, root2) {
-          for (var nodes = root2.querySelectorAll(
+        function insertStylesheet(instance, precedence, root3) {
+          for (var nodes = root3.querySelectorAll(
             'link[rel="stylesheet"][data-precedence],style[data-precedence]'
           ), last = nodes.length ? nodes[nodes.length - 1] : null, prior = last, i = 0; i < nodes.length; i++) {
             var node = nodes[i];
             if (node.dataset.precedence === precedence) prior = node;
             else if (prior !== last) break;
           }
-          prior ? prior.parentNode.insertBefore(instance, prior.nextSibling) : (precedence = 9 === root2.nodeType ? root2.head : root2, precedence.insertBefore(instance, precedence.firstChild));
+          prior ? prior.parentNode.insertBefore(instance, prior.nextSibling) : (precedence = 9 === root3.nodeType ? root3.head : root3, precedence.insertBefore(instance, precedence.firstChild));
         }
         function adoptPreloadPropsForStylesheet(stylesheetProps, preloadProps) {
           null == stylesheetProps.crossOrigin && (stylesheetProps.crossOrigin = preloadProps.crossOrigin);
@@ -17245,14 +15850,14 @@
           state.stylesheets = null;
           null !== state.unsuspend && (state.count++, precedencesByRoot = /* @__PURE__ */ new Map(), resources.forEach(insertStylesheetIntoRoot, state), precedencesByRoot = null, onUnsuspend.call(state));
         }
-        function insertStylesheetIntoRoot(root2, resource) {
+        function insertStylesheetIntoRoot(root3, resource) {
           if (!(resource.state.loading & Inserted)) {
-            var precedences = precedencesByRoot.get(root2);
+            var precedences = precedencesByRoot.get(root3);
             if (precedences) var last = precedences.get(LAST_PRECEDENCE);
             else {
               precedences = /* @__PURE__ */ new Map();
-              precedencesByRoot.set(root2, precedences);
-              for (var nodes = root2.querySelectorAll(
+              precedencesByRoot.set(root3, precedences);
+              for (var nodes = root3.querySelectorAll(
                 "link[data-precedence],style[data-precedence]"
               ), i = 0; i < nodes.length; i++) {
                 var node = nodes[i];
@@ -17270,7 +15875,7 @@
             last = onUnsuspend.bind(this);
             nodes.addEventListener("load", last);
             nodes.addEventListener("error", last);
-            i ? i.parentNode.insertBefore(nodes, i.nextSibling) : (root2 = 9 === root2.nodeType ? root2.head : root2, root2.insertBefore(nodes, root2.firstChild));
+            i ? i.parentNode.insertBefore(nodes, i.nextSibling) : (root3 = 9 === root3.nodeType ? root3.head : root3, root3.insertBefore(nodes, root3.firstChild));
             resource.state.loading |= Inserted;
           }
         }
@@ -17337,10 +15942,10 @@
           if (injectedHook && "function" === typeof injectedHook.onScheduleFiberRoot)
             try {
               injectedHook.onScheduleFiberRoot(rendererID, container, element);
-            } catch (err2) {
+            } catch (err) {
               hasLoggedError || (hasLoggedError = true, console.error(
                 "React instrumentation encountered an error: %s",
-                err2
+                err
               ));
             }
           null !== injectedProfilingHooks && "function" === typeof injectedProfilingHooks.markRenderScheduled && injectedProfilingHooks.markRenderScheduled(lane);
@@ -17373,8 +15978,8 @@
         }
         function attemptContinuousHydration(fiber) {
           if (13 === fiber.tag) {
-            var root2 = enqueueConcurrentRenderForLane(fiber, 67108864);
-            null !== root2 && scheduleUpdateOnFiber(root2, fiber, 67108864);
+            var root3 = enqueueConcurrentRenderForLane(fiber, 67108864);
+            null !== root3 && scheduleUpdateOnFiber(root3, fiber, 67108864);
             markRetryLaneIfNotHydrated(fiber, 67108864);
           }
         }
@@ -17438,11 +16043,11 @@
                       if (fiber.current.memoizedState.isDehydrated) {
                         var lanes = getHighestPriorityLanes(fiber.pendingLanes);
                         if (0 !== lanes) {
-                          var root2 = fiber;
-                          root2.pendingLanes |= 2;
-                          for (root2.entangledLanes |= 2; lanes; ) {
+                          var root3 = fiber;
+                          root3.pendingLanes |= 2;
+                          for (root3.entangledLanes |= 2; lanes; ) {
                             var lane = 1 << 31 - clz32(lanes);
-                            root2.entanglements[1] |= lane;
+                            root3.entanglements[1] |= lane;
                             lanes &= ~lane;
                           }
                           ensureRootIsScheduled(fiber);
@@ -17451,7 +16056,7 @@
                       }
                       break;
                     case 13:
-                      root2 = enqueueConcurrentRenderForLane(fiber, 2), null !== root2 && scheduleUpdateOnFiber(root2, fiber, 2), flushSyncWork$1(), markRetryLaneIfNotHydrated(fiber, 2);
+                      root3 = enqueueConcurrentRenderForLane(fiber, 2), null !== root3 && scheduleUpdateOnFiber(root3, fiber, 2), flushSyncWork$1(), markRetryLaneIfNotHydrated(fiber, 2);
                   }
                 fiber = findInstanceBlockingEvent(nativeEvent);
                 null === fiber && dispatchEventForPluginEventSystem(
@@ -17701,11 +16306,11 @@
                     if (13 === nearestMounted.tag) {
                       var lane = requestUpdateLane(nearestMounted);
                       lane = getBumpedLaneForHydrationByLane(lane);
-                      var root2 = enqueueConcurrentRenderForLane(
+                      var root3 = enqueueConcurrentRenderForLane(
                         nearestMounted,
                         lane
                       );
-                      null !== root2 && scheduleUpdateOnFiber(root2, nearestMounted, lane);
+                      null !== root3 && scheduleUpdateOnFiber(root3, nearestMounted, lane);
                       markRetryLaneIfNotHydrated(nearestMounted, lane);
                     }
                   });
@@ -17837,14 +16442,14 @@
           ));
         }
         "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-        var Scheduler = require_scheduler(), React13 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_PROVIDER_TYPE = Symbol.for("react.provider"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
+        var Scheduler = require_scheduler(), React3 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_PROVIDER_TYPE = Symbol.for("react.provider"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
         Symbol.for("react.scope");
         var REACT_ACTIVITY_TYPE = Symbol.for("react.activity");
         Symbol.for("react.legacy_hidden");
         Symbol.for("react.tracing_marker");
         var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel");
         Symbol.for("react.view_transition");
-        var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React13.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
+        var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React3.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
           pending: false,
           data: null,
           method: null,
@@ -18660,7 +17265,7 @@
           } catch (e) {
             passiveBrowserEventsSupported = false;
           }
-        var root = null, startText = null, fallbackText = null, EventInterface = {
+        var root2 = null, startText = null, fallbackText = null, EventInterface = {
           eventPhase: 0,
           bubbles: 0,
           cancelable: 0,
@@ -20387,14 +18992,14 @@
               }
             }
           },
-          X: function(src2, options) {
-            previousDispatcher.X(src2, options);
+          X: function(src, options) {
+            previousDispatcher.X(src, options);
             var ownerDocument = globalDocument;
-            if (ownerDocument && src2) {
-              var scripts = getResourcesFromRoot(ownerDocument).hoistableScripts, key = getScriptKey(src2), resource = scripts.get(key);
+            if (ownerDocument && src) {
+              var scripts = getResourcesFromRoot(ownerDocument).hoistableScripts, key = getScriptKey(src), resource = scripts.get(key);
               resource || (resource = ownerDocument.querySelector(
                 getScriptSelectorFromKey(key)
-              ), resource || (src2 = assign({ src: src2, async: true }, options), (options = preloadPropsMap.get(key)) && adoptPreloadPropsForScript(src2, options), resource = ownerDocument.createElement("script"), markNodeAsHoistable(resource), setInitialProperties(resource, "link", src2), ownerDocument.head.appendChild(resource)), resource = {
+              ), resource || (src = assign({ src, async: true }, options), (options = preloadPropsMap.get(key)) && adoptPreloadPropsForScript(src, options), resource = ownerDocument.createElement("script"), markNodeAsHoistable(resource), setInitialProperties(resource, "link", src), ownerDocument.head.appendChild(resource)), resource = {
                 type: "script",
                 instance: resource,
                 count: 1,
@@ -20451,14 +19056,14 @@
               }
             }
           },
-          M: function(src2, options) {
-            previousDispatcher.M(src2, options);
+          M: function(src, options) {
+            previousDispatcher.M(src, options);
             var ownerDocument = globalDocument;
-            if (ownerDocument && src2) {
-              var scripts = getResourcesFromRoot(ownerDocument).hoistableScripts, key = getScriptKey(src2), resource = scripts.get(key);
+            if (ownerDocument && src) {
+              var scripts = getResourcesFromRoot(ownerDocument).hoistableScripts, key = getScriptKey(src), resource = scripts.get(key);
               resource || (resource = ownerDocument.querySelector(
                 getScriptSelectorFromKey(key)
-              ), resource || (src2 = assign({ src: src2, async: true, type: "module" }, options), (options = preloadPropsMap.get(key)) && adoptPreloadPropsForScript(src2, options), resource = ownerDocument.createElement("script"), markNodeAsHoistable(resource), setInitialProperties(resource, "link", src2), ownerDocument.head.appendChild(resource)), resource = {
+              ), resource || (src = assign({ src, async: true, type: "module" }, options), (options = preloadPropsMap.get(key)) && adoptPreloadPropsForScript(src, options), resource = ownerDocument.createElement("script"), markNodeAsHoistable(resource), setInitialProperties(resource, "link", src), ownerDocument.head.appendChild(resource)), resource = {
                 type: "script",
                 instance: resource,
                 count: 1,
@@ -20477,17 +19082,17 @@
         }, badgeFormat = "%c%s%c ", badgeStyle = "background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px", resetStyle = "", pad = " ", bind = Function.prototype.bind;
         var didWarnAboutNestedUpdates = false;
         var overrideHookState = null, overrideHookStateDeletePath = null, overrideHookStateRenamePath = null, overrideProps = null, overridePropsDeletePath = null, overridePropsRenamePath = null, scheduleUpdate = null, setErrorHandler = null, setSuspenseHandler = null;
-        overrideHookState = function(fiber, id2, path, value) {
-          id2 = findHook(fiber, id2);
-          null !== id2 && (path = copyWithSetImpl(id2.memoizedState, path, 0, value), id2.memoizedState = path, id2.baseState = path, fiber.memoizedProps = assign({}, fiber.memoizedProps), path = enqueueConcurrentRenderForLane(fiber, 2), null !== path && scheduleUpdateOnFiber(path, fiber, 2));
+        overrideHookState = function(fiber, id, path, value) {
+          id = findHook(fiber, id);
+          null !== id && (path = copyWithSetImpl(id.memoizedState, path, 0, value), id.memoizedState = path, id.baseState = path, fiber.memoizedProps = assign({}, fiber.memoizedProps), path = enqueueConcurrentRenderForLane(fiber, 2), null !== path && scheduleUpdateOnFiber(path, fiber, 2));
         };
-        overrideHookStateDeletePath = function(fiber, id2, path) {
-          id2 = findHook(fiber, id2);
-          null !== id2 && (path = copyWithDeleteImpl(id2.memoizedState, path, 0), id2.memoizedState = path, id2.baseState = path, fiber.memoizedProps = assign({}, fiber.memoizedProps), path = enqueueConcurrentRenderForLane(fiber, 2), null !== path && scheduleUpdateOnFiber(path, fiber, 2));
+        overrideHookStateDeletePath = function(fiber, id, path) {
+          id = findHook(fiber, id);
+          null !== id && (path = copyWithDeleteImpl(id.memoizedState, path, 0), id.memoizedState = path, id.baseState = path, fiber.memoizedProps = assign({}, fiber.memoizedProps), path = enqueueConcurrentRenderForLane(fiber, 2), null !== path && scheduleUpdateOnFiber(path, fiber, 2));
         };
-        overrideHookStateRenamePath = function(fiber, id2, oldPath, newPath) {
-          id2 = findHook(fiber, id2);
-          null !== id2 && (oldPath = copyWithRename(id2.memoizedState, oldPath, newPath), id2.memoizedState = oldPath, id2.baseState = oldPath, fiber.memoizedProps = assign({}, fiber.memoizedProps), oldPath = enqueueConcurrentRenderForLane(fiber, 2), null !== oldPath && scheduleUpdateOnFiber(oldPath, fiber, 2));
+        overrideHookStateRenamePath = function(fiber, id, oldPath, newPath) {
+          id = findHook(fiber, id);
+          null !== id && (oldPath = copyWithRename(id.memoizedState, oldPath, newPath), id.memoizedState = oldPath, id.baseState = oldPath, fiber.memoizedProps = assign({}, fiber.memoizedProps), oldPath = enqueueConcurrentRenderForLane(fiber, 2), null !== oldPath && scheduleUpdateOnFiber(oldPath, fiber, 2));
         };
         overrideProps = function(fiber, path, value) {
           fiber.pendingProps = copyWithSetImpl(fiber.memoizedProps, path, 0, value);
@@ -20512,8 +19117,8 @@
           null !== oldPath && scheduleUpdateOnFiber(oldPath, fiber, 2);
         };
         scheduleUpdate = function(fiber) {
-          var root2 = enqueueConcurrentRenderForLane(fiber, 2);
-          null !== root2 && scheduleUpdateOnFiber(root2, fiber, 2);
+          var root3 = enqueueConcurrentRenderForLane(fiber, 2);
+          null !== root3 && scheduleUpdateOnFiber(root3, fiber, 2);
         };
         setErrorHandler = function(newShouldErrorImpl) {
           shouldErrorImpl = newShouldErrorImpl;
@@ -20525,8 +19130,8 @@
           " "
         ), lastScheduledReplayQueue = null;
         ReactDOMHydrationRoot.prototype.render = ReactDOMRoot.prototype.render = function(children) {
-          var root2 = this._internalRoot;
-          if (null === root2) throw Error("Cannot update an unmounted root.");
+          var root3 = this._internalRoot;
+          if (null === root3) throw Error("Cannot update an unmounted root.");
           var args = arguments;
           "function" === typeof args[1] ? console.error(
             "does not support the second callback argument. To execute a side effect after rendering, declare it in a component body with useEffect()."
@@ -20536,8 +19141,8 @@
             "You passed a second argument to root.render(...) but it only accepts one argument."
           );
           args = children;
-          var current2 = root2.current, lane = requestUpdateLane(current2);
-          updateContainerImpl(current2, lane, args, root2, null, null);
+          var current2 = root3.current, lane = requestUpdateLane(current2);
+          updateContainerImpl(current2, lane, args, root3, null, null);
         };
         ReactDOMHydrationRoot.prototype.unmount = ReactDOMRoot.prototype.unmount = function() {
           var args = arguments;
@@ -20566,7 +19171,7 @@
           }
         };
         (function() {
-          var isomorphicReactPackageVersion = React13.version;
+          var isomorphicReactPackageVersion = React3.version;
           if ("19.1.1" !== isomorphicReactPackageVersion)
             throw Error(
               'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' + (isomorphicReactPackageVersion + "\n  - react-dom:  19.1.1\nLearn more: https://react.dev/warnings/version-mismatch")
@@ -20706,3651 +19311,163 @@
     }
   });
 
-  // src/fp.ts
-  function multicast(fs) {
-    return (...args) => fs.map((f) => f(...args));
-  }
-
-  // src/xray.ts
-  var xray = (a) => xrayInner(a, void 0, (x) => x);
-  function xrayMulticast(xrs) {
-    return new Proxy(
-      {},
-      {
-        get(target, prop, receiver) {
-          const res = xrs.map((x) => x[prop]);
-          if (prop === "$en") {
-            return xrayMulticast(res);
-          }
-          if (prop === "$" || prop === "$s" || prop === "$ctx" || prop === "$e" || prop === "$ec" || prop === "$i" || prop === "$m" || prop === "$mx") {
-            return (...args) => xrayMulticast(multicast(res)(...args));
-          }
-          return res;
-        }
-      }
-    );
-  }
-  var xrayInner = (a, ctx, set) => new Proxy(
-    {},
-    {
-      get(target, prop, receiver) {
-        if (prop === "$v") {
-          return set(a);
-        } else if (prop === "$") {
-          return (x) => xrayInner(a, ctx, () => set(x));
-        } else if (prop === "$s") {
-          return (cb2) => xrayInner(a, ctx, () => set(cb2(a, ctx)));
-        } else if (prop === "$ctx") {
-          return (cb2) => xrayInner(a, cb2(a, ctx), set);
-        }
-        if (Array.isArray(a)) {
-          if (prop === "$e") {
-            return xrayMulticast(a.map((e, i) => xrayInner(e, i, (x) => x)));
-          } else if (prop === "$ec") {
-          } else if (prop === "$en") {
-            return xrayMulticast(
-              a.map((e, i) => xrayInner(e, [...ctx ?? [], i], (x) => x))
-            );
-          } else if (prop === "$i") {
-            return (p) => xrayInner(
-              a[p],
-              ctx,
-              (x) => set(a.map((e, i) => i === p ? x : e))
-            );
-          }
-        } else if (typeof a === "object" && a) {
-          if (prop === "$m") {
-            return (cb2) => xrayInner(
-              a,
-              ctx,
-              () => set({
-                ...a,
-                ...cb2(a, ctx)
-              })
-            );
-          } else if (prop === "$mx") {
-          } else {
-            return xrayInner(
-              a[prop],
-              ctx,
-              (x) => set({
-                ...a,
-                [prop]: x
-              })
-            );
-          }
-        }
-      }
-    }
-  );
-
-  // src/range.ts
-  function range(hi) {
-    let arr = [];
-    for (let i = 0; i < hi && i < 1e7; i++) {
-      arr.push(i);
-    }
-    return arr;
-  }
-  function smartRangeMap(n, cb2) {
-    const a = range(n);
-    const res1 = a.map((i, index, arr) => {
-      return {
-        remap(lo, hi, inclEnd) {
-          return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
-        },
-        remapCenter(lo, hi) {
-          return (i + 1) / (n + 1) * (hi - lo) + lo;
-        },
-        segment(lo, hi) {
-          return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
-        },
-        slidingWindow(arr2) {
-          return [arr2[i], arr2[i + 1]];
-        },
-        randkf() {
-          if (i === 0) return 0;
-          if (i === n - 1) return 100;
-          const lo = i / (n - 2) * 100;
-          const hi = (i + 1) / (n - 2) * 100;
-          return rand(lo, hi);
-        },
-        get(arr2) {
-          return arr2[i];
-        },
-        i,
-        next: i + 1,
-        end: () => i === n - 1,
-        start: () => i === 0
-      };
-    });
-    const res = res1.map(cb2);
-    return res;
-  }
-  function smartRange(n) {
-    return smartRangeMap(n, id);
-  }
-  function id(x) {
-    return x;
-  }
-  function rand(lo, hi, random) {
-    if (!random) random = () => Math.random();
-    return random() * (hi - lo) + lo;
-  }
-
-  // src/array-utils.ts
-  function groupBy(arr, getGroup) {
-    const groups = /* @__PURE__ */ new Map();
-    for (const entry of arr) {
-      const groupName = getGroup(entry);
-      let group = groups.get(groupName) ?? [];
-      group.push(entry);
-      groups.set(groupName, group);
-    }
-    return groups;
-  }
-  function argmax(arr, f) {
-    let maxFound = -Infinity;
-    let maxElement = arr[0];
-    for (const e of arr) {
-      const val = f(e);
-      if (val > maxFound) {
-        maxElement = e;
-        maxFound = val;
-      }
-    }
-    return maxElement;
-  }
-  function argmin(arr, f) {
-    return argmax(arr, (t) => -f(t));
-  }
-
-  // src/threadpool.ts
-  function getPerformanceStatistics(records) {
-    return Object.fromEntries(
-      Array.from(groupBy(records, (g) => g.name).entries()).map(([name, v]) => {
-        const totalRuntime = v.reduce((prev, curr) => prev + curr.runtime, 0) / v.length;
-        const invocationCount = v.length;
-        return [
-          name,
-          {
-            totalRuntime,
-            invocationCount,
-            averageRuntime: totalRuntime / invocationCount,
-            worstCaseRuntime: v.reduce(
-              (prev, curr) => Math.max(prev, curr.runtime),
-              0
-            ),
-            bestCaseRuntime: v.reduce(
-              (prev, curr) => Math.min(prev, curr.runtime),
-              0
-            )
-          }
-        ];
-      })
-    );
-  }
-  function wrapWithPromise(t) {
-    if (t instanceof Promise) {
-      return t;
-    }
-    return Promise.resolve(t);
-  }
-  function createRoundRobinThreadpool(src2, workerCount2, serialization2, t) {
-    const count = workerCount2 ?? navigator.hardwareConcurrency;
-    const performanceRecords = [];
-    const workers = [];
-    let nextWorker = 0;
-    for (let i = 0; i < count; i++) {
-      workers.push(new Worker(src2));
-    }
-    function getNextWorker() {
-      const workerChoice = nextWorker;
-      nextWorker = (nextWorker + 1) % count;
-      return workerChoice;
-    }
-    let id2 = 0;
-    function sendMessageToWorkerWithResponse(prop, args, workerIndex) {
-      const worker = workers[workerIndex];
-      const serializationInfo = serialization2?.[prop];
-      const startTime = performance.now();
-      const shouldRunInMain = serializationInfo?.runMode?.(args) ?? "worker";
-      if (shouldRunInMain === "main") {
-        if (!t)
-          throw new Error(
-            "If a threadpool method is to run in the main thread, its interface should be provided to the main thread!"
-          );
-        const res2 = t[prop](...args);
-        performanceRecords.push(
-          wrapWithPromise(res2).then((retval) => {
-            return {
-              name: prop,
-              inputSize: serializationInfo?.estimateInputSize?.(args) ?? 1,
-              runtime: performance.now() - startTime,
-              metadata: serializationInfo?.getRuntimeMetadata?.(args, retval),
-              thread: { type: "main" }
-            };
-          })
-        );
-        return res2;
-      }
-      const res = new Promise(async (resolve, reject) => {
-        const myid = id2;
-        id2++;
-        const onResponse = async (e) => {
-          if (e.data.id !== myid) return;
-          worker.removeEventListener("message", onResponse);
-          const parseRetVal = serialization2?.[prop]?.parseRetVal ?? ((x) => x);
-          resolve(await parseRetVal(e.data.returnValue));
-        };
-        worker.addEventListener("message", onResponse);
-        const serializeArgs = serialization2?.[prop]?.serializeArgs ?? ((x) => x);
-        worker.postMessage(
-          {
-            type: prop,
-            args: await serializeArgs(args),
-            id: myid
-          },
-          serialization2?.[prop]?.transferArgs?.(args) ?? []
-        );
-      });
-      performanceRecords.push(
-        res.then((retval) => {
-          return {
-            name: prop,
-            inputSize: serializationInfo?.estimateInputSize?.(args) ?? 1,
-            runtime: performance.now() - startTime,
-            metadata: serializationInfo?.getRuntimeMetadata?.(args, retval),
-            thread: { type: "worker", workerId: workerIndex }
-          };
-        })
-      );
-      return res;
-    }
-    return {
-      threadCount: count,
-      getCurrentPerformanceRecords() {
-        return Promise.all(performanceRecords);
-      },
-      send: new Proxy({}, {
-        get(i, prop) {
-          return async (...args) => {
-            const nextWorker2 = getNextWorker();
-            return sendMessageToWorkerWithResponse(prop, args, nextWorker2);
-          };
-        }
-      }),
-      sendToThread: (threadIndex) => new Proxy({}, {
-        get(i, prop) {
-          return async (...args) => {
-            return sendMessageToWorkerWithResponse(prop, args, threadIndex);
-          };
-        }
-      }),
-      broadcast: new Proxy({}, {
-        get(i, prop) {
-          return async (...args) => {
-            return await Promise.all(
-              workers.map(
-                (w, i2) => sendMessageToWorkerWithResponse(prop, args, i2)
-              )
-            );
-          };
-        }
-      })
-    };
-  }
-  function createRoundRobinThread(t, serialization2) {
-    self.addEventListener("message", async (e) => {
-      const parseArgs = serialization2?.[e.data.type]?.parseArgs ?? id;
-      const args = await parseArgs(e.data.args);
-      const resp = await t[e.data.type](...args);
-      const serializeReturnValue = serialization2?.[e.data.type]?.serializeRetVal ?? id;
-      postMessage(
-        {
-          returnValue: await serializeReturnValue(resp),
-          id: e.data.id
-        },
-        // @ts-expect-error
-        serialization2?.[e.data.type]?.transferRetVal?.(resp) ?? []
-      );
-    });
-  }
-  function createCombinedRoundRobinThreadpool(getInterface, src, workerCount, serialization) {
-    if (eval("self.WorkerGlobalScope")) {
-      createRoundRobinThread(getInterface(false), serialization);
-      return;
-    } else {
-      return createRoundRobinThreadpool(
-        src ?? document.currentScript.src,
-        workerCount,
-        serialization,
-        getInterface(true)
-      );
-    }
-  }
-  async function inMainThread(cb) {
-    if (eval("self.WorkerGlobalScope")) {
-      return;
-    }
-    return await cb();
-  }
-
-  // src/stringutils.ts
-  function delimitedSequenceRegex(start, end) {
-    return new RegExp(
-      RegExp.escape(start) + "[\\s\\S]*?" + RegExp.escape(end),
-      "g"
-    );
-  }
-  function makeDelimitedReplacements(str2, replacements) {
-    for (const r of replacements) {
-      str2 = str2.replaceAll(
-        typeof r.delimiter === "string" ? delimitedSequenceRegex(r.delimiter, r.delimiter) : (
-          // @ts-expect-error
-          delimitedSequenceRegex(r.start, r.end)
-        ),
-        r.replaceWith
-      );
-    }
-    return str2;
-  }
-
-  // src/interpolation.ts
-  function lerp(x, a, b) {
-    return a * (1 - x) + b * x;
-  }
-  function unlerp(x, a, b) {
-    return (x - a) / (b - a);
-  }
-  function rescale(x, a1, b1, a2, b2) {
-    return lerp(unlerp(x, a1, b1), a2, b2);
-  }
-  function clamp(x, lo, hi) {
-    return Math.max(Math.min(x, hi), lo);
-  }
-  function modulo(a, b) {
-    return a - b * Math.floor(a / b);
-  }
-
-  // src/math/vector.ts
-  function cart2Polar(a) {
-    return [length2(a), Math.atan2(a[1], a[0])];
-  }
-  function add2(a, b) {
-    return [a[0] + b[0], a[1] + b[1]];
-  }
-  function add3(a, b) {
-    return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-  }
-  function mul2(a, b) {
-    return [a[0] * b[0], a[1] * b[1]];
-  }
-  function div2(a, b) {
-    return [a[0] / b[0], a[1] / b[1]];
-  }
-  function sub2(a, b) {
-    return [a[0] - b[0], a[1] - b[1]];
-  }
-  function sub3(a, b) {
-    return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-  }
-  function length2(a) {
-    return Math.sqrt(dot2(a, a));
-  }
-  function mix2(a, b, c) {
-    return add2(b, scale2(sub2(c, b), a));
-  }
-  function remap2(a, b, c, d, e) {
-    return add2(d, mul2(sub2(e, d), div2(sub2(a, b), sub2(c, b))));
-  }
-  function sum2(a) {
-    return a[0] + a[1];
-  }
-  function dot2(a, b) {
-    return sum2(mul2(a, b));
-  }
-  function scale2(a, b) {
-    return [a[0] * b, a[1] * b];
-  }
-
-  // src/object-utils.ts
-  function arrayToMapKeys(arr, f) {
-    return new Map(arr.map((x) => [x, f(x)]));
-  }
-  function arrayToObjKeys(arr, f) {
-    return map2obj(arrayToMapKeys(arr, f));
-  }
-  function mapObjValues(obj, callback) {
-    return mapObjEntries(obj, (k, v) => [k, callback(k, v)]);
-  }
-  function mapObjEntries(obj, callback) {
-    return Object.fromEntries(
-      Object.entries(obj).map(([k, v]) => callback(k, v))
-    );
-  }
-  function map2obj(map) {
-    return Object.fromEntries(map.entries());
-  }
-  var ALL = Symbol("allKeys");
-  var _ALL = Symbol("all2");
-
-  // src/array-map.ts
-  var ArrayMap = class _ArrayMap {
-    constructor() {
-      this.maps = /* @__PURE__ */ new Map();
-    }
-    nthMap(n) {
-      let map = this.maps.get(n);
-      if (!map) {
-        if (n !== 0) {
-          map = /* @__PURE__ */ new Map();
-          this.maps.set(n, map);
-        } else {
-          return void 0;
-        }
-      }
-      return map;
-    }
-    get(path) {
-      let map = this.nthMap(path.length);
-      for (const p of path) {
-        map = map.get(p);
-        if (!map) return void 0;
-      }
-      return map;
-    }
-    has(path) {
-      if (path.length === 0) return this.maps.has(0);
-      let map = this.nthMap(path.length);
-      for (const p of path) {
-        map = map.get(p);
-        if (!map) return false;
-      }
-      return true;
-    }
-    delete(path) {
-      if (path.length === 0) {
-        const item2 = this.maps.get(0);
-        this.maps.delete(0);
-        return item2;
-      }
-      let map = this.nthMap(path.length);
-      for (const p of path.slice(0, -1)) {
-        map = map.get(p);
-        if (!map) return void 0;
-      }
-      const item = map.get(path.at(-1));
-      map.delete(path.at(-1));
-      return item;
-    }
-    change(path, cb2) {
-      if (path.length === 0) {
-        this.maps.set(0, cb2(this.maps.get(0)));
-        return;
-      }
-      let map = this.nthMap(path.length);
-      for (const p of path.slice(0, -1)) {
-        let oldMap = map;
-        map = map.get(p);
-        if (!map) {
-          map = /* @__PURE__ */ new Map();
-          oldMap.set(p, map);
-        }
-      }
-      map.set(path.at(-1), cb2(map.get(path.at(-1))));
-    }
-    set(path, value) {
-      this.change(path, () => value);
-    }
-    forEach(map) {
-      const r = (n, m, path) => {
-        if (n === 0) {
-          map(path, m);
-        } else {
-          for (const [k, v] of m) r(n - 1, m, path.concat(k));
-        }
-      };
-      for (const [n, map2] of this.maps) {
-        r(n, map2, []);
-      }
-    }
-    serialize() {
-      const out = [];
-      this.forEach((arr, v) => out.push([arr, v]));
-      return out;
-    }
-    static fromSerialized(s) {
-      const am = new _ArrayMap();
-      for (const [k, v] of s) {
-        am.set(k, v);
-      }
-      return am;
-    }
-  };
-
-  // src/memo.ts
-  function memo(callback, serializeParams) {
-    if (!serializeParams) serializeParams = (x) => x;
-    const map = new ArrayMap();
-    const fn = (...params) => {
-      const serialized = serializeParams(params);
-      let hasCached = map.has(serialized);
-      if (hasCached) {
-        return map.get(serialized);
-      }
-      const result = callback(...params);
-      map.set(serialized, result);
-      return result;
-    };
-    fn.invalidate = (...params) => {
-      map.delete(serializeParams(params));
-    };
-    fn.getCache = () => map;
-    return fn;
-  }
-
-  // src/math/intersections.ts
-  function lineIntersectLine(a, b) {
-    const ax = a.a[0];
-    const ay = a.a[1];
-    const bx = a.b[0];
-    const by = a.b[1];
-    const cx = b.a[0];
-    const cy = b.a[1];
-    const dx = b.b[0];
-    const dy = b.b[1];
-    return ((bx - ax) * (ay - cy) + (by - ay) * (cx - ax)) / ((bx - ax) * (dy - cy) - (by - ay) * (dx - cx));
-  }
-  function lineSegmentIntersectLineSegment(a, b) {
-    const t2 = lineIntersectLine(a, b);
-    const t1 = lineIntersectLine(b, a);
-    if (t1 < 0 || t1 > 1) return;
-    if (t2 < 0 || t2 > 1) return;
-    return t2;
-  }
-  function lineIntersectRect(l, rect) {
-    const topIntersect = lineSegmentIntersectLineSegment(
-      {
-        a: rect.a,
-        b: [rect.b[0], rect.a[1]]
-      },
-      l
-    );
-    const bottomIntersect = lineSegmentIntersectLineSegment(
-      {
-        a: [rect.a[0], rect.b[1]],
-        b: rect.b
-      },
-      l
-    );
-    const leftIntersect = lineSegmentIntersectLineSegment(
-      {
-        a: rect.a,
-        b: [rect.a[0], rect.b[1]]
-      },
-      l
-    );
-    const rightIntersect = lineSegmentIntersectLineSegment(
-      {
-        a: [rect.b[0], rect.a[1]],
-        b: rect.b
-      },
-      l
-    );
-    return [topIntersect, bottomIntersect, leftIntersect, rightIntersect].filter(
-      (i) => i && i >= 0 && i <= 1
-    );
-  }
-  function lineIntersectRectClosest(l, rect) {
-    return Math.min(...lineIntersectRect(l, rect));
-  }
-  function sampleLineSegment(l, t) {
-    return mix2(t, l.a, l.b);
-  }
-  function rangeIntersects(a1, a2, b1, b2) {
-    return !(a1 > b2 || b1 > a2);
-  }
-
-  // src/1d-spatial-hash-table.ts
-  var OneDimensionalSpatialHashTable = class {
-    constructor(bucketCount, start, end, getBounds) {
-      this.start = start;
-      this.end = end;
-      this.buckets = range(bucketCount).map(() => /* @__PURE__ */ new Set());
-      this.objects = /* @__PURE__ */ new Map();
-      this.getBounds = getBounds;
-    }
-    positionToBucketIndex(pos) {
-      return modulo(
-        Math.floor(rescale(pos, this.start, this.end, 0, this.buckets.length)),
-        this.buckets.length
-      );
-    }
-    rangeToBucketSet(start, end) {
-      if (end - start >= this.end - this.start) {
-        return this.buckets;
-      } else {
-        const bucketStart = this.positionToBucketIndex(start);
-        const bucketEnd = this.positionToBucketIndex(end);
-        if (bucketStart >= bucketEnd) {
-          return this.buckets.slice(bucketStart).concat(this.buckets.slice(0, bucketEnd + 1));
-        } else {
-          return this.buckets.slice(bucketStart, bucketEnd + 1);
-        }
-      }
-    }
-    add(t) {
-      const bounds = this.getBounds(t);
-      const buckets = this.rangeToBucketSet(bounds.start, bounds.end);
-      for (const b of buckets) b.add(t);
-      this.objects.set(t, { buckets });
-    }
-    delete(t) {
-      const obj = this.objects.get(t);
-      for (const bkt of obj.buckets) {
-        bkt.delete(t);
-      }
-    }
-    query(start, end) {
-      const buckets = this.rangeToBucketSet(start, end);
-      return new Set(
-        buckets.flatMap((b) => Array.from(b)).filter((e) => {
-          const bounds = this.getBounds(e);
-          return rangeIntersects(bounds.start, bounds.end, start, end);
-        })
-      );
-    }
-  };
-
-  // src/audio/stream-audio.ts
-  var import_fft = __toESM(require_fft());
-  function createTrack(channels, sampleRate, constituents) {
-    const maxlen = Math.max(
-      ...constituents.map((c) => c.start + c.audio.duration)
-    );
-    const sht = new OneDimensionalSpatialHashTable(constituents.length, 0, maxlen, (a) => ({
-      start: a.start,
-      end: a.start + a.audio.duration
-    }));
-    for (const c of constituents) sht.add(c);
-    return new AudioStream({
-      channels,
-      sampleRate,
-      duration: maxlen,
-      async getRange(start, count) {
-        const startTime = start / sampleRate;
-        const endTime = (start + count) / sampleRate;
-        const audio = sht.query(startTime, endTime);
-        const out = {};
-        const inputs = await Promise.all(
-          [...audio].map(
-            (e) => e.audio.getRange(start - Math.ceil(e.start * sampleRate), count)
-          )
-        );
-        for (const ch of channels) {
-          const a = new Float32Array(count);
-          for (const inp of inputs) {
-            for (let i = 0; i < count; i++) {
-              a[i] += inp[ch][i] ?? 0;
-            }
-          }
-          out[ch] = a;
-        }
-        return out;
-      }
-    });
-  }
-  var AudioStream = class _AudioStream {
-    constructor(params) {
-      this.getRange = async (start, count) => {
-        const estimatedLength = Math.ceil(this.sampleRate * this.duration);
-        const clampedStart = clamp(start, 0, estimatedLength);
-        const clampedEnd = clamp(start + count, 0, estimatedLength);
-        const range2 = await params.getRange(
-          clampedStart,
-          clampedEnd - clampedStart
-        );
-        if (clampedEnd - clampedStart == count) return range2;
-        const out = {};
-        const padStart = -Math.min(0, start);
-        for (const ch of this.channels) {
-          console.log("eeeee", count);
-          const o = new Float32Array(count);
-          const i = range2[ch];
-          for (let idx = 0; idx < i.length; idx++) {
-            o[idx + padStart] = i[idx];
-          }
-          out[ch] = o;
-        }
-        return out;
-      };
-      this.duration = params.duration;
-      this.sampleRate = params.sampleRate;
-      this.channels = params.channels;
-    }
-    gain(gain) {
-      return combineAudio(
-        this.channels,
-        this.sampleRate,
-        [this, gain],
-        (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k]),
-        this.duration
-      );
-    }
-    add(stream) {
-      return combineAudio(
-        this.channels,
-        this.sampleRate,
-        [this, stream],
-        (time, sample, a, b) => mapObjValues(a, (k, x) => x + b[k])
-      );
-    }
-    clip(start, end) {
-      return new _AudioStream({
-        channels: this.channels,
-        duration: end - start,
-        sampleRate: this.sampleRate,
-        getRange: (start2, count2) => {
-          return this.getRange(
-            start2 + Math.floor(start * this.sampleRate),
-            count2
-          );
-        }
-      });
-    }
-    convolve(_kernel) {
-      const kernel = broadcastTo(this.channels, this.sampleRate, _kernel);
-      const kernelSampleCount = Math.ceil(kernel.duration * kernel.sampleRate);
-      const kernelData = kernel.getRange(0, kernelSampleCount);
-      return new _AudioStream({
-        channels: this.channels,
-        duration: this.duration,
-        sampleRate: this.sampleRate,
-        getRange: async (start, count) => {
-          const kern = await kernelData;
-          return mapObjValues(
-            await this.getRange(start, count + kernelSampleCount),
-            (ch, v) => overlapSaveConvolve(
-              new Float32Array(v),
-              new Float32Array(kern[ch])
-            ).slice(0, count)
-          );
-        }
-      });
-    }
-    preload() {
-      const bufs = this.getRange(0, Math.ceil(this.duration * this.sampleRate));
-      return new _AudioStream({
-        channels: this.channels,
-        duration: this.duration,
-        sampleRate: this.sampleRate,
-        getRange: async (start, count) => {
-          const bufs2 = await bufs;
-          return mapObjValues(bufs2, (k, v) => v.slice(start, start + count));
-        }
-      });
-    }
-  };
-  function fft(x) {
-    const f = new import_fft.default(x.length);
-    const out = f.createComplexArray();
-    const data = f.toComplexArray(x);
-    f.transform(out, data);
-    return new Float32Array(out);
-  }
-  function ifft(x) {
-    const f = new import_fft.default(x.length / 2);
-    const out = f.createComplexArray();
-    f.inverseTransform(out, x);
-    return new Float32Array(range(out.length / 2).map((i) => out[i * 2]));
-  }
-  function fftConvolve(x, h) {
-    const arr1 = fft(x);
-    const arr2 = fft(h);
-    let out = new Float32Array(arr1.length);
-    for (let i = 0; i < arr1.length; i += 2) {
-      out[i] = arr1[i] * arr2[i] - arr1[i + 1] * arr2[i + 1];
-      out[i + 1] = arr1[i] * arr2[i + 1] + arr1[i + 1] * arr2[i];
-    }
-    return ifft(out);
-  }
-  function nextPowerOfTwo(x) {
-    return Math.pow(2, Math.ceil(Math.log2(x)));
-  }
-  function zeroPad(x, length) {
-    if (x.length === length) return x;
-    const y = new Float32Array(length);
-    for (let i = 0; i < x.length; i++) {
-      y[i] = x[i];
-    }
-    return y;
-  }
-  var powersOfTwo = range(31).map((i) => 2 ** (i + 1));
-  var getOptimumOverlapSaveFilterSize = memo((M) => {
-    const cost = (M2, N) => N * Math.log2(N + 1) / (N - M2 + 1);
-    return argmin(
-      powersOfTwo.filter((N) => cost(M, N) > 0),
-      (N) => cost(M, N)
-    );
-  });
-  function overlapSaveConvolve(x, h) {
-    const M = h.length;
-    const N = getOptimumOverlapSaveFilterSize(M);
-    const kernel = zeroPad(h, N);
-    const L = N - M + 1;
-    const blockcount = Math.ceil(x.length / L);
-    const dst = new Float32Array(L * blockcount);
-    for (let i = 0; i < blockcount; i++) {
-      const position = L * i;
-      const xslice = zeroPad(x.slice(position, position + N), N);
-      const convolved = fftConvolve(xslice, kernel);
-      for (let j = 0; j < L; j++) {
-        dst[position + j] = convolved[M + j - 1];
-      }
-    }
-    return dst.slice(0, x.length);
-  }
-  function createSignal(params) {
-    const constr = params.constructors;
-    const constructors = constr instanceof Function ? arrayToObjKeys(params.channels, (k) => (t, c) => constr(t, c)[k]) : constr;
-    return new AudioStream({
-      channels: params.channels,
-      async getRange(start, count) {
-        return mapObjEntries(constructors, (k, v) => [
-          k,
-          new Float32Array(
-            range(count).map((s) => {
-              return v((s + start) / this.sampleRate, s + start);
-            })
-          )
-        ]);
-      },
-      sampleRate: params.sampleRate,
-      duration: params.duration
-    });
-  }
-  function sameSignalOnData(sampleRate, channels, duration, f) {
-    return createSignal({
-      channels,
-      duration,
-      sampleRate,
-      length: Math.ceil(duration * sampleRate),
-      constructors: arrayToObjKeys(channels, () => f)
-    });
-  }
-  function waveform(sampleRate, channels, seconds, frequency, amplitude, phase, profile) {
-    return sameSignalOnData(
-      sampleRate,
-      channels,
-      seconds,
-      (t) => amplitude * profile((t * frequency + phase) % 1)
-    );
-  }
-  async function getRangeAndResample(src2, dstStart, dstCount, dstSampleRate) {
-    if (src2.sampleRate === dstSampleRate) {
-      return await src2.getRange(dstStart, dstCount);
-    }
-    const startSeconds = dstStart / dstSampleRate;
-    const durationSeconds = dstCount / dstSampleRate;
-    const srcStart = Math.floor(startSeconds * src2.sampleRate);
-    const srcCount = Math.ceil((startSeconds + durationSeconds) * src2.sampleRate);
-    const srcRange = await src2.getRange(srcStart, srcCount - srcStart);
-    return mapObjValues(srcRange, (k, v) => {
-      return new Float32Array(
-        range(dstCount).map((dstIndex) => {
-          const time = dstIndex / dstSampleRate;
-          const sourceIndex = time * src2.sampleRate;
-          const srcSamplePrev = Math.floor(sourceIndex);
-          const srcSampleNext = srcSamplePrev + 1;
-          return lerp(sourceIndex % 1, v[srcSamplePrev], v[srcSampleNext]);
-        })
-      );
-    });
-  }
-  function resample(audio, targetSampleRate) {
-    return combineAudio(
-      audio.channels,
-      targetSampleRate,
-      [audio],
-      (time, sample, ch) => ch
-    );
-  }
-  function combineAudio(channels, sampleRate, audio, f, customDuration) {
-    const duration = customDuration ? customDuration : Math.max(...audio.map((a) => a.duration));
-    const length = Math.ceil(duration * sampleRate);
-    const stream = new AudioStream({
-      channels,
-      duration,
-      sampleRate,
-      async getRange(start, count) {
-        const ranges = await Promise.all(
-          audio.map(
-            async (a) => mapObjValues(
-              await getRangeAndResample(
-                a,
-                start,
-                count,
-                sampleRate
-              ),
-              (k, v) => new Float32Array(v)
-            )
-          )
-        );
-        const ch = arrayToObjKeys(
-          channels,
-          (k) => new Float32Array(count)
-        );
-        for (const i of range(count)) {
-          const samples = ranges.map((r, j) => {
-            if (audio[j].channels.length === 1 && audio[j].channels[0] === "center") {
-              return arrayToObjKeys(channels, () => r.center[i]);
-            }
-            return mapObjValues(r, (k, v) => v[i]);
-          });
-          const res = f(
-            (start + i) / sampleRate,
-            start + i,
-            ...samples
-          );
-          for (const c of channels) {
-            ch[c][i] = res[c];
-          }
-        }
-        return ch;
-      }
-    });
-    return stream;
-  }
-  function broadcastTo(channels, sampleRate, mono) {
-    return combineAudio(channels, sampleRate, [mono], (_, __, x) => x);
-  }
-  function lowPassFilterSample(n, N, m) {
-    return 1 / N * range(m * 2 + 1).map((i) => Math.cos(2 * Math.PI * (i - m) / N * n)).reduce((a, b) => a + b, 0);
-  }
-  function hannSample(n, N) {
-    return Math.sin(Math.PI * (n - N / 2) / N) ** 2;
-  }
-  var createLowPassFilter = memo(
-    (channels, sampleRate, freq, cycles) => {
-      const oneCycleSampleCount = Math.ceil(1 / freq * sampleRate);
-      const sampleCount = oneCycleSampleCount * cycles;
-      const duration = sampleCount / sampleRate;
-      console.log("created lpf");
-      const cutoff = cycles;
-      return createSignal({
-        duration,
-        sampleRate,
-        channels,
-        length: sampleCount,
-        constructors: arrayToObjKeys(
-          channels,
-          () => (t, s) => lowPassFilterSample(s, sampleCount, cutoff) * hannSample(s, sampleCount)
-        )
-      }).preload();
-    }
-  );
-  var AudioBuilder = class {
-    constructor(channels, sampleRate) {
-      this.channels = channels;
-      this.sampleRate = sampleRate;
-    }
-    lpf(freq, cycles = 16) {
-      return createLowPassFilter(
-        this.channels,
-        this.sampleRate,
-        freq,
-        cycles
-      );
-    }
-    signal(duration, constructors) {
-      return createSignal({
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        constructors,
-        duration,
-        length: Math.ceil(duration * this.sampleRate)
-      });
-    }
-    waveform(frequency, amplitude, phase, profile) {
-      return waveform(
-        this.sampleRate,
-        this.channels,
-        Infinity,
-        frequency,
-        amplitude,
-        phase,
-        profile
-      );
-    }
-    constant(x) {
-      return createSignal({
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        duration: Infinity,
-        length: Infinity,
-        constructors: arrayToObjKeys(this.channels, () => () => x)
-      });
-    }
-    sine(frequency, amplitude = 1, phase = 0) {
-      return this.waveform(
-        frequency,
-        amplitude,
-        phase,
-        (x) => Math.sin(x * Math.PI * 2)
-      );
-    }
-    square(frequency, amplitude = 1, phase = 0) {
-      return this.waveform(
-        frequency,
-        amplitude,
-        phase,
-        (x) => x > 0.5 ? -1 : 1
-      );
-    }
-    saw(frequency, amplitude = 1, phase = 0) {
-      return this.waveform(frequency, amplitude, phase, (x) => x * 2 - 1);
-    }
-    noise(amplitude = 1) {
-      return createSignal({
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        duration: Infinity,
-        length: Infinity,
-        constructors: arrayToObjKeys(
-          this.channels,
-          () => () => (Math.random() * 2 - 1) * amplitude
-        )
-      });
-    }
-    adsrgen(a, d, s, r) {
-      return (at, dt, st, rt) => {
-        return sameSignalOnData(this.sampleRate, this.channels, rt, (t) => {
-          if (t < at) return rescale(t, 0, at, 0, a);
-          if (t < dt) return rescale(t, at, dt, a, d);
-          if (t < st) return rescale(t, dt, st, d, s);
-          if (t < rt) return rescale(t, st, rt, s, r);
-          return 0;
-        });
-      };
-    }
-    boxcar(length, area = 1) {
-      const sampleCount = Math.ceil(length * this.sampleRate);
-      return this.constant(area / sampleCount).clip(
-        0,
-        sampleCount / this.sampleRate
-      );
-    }
-    adsr(a, at, d, dt, s, st, r, rt) {
-      return this.adsrgen(a, d, s, r)(at, dt, st, rt);
-    }
-    broadcast(mono) {
-      return broadcastTo(this.channels, this.sampleRate, mono);
-    }
-    createTrack(constituents) {
-      return createTrack(this.channels, this.sampleRate, constituents);
-    }
-  };
-  async function playStereo(audio) {
-    const ctx = new AudioContext();
-    const src2 = ctx.createBufferSource();
-    const len = Math.ceil(audio.sampleRate * audio.duration);
-    const buf = ctx.createBuffer(2, len, audio.sampleRate);
-    const range2 = await audio.getRange(0, len);
-    buf.copyToChannel(new Float32Array(range2.left), 0);
-    buf.copyToChannel(new Float32Array(range2.right), 1);
-    src2.buffer = buf;
-    src2.connect(ctx.destination);
-    src2.start();
-  }
-  function isWorklet() {
-    return eval("globalThis.registerProcessor") !== void 0;
-  }
-  var BLOCKSIZE = 8192;
-  async function initBufferStreamerWorklet(src) {
-    if (isWorklet()) {
-      eval("registerProcessor")(
-        "buffer-streamer",
-        class extends eval("AudioWorkletProcessor") {
-          constructor() {
-            super();
-            this.buffers = [];
-            this.offsetIntoCurrentBuffer = 0;
-            this.port.onmessage = async (e) => {
-              const data = e.data;
-              if (data.type === "buffer") {
-                this.buffers.push({
-                  left: new Float32Array(data.buffers.left),
-                  right: new Float32Array(data.buffers.right)
-                });
-              }
-            };
-          }
-          process(inputs, outputs, parameters) {
-            const output = outputs[0];
-            const outputLength = output[0].length;
-            for (let i = 0; i < outputLength; i++) {
-              if (this.buffers.length > 0) {
-                output[0][i] = this.buffers[0].left[this.offsetIntoCurrentBuffer];
-                if (output[1]) {
-                  output[1][i] = this.buffers[0].right[this.offsetIntoCurrentBuffer];
-                }
-                this.offsetIntoCurrentBuffer++;
-                if (this.offsetIntoCurrentBuffer >= this.buffers[0]?.left.length) {
-                  this.offsetIntoCurrentBuffer = 0;
-                  this.buffers.shift();
-                }
-              } else {
-                output[0][i] = 0;
-                if (output[1]) {
-                  output[1][i] = 0;
-                }
-              }
-            }
-            return true;
-          }
-        }
-      );
-    } else {
-      return async (ctx) => {
-        await ctx.audioWorklet.addModule(src);
-        return () => {
-          const worklet = new AudioWorkletNode(ctx, "buffer-streamer");
-          return {
-            worklet,
-            pushData(left, right) {
-              worklet.port.postMessage(
-                {
-                  type: "buffer",
-                  buffers: {
-                    left: left.buffer,
-                    right: right.buffer
-                  }
-                },
-                [left.buffer, right.buffer]
-              );
-            }
-          };
-        };
-      };
-    }
-  }
-  var CHUNKSIZE = 2048 * 16;
-  function streamAudioToWorklet(stream, bs) {
-    let t = 0;
-    const loop = async () => {
-      const { left, right } = await stream.getRange(t, CHUNKSIZE);
-      bs.pushData(new Float32Array(left), new Float32Array(right));
-      t += CHUNKSIZE;
-      if (t <= Math.max(stream.duration * stream.sampleRate)) {
-        setTimeout(loop);
-      }
-    };
-    loop();
-  }
-  function displayAudioSamples(samples, size, amp = 1) {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = size[0];
-    canvas.height = size[1];
-    ctx.beginPath();
-    for (const i of smartRange(samples.length)) {
-      ctx.lineTo(
-        i.remap(0, canvas.width),
-        rescale(samples[i.i], -amp, amp, 0, size[1])
-      );
-    }
-    ctx.stroke();
-    return canvas;
-  }
-  async function displayAudio(stream, amp = 1, res = [1e3, 200], chunks = 1) {
-    const len = Math.ceil(stream.duration * stream.sampleRate);
-    const left = new Float32Array(len);
-    const right = new Float32Array(len);
-    let divisions = smartRange(chunks + 1).map(
-      (c) => Math.floor(c.remap(0, len, true))
-    );
-    for (let i of range(chunks)) {
-      const audio = await stream.getRange(
-        divisions[i],
-        divisions[i + 1] - divisions[i]
-      );
-      const l = new Float32Array(audio.left);
-      const r = new Float32Array(audio.right);
-      for (let j = 0; j < l.length; j++) {
-        left[j + divisions[i]] = l[j];
-        right[j + divisions[i]] = r[j];
-      }
-    }
-    return [
-      displayAudioSamples(left, res, amp),
-      displayAudioSamples(right, res, amp)
-    ];
-  }
-
-  // src/audio/notes.ts
-  var import_typescript_parsec = __toESM(require_lib());
-  var noteLexer = (0, import_typescript_parsec.buildLexer)([
-    [true, /^\(/g, 0 /* Open */],
-    [true, /^\)/g, 1 /* Close */],
-    [true, /^\:/g, 2 /* Colon */],
-    [true, /^\//g, 3 /* Slash */],
-    [false, /^\s+/g, 4 /* Whitespace */],
-    [false, /^\/\/[^\n]*/g, 7 /* Comment */],
-    [true, /^(\+|\-)?[0-9]+/g, 5 /* Integer */],
-    [true, /^[a-gA-G][b#]*[0-9]*/g, 6 /* ChromaticKey */]
-  ]);
-  var note_timing = (0, import_typescript_parsec.alt_sc)(
-    (0, import_typescript_parsec.apply)((0, import_typescript_parsec.kleft)((0, import_typescript_parsec.tok)(5 /* Integer */), (0, import_typescript_parsec.str)(":")), (t) => Number(t.text)),
-    (0, import_typescript_parsec.apply)((0, import_typescript_parsec.nil)(), () => 1)
-  );
-  var primitive_note = (0, import_typescript_parsec.apply)(
-    (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.alt_sc)((0, import_typescript_parsec.tok)(6 /* ChromaticKey */), (0, import_typescript_parsec.tok)(5 /* Integer */))),
-    ([timing, note2]) => ({
-      type: "note",
-      timing,
-      noteData: note2.text
-    })
-  );
-  var chord_inner = (0, import_typescript_parsec.rule)();
-  var chord = (0, import_typescript_parsec.apply)(
-    (0, import_typescript_parsec.seq)(
-      note_timing,
-      (0, import_typescript_parsec.lrec_sc)(
-        (0, import_typescript_parsec.apply)(chord_inner, (x) => [x]),
-        (0, import_typescript_parsec.seq)((0, import_typescript_parsec.str)("/"), chord_inner),
-        (a, [_, b]) => [...a, b]
-      )
-    ),
-    ([timing, notes]) => ({
-      type: "chord",
-      timing,
-      notes
-    })
-  );
-  var compound_note = (0, import_typescript_parsec.rule)();
-  var compound_note_inner = (0, import_typescript_parsec.rep_sc)(
-    (0, import_typescript_parsec.alt_sc)(primitive_note, chord, compound_note)
-  );
-  compound_note.setPattern(
-    (0, import_typescript_parsec.apply)(
-      (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.kmid)((0, import_typescript_parsec.str)("("), compound_note_inner, (0, import_typescript_parsec.str)(")"))),
-      ([timing, notes]) => ({ type: "compound", timing, notes })
-    )
-  );
-  chord_inner.setPattern((0, import_typescript_parsec.alt_sc)(primitive_note, compound_note));
-  var note = (0, import_typescript_parsec.alt_sc)(chord, compound_note, primitive_note);
-  var track = (0, import_typescript_parsec.rep_sc)(note);
-
-  // node_modules/ml-convolution/src/fftConvolution.js
-  var import_fft2 = __toESM(require_fft());
-  var import_next_power_of_two = __toESM(require_next_power_of_two());
-
-  // src/math/round.ts
-  function roundUp(factor, x) {
-    return Math.ceil(x / factor) * factor;
-  }
-
-  // src/webgpu/converters.ts
-  var TEXTURE_FORMAT_TO_WGSL_TYPE_LUT = {
-    r8unorm: "f32",
-    r8snorm: "f32",
-    r8uint: "u32",
-    r8sint: "i32",
-    r16unorm: "u32",
-    r16snorm: "i32",
-    r16uint: "u32",
-    r16sint: "i32",
-    r16float: "f32",
-    rg8unorm: "vec2f",
-    rg8snorm: "vec2f",
-    rg8uint: "vec2u",
-    rg8sint: "vec2i",
-    r32uint: "u32",
-    r32sint: "i32",
-    r32float: "f32",
-    rg16unorm: "vec2f",
-    rg16snorm: "vec2f",
-    rg16uint: "vec2u",
-    rg16sint: "vec2i",
-    rg16float: "vec2f",
-    rgba8unorm: "vec4f",
-    "rgba8unorm-srgb": "vec4f",
-    rgba8snorm: "vec4f",
-    rgba8uint: "vec4u",
-    rgba8sint: "vec4i",
-    bgra8unorm: "vec4f",
-    "bgra8unorm-srgb": "vec4f",
-    rgb9e5ufloat: "vec4f",
-    rgb10a2uint: "vec4u",
-    rgb10a2unorm: "vec4f",
-    rg11b10ufloat: "vec4f",
-    rg32uint: "vec2u",
-    rg32sint: "vec2i",
-    rg32float: "vec2f",
-    rgba16unorm: "vec4u",
-    rgba16snorm: "vec4i",
-    rgba16uint: "vec4u",
-    rgba16sint: "vec4i",
-    rgba16float: "vec4f",
-    rgba32uint: "vec4u",
-    rgba32sint: "vec4i",
-    rgba32float: "vec4f",
-    stencil8: "u32",
-    depth16unorm: "f32",
-    depth24plus: "f32",
-    "depth24plus-stencil8": "f32",
-    depth32float: "f32",
-    "depth32float-stencil8": "f32",
-    "bc1-rgba-unorm": "vec4f",
-    "bc1-rgba-unorm-srgb": "vec4f",
-    "bc2-rgba-unorm": "vec4f",
-    "bc2-rgba-unorm-srgb": "vec4f",
-    "bc3-rgba-unorm": "vec4f",
-    "bc3-rgba-unorm-srgb": "vec4f",
-    "bc4-r-unorm": "f32",
-    "bc4-r-snorm": "f32",
-    "bc5-rg-unorm": "vec2f",
-    "bc5-rg-snorm": "vec2f",
-    "bc6h-rgb-ufloat": "vec3f",
-    "bc6h-rgb-float": "vec3f",
-    "bc7-rgba-unorm": "vec4f",
-    "bc7-rgba-unorm-srgb": "vec4f",
-    "etc2-rgb8unorm": "vec3f",
-    "etc2-rgb8unorm-srgb": "vec3f",
-    "etc2-rgb8a1unorm": "vec4f",
-    "etc2-rgb8a1unorm-srgb": "vec4f",
-    "etc2-rgba8unorm": "vec4f",
-    "etc2-rgba8unorm-srgb": "vec4f",
-    "eac-r11unorm": "f32",
-    "eac-r11snorm": "f32",
-    "eac-rg11unorm": "vec2f",
-    "eac-rg11snorm": "vec2f",
-    "astc-4x4-unorm": "vec4f",
-    "astc-4x4-unorm-srgb": "vec4f",
-    "astc-5x4-unorm": "vec4f",
-    "astc-5x4-unorm-srgb": "vec4f",
-    "astc-5x5-unorm": "vec4f",
-    "astc-5x5-unorm-srgb": "vec4f",
-    "astc-6x5-unorm": "vec4f",
-    "astc-6x5-unorm-srgb": "vec4f",
-    "astc-6x6-unorm": "vec4f",
-    "astc-6x6-unorm-srgb": "vec4f",
-    "astc-8x5-unorm": "vec4f",
-    "astc-8x5-unorm-srgb": "vec4f",
-    "astc-8x6-unorm": "vec4f",
-    "astc-8x6-unorm-srgb": "vec4f",
-    "astc-8x8-unorm": "vec4f",
-    "astc-8x8-unorm-srgb": "vec4f",
-    "astc-10x5-unorm": "vec4f",
-    "astc-10x5-unorm-srgb": "vec4f",
-    "astc-10x6-unorm": "vec4f",
-    "astc-10x6-unorm-srgb": "vec4f",
-    "astc-10x8-unorm": "vec4f",
-    "astc-10x8-unorm-srgb": "vec4f",
-    "astc-10x10-unorm": "vec4f",
-    "astc-10x10-unorm-srgb": "vec4f",
-    "astc-12x10-unorm": "vec4f",
-    "astc-12x10-unorm-srgb": "vec4f",
-    "astc-12x12-unorm": "vec4f",
-    "astc-12x12-unorm-srgb": "vec4f"
-  };
-  function getCopyFootprintPerTexel(fmt, aspect = "all") {
-    if (aspect === "stencil-only") {
-      if (fmt === "depth24plus-stencil8" || fmt === "depth32float-stencil8") {
-        return 1;
-      }
-    } else if (aspect === "depth-only") {
-      if (fmt === "depth32float-stencil8") {
-        return 4;
-      }
-    }
-    return TEXEL_BLOCK_COPY_FOOTPRINTS[fmt];
-  }
-  var TEXEL_BLOCK_COPY_FOOTPRINTS = {
-    r8unorm: 1,
-    r8snorm: 1,
-    r8uint: 1,
-    r8sint: 1,
-    r16unorm: 2,
-    r16snorm: 2,
-    r16uint: 2,
-    r16sint: 2,
-    r16float: 2,
-    rg8unorm: 2,
-    rg8snorm: 2,
-    rg8uint: 2,
-    rg8sint: 2,
-    r32uint: 4,
-    r32sint: 4,
-    r32float: 4,
-    rg16unorm: 4,
-    rg16snorm: 4,
-    rg16uint: 4,
-    rg16sint: 4,
-    rg16float: 4,
-    rgba8unorm: 4,
-    "rgba8unorm-srgb": 4,
-    rgba8snorm: 4,
-    rgba8uint: 4,
-    rgba8sint: 4,
-    bgra8unorm: 4,
-    "bgra8unorm-srgb": 4,
-    rgb9e5ufloat: 4,
-    rgb10a2uint: 4,
-    rgb10a2unorm: 4,
-    rg11b10ufloat: 4,
-    rg32uint: 8,
-    rg32sint: 8,
-    rg32float: 8,
-    rgba16unorm: 8,
-    rgba16snorm: 8,
-    rgba16uint: 8,
-    rgba16sint: 8,
-    rgba16float: 8,
-    rgba32uint: 16,
-    rgba32sint: 16,
-    rgba32float: 16,
-    stencil8: 1,
-    depth16unorm: 2,
-    depth24plus: void 0,
-    "depth24plus-stencil8": void 0,
-    depth32float: void 0,
-    "depth32float-stencil8": void 0,
-    "bc1-rgba-unorm": 8,
-    "bc1-rgba-unorm-srgb": 8,
-    "bc2-rgba-unorm": 16,
-    "bc2-rgba-unorm-srgb": 16,
-    "bc3-rgba-unorm": 16,
-    "bc3-rgba-unorm-srgb": 16,
-    "bc4-r-unorm": 8,
-    "bc4-r-snorm": 8,
-    "bc5-rg-unorm": 16,
-    "bc5-rg-snorm": 16,
-    "bc6h-rgb-ufloat": 16,
-    "bc6h-rgb-float": 16,
-    "bc7-rgba-unorm": 16,
-    "bc7-rgba-unorm-srgb": 16,
-    "etc2-rgb8unorm": 8,
-    "etc2-rgb8unorm-srgb": 8,
-    "etc2-rgb8a1unorm": 8,
-    "etc2-rgb8a1unorm-srgb": 8,
-    "etc2-rgba8unorm": 16,
-    "etc2-rgba8unorm-srgb": 16,
-    "eac-r11unorm": 8,
-    "eac-r11snorm": 8,
-    "eac-rg11unorm": 16,
-    "eac-rg11snorm": 16,
-    "astc-4x4-unorm": 16,
-    "astc-4x4-unorm-srgb": 16,
-    "astc-5x4-unorm": 16,
-    "astc-5x4-unorm-srgb": 16,
-    "astc-5x5-unorm": 16,
-    "astc-5x5-unorm-srgb": 16,
-    "astc-6x5-unorm": 16,
-    "astc-6x5-unorm-srgb": 16,
-    "astc-6x6-unorm": 16,
-    "astc-6x6-unorm-srgb": 16,
-    "astc-8x5-unorm": 16,
-    "astc-8x5-unorm-srgb": 16,
-    "astc-8x6-unorm": 16,
-    "astc-8x6-unorm-srgb": 16,
-    "astc-8x8-unorm": 16,
-    "astc-8x8-unorm-srgb": 16,
-    "astc-10x5-unorm": 16,
-    "astc-10x5-unorm-srgb": 16,
-    "astc-10x6-unorm": 16,
-    "astc-10x6-unorm-srgb": 16,
-    "astc-10x8-unorm": 16,
-    "astc-10x8-unorm-srgb": 16,
-    "astc-10x10-unorm": 16,
-    "astc-10x10-unorm-srgb": 16,
-    "astc-12x10-unorm": 16,
-    "astc-12x10-unorm-srgb": 16,
-    "astc-12x12-unorm": 16,
-    "astc-12x12-unorm-srgb": 16
-  };
-  var SAMPLER_TYPE_TO_WGSL_TYPE = {
-    float: "f32",
-    uint: "u32",
-    sint: "i32",
-    depth: "f32"
-  };
-  var WGSL_TYPE_SIZES = {
-    i32: 4,
-    u32: 4,
-    f32: 4,
-    f16: 2,
-    "atomic<u32>": 4,
-    "atomic<i32>": 4,
-    vec2i: 8,
-    vec2u: 8,
-    vec2f: 8,
-    vec2f16: 4,
-    vec3i: 12,
-    vec3u: 12,
-    vec3f: 12,
-    vec3f16: 6,
-    vec4i: 16,
-    vec4u: 16,
-    vec4f: 16,
-    vec4f16: 8,
-    mat2x2f: 16,
-    mat2x2f16: 8,
-    mat3x2f: 24,
-    mat3x2f16: 12,
-    mat4x2f: 32,
-    mat4x2f16: 16,
-    mat2x3f: 24,
-    mat2x3f16: 12,
-    mat3x3f: 48,
-    mat3x3f16: 24,
-    mat4x3f: 64,
-    mat4x3f16: 32,
-    mat2x4f: 32,
-    mat2x4f16: 16,
-    mat3x4f: 48,
-    mat3x4f16: 24,
-    mat4x4f: 64,
-    mat4x4f16: 32
-  };
-  var WGSL_TYPE_ALIGNMENTS = {
-    i32: 4,
-    u32: 4,
-    f32: 4,
-    f16: 2,
-    "atomic<u32>": 4,
-    "atomic<i32>": 4,
-    vec2i: 8,
-    vec2u: 8,
-    vec2f: 8,
-    vec2f16: 4,
-    vec3i: 16,
-    vec3u: 16,
-    vec3f: 16,
-    vec3f16: 8,
-    vec4i: 16,
-    vec4u: 16,
-    vec4f: 16,
-    vec4f16: 8,
-    mat2x2f: 8,
-    mat2x2f16: 4,
-    mat3x2f: 8,
-    mat3x2f16: 4,
-    mat4x2f: 8,
-    mat4x2f16: 4,
-    mat2x3f: 16,
-    mat2x3f16: 8,
-    mat3x3f: 16,
-    mat3x3f16: 8,
-    mat4x3f: 16,
-    mat4x3f16: 8,
-    mat2x4f: 16,
-    mat2x4f16: 8,
-    mat3x4f: 16,
-    mat3x4f16: 8,
-    mat4x4f: 16,
-    mat4x4f16: 8
-  };
-  var WGSL_TYPE_ELEMENT_COUNTS = {
-    i32: 1,
-    u32: 1,
-    f32: 1,
-    f16: 1,
-    "atomic<u32>": 1,
-    "atomic<i32>": 1,
-    vec2i: 2,
-    vec2u: 2,
-    vec2f: 2,
-    vec2f16: 2,
-    vec3i: 3,
-    vec3u: 3,
-    vec3f: 3,
-    vec3f16: 3,
-    vec4i: 4,
-    vec4u: 4,
-    vec4f: 4,
-    vec4f16: 4,
-    mat2x2f: 4,
-    mat2x2f16: 4,
-    mat3x2f: 6,
-    mat3x2f16: 6,
-    mat4x2f: 8,
-    mat4x2f16: 8,
-    mat2x3f: 6,
-    mat2x3f16: 6,
-    mat3x3f: 9,
-    mat3x3f16: 9,
-    mat4x3f: 12,
-    mat4x3f16: 12,
-    mat2x4f: 8,
-    mat2x4f16: 8,
-    mat3x4f: 12,
-    mat3x4f16: 12,
-    mat4x4f: 16,
-    mat4x4f16: 16
-  };
-  var WGSL_TYPE_DATATYPES = {
-    i32: "i32",
-    u32: "u32",
-    f32: "f32",
-    f16: "f16",
-    "atomic<u32>": "u32",
-    "atomic<i32>": "i32",
-    vec2i: "i32",
-    vec2u: "u32",
-    vec2f: "f32",
-    vec2f16: "f16",
-    vec3i: "i32",
-    vec3u: "u32",
-    vec3f: "f32",
-    vec3f16: "f16",
-    vec4i: "i32",
-    vec4u: "u32",
-    vec4f: "f32",
-    vec4f16: "f16",
-    mat2x2f: "f32",
-    mat2x2f16: "f16",
-    mat3x2f: "f32",
-    mat3x2f16: "f16",
-    mat4x2f: "f32",
-    mat4x2f16: "f16",
-    mat2x3f: "f32",
-    mat2x3f16: "f16",
-    mat3x3f: "f32",
-    mat3x3f16: "f16",
-    mat4x3f: "f32",
-    mat4x3f16: "f16",
-    mat2x4f: "f32",
-    mat2x4f16: "f16",
-    mat3x4f: "f32",
-    mat3x4f16: "f16",
-    mat4x4f: "f32",
-    mat4x4f16: "f16"
-  };
-  var WGSL_BASE_TYPE_TO_SAMPLER_TYPE = {
-    i32: "sint",
-    u32: "uint",
-    f32: "float",
-    f16: "float"
-  };
-  var VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR = {
-    uint8: Uint8Array,
-    uint8x2: Uint8Array,
-    uint8x4: Uint8Array,
-    sint8: Int8Array,
-    sint8x2: Int8Array,
-    sint8x4: Int8Array,
-    unorm8: Uint8Array,
-    unorm8x2: Uint8Array,
-    unorm8x4: Uint8Array,
-    snorm8: Int8Array,
-    snorm8x2: Int8Array,
-    snorm8x4: Int8Array,
-    uint16: Uint16Array,
-    uint16x2: Uint16Array,
-    uint16x4: Uint16Array,
-    sint16: Int16Array,
-    sint16x2: Int16Array,
-    sint16x4: Int16Array,
-    unorm16: Uint16Array,
-    unorm16x2: Uint16Array,
-    unorm16x4: Uint16Array,
-    snorm16: Int16Array,
-    snorm16x2: Int16Array,
-    snorm16x4: Int16Array,
-    float16: Float16Array,
-    float16x2: Float16Array,
-    float16x4: Float16Array,
-    float32: Float32Array,
-    float32x2: Float32Array,
-    float32x3: Float32Array,
-    float32x4: Float32Array,
-    uint32: Uint32Array,
-    uint32x2: Uint32Array,
-    uint32x3: Uint32Array,
-    uint32x4: Uint32Array,
-    sint32: Int32Array,
-    sint32x2: Int32Array,
-    sint32x3: Int32Array,
-    sint32x4: Int32Array,
-    "unorm10-10-10-2": Uint8Array,
-    "unorm8x4-bgra": Uint8Array
-  };
-
-  // src/webgpu/wgsl-struct-layout-generator.ts
-  function struct(name, members) {
-    return {
-      type: "struct",
-      name,
-      // @ts-expect-error
-      members: Object.entries(members).map(([k, v]) => [
-        k,
-        typeof v === "string" ? { type: { type: v } } : { type: v }
-      ])
-    };
-  }
-  function generateLayouts(specs) {
-    const clone = structuredClone(specs);
-    const determineIndividualLayoutSizeAndAlignment = memo(
-      (spec) => {
-        if (spec.type === "struct") {
-          let currOffset = 0;
-          for (const [memberName, member] of spec.members) {
-            determineIndividualLayoutSizeAndAlignment(member.type);
-            member.offset = currOffset;
-            currOffset += roundUp(member.type.align, member.type.size);
-          }
-          const lastMember = spec.members.at(-1)[1];
-          const justPastLastMember = lastMember.offset + lastMember.type.size;
-          spec.align = Math.max(...spec.members.map((m) => m[1].type.align));
-          spec.size = roundUp(spec.align, justPastLastMember);
-        } else if (spec.type === "array") {
-          determineIndividualLayoutSizeAndAlignment(spec.member);
-          spec.size = spec.count * roundUp(spec.member.align, spec.member.size);
-          spec.align = spec.member.align;
-        } else {
-          spec.size = WGSL_TYPE_SIZES[spec.type];
-          spec.align = WGSL_TYPE_ALIGNMENTS[spec.type];
-        }
-      }
-    );
-    for (const e of clone) {
-      determineIndividualLayoutSizeAndAlignment(e);
-    }
-    return clone;
-  }
-  function wgslDataTypeToDataViewSetter(dt) {
-    return {
-      i32: "setInt32",
-      u32: "setUint32",
-      f32: "setFloat32",
-      f16: "setFloat16"
-    }[dt];
-  }
-  function createLayoutGenerator(spec) {
-    function createSetters(spec2, baseOffset, arrayNestingLevel, extraOffsets, accessor) {
-      if (spec2.type === "struct") {
-        return spec2.members.map(
-          ([name, member]) => createSetters(
-            member.type,
-            baseOffset + member.offset,
-            arrayNestingLevel,
-            extraOffsets,
-            accessor + `.${name}`
-          )
-        ).join("\n");
-      } else if (spec2.type === "array") {
-        const iname = `i${arrayNestingLevel}`;
-        const elemSize = roundUp(spec2.member.align, spec2.member.size);
-        return `for (let ${iname} = 0; ${iname} < ${spec2.count}; ${iname}++) {
-  ${createSetters(spec2.member, baseOffset, arrayNestingLevel + 1, [...extraOffsets, `${iname} * ${elemSize}`], accessor + `[${iname}]`)} 
-}`;
-      } else {
-        const iname = `i${arrayNestingLevel}`;
-        const primitiveCount = WGSL_TYPE_ELEMENT_COUNTS[spec2.type];
-        return `for (let ${iname} = 0; ${iname} < ${WGSL_TYPE_ELEMENT_COUNTS[spec2.type]}; ${iname}++) {
-  dst.${wgslDataTypeToDataViewSetter(WGSL_TYPE_DATATYPES[spec2.type])}(
-    ${baseOffset} + ${extraOffsets.join(" + ")} + ${iname} * ${WGSL_TYPE_SIZES[WGSL_TYPE_DATATYPES[spec2.type]]},
-    ${primitiveCount > 1 ? accessor + `[${iname}]` : accessor},
-    true
-  );
-}`;
-      }
-    }
-    const fnbody = createSetters(spec, 0, 0, [], "src");
-    return new Function("dst", "src", fnbody);
-  }
-
-  // src/webgpu/wgsl-snippets.ts
-  var WgslSnippets = {
-    unitQuadSigned: {
-      src: `const UNIT_QUAD_SIGNED = array(
-    vec2( 1.0,  1.0),
-    vec2( 1.0, -1.0),
-    vec2(-1.0, -1.0),
-    vec2( 1.0,  1.0),
-    vec2(-1.0, -1.0),
-    vec2(-1.0,  1.0),
-);`
-    },
-    unitQuadUnsigned: {
-      src: `const UNIT_QUAD_UNSIGNED = array(
-    vec2(1.0, 0.0),
-    vec2(1.0, 1.0),
-    vec2(0.0, 1.0),
-    vec2(1.0, 0.0),
-    vec2(0.0, 1.0),
-    vec2(0.0, 0.0),
-);`
-    },
-    logistic: {
-      src: `fn logistic(x: f32) -> f32 {
-  return 1.0 / (1.0 + exp(-x)); 
-}`
-    },
-    DITHER256_THRESHOLDS: {
-      src: `array<f32, 256>(
-  0,
-  128,
-  32,
-  160,
-  8,
-  136,
-  40,
-  168,
-  2,
-  130,
-  34,
-  162,
-  10,
-  138,
-  42,
-  170,
-  192,
-  64,
-  224,
-  96,
-  200,
-  72,
-  232,
-  104,
-  194,
-  66,
-  226,
-  98,
-  202,
-  74,
-  234,
-  106,
-  48,
-  176,
-  16,
-  144,
-  56,
-  184,
-  24,
-  152,
-  50,
-  178,
-  18,
-  146,
-  58,
-  186,
-  26,
-  154,
-  240,
-  112,
-  208,
-  80,
-  248,
-  120,
-  216,
-  88,
-  242,
-  114,
-  210,
-  82,
-  250,
-  122,
-  218,
-  90,
-  12,
-  140,
-  44,
-  172,
-  4,
-  132,
-  36,
-  164,
-  14,
-  142,
-  46,
-  174,
-  6,
-  134,
-  38,
-  166,
-  204,
-  76,
-  236,
-  108,
-  196,
-  68,
-  228,
-  100,
-  206,
-  78,
-  238,
-  110,
-  198,
-  70,
-  230,
-  102,
-  60,
-  188,
-  28,
-  156,
-  52,
-  180,
-  20,
-  148,
-  62,
-  190,
-  30,
-  158,
-  54,
-  182,
-  22,
-  150,
-  252,
-  124,
-  220,
-  92,
-  244,
-  116,
-  212,
-  84,
-  254,
-  126,
-  222,
-  94,
-  246,
-  118,
-  214,
-  86,
-  3,
-  131,
-  35,
-  163,
-  11,
-  139,
-  43,
-  171,
-  1,
-  129,
-  33,
-  161,
-  9,
-  137,
-  41,
-  169,
-  195,
-  67,
-  227,
-  99,
-  203,
-  75,
-  235,
-  107,
-  193,
-  65,
-  225,
-  97,
-  201,
-  73,
-  233,
-  105,
-  51,
-  179,
-  19,
-  147,
-  59,
-  187,
-  27,
-  155,
-  49,
-  177,
-  17,
-  145,
-  57,
-  185,
-  25,
-  153,
-  243,
-  115,
-  211,
-  83,
-  251,
-  123,
-  219,
-  91,
-  241,
-  113,
-  209,
-  81,
-  249,
-  121,
-  217,
-  89,
-  15,
-  143,
-  47,
-  175,
-  7,
-  135,
-  39,
-  167,
-  13,
-  141,
-  45,
-  173,
-  5,
-  133,
-  37,
-  165,
-  207,
-  79,
-  239,
-  111,
-  199,
-  71,
-  231,
-  103,
-  205,
-  77,
-  237,
-  109,
-  197,
-  69,
-  229,
-  101,
-  63,
-  191,
-  31,
-  159,
-  55,
-  183,
-  23,
-  151,
-  61,
-  189,
-  29,
-  157,
-  53,
-  181,
-  21,
-  149,
-  255,
-  127,
-  223,
-  95,
-  247,
-  119,
-  215,
-  87,
-  253,
-  125,
-  221,
-  93,
-  245,
-  117,
-  213,
-  85
-)}`
-    },
-    dither256: {
-      src: `fn dither256(factor: f32, coord: vec2i) -> bool {
-  let x = coord.x % 16;
-  let y = coord.y % 16;
-  let threshold = DITHER256_THRESHOLDS[y * 16 + x] / 256.0;
-  return factor > threshold ;
-}`,
-      deps: ["DITHER256_THRESHOLDS"]
-    },
-    // thank you https://gist.github.com/munrocket/236ed5ba7e409b8bdf1ff6eca5dcdc39
-    hash: {
-      src: `// https://www.pcg-random.org/
-fn hash11(n: u32) -> u32 {
-    var h = n * 747796405u + 2891336453u;
-    h = ((h >> ((h >> 28u) + 4u)) ^ h) * 277803737u;
-    return (h >> 22u) ^ h;
-}
-
-fn hash22(p: vec2u) -> vec2u {
-    var v = p * 1664525u + 1013904223u;
-    v.x += v.y * 1664525u; v.y += v.x * 1664525u;
-    v ^= v >> vec2u(16u);
-    v.x += v.y * 1664525u; v.y += v.x * 1664525u;
-    v ^= v >> vec2u(16u);
-    return v;
-}
-
-// http://www.jcgt.org/published/0009/03/02/
-fn hash33(p: vec3u) -> vec3u {
-    var v = p * 1664525u + 1013904223u;
-    v.x += v.y*v.z; v.y += v.z*v.x; v.z += v.x*v.y;
-    v ^= v >> vec3u(16u);
-    v.x += v.y*v.z; v.y += v.z*v.x; v.z += v.x*v.y;
-    return v;
-}
-
-// http://www.jcgt.org/published/0009/03/02/
-fn hash44(p: vec4u) -> vec4u {
-    var v = p * 1664525u + 1013904223u;
-    v.x += v.y*v.w; v.y += v.z*v.x; v.z += v.x*v.y; v.w += v.y*v.z;
-    v ^= v >> vec4u(16u);
-    v.x += v.y*v.w; v.y += v.z*v.x; v.z += v.x*v.y; v.w += v.y*v.z;
-    return v;
-}`
-    },
-    rand: {
-      src: `fn rand11(f: f32) -> f32 { return f32(hash11(bitcast<u32>(f))) / f32(0xffffffff); }
-fn rand22(f: vec2f) -> vec2f { return vec2f(hash22(bitcast<vec2u>(f))) / f32(0xffffffff); }
-fn rand33(f: vec3f) -> vec3f { return vec3f(hash33(bitcast<vec3u>(f))) / f32(0xffffffff); }
-fn rand44(f: vec4f) -> vec4f { return vec4f(hash44(bitcast<vec4u>(f))) / f32(0xffffffff); }`,
-      deps: ["hash"]
-    },
-    valueNoise: {
-      src: `
-   // WTFPL License
-fn noise(p: f32) -> f32 {
-    let fl = floor(p);
-    return mix(rand11(fl), rand11(fl + 1.), fract(p));
-}
-    
-// WTFPL License
-fn noise2(n: vec2f) -> f32 {
-    let d = vec2f(0., 1.);
-    let b = floor(n);
-    let f = smoothStep(vec2f(0.), vec2f(1.), fract(n));
-    return mix(mix(rand22(b), rand22(b + d.yx), f.x), mix(rand22(b + d.xy), rand22(b + d.yy), f.x), f.y);
-}
-
-// MIT License. \xA9 Stefan Gustavson, Munrocket
-//
-fn mod289(x: vec4f) -> vec4f { return x - floor(x * (1. / 289.)) * 289.; }
-fn perm4(x: vec4f) -> vec4f { return mod289(((x * 34.) + 1.) * x); }
-
-fn noise3(p: vec3f) -> f32 {
-    let a = floor(p);
-    var d: vec3f = p - a;
-    d = d * d * (3. - 2. * d);
-
-    let b = a.xxyy + vec4f(0., 1., 0., 1.);
-    let k1 = perm4(b.xyxy);
-    let k2 = perm4(k1.xyxy + b.zzww);
-
-    let c = k2 + a.zzzz;
-    let k3 = perm4(c);
-    let k4 = perm4(c + 1.);
-
-    let o1 = fract(k3 * (1. / 41.));
-    let o2 = fract(k4 * (1. / 41.));
-
-    let o3 = o2 * d.z + o1 * (1. - d.z);
-    let o4 = o3.yw * d.x + o3.xz * (1. - d.x);
-
-    return o4.y * d.y + o4.x * (1. - d.y);
-}
-    `,
-      deps: ["rand"]
-    },
-    permute4: {
-      src: `
-fn permute4(x: vec4f) -> vec4f { return ((x * 34. + 1.) * x) % vec4f(289.); }
-    `
-    },
-    // note: Operator % has changed, probably current code with it need a fix
-    perlinNoise: {
-      src: `
-   // MIT License. \xA9 Stefan Gustavson, Munrocket
-fn fade2(t: vec2f) -> vec2f { return t * t * t * (t * (t * 6. - 15.) + 10.); }
-
-fn perlinNoise2(P: vec2f) -> f32 {
-    var Pi: vec4f = floor(P.xyxy) + vec4f(0., 0., 1., 1.);
-    let Pf = fract(P.xyxy) - vec4f(0., 0., 1., 1.);
-    Pi = Pi % vec4f(289.); // To avoid truncation effects in permutation
-    let ix = Pi.xzxz;
-    let iy = Pi.yyww;
-    let fx = Pf.xzxz;
-    let fy = Pf.yyww;
-    let i = permute4(permute4(ix) + iy);
-    var gx: vec4f = 2. * fract(i * 0.0243902439) - 1.; // 1/41 = 0.024...
-    let gy = abs(gx) - 0.5;
-    let tx = floor(gx + 0.5);
-    gx = gx - tx;
-    var g00: vec2f = vec2f(gx.x, gy.x);
-    var g10: vec2f = vec2f(gx.y, gy.y);
-    var g01: vec2f = vec2f(gx.z, gy.z);
-    var g11: vec2f = vec2f(gx.w, gy.w);
-    let norm = 1.79284291400159 - 0.85373472095314 *
-        vec4f(dot(g00, g00), dot(g01, g01), dot(g10, g10), dot(g11, g11));
-    g00 = g00 * norm.x;
-    g01 = g01 * norm.y;
-    g10 = g10 * norm.z;
-    g11 = g11 * norm.w;
-    let n00 = dot(g00, vec2f(fx.x, fy.x));
-    let n10 = dot(g10, vec2f(fx.y, fy.y));
-    let n01 = dot(g01, vec2f(fx.z, fy.z));
-    let n11 = dot(g11, vec2f(fx.w, fy.w));
-    let fade_xy = fade2(Pf.xy);
-    let n_x = mix(vec2f(n00, n01), vec2f(n10, n11), vec2f(fade_xy.x));
-    let n_xy = mix(n_x.x, n_x.y, fade_xy.y);
-    return 2.3 * n_xy;
-}
-    
-// MIT License. \xA9 Stefan Gustavson, Munrocket
-fn taylorInvSqrt4(r: vec4f) -> vec4f { return 1.79284291400159 - 0.85373472095314 * r; }
-fn fade3(t: vec3f) -> vec3f { return t * t * t * (t * (t * 6. - 15.) + 10.); }
-
-fn perlinNoise3(P: vec3f) -> f32 {
-    var Pi0 : vec3f = floor(P); // Integer part for indexing
-    var Pi1 : vec3f = Pi0 + vec3f(1.); // Integer part + 1
-    Pi0 = Pi0 % vec3f(289.);
-    Pi1 = Pi1 % vec3f(289.);
-    let Pf0 = fract(P); // Fractional part for interpolation
-    let Pf1 = Pf0 - vec3f(1.); // Fractional part - 1.
-    let ix = vec4f(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
-    let iy = vec4f(Pi0.yy, Pi1.yy);
-    let iz0 = Pi0.zzzz;
-    let iz1 = Pi1.zzzz;
-
-    let ixy = permute4(permute4(ix) + iy);
-    let ixy0 = permute4(ixy + iz0);
-    let ixy1 = permute4(ixy + iz1);
-
-    var gx0: vec4f = ixy0 / 7.;
-    var gy0: vec4f = fract(floor(gx0) / 7.) - 0.5;
-    gx0 = fract(gx0);
-    var gz0: vec4f = vec4f(0.5) - abs(gx0) - abs(gy0);
-    var sz0: vec4f = step(gz0, vec4f(0.));
-    gx0 = gx0 + sz0 * (step(vec4f(0.), gx0) - 0.5);
-    gy0 = gy0 + sz0 * (step(vec4f(0.), gy0) - 0.5);
-
-    var gx1: vec4f = ixy1 / 7.;
-    var gy1: vec4f = fract(floor(gx1) / 7.) - 0.5;
-    gx1 = fract(gx1);
-    var gz1: vec4f = vec4f(0.5) - abs(gx1) - abs(gy1);
-    var sz1: vec4f = step(gz1, vec4f(0.));
-    gx1 = gx1 - sz1 * (step(vec4f(0.), gx1) - 0.5);
-    gy1 = gy1 - sz1 * (step(vec4f(0.), gy1) - 0.5);
-
-    var g000: vec3f = vec3f(gx0.x, gy0.x, gz0.x);
-    var g100: vec3f = vec3f(gx0.y, gy0.y, gz0.y);
-    var g010: vec3f = vec3f(gx0.z, gy0.z, gz0.z);
-    var g110: vec3f = vec3f(gx0.w, gy0.w, gz0.w);
-    var g001: vec3f = vec3f(gx1.x, gy1.x, gz1.x);
-    var g101: vec3f = vec3f(gx1.y, gy1.y, gz1.y);
-    var g011: vec3f = vec3f(gx1.z, gy1.z, gz1.z);
-    var g111: vec3f = vec3f(gx1.w, gy1.w, gz1.w);
-
-    let norm0 = taylorInvSqrt4(
-        vec4f(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
-    g000 = g000 * norm0.x;
-    g010 = g010 * norm0.y;
-    g100 = g100 * norm0.z;
-    g110 = g110 * norm0.w;
-    let norm1 = taylorInvSqrt4(
-        vec4f(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
-    g001 = g001 * norm1.x;
-    g011 = g011 * norm1.y;
-    g101 = g101 * norm1.z;
-    g111 = g111 * norm1.w;
-
-    let n000 = dot(g000, Pf0);
-    let n100 = dot(g100, vec3f(Pf1.x, Pf0.yz));
-    let n010 = dot(g010, vec3f(Pf0.x, Pf1.y, Pf0.z));
-    let n110 = dot(g110, vec3f(Pf1.xy, Pf0.z));
-    let n001 = dot(g001, vec3f(Pf0.xy, Pf1.z));
-    let n101 = dot(g101, vec3f(Pf1.x, Pf0.y, Pf1.z));
-    let n011 = dot(g011, vec3f(Pf0.x, Pf1.yz));
-    let n111 = dot(g111, Pf1);
-
-    var fade_xyz: vec3f = fade3(Pf0);
-    let temp = vec4f(f32(fade_xyz.z)); // simplify after chrome bug fix
-    let n_z = mix(vec4f(n000, n100, n010, n110), vec4f(n001, n101, n011, n111), temp);
-    let n_yz = mix(n_z.xy, n_z.zw, vec2f(f32(fade_xyz.y))); // simplify after chrome bug fix
-    let n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
-    return 2.2 * n_xyz;
-}
-    `,
-      deps: ["rand", "permute4"]
-    },
-    rescale: {
-      src: ["f32", "vec2f", "vec3f", "vec4f"].map(
-        (v, i) => `
-      fn rescale${i}(x: ${v}, a1: ${v}, b1: ${v}, a2: ${v}, b2: ${v}) -> ${v} {
-        let temp = (x - a1) / (b1 - a1);
-        return mix(a2, b2, temp);
-      } 
-    `
-      ).join("\n\n")
-    }
-  };
-  function useWgslSnippetsRaw(ss) {
-    return "\n" + ss.map((s) => `// IMPORTED_SNIPPET: ${s}
-${WgslSnippets[s].src}`).join("\n\n");
-  }
-  function snippetWithDependencies(sn, deps = /* @__PURE__ */ new Set()) {
-    deps.add(sn);
-    for (const d of WgslSnippets[sn]?.deps ?? []) {
-      snippetWithDependencies(d, deps);
-    }
-    return deps;
-  }
-  function useWgslSnippets(str2) {
-    const snippetNames = str2.split(/\s+/g);
-    const withdeps = new Set(
-      snippetNames.flatMap((s) => [...snippetWithDependencies(s)])
-    );
-    return useWgslSnippetsRaw([...withdeps]);
-  }
-
-  // raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/simple-filter.wgsl?raw
-  var simple_filter_default = "/*TEXTURES*/\r\n\r\n/*TEXTURES*/\r\n\r\n\r\n/*GLOBALS*/\r\n\r\n/*GLOBALS*/\r\n\r\nstruct FragInput {\r\n  @builtin(position) position : vec4f,\r\n  @location(0) uv : vec2f,\r\n}\r\n\r\n@vertex\r\nfn VSMain(@builtin(vertex_index) vertexIndex: u32) -> FragInput {\r\n  var output: FragInput;\r\n\r\n  output.position = vec4(array(\r\n    vec2( 1.0,  1.0),\r\n    vec2( 1.0, -1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2( 1.0,  1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2(-1.0,  1.0),\r\n  )[vertexIndex], 0.5, 1.0);\r\n\r\n  output.uv = array(\r\n    vec2(1.0, 0.0),\r\n    vec2(1.0, 1.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(1.0, 0.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(0.0, 0.0),\r\n  )[vertexIndex];\r\n\r\n  return output;\r\n}\r\n\r\nstruct Output {\r\n/*OUTPUT_STRUCT*/\r\n\r\n/*OUTPUT_STRUCT*/\r\n}\r\n\r\n@fragment\r\nfn FSMain(@location(0) uv : vec2f) -> Output  {\r\n  /*FRAGMENT_BODY*/\r\n\r\n  /*FRAGMENT_BODY*/\r\n}";
-
-  // src/webgpu/simple-filter.ts
-  function createSimpleFilterShader(params) {
-    return makeDelimitedReplacements(simple_filter_default, [
-      {
-        delimiter: "/*TEXTURES*/",
-        replaceWith: params.textures
-      },
-      {
-        delimiter: "/*GLOBALS*/",
-        replaceWith: params.globals
-      },
-      {
-        delimiter: "/*OUTPUT_STRUCT*/",
-        replaceWith: params.outputStruct
-      },
-      {
-        delimiter: "/*FRAGMENT_BODY*/",
-        replaceWith: params.fragmentBody
-      }
-    ]);
-  }
-  function createSimpleFilterPipeline(device, spec) {
-    let fragmentBody = "";
-    let bindings = "";
-    let bindingIndex = 0;
-    const inputEntries = Object.entries(spec.inputs);
-    const samplers = [];
-    let hasInputs = inputEntries.length > 0;
-    if (hasInputs) {
-      for (const s of spec.samplers ?? [{}]) {
-        bindings += `@group(0) @binding(${bindingIndex})
-var sampler${bindingIndex}: sampler;
-`;
-        samplers.push(device.createSampler(s));
-        bindingIndex++;
-      }
-    }
-    bindingIndex = 0;
-    const nameToInputMap = /* @__PURE__ */ new Map();
-    const nameToOutputMap = /* @__PURE__ */ new Map();
-    let uniformBindGroupIndex = hasInputs ? 2 : 0;
-    for (const [name, value] of inputEntries) {
-      bindings += `@group(1) @binding(${bindingIndex}) 
-var tex_${name}: ${value.dimensionality ?? "texture_2d"}<${value.type ?? "f32"}>;`;
-      nameToInputMap.set(name, bindingIndex);
-      fragmentBody += !value.dimensionality ? `  var ${name} = textureSample(tex_${name}, sampler${value.sampleWith ?? 0}, uv);
-` : "";
-      bindingIndex++;
-    }
-    let outputStruct = "";
-    let outputBindingIndex = 0;
-    for (const [name, value] of Object.entries(spec.outputs)) {
-      outputStruct += `  @location(${outputBindingIndex}) ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]},
-`;
-      nameToOutputMap.set(name, outputBindingIndex);
-      fragmentBody += `  var ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]};
-`;
-      outputBindingIndex++;
-    }
-    fragmentBody += spec.source;
-    fragmentBody += `
-  var OUTPUT: Output;
-`;
-    const outputsEntries = Object.entries(spec.outputs);
-    for (const [name, value] of outputsEntries) {
-      fragmentBody += `  OUTPUT.${name} = ${name};
-`;
-    }
-    fragmentBody += "return OUTPUT;";
-    let globals = "";
-    globals += spec.globals ?? "";
-    if (spec.uniforms) {
-      globals += `@group(${uniformBindGroupIndex}) @binding(0) var<uniform> params : Params;
-struct Params {
-`;
-      for (const [uniformName, uniformType] of Object.entries(
-        spec.uniforms ?? {}
-      )) {
-        globals += `  ${uniformName}: ${uniformType},
-`;
-      }
-      globals += "}";
-    }
-    const shaderSource = createSimpleFilterShader({
-      textures: bindings,
-      globals,
-      outputStruct,
-      fragmentBody
-    });
-    const [uniformLayouts] = spec.uniforms ? (
-      // @ts-expect-error
-      generateLayouts([struct("Params", spec.uniforms)])
-    ) : void 0;
-    const uniformGenerator = createLayoutGenerator(uniformLayouts);
-    const module = device.createShaderModule({
-      code: shaderSource
-    });
-    const pipeline = device.createRenderPipeline({
-      layout: "auto",
-      vertex: { module },
-      fragment: {
-        module,
-        targets: outputsEntries.map(([name, value]) => ({
-          format: value
-        }))
-      }
-    });
-    const samplerBindGroup = hasInputs ? device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(0),
-      entries: samplers.map((s, i) => ({
-        resource: s,
-        binding: i
-      }))
-    }) : void 0;
-    return {
-      pipeline,
-      makeUniformBuffer() {
-        const buffer = device.createBuffer({
-          size: 1024,
-          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
-        });
-        const bindGroup = device.createBindGroup({
-          layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
-          entries: [
-            {
-              resource: buffer,
-              binding: 0
-            }
-          ]
-        });
-        const ret = {
-          buffer,
-          bindGroup,
-          setBuffer(values) {
-            const buf = new ArrayBuffer(uniformLayouts.size);
-            uniformGenerator(new DataView(buf), values);
-            device.queue.writeBuffer(buffer, 0, buf);
-            return ret;
-          }
-        };
-        return ret;
-      },
-      withInputs(inputs) {
-        const inputTextureBindGroup = hasInputs ? device.createBindGroup({
-          layout: pipeline.getBindGroupLayout(1),
-          entries: inputEntries.map(([name, value], i) => ({
-            resource: inputs[name],
-            binding: i
-          }))
-        }) : void 0;
-        return {
-          withDedicatedUniformBuffer(existingBufferInfo) {
-            const uniformBuffer = existingBufferInfo?.buffer ?? device.createBuffer({
-              size: uniformLayouts.size,
-              usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
-            });
-            const uniformBufferOffset = existingBufferInfo?.offset ?? 0;
-            const uniformBindGroup = device.createBindGroup({
-              layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
-              entries: [
-                {
-                  binding: 0,
-                  resource: uniformBuffer
-                }
-              ]
-            });
-            function record(bundleEncoder) {
-              bundleEncoder.setPipeline(pipeline);
-              if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
-              if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
-              bundleEncoder.setBindGroup(uniformBindGroupIndex, uniformBindGroup);
-              bundleEncoder.draw(6);
-            }
-            const defaultBundleEncoder = device.createRenderBundleEncoder({
-              colorFormats: outputsEntries.map((o) => o[1])
-            });
-            record(defaultBundleEncoder);
-            const bundle = defaultBundleEncoder.finish();
-            return {
-              run: (encoder, outputs) => {
-                const pass = encoder.beginRenderPass({
-                  colorAttachments: outputsEntries.map(
-                    ([name, value]) => outputs[name] instanceof GPUTextureView ? {
-                      view: outputs[name],
-                      clearValue: [0, 0, 0, 1],
-                      loadOp: "clear",
-                      storeOp: "store"
-                    } : outputs[name]
-                  )
-                });
-                pass.executeBundles([bundle]);
-                pass.end();
-              },
-              bundle,
-              runWithRenderPass: (pass) => {
-                pass.executeBundles([bundle]);
-              },
-              record,
-              setUniforms(values) {
-                const buf = new ArrayBuffer(uniformLayouts.size);
-                uniformGenerator(new DataView(buf), values);
-                device.queue.writeBuffer(uniformBuffer, uniformBufferOffset, buf);
-              }
-            };
-          },
-          withUniforms: (uniforms) => {
-            function record(bundleEncoder) {
-              bundleEncoder.setPipeline(pipeline);
-              if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
-              if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
-              if (uniforms)
-                bundleEncoder.setBindGroup(
-                  uniformBindGroupIndex,
-                  uniforms.bindGroup
-                );
-              bundleEncoder.draw(6);
-            }
-            const defaultBundleEncoder = device.createRenderBundleEncoder({
-              colorFormats: outputsEntries.map((o) => o[1])
-            });
-            record(defaultBundleEncoder);
-            const bundle = defaultBundleEncoder.finish();
-            return {
-              run: (encoder, outputs) => {
-                const pass = encoder.beginRenderPass({
-                  colorAttachments: outputsEntries.map(
-                    ([name, value]) => outputs[name] instanceof GPUTextureView ? {
-                      view: outputs[name],
-                      clearValue: [0, 0, 0, 1],
-                      loadOp: "clear",
-                      storeOp: "store"
-                    } : outputs[name]
-                  )
-                });
-                pass.executeBundles([bundle]);
-                pass.end();
-              },
-              bundle,
-              runWithRenderPass: (pass) => {
-                pass.executeBundles([bundle]);
-              },
-              record
-            };
-          }
-        };
-      }
-    };
-  }
-
-  // src/webgpu/readpixels.ts
-  function readPixelsSizeReq(params) {
-    let { format, subregion } = params;
-    const copyFootprintPerTexel = getCopyFootprintPerTexel(format);
-    const area = sub3(subregion[1], subregion[0]);
-    return roundUp(256, copyFootprintPerTexel * area[0]) * area[1] * area[2];
-  }
-  async function readPixels(params) {
-    let { device, tex, buf, subregion, mipLevel, aspect, offsetInBuffer } = params;
-    const copyFootprintPerTexel = getCopyFootprintPerTexel(params.tex.format);
-    if (!subregion) {
-      subregion = [
-        [0, 0, 0],
-        [tex.width, tex.height, tex.depthOrArrayLayers]
-      ];
-    }
-    const enc = device.createCommandEncoder();
-    const area = sub3(subregion[1], subregion[0]);
-    const bytesPerRow = roundUp(256, copyFootprintPerTexel * area[0]);
-    const rowsPerImage = area[1];
-    enc.copyTextureToBuffer(
-      {
-        texture: tex,
-        mipLevel,
-        aspect,
-        origin: subregion[0]
-      },
-      {
-        buffer: buf,
-        offset: offsetInBuffer,
-        bytesPerRow,
-        rowsPerImage
-      },
-      area
-    );
-    device.queue.submit([enc.finish()]);
-    await device.queue.onSubmittedWorkDone();
-    await buf.mapAsync(GPUMapMode.READ);
-    const range2 = buf.getMappedRange();
-    return {
-      range: range2,
-      bytesPerRow,
-      rowsPerImage
-    };
-  }
-  async function readPixelsToCpuBuffer(params) {
-    const { tex } = params;
-    const size = readPixelsSizeReq({
-      format: tex.format,
-      subregion: params.subregion ?? [
-        [0, 0, 0],
-        [tex.width, tex.height, tex.depthOrArrayLayers]
-      ]
-    });
-    const cpuBuffer = params.cpuBuffer ?? new ArrayBuffer(size);
-    const mappedBuffer = await readPixels(params);
-    const mappedBufferContents = new Uint8Array(mappedBuffer.range);
-    const cpuBufferContents = new Uint8Array(cpuBuffer);
-    for (let i = 0; i < mappedBufferContents.length; i++) {
-      cpuBufferContents[i] = mappedBufferContents[i];
-    }
-    params.buf.unmap();
-    return {
-      cpuBuffer,
-      bytesPerRow: mappedBuffer.bytesPerRow,
-      rowsPerImage: mappedBuffer.rowsPerImage,
-      size
-    };
-  }
-
-  // src/webgpu/gpudoc/ui.tsx
-  var import_react4 = __toESM(require_react());
+  // demos-src/ui/drag-and-drop.demo.tsx
+  var import_react3 = __toESM(require_react());
   var import_client = __toESM(require_client());
 
-  // src/webgpu/gpudoc/display-texture.ts
-  function create2dShaderFormat(device, samplerType, outputFormat) {
-    console.log("creating new pipeline", samplerType, outputFormat);
-    return createSimpleFilterPipeline(device, {
-      inputs: {
-        input: {
-          type: SAMPLER_TYPE_TO_WGSL_TYPE[samplerType],
-          dimensionality: samplerType === "depth" ? "texture_depth_2d" : "texture_2d"
-        }
-      },
-      outputs: {
-        dst: outputFormat
-      },
-      uniforms: {
-        cornerA: "vec2f",
-        cornerB: "vec2f",
-        blackEquiv: "vec4f",
-        whiteEquiv: "vec4f"
-      },
-      source: `
-let uv2 = mix(params.cornerA, params.cornerB, uv);
-
-let pixel = vec4f(textureSample(tex_input, sampler0, uv2));
-
-dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
-    `
-    });
-  }
-  function textureDisplayer(device) {
-    const getDisplayerPipeline = memo(
-      (samplerType, outputFormat) => create2dShaderFormat(device, samplerType, outputFormat)
-    );
-    return {
-      displayTexture2d(src2, dst, encoder) {
-        const pipeline = getDisplayerPipeline(src2.samplerType, dst.format);
-        const uniforms = pipeline.makeUniformBuffer().setBuffer({
-          cornerA: src2.cornerA,
-          cornerB: src2.cornerB,
-          blackEquiv: src2.blackEquiv,
-          whiteEquiv: src2.whiteEquiv
-        });
-        pipeline.withInputs({
-          input: src2.tex
-        }).withUniforms(uniforms).run(encoder, {
-          dst: dst.tex
-        });
-      }
-    };
-  }
-
-  // raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/gpudoc/gpudoc.css?raw
-  var gpudoc_default = ':root {\r\n  --default-padding: 1rem;\r\n  --default-border: 1px solid #999;\r\n  --input-color: #000;\r\n  --red: #f66;\r\n  --green: #4f4;\r\n  --blue: #aaf;\r\n  --alpha: #bbb;\r\n}\r\n\r\n.gpudoc {\r\n  width: 100vw;\r\n  height: 100vh;\r\n  position: absolute;\r\n  top: 0;\r\n  left: 0;\r\n  z-index: 9999;\r\n  background-color: #121212;\r\n  color: white;\r\n  font-family: sans-serif;\r\n  border-right: var(--default-border);\r\n  display: grid;\r\n  grid-template-areas:\r\n    "tab-bar"\r\n    "tab";\r\n  grid-template-rows: max-content 1fr;\r\n  box-sizing: border-box;\r\n}\r\n\r\n.tex-thumbs {\r\n  display: grid;\r\n  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\r\n  list-style: none;\r\n}\r\n\r\n.tex-thumbs li {\r\n  display: flex;\r\n  align-items: center;\r\n  flex-direction: column;\r\n  max-width: 350px;\r\n  padding: var(--default-padding);\r\n}\r\n\r\n.tex-thumbs .name {\r\n  font-weight: bold;\r\n  margin-bottom: var(--default-padding);\r\n}\r\n\r\n.tex-thumbs .canvas,\r\n.tex-thumbs canvas {\r\n  width: 100%;\r\n}\r\n\r\n.tab-bar {\r\n  font-size: 0.9em;\r\n  padding: 0;\r\n  margin: 0;\r\n  display: flex;\r\n  flex-wrap: wrap;\r\n  border-bottom: var(--default-border);\r\n  list-style: none;\r\n  grid-area: tab-bar;\r\n}\r\n\r\n.tab-bar li {\r\n  padding: calc(var(--default-padding) * 0.5);\r\n  border-right: var(--default-border);\r\n}\r\n\r\n.tab-bar li.selected {\r\n  background-color: #333;\r\n}\r\n\r\n.gpudoc .tab {\r\n  grid-area: tab;\r\n  height: 100%;\r\n}\r\n\r\n.tex-inspector {\r\n  height: 100%;\r\n  display: grid;\r\n  grid-template-areas: "canvas ui";\r\n}\r\n\r\n.tex-inspector > div:has(canvas) {\r\n  height: 100%;\r\n  grid-area: canvas;\r\n  position: relative;\r\n  overflow: hidden;\r\n}\r\n\r\n.tex-inspector canvas {\r\n  height: 100%;\r\n  width: 100%;\r\n}\r\n\r\n.tex-inspector .ui {\r\n  grid-area: ui;\r\n}\r\n\r\n.color-sliders {\r\n  display: grid;\r\n  grid-template-areas:\r\n    "darklabel lightlabel"\r\n    "dark light";\r\n}\r\n\r\n.color-sliders .dark,\r\n.color-sliders .light {\r\n  display: flex;\r\n  flex-direction: column;\r\n}\r\n\r\n.dark-label {\r\n  grid-area: darklabel;\r\n}\r\n.light-label {\r\n  grid-area: lightlabel;\r\n}\r\n\r\n.color-sliders .dark {\r\n  grid-area: dark;\r\n}\r\n.color-sliders .light {\r\n  grid-area: light;\r\n}\r\n\r\n.color-sliders input {\r\n  border: var(--default-border);\r\n  background-color: var(--input-color);\r\n  width: 4rem;\r\n}\r\n\r\n.color-sliders input:nth-child(1) {\r\n  color: var(--red);\r\n}\r\n.color-sliders input:nth-child(2) {\r\n  color: var(--green);\r\n}\r\n.color-sliders input:nth-child(3) {\r\n  color: var(--blue);\r\n}\r\n.color-sliders input:nth-child(4) {\r\n  color: var(--alpha);\r\n}\r\n\r\n.texel-inspector-window {\r\n  border: var(--default-border);\r\n  background-color: #121212;\r\n}\r\n\r\n.texel-marker {\r\n  border-radius: 3px;\r\n  border: 1px solid black;\r\n  outline: 1px solid white;\r\n}\r\n\r\n.line-segment {\r\n  border-radius: 3px;\r\n  border: 1px solid white;\r\n  background-color: black;\r\n}\r\n\r\n.texel-dragger {\r\n  width: 20px;\r\n  height: 20px;\r\n  transform: translate(-10px, -10px);\r\n  border-radius: 10px;\r\n  background-color: #0003;\r\n  border: 1px solid #fff8;\r\n}\r\n\r\n.dragger {\r\n  cursor: grab;\r\n}\r\n\r\n.texel-components {\r\n  display: grid;\r\n  grid-template-columns: repeat(4, 1fr);\r\n}\r\n\r\n.red {\r\n  color: var(--red);\r\n}\r\n.green {\r\n  color: var(--green);\r\n}\r\n.blue {\r\n  color: var(--blue);\r\n}\r\n.alpha {\r\n  color: var(--alpha);\r\n}\r\n';
-
-  // node_modules/uuid/dist/stringify.js
-  var byteToHex = [];
-  for (let i = 0; i < 256; ++i) {
-    byteToHex.push((i + 256).toString(16).slice(1));
-  }
-  function unsafeStringify(arr, offset = 0) {
-    return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
-  }
-
-  // node_modules/uuid/dist/rng.js
-  var getRandomValues;
-  var rnds8 = new Uint8Array(16);
-  function rng() {
-    if (!getRandomValues) {
-      if (typeof crypto === "undefined" || !crypto.getRandomValues) {
-        throw new Error("crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported");
-      }
-      getRandomValues = crypto.getRandomValues.bind(crypto);
-    }
-    return getRandomValues(rnds8);
-  }
-
-  // node_modules/uuid/dist/native.js
-  var randomUUID = typeof crypto !== "undefined" && crypto.randomUUID && crypto.randomUUID.bind(crypto);
-  var native_default = { randomUUID };
-
-  // node_modules/uuid/dist/v4.js
-  function _v4(options, buf, offset) {
-    options = options || {};
-    const rnds = options.random ?? options.rng?.() ?? rng();
-    if (rnds.length < 16) {
-      throw new Error("Random bytes length must be >= 16");
-    }
-    rnds[6] = rnds[6] & 15 | 64;
-    rnds[8] = rnds[8] & 63 | 128;
-    if (buf) {
-      offset = offset || 0;
-      if (offset < 0 || offset + 16 > buf.length) {
-        throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
-      }
-      for (let i = 0; i < 16; ++i) {
-        buf[offset + i] = rnds[i];
-      }
-      return buf;
-    }
-    return unsafeStringify(rnds);
-  }
-  function v4(options, buf, offset) {
-    if (native_default.randomUUID && !buf && !options) {
-      return native_default.randomUUID();
-    }
-    return _v4(options, buf, offset);
-  }
-  var v4_default = v4;
-
-  // src/ui/pan-and-zoom.tsx
+  // src/ui/react-drag-and-drop.tsx
   var import_react = __toESM(require_react());
-  function PanAndZoom(props) {
-    const scrollSensitivity = props.scrollSensitivity ?? 1;
-    const scrollDecay = props.scrollDecay ?? 0.01;
-    const scrollSnapToZero = props.scrollSnapToZero ?? 1e-3;
-    const scrollVel = (0, import_react.useRef)(0);
-    const mouseDown = (0, import_react.useRef)(false);
-    const normalizedMousePos = (0, import_react.useRef)({ x: 0, y: 0 });
-    (0, import_react.useEffect)(() => {
-      let stopped = false;
-      let lastTime = performance.now();
-      const cb2 = (time) => {
-        if (stopped) return;
-        const deltaTime = time - lastTime;
-        lastTime = time;
-        scrollVel.current *= Math.pow(scrollDecay, deltaTime / 1e3);
-        if (Math.abs(scrollVel.current) > scrollSnapToZero) {
-          props.setCoords((c) => {
-            const targetOriginX = lerp(
-              normalizedMousePos.current.x,
-              c.a[0],
-              c.b[0]
-            );
-            const targetOriginY = lerp(
-              normalizedMousePos.current.y,
-              c.a[1],
-              c.b[1]
-            );
-            const scrollAmount = scrollVel.current * deltaTime / 1e3;
-            return {
-              a: [
-                lerp(scrollAmount, c.a[0], targetOriginX),
-                lerp(scrollAmount, c.a[1], targetOriginY)
-              ],
-              b: [
-                lerp(scrollAmount, c.b[0], targetOriginX),
-                lerp(scrollAmount, c.b[1], targetOriginY)
-              ]
-            };
-          });
-          props.onUpdate?.();
-        }
-        requestAnimationFrame(cb2);
-      };
-      requestAnimationFrame(cb2);
-      return () => {
-        stopped = true;
-      };
-    }, []);
-    const divref = (0, import_react.useRef)(null);
-    return /* @__PURE__ */ import_react.default.createElement(
-      "div",
-      {
-        style: {
-          width: "fit-content",
-          display: "flex"
-        },
-        ref: divref,
-        onWheel: (e) => {
-          e.preventDefault();
-          scrollVel.current += Math.sign(e.deltaY) * scrollSensitivity * (props.swapScroll ? -1 : 1);
-        },
-        onMouseDown: (e) => {
-          mouseDown.current = true;
-        },
-        onMouseUp: (e) => {
-          mouseDown.current = false;
-        },
-        onMouseMove: (e) => {
-          const rect = divref.current?.getBoundingClientRect();
-          if (!rect) return;
-          normalizedMousePos.current = {
-            x: rescale(e.nativeEvent.offsetX, 0, rect.width, 0, 1),
-            y: rescale(e.nativeEvent.offsetY, 0, rect.height, 0, 1)
-          };
-          if (!mouseDown.current) return;
-          props.setCoords((c) => {
-            const dx = -rescale(e.movementX, 0, rect.width, 0, c.b[0] - c.a[0]);
-            const dy = -rescale(e.movementY, 0, rect.height, 0, c.b[1] - c.a[1]);
-            return {
-              a: [c.a[0] + dx, c.a[1] + dy],
-              b: [c.b[0] + dx, c.b[1] + dy]
-            };
-          });
-          props.onUpdate?.();
-        }
-      },
-      props.children
-    );
-  }
-
-  // src/ui/react-number-field.tsx
   var import_react2 = __toESM(require_react());
-  function stringifyNumber(x) {
-    return x.toLocaleString("fullwide", {
-      useGrouping: false,
-      maximumFractionDigits: 10
-    });
-  }
-  function roundAndClamp(x, min, max, step, offset) {
-    x = Math.max(Math.min(x, max), min);
-    if (step === 0) return x;
-    return Math.round((x - offset) / step) * step + offset;
-  }
-  function NumberField(propsOpt) {
-    const props = {
-      scale: "log",
-      sensitivity: 0.01,
-      min: -Infinity,
-      max: Infinity,
-      step: 0,
-      offset: 0,
-      displayPrecision: 3,
-      defaultIfNaN: 0,
-      jumpstartDragFromZero: 0,
-      ...propsOpt
-    };
-    const value = isNaN(props.value) ? props.defaultIfNaN : props.value;
-    const [valueTemp, _setValueTemp] = (0, import_react2.useState)(stringifyNumber(value));
-    const lastNumberRef = (0, import_react2.useRef)(value);
-    function constrain(n) {
-      return roundAndClamp(n, props.min, props.max, props.step, props.offset);
-    }
-    function setValueTemp(vt, forceConstrain) {
-      if (!forceConstrain) _setValueTemp(vt);
-      const num = Number(vt);
-      if (!isNaN(num)) {
-        const cn = constrain(num);
-        props.setValue(cn);
-        lastNumberRef.current = cn;
-        if (forceConstrain) {
-          _setValueTemp(stringifyNumber(cn));
-        }
-      }
-    }
-    function setValueTempNum(n, forceConstrain) {
-      return setValueTemp(
-        stringifyNumber(forceConstrain ? constrain(n) : n),
-        forceConstrain
-      );
-    }
-    (0, import_react2.useEffect)(() => {
-      if (lastNumberRef.current !== value) {
-        lastNumberRef.current = value;
-        _setValueTemp(stringifyNumber(value));
-      }
-    }, [value]);
-    return /* @__PURE__ */ import_react2.default.createElement(
-      "input",
-      {
-        value: valueTemp,
-        onInput: (e) => {
-          setValueTemp(e.currentTarget.value, false);
-        },
-        ref: (e) => {
-          e?.addEventListener("change", () => {
-            setValueTemp(e.value, true);
-          });
-        },
-        onMouseDown: async (e) => {
-          const elem = e.currentTarget;
-          await e.currentTarget.requestPointerLock();
-          let dragnum = value;
-          const mousemoveListener = (e2) => {
-            const x = e2.movementX;
-            if (props.scale === "log") {
-              if (dragnum === 0) {
-                dragnum = props.jumpstartDragFromZero * Math.sign(x);
-              } else {
-                dragnum = dragnum * (2 ** props.sensitivity) ** x;
-              }
-            } else {
-              dragnum += x * props.sensitivity;
+  function createDragContext() {
+    const DragContext = (0, import_react2.createContext)(void 0);
+    return {
+      DragContext,
+      DragContextContainer(props) {
+        const { dragCtx, setDragCtx } = props;
+        const destinationCallbacks = (0, import_react.useRef)(/* @__PURE__ */ new Set());
+        const endDragCallbacks = (0, import_react.useRef)(/* @__PURE__ */ new Set());
+        (0, import_react.useEffect)(() => {
+          if (dragCtx === void 0) return;
+          const mouseup = () => {
+            setDragCtx(void 0);
+            document.body.style.userSelect = "";
+            for (const cb of [...destinationCallbacks.current]) {
+              destinationCallbacks.current.delete(cb);
             }
-            setValueTempNum(dragnum, true);
+            for (const cb of [...endDragCallbacks.current]) {
+              cb();
+              endDragCallbacks.current.delete(cb);
+            }
           };
-          const mouseupListener = (e2) => {
-            document.removeEventListener("mousemove", mousemoveListener);
-            document.removeEventListener("mouseup", mouseupListener);
-            document.exitPointerLock();
+          document.addEventListener("mouseup", mouseup);
+          return () => {
+            document.removeEventListener("mouseup", mouseup);
           };
-          document.addEventListener("mousemove", mousemoveListener);
-          document.addEventListener("mouseup", mouseupListener);
-        }
-      }
-    );
-  }
-
-  // src/ui/react-draggable-window.tsx
-  var import_react3 = __toESM(require_react());
-  var DraggableWindowContext = (0, import_react3.createContext)(void 0);
-  function useParentDims(getParent) {
-    const [parentDims, setParentDims] = (0, import_react3.useState)([1, 1]);
-    const elemRef = (0, import_react3.useRef)(null);
-    function updateParentDims() {
-      if (!elemRef.current) return;
-      const parent = getParent(elemRef.current);
-      if (!parent) return;
-      const rect = parent.getBoundingClientRect();
-      setParentDims([rect.width, rect.height]);
-    }
-    (0, import_react3.useEffect)(() => {
-      if (!elemRef.current) return;
-      const parent = getParent(elemRef.current);
-      if (!parent) return;
-      updateParentDims();
-    }, []);
-    (0, import_react3.useEffect)(() => {
-      if (!elemRef.current) return;
-      const parent = getParent(elemRef.current);
-      if (!parent) return;
-      const observer = new ResizeObserver(() => {
-        updateParentDims();
-      });
-      observer.observe(parent);
-      return () => {
-        observer.disconnect();
-      };
-    });
-    return [elemRef, parentDims];
-  }
-  function DraggableWindow(props) {
-    const transformedX = rescale(
-      props.pos[0],
-      props.transform.a[0],
-      props.transform.b[0],
-      0,
-      100
-    );
-    const transformedY = rescale(
-      props.pos[1],
-      props.transform.a[1],
-      props.transform.b[1],
-      0,
-      100
-    );
-    const [elemRef, parentDims] = useParentDims((e) => e.parentElement);
-    return /* @__PURE__ */ import_react3.default.createElement(
-      DraggableWindowContext.Provider,
-      {
-        value: {
-          pos: props.pos,
-          setPos: props.setPos,
-          currentScaleFactors: div2(
-            sub2(props.transform.b, props.transform.a),
-            parentDims
-            // [100, 100]
-          )
-        }
-      },
-      /* @__PURE__ */ import_react3.default.createElement(
-        "div",
-        {
-          ref: elemRef,
-          className: "draggable-window",
-          style: {
-            position: "absolute",
-            top: `${transformedY}%`,
-            left: `${transformedX}%`
-          }
-        },
-        props.children
-      )
-    );
-  }
-  function LineSeg(props) {
-    const [elemRef, parentDims] = useParentDims((e) => e.parentElement);
-    const remappedEndpointA = remap2(
-      props.endpoints.a,
-      props.transform.a,
-      props.transform.b,
-      [0, 0],
-      parentDims
-    );
-    const remappedEndpointB = remap2(
-      props.endpoints.b,
-      props.transform.a,
-      props.transform.b,
-      [0, 0],
-      parentDims
-    );
-    const [dist, dir] = cart2Polar(sub2(remappedEndpointB, remappedEndpointA));
-    return /* @__PURE__ */ import_react3.default.createElement(
-      "div",
-      {
-        ref: elemRef,
-        className: "line-segment",
-        style: {
-          position: "absolute",
-          transformOrigin: "top left",
-          height: "1px",
-          width: `${dist}px`,
-          transform: `rotate(${dir}rad)`,
-          left: `${remappedEndpointA[0]}px`,
-          top: `${remappedEndpointA[1]}px`
-        }
-      }
-    );
-  }
-  function Dragger(props) {
-    const { pos, setPos, currentScaleFactors } = (0, import_react3.useContext)(
-      DraggableWindowContext
-    );
-    const elemRef = (0, import_react3.useRef)(null);
-    const [isHeld, setIsHeld] = (0, import_react3.useState)(false);
-    const tempPosRef = (0, import_react3.useRef)([0, 0]);
-    (0, import_react3.useEffect)(() => {
-      if (!isHeld) return;
-      const elem = elemRef.current;
-      if (!elem) return;
-      const mousemove = (evt) => {
-        tempPosRef.current = add2(
-          tempPosRef.current,
-          mul2([evt.movementX, evt.movementY], currentScaleFactors)
-        );
-        setPos(tempPosRef.current);
-        evt.stopPropagation();
-      };
-      document.addEventListener("mousemove", mousemove);
-      return () => {
-        document.removeEventListener("mousemove", mousemove);
-      };
-    }, [isHeld]);
-    (0, import_react3.useEffect)(() => {
-      const elem = elemRef.current;
-      if (!elem) return;
-      const mouseup = (evt) => {
-        setIsHeld(false);
-        elem.style.userSelect = "";
-      };
-      const mousedown = (evt) => {
-        setIsHeld(true);
-        tempPosRef.current = pos;
-        elem.style.userSelect = "none";
-        evt.stopPropagation();
-      };
-      elem.addEventListener("mousedown", mousedown);
-      document.addEventListener("mouseup", mouseup);
-      return () => {
-        elem.removeEventListener("mousedown", mousedown);
-        document.removeEventListener("mouseup", mouseup);
-      };
-    }, [pos, currentScaleFactors]);
-    return /* @__PURE__ */ import_react3.default.createElement("div", { className: "dragger", ref: elemRef }, props.children);
-  }
-
-  // src/webgpu/gpudoc/ui.tsx
-  var GPUDocContext = (0, import_react4.createContext)(void 0);
-  function gpuDebugWindow(params) {
-    const d = document.createElement("div");
-    const root = (0, import_client.createRoot)(d).render(
-      /* @__PURE__ */ import_react4.default.createElement(
-        GpudocDebugWindow,
-        {
-          device: params.device,
-          textures: params.textures,
-          buffers: params.buffers
-        }
-      )
-    );
-    return d;
-  }
-  function GpudocDebugWindow(props) {
-    const displayer = (0, import_react4.useMemo)(
-      () => textureDisplayer(props.device),
-      [props.device]
-    );
-    const [tabs, setTabs] = (0, import_react4.useState)([
-      {
-        type: "search-texture",
-        search: "",
-        id: v4_default()
-      }
-    ]);
-    const [currentTabIndex, setCurrentTabIndex] = (0, import_react4.useState)(0);
-    const currentTab = tabs[currentTabIndex];
-    return /* @__PURE__ */ import_react4.default.createElement(
-      GPUDocContext.Provider,
-      {
-        value: {
-          displayer,
-          device: props.device,
-          tabs,
-          currentTabIndex,
-          setCurrentTabIndex,
-          setTabs,
-          textures: props.textures,
-          buffers: props.buffers
-        }
-      },
-      /* @__PURE__ */ import_react4.default.createElement("style", null, gpudoc_default),
-      /* @__PURE__ */ import_react4.default.createElement("div", { className: "gpudoc" }, /* @__PURE__ */ import_react4.default.createElement(GpudocTabBar, null), /* @__PURE__ */ import_react4.default.createElement("div", { className: "tab" }, /* @__PURE__ */ import_react4.default.createElement(
-        GpudocTab,
-        {
-          tab: currentTab,
-          setTab: (newtab) => setTabs(
-            (oldtabs) => oldtabs.map((t, i) => i === currentTabIndex ? newtab(t) : t)
-          )
-        }
-      )))
-    );
-  }
-  function GpudocTab(props) {
-    const tab = props.tab;
-    const { textures, tabs } = useGpudoc();
-    if (tab.type === "search-texture") {
-      return /* @__PURE__ */ import_react4.default.createElement("ul", { className: "tex-thumbs" }, [...textures].map((t) => /* @__PURE__ */ import_react4.default.createElement(TextureThumbnail, { tex: t.tex, key: t.id })));
-    } else {
-      return /* @__PURE__ */ import_react4.default.createElement(
-        "div",
-        {
-          className: "tex-inspector",
-          ref: (elem) => {
-            const listener = (e) => {
-              e.preventDefault();
-            };
-            elem.addEventListener("wheel", listener);
-            return () => {
-              elem.removeEventListener("wheel", listener);
-            };
-          }
-        },
-        /* @__PURE__ */ import_react4.default.createElement("div", { className: "ui" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "color-sliders" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "dark-label" }, "Dark"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "light-label" }, "Light"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "dark" }, range(4).map((i) => /* @__PURE__ */ import_react4.default.createElement(
-          NumberField,
+        }, [dragCtx]);
+        return /* @__PURE__ */ import_react.default.createElement(
+          DragContext.Provider,
           {
-            key: i,
-            value: tab.dark[i],
-            setValue: (v) => props.setTab(
-              (oldtab) => xray(oldtab).dark.$i(i).$(v).$v
-            ),
-            jumpstartDragFromZero: 0.01
-          }
-        ))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "light" }, range(4).map((i) => /* @__PURE__ */ import_react4.default.createElement(
-          NumberField,
-          {
-            key: i,
-            value: tab.light[i],
-            setValue: (v) => props.setTab(
-              (oldtab) => xray(oldtab).light.$i(i).$(v).$v
-            ),
-            jumpstartDragFromZero: 0.01
-          }
-        ))))),
-        /* @__PURE__ */ import_react4.default.createElement(
-          PanAndZoom,
-          {
-            coords: tab.coords,
-            setCoords: (coords) => {
-              props.setTab((oldtab) => ({
-                ...oldtab,
-                // @ts-expect-error
-                coords: coords(oldtab.coords)
-              }));
+            value: {
+              dragCtx,
+              setDragCtx,
+              destinationCallbacks,
+              endDragCallbacks
             }
           },
-          tab.texelInspectorWindows.map((t, i) => /* @__PURE__ */ import_react4.default.createElement(
-            TexelInspectorWindow,
-            {
-              tab,
-              key: t.id,
-              win: t,
-              setWin: (w) => props.setTab(
-                (oldtab) => xray(oldtab).texelInspectorWindows.$i(i).$(w).$v
-              )
+          props.children
+        );
+      },
+      DragSource(props) {
+        const { dragCtx, setDragCtx, destinationCallbacks, endDragCallbacks } = (0, import_react.useContext)(DragContext);
+        return /* @__PURE__ */ import_react.default.createElement(
+          "div",
+          {
+            className: "drag-source",
+            onMouseDown: () => {
+              props.onStartDrag?.();
+              document.getSelection().removeAllRanges();
+              document.body.style.userSelect = "none";
+              setDragCtx(props.value);
+              destinationCallbacks.current.add(props.onReachDestination);
+              if (props.onEndDrag) {
+                endDragCallbacks.current.add(props.onEndDrag);
+                console.log("hello?");
+                console.log(endDragCallbacks.current);
+              }
             }
-          )),
-          /* @__PURE__ */ import_react4.default.createElement(
-            TextureCanvas,
-            {
-              tex: tab.tex,
-              useCalculatedSize: true,
-              cornerA: tab.coords.a,
-              cornerB: tab.coords.b,
-              dark: tab.dark,
-              light: tab.light
+          },
+          props.children
+        );
+      },
+      DragDestination(props) {
+        const { dragCtx, setDragCtx, destinationCallbacks, endDragCallbacks } = (0, import_react.useContext)(DragContext);
+        return /* @__PURE__ */ import_react.default.createElement(
+          "div",
+          {
+            className: dragCtx === void 0 ? "drag-destination" : "drag-destination drag-active",
+            onMouseUp: () => {
+              if (dragCtx === void 0) return;
+              for (const cb of [...destinationCallbacks.current]) {
+                cb();
+                destinationCallbacks.current.delete(cb);
+              }
+              for (const cb of [...endDragCallbacks.current]) {
+                cb();
+                endDragCallbacks.current.delete(cb);
+              }
+              props.onSetValue(dragCtx);
+              setDragCtx(void 0);
             }
-          )
-        )
-      );
-    }
-  }
-  function TexelInspectorWindow(props) {
-    const { win, tab } = props;
-    const { device } = useGpudoc();
-    const texelCoords = [
-      clamp(Math.floor(win.samplePos[0] * tab.tex.width), 0, tab.tex.width - 1),
-      clamp(Math.floor(win.samplePos[1] * tab.tex.height), 0, tab.tex.height - 1),
-      clamp(win.layer, 0, tab.tex.depthOrArrayLayers - 1)
-    ];
-    const roundedSamplePos = [
-      texelCoords[0] / tab.tex.width,
-      texelCoords[1] / tab.tex.height
-    ];
-    const texelMarkerX = rescale(
-      roundedSamplePos[0],
-      tab.coords.a[0],
-      tab.coords.b[0],
-      0,
-      100
-    );
-    const texelMarkerY = rescale(
-      roundedSamplePos[1],
-      tab.coords.a[1],
-      tab.coords.b[1],
-      0,
-      100
-    );
-    const area = sub2(tab.coords.b, tab.coords.a);
-    const lineseg = {
-      b: [
-        roundedSamplePos[0] + 0.5 / tab.tex.width,
-        roundedSamplePos[1] + 0.5 / tab.tex.height
-      ],
-      a: win.pos
+          },
+          props.children
+        );
+      },
+      DragFloat(props) {
+        const { dragCtx, setDragCtx } = (0, import_react.useContext)(DragContext);
+        const [pos, setPos] = (0, import_react.useState)([0, 0]);
+        (0, import_react.useEffect)(() => {
+          const listener = (e) => {
+            setPos([e.clientX, e.clientY]);
+          };
+          document.addEventListener("mousemove", listener);
+          return () => {
+            document.removeEventListener("mousemove", listener);
+          };
+        }, []);
+        if (dragCtx === void 0) return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null);
+        return /* @__PURE__ */ import_react.default.createElement(
+          "div",
+          {
+            className: "drag-float",
+            style: {
+              position: "fixed",
+              top: pos[1] + 40 + "px",
+              left: pos[0] + 40 + "px"
+            }
+          },
+          props.children
+        );
+      }
     };
-    const segEndpointA = sampleLineSegment(
-      lineseg,
-      lineIntersectRectClosest(lineseg, {
-        a: roundedSamplePos,
-        b: [
-          roundedSamplePos[0] + 1 / tab.tex.width,
-          roundedSamplePos[1] + 1 / tab.tex.height
-        ]
-      })
-    );
-    const [pixel, setPixel] = (0, import_react4.useState)([0, 0, 0, 0]);
-    (0, import_react4.useEffect)(() => {
-      (async () => {
-        const tempBuf = device.createBuffer({
-          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-          size: 16
-        });
-        const b = await readPixelsToCpuBuffer({
-          tex: tab.tex,
-          aspect: "all",
-          buf: tempBuf,
-          subregion: [texelCoords, add3(texelCoords, [1, 1, 1])],
-          device
-        });
-        const ui8a = new Uint8Array(b.cpuBuffer);
-        setPixel([ui8a[0], ui8a[1], ui8a[2], ui8a[3]]);
-      })();
-    }, [win.samplePos]);
-    return /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement(
-      "div",
-      {
-        className: "texel-marker",
-        style: {
-          position: "absolute",
-          left: `${texelMarkerX}%`,
-          top: `${texelMarkerY}%`,
-          width: `${100 / area[0] / tab.tex.width}%`,
-          height: `${100 / area[1] / tab.tex.height}%`
-        }
-      }
-    ), /* @__PURE__ */ import_react4.default.createElement(
-      LineSeg,
-      {
-        transform: props.tab.coords,
-        endpoints: {
-          a: segEndpointA,
-          b: win.pos
-        }
-      }
-    ), /* @__PURE__ */ import_react4.default.createElement(
-      DraggableWindow,
-      {
-        transform: props.tab.coords,
-        pos: win.samplePos,
-        setPos: (p) => props.setWin(xray(win).samplePos.$(p).$v)
-      },
-      /* @__PURE__ */ import_react4.default.createElement(Dragger, null, /* @__PURE__ */ import_react4.default.createElement("div", { className: "texel-dragger" }))
-    ), /* @__PURE__ */ import_react4.default.createElement(
-      DraggableWindow,
-      {
-        transform: props.tab.coords,
-        pos: win.pos,
-        setPos: (p) => props.setWin(xray(win).pos.$(p).$v)
-      },
-      /* @__PURE__ */ import_react4.default.createElement("div", { className: "texel-inspector-window" }, /* @__PURE__ */ import_react4.default.createElement(Dragger, null, "Texel (", texelCoords[0], ", ", texelCoords[1], ")"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "texel-components" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "red" }, pixel[0]), /* @__PURE__ */ import_react4.default.createElement("div", { className: "green" }, pixel[1]), /* @__PURE__ */ import_react4.default.createElement("div", { className: "blue" }, pixel[2]), /* @__PURE__ */ import_react4.default.createElement("div", { className: "alpha" }, pixel[3])))
-    ));
   }
-  function GpudocTabBar() {
-    const { tabs, currentTabIndex, setCurrentTabIndex, setTabs } = useGpudoc();
-    return /* @__PURE__ */ import_react4.default.createElement("ul", { className: "tab-bar" }, tabs.map((t, i) => /* @__PURE__ */ import_react4.default.createElement(
-      "li",
-      {
-        onClick: () => {
-          setCurrentTabIndex(i);
-        },
-        key: t.id,
-        className: currentTabIndex === i ? "selected" : ""
-      },
-      /* @__PURE__ */ import_react4.default.createElement(GpudocTabThumbDisplay, { tab: t })
-    )));
-  }
-  function GpudocTabThumbDisplay(props) {
-    const tab = props.tab;
-    if (tab.type === "search-texture") {
-      return /* @__PURE__ */ import_react4.default.createElement("div", null, "Search Texture");
-    } else {
-      return /* @__PURE__ */ import_react4.default.createElement("div", null, "Texture: ", tab.tex.label);
-    }
-  }
-  function TextureThumbnail(props) {
-    const { tabs, setTabs, setCurrentTabIndex } = useGpudoc();
-    return /* @__PURE__ */ import_react4.default.createElement(
-      "li",
-      {
-        onClick: () => {
-          setTabs([
-            ...tabs,
-            {
-              type: "inspect-texture",
-              tex: props.tex,
-              id: v4_default(),
-              coords: { a: [0, 0], b: [1, 1] },
-              dark: [0, 0, 0, 0],
-              light: [1, 1, 1, 1],
-              texelInspectorWindows: [
-                {
-                  samplePos: [0.5, 0.5],
-                  layer: 0,
-                  pos: [0.5, 0.5],
-                  id: v4_default()
-                }
-              ]
-            }
-          ]);
-          setCurrentTabIndex(tabs.length);
-        }
-      },
-      /* @__PURE__ */ import_react4.default.createElement("div", { className: "name" }, props.tex.label),
-      /* @__PURE__ */ import_react4.default.createElement("div", { className: "canvas" }, /* @__PURE__ */ import_react4.default.createElement(TextureCanvas, { tex: props.tex }))
-    );
-  }
-  function useGpudoc() {
-    return (0, import_react4.useContext)(GPUDocContext);
-  }
-  function setCanvasDims(canvas, dims) {
-    const [width, height] = [Math.round(dims[0]), Math.round(dims[1])];
-    if (width !== canvas.width) canvas.width = width;
-    if (height !== canvas.height) canvas.height = height;
-  }
-  function TextureCanvas(props) {
-    const canvasRef = (0, import_react4.useRef)(null);
-    const { displayer, device } = useGpudoc();
-    (0, import_react4.useEffect)(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-      const ctx = canvas.getContext("webgpu");
-      ctx.configure({
-        device,
-        format: canvasFormat
-      });
-    }, [device]);
-    function rerender() {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-      const ctx = canvas.getContext("webgpu");
-      const encoder = device.createCommandEncoder();
-      const textureWgslType = TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[props.tex.format];
-      const wgslBaseType = WGSL_TYPE_DATATYPES[textureWgslType];
-      const samplerType = WGSL_BASE_TYPE_TO_SAMPLER_TYPE[wgslBaseType];
-      displayer.displayTexture2d(
-        {
-          tex: props.tex.createView(),
-          samplerType,
-          cornerA: props.cornerA ?? [0, 0],
-          cornerB: props.cornerB ?? [1, 1],
-          blackEquiv: props.dark ?? [0, 0, 0, 0],
-          whiteEquiv: props.light ?? [1, 1, 1, 1]
-        },
-        {
-          tex: ctx.getCurrentTexture().createView(),
-          format: canvasFormat
-        },
-        encoder
-      );
-      device.queue.submit([encoder.finish()]);
-    }
-    (0, import_react4.useEffect)(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const tex = props.tex;
-      const dims = [tex.width, tex.height, tex.depthOrArrayLayers];
-      if (!props.useCalculatedSize) {
-        if (props.canvasDims) {
-          setCanvasDims(canvas, props.canvasDims);
-        } else {
-          setCanvasDims(canvas, dims);
-        }
-      }
-      rerender();
-    }, [
-      props.tex,
-      device,
-      props.canvasDims,
-      props.cornerA,
-      props.cornerB,
-      props.dark,
-      props.light
+
+  // demos-src/ui/drag-and-drop.demo.tsx
+  var root = document.createElement("div");
+  document.body.appendChild(root);
+  (0, import_client.createRoot)(root).render(/* @__PURE__ */ import_react3.default.createElement(App2, null));
+  var dnd = createDragContext();
+  function App2() {
+    const [dragCtx, setDragCtx] = (0, import_react3.useState)(void 0);
+    const [data, setData] = (0, import_react3.useState)([
+      "A",
+      void 0,
+      void 0
     ]);
-    (0, import_react4.useEffect)(() => {
-      const canvas = canvasRef.current;
-      if (!canvas || !props.useCalculatedSize) return;
-      const observer = new ResizeObserver(() => {
-        const rect = canvas.getBoundingClientRect();
-        setCanvasDims(canvas, [
-          rect.width * window.devicePixelRatio,
-          rect.height * window.devicePixelRatio
-        ]);
-        rerender();
-      });
-      observer.observe(canvas);
-      return () => observer.disconnect();
-    }, [props.useCalculatedSize]);
-    return /* @__PURE__ */ import_react4.default.createElement("canvas", { ref: canvasRef });
-  }
-
-  // src/webgpu/gpudoc/gpudoc.ts
-  function hookGPUDevice(device, passthrough = false) {
-    if (passthrough) return device;
-    const textures = /* @__PURE__ */ new Set();
-    const buffers = /* @__PURE__ */ new Set();
-    let texId = 0;
-    let bufId = 0;
-    const oldCreateTexture = device.createTexture.bind(device);
-    device.createTexture = (descriptor) => {
-      const desc2 = { ...descriptor };
-      desc2.usage |= GPUTextureUsage.COPY_SRC;
-      const tex = oldCreateTexture(desc2);
-      textures.add({ tex, id: texId++ });
-      return tex;
-    };
-    device.getDebugView = () => {
-      return gpuDebugWindow({ textures, buffers, device });
-    };
-    return device;
-  }
-
-  // src/ui/use-latest.tsx
-  var import_react5 = __toESM(require_react());
-
-  // src/ui/react-tooltip.tsx
-  var import_react6 = __toESM(require_react());
-  var import_react7 = __toESM(require_react());
-  var Tooltips = (0, import_react6.createContext)({
-    setTooltip() {
-    },
-    tooltip: void 0
-  });
-
-  // src/ui/react-string-field.tsx
-  var import_react8 = __toESM(require_react());
-
-  // src/ui/react-object-field.tsx
-  var import_react9 = __toESM(require_react());
-
-  // src/ui/react-nested-layout.tsx
-  var import_react10 = __toESM(require_react());
-
-  // src/ui/react-infinite-scroll.tsx
-  var import_react11 = __toESM(require_react());
-
-  // src/ui/react-drag-and-drop.tsx
-  var import_react12 = __toESM(require_react());
-  var import_react13 = __toESM(require_react());
-
-  // src/ui/react-datetime-field.tsx
-  var import_react14 = __toESM(require_react());
-
-  // src/ui/progress-bar.tsx
-  var import_react15 = __toESM(require_react());
-  var import_client2 = __toESM(require_client());
-
-  // demos-src/webgpu/mandelbrot.demo.ts
-  (async () => {
-    function fail(msg) {
-      window.alert(msg);
-      throw new Error(msg);
-    }
-    const adapter = await navigator.gpu.requestAdapter();
-    if (!adapter) {
-      fail("No GPU adapter!");
-      return;
-    }
-    const device = hookGPUDevice(await adapter.requestDevice());
-    device.addEventListener(
-      "uncapturederror",
-      (event) => console.error(event.error)
-    );
-    const tex = device.createTexture({
-      label: "Test Texture",
-      size: [1024, 1024],
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
-      format: "rgba8unorm"
-    });
-    if (!device) {
-      fail("No GPU device!");
-    }
-    const canvas = document.createElement("canvas");
-    document.body.appendChild(canvas);
-    canvas.width = 1024;
-    canvas.height = 1024;
-    const ctx = canvas.getContext("webgpu");
-    ctx.configure({
-      device,
-      format: navigator.gpu.getPreferredCanvasFormat()
-    });
-    const mandelbrotPipeline = createSimpleFilterPipeline(device, {
-      inputs: {},
-      outputs: {
-        color: "rgba8unorm"
-      },
-      uniforms: {
-        corner1: "vec2f",
-        corner2: "vec2f",
-        iters: "u32"
-      },
-      globals: `
-${useWgslSnippets("perlinNoise")}    
-    `,
-      source: `
-let c = 
-  mix(params.corner1, params.corner2, uv);
-
-var z = vec2f(0.0);
-
-var escaped = false;
-
-for (var i = 0u; i < params.iters; i++) {
-  z = vec2f(
-    z.x * z.x - z.y * z.y,
-    2.0 * z.x * z.y
-  ) + c; 
-
-  if (length(z) > 2.0) {
-    escaped = true;
-    break;
-  }
-}
-
-if (escaped) {
-  color = vec4f(1.0, 1.0, 1.0, 1.0); 
-} else {
-  color = vec4f(vec2f(perlinNoise2(uv * 10.0)), 0.0, 1.0); 
-}
-    `
-    });
-    const encoder = device.createCommandEncoder();
-    const pipelineInstance = mandelbrotPipeline.withInputs({}).withDedicatedUniformBuffer();
-    pipelineInstance.setUniforms({
-      corner1: [-2, -2],
-      corner2: [2, 2],
-      iters: 64
-    });
-    pipelineInstance.run(encoder, { color: tex.createView() });
-    const displayer = textureDisplayer(device);
-    displayer.displayTexture2d(
+    return /* @__PURE__ */ import_react3.default.createElement("div", { style: { userSelect: "none" } }, /* @__PURE__ */ import_react3.default.createElement(dnd.DragContextContainer, { ...{ dragCtx, setDragCtx } }, data.map((e, i) => /* @__PURE__ */ import_react3.default.createElement(
+      LiftedSlot,
       {
-        tex: tex.createView(),
-        samplerType: "float",
-        cornerA: [0, 0],
-        cornerB: [1, 1],
-        blackEquiv: [0, 0, 0, 0],
-        whiteEquiv: [1, 1, 1, 1]
-      },
+        key: i,
+        data: e,
+        setData: (s) => setData((oldData) => oldData.map((e2, i2) => i === i2 ? s : e2))
+      }
+    )), /* @__PURE__ */ import_react3.default.createElement(dnd.DragFloat, null, dragCtx)));
+  }
+  function LiftedSlot(props) {
+    const { data, setData } = props;
+    if (data === void 0) {
+      return /* @__PURE__ */ import_react3.default.createElement(dnd.DragDestination, { onSetValue: (v) => setData(v) }, "Empty");
+    }
+    return /* @__PURE__ */ import_react3.default.createElement(
+      dnd.DragSource,
       {
-        tex: ctx.getCurrentTexture().createView(),
-        format: navigator.gpu.getPreferredCanvasFormat()
+        value: data,
+        onReachDestination: () => {
+          setData(void 0);
+        }
       },
-      encoder
+      data
     );
-    device.queue.submit([encoder.finish()]);
-    document.body.appendChild(device.getDebugView());
-  })();
+  }
 })();
 /*! Bundled license information:
 

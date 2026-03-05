@@ -57,8 +57,11 @@ import {
   inMainThread,
 } from "../src/threadpool";
 
-const LINE_COUNT = 500;
 const POINTS_PER_LINE = 20;
+const SIZE = 2560;
+const LINE_COUNT = Math.round(SIZE / 3);
+const PUPIL_DENSITY = Math.round(30_000_000 * (SIZE ** 2 / 2048 ** 2));
+const IRIS_DENSITY = Math.round(15_000_000 * (SIZE ** 2 / 2048 ** 2));
 
 type Eyeball = {
   irisRadius: number;
@@ -73,7 +76,7 @@ type Edge = {};
 
 function pointDrawer(
   canvas: HTMLCanvasElement | OffscreenCanvas,
-  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
 ) {
   const dims: Vec2 = [canvas.width, canvas.height];
   return {
@@ -82,12 +85,24 @@ function pointDrawer(
     },
     pointUnscaled(pos: Vec2) {
       const [x, y] = pos;
+      // ctx.globalCompositeOperation = "multiply";
       // ctx.beginPath();
       // ctx.arc(x, y, 15, 0, Math.PI * 2);
       // ctx.stroke();
       // ctx.fillRect(Math.floor(x) - 1, Math.floor(y), 3, 1);
       // ctx.fillRect(Math.floor(x), Math.floor(y) - 5, 1, 11);
-      ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1);
+
+      const OFFSET = 0.3;
+      const RECTSIZE = 1;
+
+      ctx.fillRect(x, y, RECTSIZE, RECTSIZE);
+
+      // ctx.fillStyle = "#ff6666";
+      // ctx.fillRect(x - OFFSET, y - OFFSET, RECTSIZE, RECTSIZE);
+      // ctx.fillStyle = "#66ff66";
+      // ctx.fillRect(x, y, RECTSIZE, RECTSIZE);
+      // ctx.fillStyle = "#6666ff";
+      // ctx.fillRect(x + OFFSET, y + OFFSET, RECTSIZE, RECTSIZE);
       // ctx.fillRect(Math.floor(x) - 1, Math.floor(y), 3, 1);
     },
   };
@@ -100,7 +115,7 @@ const tp = createCombinedRoundRobinThreadpool(
 
     function shiftLines() {
       for (const index of range(
-        Math.max(...[...eyeballs.all()].map((e) => e.index)) + 1
+        Math.max(...[...eyeballs.all()].map((e) => e.index)) + 1,
       )) {
         for (const i of range(1)) {
           subdivideEdgesAtCutsSimple(
@@ -109,7 +124,7 @@ const tp = createCombinedRoundRobinThreadpool(
               if (
                 distance2(
                   edge.endpoints[0].data.initialPos,
-                  edge.endpoints[1].data.initialPos
+                  edge.endpoints[1].data.initialPos,
                 ) <
                 1 / 2048
               )
@@ -130,18 +145,18 @@ const tp = createCombinedRoundRobinThreadpool(
 
                   const tValue = closestApproachOfLineSegmentToPoint(
                     seg,
-                    e.pos
+                    e.pos,
                   );
                   const distAway = distance2(
                     sampleLineSegment(seg, tValue),
-                    e.pos
+                    e.pos,
                   );
                   const radiiAway = clamp(distAway / e.forceRadius, 0, 1);
 
                   return getEqualAngularDivisionsOfLineSegment(
                     e.pos,
                     seg,
-                    Math.max(0.6 * radiiAway, 0.1)
+                    Math.max(0.6 * radiiAway, 0.1),
                   );
                 })
                 .flat(1);
@@ -156,7 +171,7 @@ const tp = createCombinedRoundRobinThreadpool(
                 pos: mixedPos,
               };
             },
-            {}
+            {},
           );
 
           pushLines(graph, eyeballs, index);
@@ -166,15 +181,15 @@ const tp = createCombinedRoundRobinThreadpool(
             (e) =>
               Math.atan2(
                 e.endpoints[1].data.pos[1] - e.endpoints[0].data.pos[1],
-                e.endpoints[1].data.pos[0] - e.endpoints[0].data.pos[0]
+                e.endpoints[1].data.pos[0] - e.endpoints[0].data.pos[0],
               ),
             (e, angle) => {
               let cutsToMake = Math.min(
                 Math.floor((angle / Math.PI) * 20),
                 Math.floor(
                   distance2(e.endpoints[0].data.pos, e.endpoints[1].data.pos) *
-                    2048
-                )
+                    2048,
+                ),
               );
               if (cutsToMake === 0) return undefined;
               return [
@@ -191,7 +206,7 @@ const tp = createCombinedRoundRobinThreadpool(
                 initialPos: mixedIPos,
                 pos: mixedPos,
               };
-            }
+            },
           );
         }
         pushLines(graph, eyeballs, index);
@@ -226,11 +241,11 @@ const tp = createCombinedRoundRobinThreadpool(
           ? (document.getElementById("canvas")! as HTMLCanvasElement)
           : new OffscreenCanvas(
               Math.ceil(canvasDims[0]),
-              Math.ceil(canvasDims[1])
+              Math.ceil(canvasDims[1]),
             );
 
         const ctx: CanvasRenderingContext2D = canvas.getContext(
-          "2d"
+          "2d",
         )! as CanvasRenderingContext2D;
         const draw = pointDrawer(canvas, ctx);
 
@@ -242,7 +257,7 @@ const tp = createCombinedRoundRobinThreadpool(
         {
           ctx.fillStyle = "black";
 
-          const pointCount = Math.floor(30_000_000 * e.pupilRadius ** 2);
+          const pointCount = Math.floor(PUPIL_DENSITY * e.pupilRadius ** 2);
 
           for (const i of range(pointCount)) {
             const randomPointInCircle: Vec2 = [
@@ -253,7 +268,7 @@ const tp = createCombinedRoundRobinThreadpool(
               continue;
 
             draw.pointUnscaled(
-              scale2(randomPointInCircle, originalCanvasDims[0])
+              scale2(randomPointInCircle, originalCanvasDims[0]),
             );
           }
         }
@@ -261,7 +276,7 @@ const tp = createCombinedRoundRobinThreadpool(
         {
           ctx.fillStyle = "black";
 
-          const pointCount = Math.floor(20_000_000 * e.irisRadius ** 2);
+          const pointCount = Math.floor(IRIS_DENSITY * e.irisRadius ** 2);
 
           const seed: Vec2 = [Math.random() * 100, Math.random() * 100];
 
@@ -282,13 +297,13 @@ const tp = createCombinedRoundRobinThreadpool(
                 rand(-0.2, 0.2) ||
               distance2(
                 [rescale(r, e.pupilRadius, e.irisRadius, 0, 1), theta / 2],
-                [0.5, -Math.PI / 4 / 2]
+                [0.5, -Math.PI / 4 / 2],
               ) < rand(0.15, 0.36)
             )
               continue;
 
             draw.pointUnscaled(
-              scale2(add2(randomPointInCircle, eyePos), originalCanvasDims[0])
+              scale2(add2(randomPointInCircle, eyePos), originalCanvasDims[0]),
             );
           }
         }
@@ -298,7 +313,7 @@ const tp = createCombinedRoundRobinThreadpool(
         return {
           drawAt: mul2(
             sub2(e.pos, [eyeballSize, eyeballSize]),
-            originalCanvasDims
+            originalCanvasDims,
           ),
           image: (canvas as OffscreenCanvas).transferToImageBitmap(),
         };
@@ -354,7 +369,7 @@ const tp = createCombinedRoundRobinThreadpool(
         return [parseSpatialHashTable<Eyeball>(ebs, getEyeballBounds)];
       },
     },
-  }
+  },
 );
 
 function circle(ctx: CanvasRenderingContext2D, c: Circle) {
@@ -365,7 +380,7 @@ function circle(ctx: CanvasRenderingContext2D, c: Circle) {
 function pushLines(
   graph: Graph<Point, Edge>,
   eyeballs: SpatialHashTable<Eyeball>,
-  index: number
+  index: number,
 ) {
   for (const vert of graph.vertices) {
     const eyesInRange = inCircle(
@@ -374,7 +389,7 @@ function pushLines(
       (e) => ({
         radius: e.forceRadius,
         center: e.pos,
-      })
+      }),
     );
 
     let offset: Vec2 = [0, 0];
@@ -408,7 +423,7 @@ function addEyeballs(
   tryCount: number,
   logMax: number,
   logMin: number,
-  index: number
+  index: number,
 ) {
   for (const i of smartRange(tryCount)) {
     const radius = Math.pow(10, i.remap(logMax, logMin));
@@ -479,7 +494,7 @@ async function loop() {
 function lookupEyeballForceField(
   ebs: SpatialHashTable<Eyeball>,
   position: Vec2,
-  index: number | undefined
+  index: number | undefined,
 ) {
   const eyesInRange = inCircle(ebs, { center: position, radius: 0 }, (e) => ({
     radius: e.forceRadius,
@@ -510,14 +525,14 @@ inMainThread(async () => {
       b: [1.3, 1.3],
     },
     [100, 100],
-    getEyeballBounds
+    getEyeballBounds,
   );
 
   const canvas = document.createElement("canvas");
   canvas.id = "canvas";
   document.body.appendChild(canvas);
-  canvas.width = 3000;
-  canvas.height = 3000;
+  canvas.width = SIZE;
+  canvas.height = SIZE;
   const ctx = canvas.getContext("2d")!;
 
   const draw = pointDrawer(canvas, ctx);
@@ -537,16 +552,19 @@ inMainThread(async () => {
     Promise.all(
       [...mainThreadEyeballs.all()].map(async (e) => {
         await enqueueAnimationFrame(async () => {
-          const r = await tp.send.drawEyeballOffscreen(e, [3000, 3000]);
+          const r = await tp.send.drawEyeballOffscreen(e, [
+            canvas.width,
+            canvas.height,
+          ]);
           if (r) {
             ctx.drawImage(
               r.image,
               Math.floor(r.drawAt[0]),
-              Math.floor(r.drawAt[1])
+              Math.floor(r.drawAt[1]),
             );
           }
         });
-      })
+      }),
     ),
 
     Promise.all(
@@ -570,11 +588,11 @@ inMainThread(async () => {
 
             return pt;
           },
-          null
+          null,
         );
 
         const components = getConnectedComponents(
-          await tp.send.shiftGraph(graph)
+          await tp.send.shiftGraph(graph),
         );
 
         await enqueueAnimationFrame(async () => {
@@ -593,22 +611,22 @@ inMainThread(async () => {
                           lookupEyeballForceField(
                             mainThreadEyeballs,
                             v,
-                            undefined
-                          )
+                            undefined,
+                          ),
                         ),
                       p,
-                      0.001
-                    )
+                      0.001,
+                    ),
                   ),
-                  normalize2([1, -1])
+                  normalize2([1, -1]),
                 );
 
                 if (isNaN(d)) d = 0;
 
                 const normd = clamp(d + rand(-0.5, 0.5), 0, 1);
 
-                return lerp(normd, 1 / 2000, 1 / 300);
-              }
+                return lerp(normd, 1 / 4000, 1 / 600);
+              },
             );
 
             console.log(toDraw.length);
@@ -617,18 +635,18 @@ inMainThread(async () => {
             for (const e of toDraw) {
               const pos = e;
               draw.pointUnscaled(
-                add2(scale2(pos, canvas.width), [rand(-1, 1), rand(-1, 1)])
+                add2(scale2(pos, canvas.width), [rand(-1, 1), rand(-1, 1)]),
               );
             }
             ctx.stroke();
           }
         });
-      })
+      }),
     ),
   ]);
 
   console.log(
     "PERF",
-    getPerformanceStatistics(await tp.getCurrentPerformanceRecords())
+    getPerformanceStatistics(await tp.getCurrentPerformanceRecords()),
   );
 });
