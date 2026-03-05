@@ -58,10 +58,21 @@ import {
 } from "../src/threadpool";
 
 const POINTS_PER_LINE = 20;
-const SIZE = 2560;
-const LINE_COUNT = Math.round(SIZE / 3);
-const PUPIL_DENSITY = Math.round(30_000_000 * (SIZE ** 2 / 2048 ** 2));
-const IRIS_DENSITY = Math.round(15_000_000 * (SIZE ** 2 / 2048 ** 2));
+let SIZE: number;
+let LINE_COUNT: number;
+let PUPIL_DENSITY: number;
+let IRIS_DENSITY: number;
+let MIN_LINE_POINT_DENSITY: number;
+let MAX_LINE_POINT_DENSITY: number;
+
+function setSize(size: number) {
+  SIZE = size;
+  LINE_COUNT = Math.round(SIZE / 3);
+  PUPIL_DENSITY = Math.round(40_000_000 * (SIZE ** 2 / 2048 ** 2));
+  IRIS_DENSITY = Math.round(35_000_000 * (SIZE ** 2 / 2048 ** 2));
+  MIN_LINE_POINT_DENSITY = SIZE * 0.35;
+  MAX_LINE_POINT_DENSITY = SIZE * 2.4;
+}
 
 type Eyeball = {
   irisRadius: number;
@@ -217,6 +228,9 @@ const tp = createCombinedRoundRobinThreadpool(
     }
 
     return {
+      setSize(size: number) {
+        setSize(size);
+      },
       setGraph(g: Graph<Point, Edge>) {
         graph = g;
       },
@@ -519,6 +533,10 @@ function lookupEyeballForceField(
 loop();
 
 inMainThread(async () => {
+  const size = Math.round(window.innerWidth * window.devicePixelRatio);
+  setSize(size);
+  await tp.broadcast.setSize(size);
+
   const mainThreadEyeballs = spatialHashTable<Eyeball>(
     {
       a: [-0.3, -0.3],
@@ -530,6 +548,10 @@ inMainThread(async () => {
 
   const canvas = document.createElement("canvas");
   canvas.id = "canvas";
+  canvas.style.position = "absolute";
+  canvas.style.top = "0";
+  canvas.style.left = "0";
+  canvas.style.width = "100%";
   document.body.appendChild(canvas);
   canvas.width = SIZE;
   canvas.height = SIZE;
@@ -625,7 +647,11 @@ inMainThread(async () => {
 
                 const normd = clamp(d + rand(-0.5, 0.5), 0, 1);
 
-                return lerp(normd, 1 / 4000, 1 / 600);
+                return lerp(
+                  normd,
+                  1 / MAX_LINE_POINT_DENSITY,
+                  1 / MIN_LINE_POINT_DENSITY,
+                );
               },
             );
 

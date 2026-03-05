@@ -801,10 +801,20 @@
 
   // demos-src/god-is-watching-2.demo.ts
   var POINTS_PER_LINE = 20;
-  var SIZE = 2560;
-  var LINE_COUNT = Math.round(SIZE / 3);
-  var PUPIL_DENSITY = Math.round(3e7 * (SIZE ** 2 / 2048 ** 2));
-  var IRIS_DENSITY = Math.round(15e6 * (SIZE ** 2 / 2048 ** 2));
+  var SIZE;
+  var LINE_COUNT;
+  var PUPIL_DENSITY;
+  var IRIS_DENSITY;
+  var MIN_LINE_POINT_DENSITY;
+  var MAX_LINE_POINT_DENSITY;
+  function setSize(size) {
+    SIZE = size;
+    LINE_COUNT = Math.round(SIZE / 3);
+    PUPIL_DENSITY = Math.round(4e7 * (SIZE ** 2 / 2048 ** 2));
+    IRIS_DENSITY = Math.round(35e6 * (SIZE ** 2 / 2048 ** 2));
+    MIN_LINE_POINT_DENSITY = SIZE * 0.35;
+    MAX_LINE_POINT_DENSITY = SIZE * 2.4;
+  }
   function pointDrawer(canvas, ctx) {
     const dims = [canvas.width, canvas.height];
     return {
@@ -910,6 +920,9 @@
         }
       }
       return {
+        setSize(size) {
+          setSize(size);
+        },
         setGraph(g) {
           graph = g;
         },
@@ -1140,6 +1153,9 @@
   }
   loop();
   inMainThread(async () => {
+    const size = Math.round(window.innerWidth * window.devicePixelRatio);
+    setSize(size);
+    await tp.broadcast.setSize(size);
     const mainThreadEyeballs = spatialHashTable(
       {
         a: [-0.3, -0.3],
@@ -1150,6 +1166,10 @@
     );
     const canvas = document.createElement("canvas");
     canvas.id = "canvas";
+    canvas.style.position = "absolute";
+    canvas.style.top = "0";
+    canvas.style.left = "0";
+    canvas.style.width = "100%";
     document.body.appendChild(canvas);
     canvas.width = SIZE;
     canvas.height = SIZE;
@@ -1230,7 +1250,11 @@
                   );
                   if (isNaN(d)) d = 0;
                   const normd = clamp(d + rand(-0.5, 0.5), 0, 1);
-                  return lerp(normd, 1 / 4e3, 1 / 600);
+                  return lerp(
+                    normd,
+                    1 / MAX_LINE_POINT_DENSITY,
+                    1 / MIN_LINE_POINT_DENSITY
+                  );
                 }
               );
               console.log(toDraw.length);

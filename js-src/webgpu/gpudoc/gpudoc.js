@@ -22419,11 +22419,6 @@ var track = (0, import_typescript_parsec.rep_sc)(note);
 var import_fft2 = __toESM(require_fft());
 var import_next_power_of_two = __toESM(require_next_power_of_two());
 
-// src/math/round.ts
-function roundUp(factor, x) {
-  return Math.ceil(x / factor) * factor;
-}
-
 // src/webgpu/wgsl-snippets.ts
 var WgslSnippets = {
   unitQuadSigned: {
@@ -22940,6 +22935,11 @@ fn perlinNoise3(P: vec3f) -> f32 {
     ).join("\n\n")
   }
 };
+
+// src/math/round.ts
+function roundUp(factor, x) {
+  return Math.ceil(x / factor) * factor;
+}
 
 // src/webgpu/readpixels.ts
 function readPixelsSizeReq(params) {

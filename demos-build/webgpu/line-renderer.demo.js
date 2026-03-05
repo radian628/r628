@@ -22028,33 +22028,6 @@
   var import_fft2 = __toESM(require_fft());
   var import_next_power_of_two = __toESM(require_next_power_of_two());
 
-  // src/webgl/mesh.ts
-  function normalize(v) {
-    const len = Math.hypot(...v);
-    return scale3(v, 1 / len);
-  }
-  function rodrigues(v, k, theta) {
-    k = normalize(k);
-    return add3(
-      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-    );
-  }
-  function rotate(axis, angle) {
-    return [
-      ...rodrigues([1, 0, 0], axis, angle),
-      0,
-      ...rodrigues([0, 1, 0], axis, angle),
-      0,
-      ...rodrigues([0, 0, 1], axis, angle),
-      0,
-      0,
-      0,
-      0,
-      1
-    ];
-  }
-
   // src/math/round.ts
   function roundUp(factor, x) {
     return Math.ceil(x / factor) * factor;
@@ -24039,6 +24012,33 @@ struct Params {
       0,
       near * far * rangeInv,
       0
+    ];
+  }
+
+  // src/webgl/mesh.ts
+  function normalize(v) {
+    const len = Math.hypot(...v);
+    return scale3(v, 1 / len);
+  }
+  function rodrigues(v, k, theta) {
+    k = normalize(k);
+    return add3(
+      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+    );
+  }
+  function rotate(axis, angle) {
+    return [
+      ...rodrigues([1, 0, 0], axis, angle),
+      0,
+      ...rodrigues([0, 1, 0], axis, angle),
+      0,
+      ...rodrigues([0, 0, 1], axis, angle),
+      0,
+      0,
+      0,
+      0,
+      1
     ];
   }
 

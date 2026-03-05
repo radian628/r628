@@ -21789,11 +21789,6 @@ var track = (0, import_typescript_parsec.rep_sc)(note);
 var import_fft2 = __toESM(require_fft());
 var import_next_power_of_two = __toESM(require_next_power_of_two());
 
-// src/math/round.ts
-function roundUp(factor, x) {
-  return Math.ceil(x / factor) * factor;
-}
-
 // src/webgpu/wgsl-snippets.ts
 var WgslSnippets = {
   unitQuadSigned: {
@@ -22507,6 +22502,11 @@ var VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR = {
   "unorm10-10-10-2": Uint8Array,
   "unorm8x4-bgra": Uint8Array
 };
+
+// src/math/round.ts
+function roundUp(factor, x) {
+  return Math.ceil(x / factor) * factor;
+}
 
 // src/webgpu/gpudoc/ui.tsx
 var import_react4 = __toESM(require_react());
