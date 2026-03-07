@@ -145,7 +145,8 @@ export async function lineRenderer(
     alpha: {
       operation: "add",
       srcFactor: "one",
-      dstFactor: "one",
+      // dstFactor: "one",
+      dstFactor: "one-minus-src-alpha",
       // dstFactor: "zero",
     },
   };

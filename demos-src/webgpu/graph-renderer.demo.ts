@@ -19,6 +19,7 @@ import {
   range,
   rotate,
   scale3,
+  scale4,
   struct,
   translate,
   variadify,
@@ -69,11 +70,14 @@ function inv4(m: Mat4): Mat4 {
 
   const verts = nodes.map((n) => addVertex(graph, n));
 
-  range(50000).map(() =>
+  range(100000).map(() =>
     addEdge(
       graph,
       [pickrand(verts), pickrand(verts)],
-      [Math.random() * 255, Math.random() * 255, Math.random() * 255, 255],
+      scale4(
+        [Math.random() * 255, Math.random() * 255, Math.random() * 255, 255],
+        0.35,
+      ),
     ),
   );
 
@@ -117,6 +121,7 @@ function inv4(m: Mat4): Mat4 {
   ctx.configure({
     device: device,
     format: navigator.gpu.getPreferredCanvasFormat(),
+    alphaMode: "premultiplied",
   });
 
   const lines = await lineRenderer(
@@ -138,7 +143,7 @@ function inv4(m: Mat4): Mat4 {
     [...graph.vertices].map((v) => ({
       position: v.data.position,
       color: v.data.color,
-      size: 0.1,
+      size: 0.5,
     })),
   );
 
@@ -152,7 +157,7 @@ function inv4(m: Mat4): Mat4 {
       return [
         {
           position: mix3(
-            0.1 / len,
+            0.6 / len,
             v.endpoints[0].data.position,
             v.endpoints[1].data.position,
           ),
@@ -161,7 +166,7 @@ function inv4(m: Mat4): Mat4 {
         },
         {
           position: mix3(
-            1 - 0.1 / len,
+            1 - 0.6 / len,
             v.endpoints[0].data.position,
             v.endpoints[1].data.position,
           ),
@@ -259,15 +264,17 @@ function inv4(m: Mat4): Mat4 {
       viewportSize: canvas.width,
     });
 
-    const enc = device.createCommandEncoder();
-
     const colorTex = ctx.getCurrentTexture();
+
+    clear.clear(colorTex, [0, 0, 0, 255]);
+
+    const enc = device.createCommandEncoder();
 
     const pass = enc.beginRenderPass({
       colorAttachments: [
         {
           view: colorTex,
-          loadOp: "clear",
+          loadOp: "load",
           storeOp: "store",
         },
       ],
@@ -278,6 +285,17 @@ function inv4(m: Mat4): Mat4 {
         depthStoreOp: "store",
       },
     });
+
+    pass.setPipeline(lines.pointPipeline);
+    pipelineRenderpass(
+      lines.pointPipeline,
+      pass,
+    )({
+      points: vertices,
+      geometry: lines.quad,
+      perFrame: graphPerFrameBindGroup,
+    });
+    pass.draw(6, graph.vertices.size);
 
     pass.setPipeline(lines.linePipeline);
     pipelineRenderpass(
@@ -294,16 +312,6 @@ function inv4(m: Mat4): Mat4 {
     });
     pass.draw(6, graph.edges.size * 3 - 1);
 
-    pass.setPipeline(lines.pointPipeline);
-    pipelineRenderpass(
-      lines.pointPipeline,
-      pass,
-    )({
-      points: vertices,
-      geometry: lines.quad,
-      perFrame: graphPerFrameBindGroup,
-    });
-    pass.draw(6, graph.vertices.size);
     pass.end();
 
     device.queue.submit([enc.finish()]);
