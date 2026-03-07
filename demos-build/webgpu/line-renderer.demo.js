@@ -23560,36 +23560,6 @@
     }
   };
 
-  // src/webgl/mesh.ts
-  function normalize(v) {
-    const len = Math.hypot(...v);
-    return scale3(v, 1 / len);
-  }
-  function rodrigues(v, k, theta) {
-    k = normalize(k);
-    return add3(
-      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-    );
-  }
-  function rotate(axis, angle) {
-    return [
-      ...rodrigues([1, 0, 0], axis, angle),
-      0,
-      ...rodrigues([0, 1, 0], axis, angle),
-      0,
-      ...rodrigues([0, 0, 1], axis, angle),
-      0,
-      0,
-      0,
-      0,
-      1
-    ];
-  }
-  function translate(v) {
-    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
-  }
-
   // src/math/round.ts
   function roundUp(factor, x) {
     return Math.ceil(x / factor) * factor;
@@ -25634,6 +25604,36 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u) {
     ];
   }
 
+  // src/webgl/mesh.ts
+  function normalize(v) {
+    const len = Math.hypot(...v);
+    return scale3(v, 1 / len);
+  }
+  function rodrigues(v, k, theta) {
+    k = normalize(k);
+    return add3(
+      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+    );
+  }
+  function rotate(axis, angle) {
+    return [
+      ...rodrigues([1, 0, 0], axis, angle),
+      0,
+      ...rodrigues([0, 1, 0], axis, angle),
+      0,
+      ...rodrigues([0, 0, 1], axis, angle),
+      0,
+      0,
+      0,
+      0,
+      1
+    ];
+  }
+  function translate(v) {
+    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
+  }
+
   // src/audio/stream-audio.ts
   var import_fft = __toESM(require_fft());
   function createTrack(channels, sampleRate, constituents) {
@@ -27222,7 +27222,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       "params",
       struct("Params", {
         mvp: "mat4x4f",
-        viewportSize: "f32"
+        aspect: "f32"
       })
     );
     const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
@@ -27244,7 +27244,10 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       vertex: `
       var frag: FragInput;
       let pos = params.mvp * vec4f(vertex.position, 1.0); 
-      frag.position = vec4f(pos.xy + vertex.geometryPosition * vertex.size, pos.zw);
+      frag.position = vec4f(pos.xy + 
+        vertex.geometryPosition * vertex.size
+        * vec2f(1.0, params.aspect)
+      , pos.zw);
       frag.signedUv = vertex.geometryPosition;
       frag.color = vertex.color;
       frag.size = vertex.size;
@@ -27390,7 +27393,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
           buffer: vertexBuf,
           draw(target, depthTarget, transform) {
             uniforms.fill(perFrameUniforms, 0, {
-              viewportSize: Math.min(target.width, target.height),
+              aspect: target.width / target.height,
               mvp: transform
             });
             const encoder = device.createCommandEncoder();
@@ -27458,7 +27461,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         return {
           draw(target, depthTarget, transform) {
             uniforms.fill(perFrameUniforms, 0, {
-              viewportSize: Math.min(target.width, target.height),
+              aspect: target.width / target.height,
               mvp: transform
             });
             const encoder = device.createCommandEncoder();
@@ -27511,7 +27514,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         const bg = perFrameBindGroup.instantiate({
           params: uniforms.quickCreate({
             mvp: transform,
-            viewportSize: Math.min(target.width, target.height)
+            aspect: target.width / target.height
           })
         });
         pipelineRenderpass(

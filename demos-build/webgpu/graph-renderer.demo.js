@@ -23009,6 +23009,14 @@
   }
 
   // src/array-utils.ts
+  function splitBy(arr, amount) {
+    let outarr = [[]];
+    for (let i = 0; i < arr.length; i++) {
+      if (i % amount === amount - 1) outarr.push([]);
+      outarr.at(-1).push(arr[i]);
+    }
+    return outarr;
+  }
   function groupBy(arr, getGroup) {
     const groups = /* @__PURE__ */ new Map();
     for (const entry of arr) {
@@ -23263,6 +23271,14 @@
       a[0] * b[4] + a[1] * b[5] + a[2] * b[6] + a[3] * b[7],
       a[0] * b[8] + a[1] * b[9] + a[2] * b[10] + a[3] * b[11],
       a[0] * b[12] + a[1] * b[13] + a[2] * b[14] + a[3] * b[15]
+    ];
+  }
+  function mulMat4ByVec4(a, b) {
+    return [
+      a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3],
+      a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3],
+      a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3],
+      a[3] * b[0] + a[7] * b[1] + a[11] * b[2] + a[15] * b[3]
     ];
   }
   function mulMat4(a, b) {
@@ -23661,36 +23677,6 @@
       );
     }
   };
-
-  // src/webgl/mesh.ts
-  function normalize(v) {
-    const len = Math.hypot(...v);
-    return scale3(v, 1 / len);
-  }
-  function rodrigues(v, k, theta) {
-    k = normalize(k);
-    return add3(
-      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-    );
-  }
-  function rotate(axis, angle) {
-    return [
-      ...rodrigues([1, 0, 0], axis, angle),
-      0,
-      ...rodrigues([0, 1, 0], axis, angle),
-      0,
-      ...rodrigues([0, 0, 1], axis, angle),
-      0,
-      0,
-      0,
-      0,
-      1
-    ];
-  }
-  function translate(v) {
-    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
-  }
 
   // src/math/round.ts
   function roundUp(factor, x) {
@@ -25736,6 +25722,36 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u) {
     ];
   }
 
+  // src/webgl/mesh.ts
+  function normalize(v) {
+    const len = Math.hypot(...v);
+    return scale3(v, 1 / len);
+  }
+  function rodrigues(v, k, theta) {
+    k = normalize(k);
+    return add3(
+      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+    );
+  }
+  function rotate(axis, angle) {
+    return [
+      ...rodrigues([1, 0, 0], axis, angle),
+      0,
+      ...rodrigues([0, 1, 0], axis, angle),
+      0,
+      ...rodrigues([0, 0, 1], axis, angle),
+      0,
+      0,
+      0,
+      0,
+      1
+    ];
+  }
+  function translate(v) {
+    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
+  }
+
   // src/audio/stream-audio.ts
   var import_fft = __toESM(require_fft());
   function createTrack(channels, sampleRate, constituents) {
@@ -27324,7 +27340,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       "params",
       struct("Params", {
         mvp: "mat4x4f",
-        viewportSize: "f32"
+        aspect: "f32"
       })
     );
     const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
@@ -27346,7 +27362,10 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       vertex: `
       var frag: FragInput;
       let pos = params.mvp * vec4f(vertex.position, 1.0); 
-      frag.position = vec4f(pos.xy + vertex.geometryPosition * vertex.size, pos.zw);
+      frag.position = vec4f(pos.xy + 
+        vertex.geometryPosition * vertex.size
+        * vec2f(1.0, params.aspect)
+      , pos.zw);
       frag.signedUv = vertex.geometryPosition;
       frag.color = vertex.color;
       frag.size = vertex.size;
@@ -27492,7 +27511,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
           buffer: vertexBuf,
           draw(target, depthTarget, transform) {
             uniforms.fill(perFrameUniforms, 0, {
-              viewportSize: Math.min(target.width, target.height),
+              aspect: target.width / target.height,
               mvp: transform
             });
             const encoder = device.createCommandEncoder();
@@ -27560,7 +27579,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         return {
           draw(target, depthTarget, transform) {
             uniforms.fill(perFrameUniforms, 0, {
-              viewportSize: Math.min(target.width, target.height),
+              aspect: target.width / target.height,
               mvp: transform
             });
             const encoder = device.createCommandEncoder();
@@ -27613,7 +27632,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         const bg = perFrameBindGroup.instantiate({
           params: uniforms.quickCreate({
             mvp: transform,
-            viewportSize: Math.min(target.width, target.height)
+            aspect: target.width / target.height
           })
         });
         pipelineRenderpass(
@@ -27801,10 +27820,13 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         addVertex(graph, {
           position: scale3(mul3([n.x, n.y, Math.log(n.z)], [1e-3, 1e-3, 70]), 0.2),
           color: [r2, g2, b2, 255],
-          initialized: false
+          initialized: false,
+          label: n.id
         })
       );
     }
+    const vertsArray = [...graph.vertices];
+    const vertGroups = splitBy(vertsArray, 500);
     for (const e of graphData.links) {
       const src2 = nodeMap.get(e.source);
       const dst = nodeMap.get(e.target);
@@ -27843,10 +27865,10 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     if (!device) {
       fail("No GPU device!");
     }
+    document.body.style = "width: 100vw; height: 100vh; overflow: hidden;";
     const canvas = document.createElement("canvas");
     document.body.appendChild(canvas);
-    canvas.width = 1024;
-    canvas.height = 1024;
+    canvas.style = "position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;";
     const ctx = canvas.getContext("webgpu");
     ctx.configure({
       device,
@@ -27854,18 +27876,25 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       // alphaMode: "premultiplied",
       alphaMode: "opaque"
     });
+    function handleResize() {
+      canvas.width = window.innerWidth * window.devicePixelRatio;
+      canvas.height = window.innerHeight * window.devicePixelRatio;
+      depthTex = lines.depthTexFormat.instantiate(
+        [canvas.width, canvas.height],
+        GPUTextureUsage.RENDER_ATTACHMENT
+      );
+    }
     const lines = await lineRenderer(
       device,
       navigator.gpu.getPreferredCanvasFormat()
     );
+    let depthTex;
     const clear = await clearRenderer(
       device,
       navigator.gpu.getPreferredCanvasFormat()
     );
-    const depthTex = lines.depthTexFormat.instantiate(
-      [canvas.width, canvas.height],
-      GPUTextureUsage.RENDER_ATTACHMENT
-    );
+    handleResize();
+    window.addEventListener("resize", handleResize);
     const vertices = lines.pointInstanceBufferFormat.quickCreate(
       [...graph.vertices].map((v) => ({
         position: v.data.position,
@@ -27931,13 +27960,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         ];
       })
     );
-    const graphUniforms = lines.uniforms.quickCreate({
-      mvp: variadify(mulMat4)(
-        perspectiveWebgpu(Math.PI / 2, 1, 0.1, 1e3),
-        translate([0, 0, -4])
-      ),
-      viewportSize: canvas.width
-    });
+    const graphUniforms = lines.uniforms.instantiate(1);
     const graphPerFrameBindGroup = lines.perFrameBindGroup.instantiate({
       params: graphUniforms
     });
@@ -27953,6 +27976,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       keysDown.delete(e.key.toLowerCase());
     });
     document.addEventListener("mousedown", (e) => {
+      if (e.target instanceof HTMLElement && e.target.tagName.toUpperCase() === "A") return;
       document.body.requestPointerLock();
     });
     document.addEventListener("mousemove", (e) => {
@@ -27964,6 +27988,8 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       rotationMatrix = mulMat4(rotationMatrix, mulMat4(r1, r2));
     });
     let lastT = 0;
+    const labels = /* @__PURE__ */ new Map();
+    let loopIter = 0;
     function loop(t) {
       const seconds = t / 1e3;
       let dt = (t - lastT) / 1e3;
@@ -27984,12 +28010,51 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         viewerVel = [0, 0, 0];
       }
       let currTransform = mulMat4(rotationMatrix, translate(viewerPos));
+      for (const n of vertGroups[loopIter % vertGroups.length]) {
+        const isNearby = distance3(n.data.position, scale3(viewerPos, -1)) < 20;
+        const labelElem = labels.get(n.data.label);
+        if (isNearby) {
+          if (!labelElem) {
+            const newLabelElem = document.createElement("a");
+            newLabelElem.href = `https://scp-wiki.wikidot.com${n.data.label}`;
+            newLabelElem.target = "_blank";
+            newLabelElem.innerText = n.data.label.slice(1);
+            newLabelElem.style = `color: white; background-color: #000b; padding: 5px; transform: translateX(-50%); font-family: sans-serif;`;
+            document.body.appendChild(newLabelElem);
+            labels.set(n.data.label, {
+              elem: newLabelElem,
+              vert: n
+            });
+          }
+        } else {
+          if (labelElem) {
+            labels.delete(n.data.label);
+            labelElem.elem.parentElement.removeChild(labelElem.elem);
+          }
+        }
+      }
+      for (const [id2, { elem, vert }] of labels) {
+        const worldSpace = vert.data.position.concat(1);
+        const clipSpace = mulMat4ByVec4(currTransform, worldSpace);
+        const x = clipSpace[0] / clipSpace[2];
+        const y = clipSpace[1] / clipSpace[2];
+        const aspect = canvas.width / canvas.height;
+        if (clipSpace[2] < 0) {
+          elem.style.display = "block";
+          elem.style.position = "absolute";
+          console.log(x);
+          elem.style.left = `${rescale(x, aspect, -aspect, 0, window.innerWidth)}px`;
+          elem.style.top = `${rescale(y + 0.5 / clipSpace[2], -1, 1, 0, window.innerHeight)}px`;
+        } else {
+          elem.style.display = "none";
+        }
+      }
       lines.uniforms.fill(graphUniforms, 0, {
         mvp: variadify(mulMat4)(
-          perspectiveWebgpu(Math.PI / 2, 1, 0.1, 1e3),
+          perspectiveWebgpu(Math.PI / 2, canvas.width / canvas.height, 0.1, 1e3),
           currTransform
         ),
-        viewportSize: canvas.width
+        aspect: canvas.width / canvas.height
       });
       const colorTex = ctx.getCurrentTexture();
       clear.clear(colorTex, [0, 0, 0, 255]);
@@ -28042,6 +28107,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       pass.draw(6, graph.edges.size * 3 - 1);
       pass.end();
       device.queue.submit([enc.finish()]);
+      loopIter++;
       requestAnimationFrame(loop);
     }
     loop(0);

@@ -25662,7 +25662,7 @@ async function lineRenderer(device, outputFormat) {
     "params",
     struct("Params", {
       mvp: "mat4x4f",
-      viewportSize: "f32"
+      aspect: "f32"
     })
   );
   const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
@@ -25684,7 +25684,10 @@ async function lineRenderer(device, outputFormat) {
     vertex: `
       var frag: FragInput;
       let pos = params.mvp * vec4f(vertex.position, 1.0); 
-      frag.position = vec4f(pos.xy + vertex.geometryPosition * vertex.size, pos.zw);
+      frag.position = vec4f(pos.xy + 
+        vertex.geometryPosition * vertex.size
+        * vec2f(1.0, params.aspect)
+      , pos.zw);
       frag.signedUv = vertex.geometryPosition;
       frag.color = vertex.color;
       frag.size = vertex.size;
@@ -25830,7 +25833,7 @@ async function lineRenderer(device, outputFormat) {
         buffer: vertexBuf,
         draw(target, depthTarget, transform) {
           uniforms.fill(perFrameUniforms, 0, {
-            viewportSize: Math.min(target.width, target.height),
+            aspect: target.width / target.height,
             mvp: transform
           });
           const encoder = device.createCommandEncoder();
@@ -25898,7 +25901,7 @@ async function lineRenderer(device, outputFormat) {
       return {
         draw(target, depthTarget, transform) {
           uniforms.fill(perFrameUniforms, 0, {
-            viewportSize: Math.min(target.width, target.height),
+            aspect: target.width / target.height,
             mvp: transform
           });
           const encoder = device.createCommandEncoder();
@@ -25951,7 +25954,7 @@ async function lineRenderer(device, outputFormat) {
       const bg = perFrameBindGroup.instantiate({
         params: uniforms.quickCreate({
           mvp: transform,
-          viewportSize: Math.min(target.width, target.height)
+          aspect: target.width / target.height
         })
       });
       pipelineRenderpass(

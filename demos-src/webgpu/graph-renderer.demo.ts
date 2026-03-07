@@ -17,14 +17,18 @@ import {
   mix4,
   mul3,
   mulMat4,
+  mulMat4ByVec4,
   mulVec4ByMat4,
   perspectiveWebgpu,
   pickrand,
   pipelineRenderpass,
   range,
+  rescale,
   rotate,
   scale3,
   scale4,
+  spatialHashTable,
+  splitBy,
   struct,
   translate,
   variadify,
@@ -38,7 +42,7 @@ import {
 import stringHash from "string-hash";
 
 
-type Node = { position: Vec3; color: Vec4, initialized: boolean };
+type Node = { position: Vec3; color: Vec4, initialized: boolean,label: string  };
 
 function inv4(m: Mat4): Mat4 {
   const M = new Matrix([
@@ -53,14 +57,15 @@ function inv4(m: Mat4): Mat4 {
 
 (async () => {
   const graphData = (await ( await fetch("../assets/graph_fixed.json")).json());
-  
+
   console.log("bust cache")
-  
+
   console.log(graphData);
   // const n1: Node = { position: [1, 1, 1] };
   // const n2: Node = { position: [2, 1, 1] };
   // const n3: Node = { position: [1, 2, 1] };
   // const n4: Node = { position: [1, 1, 2] };
+
 
   const graph: Graph<Node, Vec4> = createGraph();
 
@@ -78,10 +83,15 @@ function inv4(m: Mat4): Mat4 {
       addVertex(graph, {
       position: scale3(mul3([n.x, n.y, Math.log(n.z)], [0.001, 0.001, 70]), 0.2) as Vec3,
         color: [r, g, b, 255],
-        initialized: false
+        initialized: false,
+        label: n.id
       }),
     );
   }
+
+  const vertsArray = [...graph.vertices ]
+
+  const vertGroups = splitBy(vertsArray, 500); 
 
   for (const e of graphData.links) {
     const src = nodeMap.get(e.source)
@@ -179,10 +189,11 @@ function inv4(m: Mat4): Mat4 {
     fail("No GPU device!");
   }
 
+  document.body.style = "width: 100vw; height: 100vh; overflow: hidden;"
+
   const canvas = document.createElement("canvas");
   document.body.appendChild(canvas);
-  canvas.width = 1024;
-  canvas.height = 1024;
+  canvas.style = "position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;"
   const ctx = canvas.getContext("webgpu");
   ctx.configure({
     device: device,
@@ -191,20 +202,29 @@ function inv4(m: Mat4): Mat4 {
     alphaMode: "opaque",
   });
 
+  function handleResize() {
+  canvas.width = window.innerWidth * window.devicePixelRatio;
+  canvas.height = window.innerHeight * window.devicePixelRatio;
+  depthTex = lines.depthTexFormat.instantiate(
+    [canvas.width, canvas.height],
+    GPUTextureUsage.RENDER_ATTACHMENT,
+  );
+  }
+
   const lines = await lineRenderer(
     device,
     navigator.gpu.getPreferredCanvasFormat(),
   );
+
+  let depthTex: ReturnType<typeof lines.depthTexFormat.instantiate>;
 
   const clear = await clearRenderer(
     device,
     navigator.gpu.getPreferredCanvasFormat(),
   );
 
-  const depthTex = lines.depthTexFormat.instantiate(
-    [canvas.width, canvas.height],
-    GPUTextureUsage.RENDER_ATTACHMENT,
-  );
+ handleResize();
+ window.addEventListener("resize", handleResize); 
 
   const vertices = lines.pointInstanceBufferFormat.quickCreate(
     [...graph.vertices].map((v) => ({
@@ -280,13 +300,7 @@ function inv4(m: Mat4): Mat4 {
     }),
   );
 
-  const graphUniforms = lines.uniforms.quickCreate({
-    mvp: variadify(mulMat4)(
-      perspectiveWebgpu(Math.PI / 2, 1, 0.1, 1000),
-      translate([0, 0, -4]),
-    ),
-    viewportSize: canvas.width,
-  });
+  const graphUniforms = lines.uniforms.instantiate(1);
 
   const graphPerFrameBindGroup = lines.perFrameBindGroup.instantiate({
     params: graphUniforms,
@@ -309,6 +323,7 @@ function inv4(m: Mat4): Mat4 {
   });
 
   document.addEventListener("mousedown", (e) => {
+    if (e.target instanceof HTMLElement && e.target.tagName.toUpperCase() === "A") return;
     document.body.requestPointerLock();
   });
 
@@ -325,6 +340,10 @@ function inv4(m: Mat4): Mat4 {
   });
 
   let lastT = 0;
+
+  const labels = new Map<string, { elem: HTMLElement, vert: Vertex<Node, Vec4> }>();
+
+  let loopIter = 0;
 
   function loop(t) {
     const seconds = t / 1000;
@@ -352,14 +371,65 @@ function inv4(m: Mat4): Mat4 {
 
     let currTransform = mulMat4(rotationMatrix, translate(viewerPos));
 
+    for (const n of  vertGroups[loopIter % vertGroups.length]) {
+      const isNearby = 
+distance3(n.data.position, scale3(viewerPos, -1)) < 20;
+
+const labelElem = labels.get(n.data.label);
+
+if (isNearby) {
+  if (!labelElem) {
+    const newLabelElem = document.createElement("a");
+    newLabelElem.href = `https://scp-wiki.wikidot.com${n.data.label}`
+    newLabelElem.target = "_blank";
+  newLabelElem.innerText = n.data.label.slice(1);
+  newLabelElem.style = `color: white; background-color: #000b; padding: 5px; transform: translateX(-50%); font-family: sans-serif;`; 
+  document.body.appendChild(newLabelElem);
+    labels.set(n.data.label, {
+      elem: newLabelElem,
+      vert: n 
+    });
+  }
+} else {
+  if (labelElem) {
+    labels.delete(n.data.label);
+    labelElem.elem.parentElement.removeChild(labelElem.elem);
+  }
+}
+    }
+
+    for (const [id, { elem, vert}] of labels) {
+
+      const worldSpace: Vec4 = vert.data.position.concat(1) as Vec4;
+
+      const clipSpace = mulMat4ByVec4(currTransform , worldSpace);
+
+      const x = clipSpace[0]/  clipSpace[2];
+      const y = clipSpace[1]/  clipSpace[2];
+
+      const aspect = canvas.width / canvas.height; 
+
+      if (clipSpace[2] < 0) {
+        elem.style.display = "block";
+        elem.style.position = "absolute";
+        console.log(x)
+        elem.style.left = `${rescale(x, aspect, -aspect, 0, window.innerWidth)}px`;
+        elem.style.top = `${rescale(y + 0.5 / clipSpace[2], -1, 1, 0, window.innerHeight)}px`;
+      } else {
+        elem.style.display = "none";
+      }
+
+    }
+
+
     // let currTransform = translate(viewerPos);
 
     lines.uniforms.fill(graphUniforms, 0, {
       mvp: variadify(mulMat4)(
-        perspectiveWebgpu(Math.PI / 2, 1, 0.1, 1000),
+        perspectiveWebgpu(Math.PI / 2, canvas.width / canvas.height, 0.1, 1000),
         currTransform,
       ),
-      viewportSize: canvas.width,
+      aspect: canvas.width / canvas.height,
     });
 
     const colorTex = ctx.getCurrentTexture();
@@ -421,6 +491,8 @@ function inv4(m: Mat4): Mat4 {
     pass.end();
 
     device.queue.submit([enc.finish()]);
+
+    loopIter++;
 
     requestAnimationFrame(loop);
   }
