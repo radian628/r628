@@ -10,6 +10,7 @@
     "@webgpu/types": "^0.1.69",
     "codemirror": "^6.0.2",
     "esbuild": "^0.25.12",
+    "esbuild-plugin-copy": "^2.1.1",
     "eslint": "^9.39.4",
     "fft.js": "^4.0.4",
     "glob": "^11.1.0",

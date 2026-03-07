@@ -35,14 +35,8 @@ import {
   wrapDevice,
   xyz,
 } from "../../src";
-import GraphData from "./graph_fixed.json?raw";
 import stringHash from "string-hash";
 
-const graphData = JSON.parse(GraphData);
-
-console.log("bust cache")
-
-console.log(graphData);
 
 type Node = { position: Vec3; color: Vec4, initialized: boolean };
 
@@ -58,6 +52,11 @@ function inv4(m: Mat4): Mat4 {
 }
 
 (async () => {
+  const graphData = (await ( await fetch("../assets/graph_fixed.json")).json());
+  
+  console.log("bust cache")
+  
+  console.log(graphData);
   // const n1: Node = { position: [1, 1, 1] };
   // const n2: Node = { position: [2, 1, 1] };
   // const n3: Node = { position: [1, 2, 1] };

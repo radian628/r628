@@ -5,6 +5,7 @@ import { demosPlugin } from "./src-node/esbuild-demos";
 import * as path from "node:path";
 import { wgslPlugin } from "./src-node/esbuild-wgsl-plugin";
 import { rawQueryParamPlugin } from "./src-node/esbuild-raw-query-param";
+import copy from "esbuild-plugin-copy";
 
 const codegenFiles = await glob("**/*.codegen.ts", {
   ignore: "node_modules/**",
@@ -31,7 +32,7 @@ await esbuild.build({
   minify: false,
   bundle: true,
   format: "esm",
-  plugins: [rawQueryParamPlugin],
+  plugins: [rawQueryParamPlugin, ],
 });
 
 await esbuild.build({
@@ -42,7 +43,13 @@ await esbuild.build({
   platform: "node",
   external: ["esbuild"],
   format: "esm",
-  plugins: [rawQueryParamPlugin],
+  plugins: [rawQueryParamPlugin, copy({
+    resolveFrom:"cwd",
+    assets: {
+      from: ["./assets/*"],
+      to: ["./demos-build/assets"]
+    }
+  })],
 });
 
 const reactDemos = await esbuild.build({
