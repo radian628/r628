@@ -3,14 +3,18 @@ import {
   add3,
   addEdge,
   addVertex,
+  clamp,
   clearRenderer,
   createGraph,
   distance3,
+  getDepthFirstTraversalOrder,
   Graph,
   hookGPUDevice,
+  lerp,
   lineRenderer,
   Mat4,
   mix3,
+  mix4,
   mul3,
   mulMat4,
   mulVec4ByMat4,
@@ -32,12 +36,13 @@ import {
   xyz,
 } from "../../src";
 import GraphData from "./graph_fixed.json?raw";
+import stringHash from "string-hash";
 
 const graphData = JSON.parse(GraphData);
 
 console.log(graphData);
 
-type Node = { position: Vec3; color: Vec4 };
+type Node = { position: Vec3; color: Vec4, initialized: boolean };
 
 function inv4(m: Mat4): Mat4 {
   const M = new Matrix([
@@ -61,11 +66,18 @@ function inv4(m: Mat4): Mat4 {
   let nodeMap = new Map<string, Vertex<Node, Vec4>>();
 
   for (const n of graphData.nodes) {
+    const hash = stringHash(n.canon);
+
+    const r = (hash % 256) * 0.5 + 127;
+    const g = ((hash >> 8) % 256) * 0.5 + 127;
+    const b = ((hash >> 16) % 256) * 0.5 + 127;
+
     nodeMap.set(
       n.id,
       addVertex(graph, {
       position: scale3(mul3([n.x, n.y, Math.log(n.z)], [0.001, 0.001, 70]), 0.2) as Vec3,
-        color: [255, 255, 255, 255],
+        color: [r, g, b, 255],
+        initialized: false
       }),
     );
   }
@@ -89,6 +101,20 @@ function inv4(m: Mat4): Mat4 {
       [0, Math.random() * 55 + 200, 0, 255],
     );
   }
+
+  const order = getDepthFirstTraversalOrder(graph);
+
+  let r = 0;
+  let g = 255;
+  let b = 0;
+
+  // for (const o of order) {
+  //   o.data.color = [r,g,b, 255];
+
+  //   r = clamp(r + Math.random() * 10 - 5, 127, 255)
+  //   g = clamp(g + Math.random() * 10 - 5, 127, 255)
+  //   b = clamp(b + Math.random() * 10 - 5, 127, 255)
+  // }
 
   // const nodes = range(20000).map(
   //   () =>
@@ -196,41 +222,52 @@ function inv4(m: Mat4): Mat4 {
         v.endpoints[1].data.position,
       );
 
+          const distFromEdge = 0.8 / len;
+
       const across = x => mix3(
-            x,
+            lerp(x, distFromEdge, 1 - distFromEdge),
             v.endpoints[0].data.position,
             v.endpoints[1].data.position,
           )
 
+    let colorMul = Math.random() * 0.2 + 0.4
+
+     const lerpColor = x => scale4(mix4(
+      x,
+      v.endpoints[0].data.color,
+      v.endpoints[1].data.color,
+     ), colorMul);
+
+
       return [
         {
-          position: across(0.5 / len),
-          color: v.data,
+          position: across(0),
+          color: lerpColor(0),
           size: edgeThickness,
         },
         {
           position: across(0.1),
-          color: v.data,
+          color: lerpColor(0.1) ,
           size: edgeThickness * 0.25,
         },
         {
           position: across(0.33),
-          color: v.data,
+          color: lerpColor(0.33),
           size: edgeThickness * 0.1,
         },
         {
           position: across(0.67),
-          color: v.data,
+          color: lerpColor(0.67),
           size: edgeThickness * 0.1,
         },
         {
           position: across(0.9),
-          color: v.data,
+          color: lerpColor(0.9),
           size: edgeThickness * 0.25,
         },
         {
-          position: across(1 - 0.5 / len),
-          color: v.data,
+          position: across(1),
+          color: lerpColor(1),
           size: edgeThickness,
         },
         {
@@ -357,13 +394,13 @@ function inv4(m: Mat4): Mat4 {
     });
     pass.draw(6, graph.vertices.size);
 
-    // pipelineRenderpass(
-    //   lines.pointPipeline,
-    //   pass,
-    // )({
-    //   points: edges,
-    // });
-    // pass.draw(6, graph.edges.size * 3);
+    pipelineRenderpass(
+      lines.pointPipeline,
+      pass,
+    )({
+      points: edges,
+    });
+    pass.draw(6, graph.edges.size * 3);
 
     pass.setPipeline(lines.linePipeline);
     pipelineRenderpass(

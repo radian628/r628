@@ -174,11 +174,9 @@ export async function lineRenderer(
       frag.signedUv = vertex.geometryPosition;
       frag.color = vertex.color;
       frag.size = vertex.size;
-      frag.centerDepth = pos.z + 0.1; 
       return frag;
     `,
     fragment: {
-      extraOutputs: `@builtin(frag_depth) depth : f32,`,
       function: `
       var pixel: FragOutput;
 
@@ -187,24 +185,11 @@ export async function lineRenderer(
       if (mag > 1.0) { discard; }
       pixel.color = input.color;
 
-      let realDepth = input.position.z / input.position.w;
-
-      let bulge = sqrt(1.0 - mag * mag) * input.size;
-
-      pixel.depth = (input.centerDepth - bulge) * input.position.w;
-
-      // pixel.color.g = fract((input.centerDepth - bulge) * input.position.w);
-
-      // pixel.depth = realDepth * input.position.w;
-
-      // pixel.depth = input.centerDepth * input.position.w;
-
       return pixel;`,
       struct: `@builtin(position) position : vec4f,
 @location(0) color : vec4f,
 @location(1) signedUv : vec2f,
-@location(2) size : f32,
-@location(3) centerDepth : f32`,
+@location(2) size : f32,`,
     },
   });
 
@@ -262,7 +247,7 @@ export async function lineRenderer(
         0.0  
       );
 
-      frag.color = vertex.color1;
+      frag.color = mix(vertex.color1, vertex.color2, uv.x);
 
       frag.size = size / frag.position.z;
       frag.signedUv = vertex.geometryPosition;
