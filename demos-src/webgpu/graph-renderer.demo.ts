@@ -40,6 +40,8 @@ import stringHash from "string-hash";
 
 const graphData = JSON.parse(GraphData);
 
+console.log("bust cache")
+
 console.log(graphData);
 
 type Node = { position: Vec3; color: Vec4, initialized: boolean };
