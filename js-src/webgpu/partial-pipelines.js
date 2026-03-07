@@ -23868,6 +23868,11 @@ var OneDimensionalSpatialHashTable = class {
   }
 };
 
+// src/math/round.ts
+function roundUp(factor, x) {
+  return Math.ceil(x / factor) * factor;
+}
+
 // src/webgpu/wgsl-snippets.ts
 var WgslSnippets = {
   unitQuadSigned: {
@@ -24384,11 +24389,6 @@ fn perlinNoise3(P: vec3f) -> f32 {
     ).join("\n\n")
   }
 };
-
-// src/math/round.ts
-function roundUp(factor, x) {
-  return Math.ceil(x / factor) * factor;
-}
 
 // src/audio/stream-audio.ts
 var import_fft = __toESM(require_fft());
@@ -25416,6 +25416,7 @@ function wrapDevice(device) {
         }
 
         struct FragOutput {
+          ${params.fragment.extraOutputs ?? ""}
           ${Object.entries(params.outputs).map(
             ([name, value], i) => `@location(${i}) ${name} : ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[typeof value === "string" ? value : value.format]}`
           ).join(",\n  ")}

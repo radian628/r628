@@ -23868,6 +23868,11 @@ var OneDimensionalSpatialHashTable = class {
   }
 };
 
+// src/math/round.ts
+function roundUp(factor, x) {
+  return Math.ceil(x / factor) * factor;
+}
+
 // src/webgpu/wgsl-snippets.ts
 var WgslSnippets = {
   unitQuadSigned: {
@@ -24384,11 +24389,6 @@ fn perlinNoise3(P: vec3f) -> f32 {
     ).join("\n\n")
   }
 };
-
-// src/math/round.ts
-function roundUp(factor, x) {
-  return Math.ceil(x / factor) * factor;
-}
 
 // src/audio/stream-audio.ts
 var import_fft = __toESM(require_fft());
@@ -25427,6 +25427,7 @@ function wrapDevice(device) {
         }
 
         struct FragOutput {
+          ${params.fragment.extraOutputs ?? ""}
           ${Object.entries(params.outputs).map(
             ([name, value], i) => `@location(${i}) ${name} : ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[typeof value === "string" ? value : value.format]}`
           ).join(",\n  ")}
@@ -25686,21 +25687,38 @@ async function lineRenderer(device, outputFormat) {
       frag.position = vec4f(pos.xy + vertex.geometryPosition * vertex.size, pos.zw);
       frag.signedUv = vertex.geometryPosition;
       frag.color = vertex.color;
-      frag.size = vertex.size / frag.position.z;
+      frag.size = vertex.size;
+      frag.centerDepth = pos.z + 0.1; 
       return frag;
     `,
     fragment: {
+      extraOutputs: `@builtin(frag_depth) depth : f32,`,
       function: `
       var pixel: FragOutput;
 
-      if (length(input.signedUv) > 1.0) { discard; }
+      let mag = length(input.signedUv);
+
+      if (mag > 1.0) { discard; }
       pixel.color = input.color;
+
+      let realDepth = input.position.z / input.position.w;
+
+      let bulge = sqrt(1.0 - mag * mag) * input.size;
+
+      pixel.depth = (input.centerDepth - bulge) * input.position.w;
+
+      // pixel.color.g = fract((input.centerDepth - bulge) * input.position.w);
+
+      // pixel.depth = realDepth * input.position.w;
+
+      // pixel.depth = input.centerDepth * input.position.w;
 
       return pixel;`,
       struct: `@builtin(position) position : vec4f,
 @location(0) color : vec4f,
 @location(1) signedUv : vec2f,
-@location(2) size : f32`
+@location(2) size : f32,
+@location(3) centerDepth : f32`
     }
   });
   const linePipeline = await wdevice.pipeline({

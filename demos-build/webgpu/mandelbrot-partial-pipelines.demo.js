@@ -25416,6 +25416,7 @@ struct Params {
         }
 
         struct FragOutput {
+          ${params.fragment.extraOutputs ?? ""}
           ${Object.entries(params.outputs).map(
               ([name, value], i) => `@location(${i}) ${name} : ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[typeof value === "string" ? value : value.format]}`
             ).join(",\n  ")}

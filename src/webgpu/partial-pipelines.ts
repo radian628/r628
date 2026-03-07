@@ -761,6 +761,7 @@ export function wrapDevice(device: GPUDevice) {
       fragment?: {
         function: string;
         struct: string;
+        extraOutputs?: string;
       };
       depthStencil?: GPUDepthStencilState;
     }): Promise<WrappedPipeline<BindGroups, any, Inputs, Outputs>> {
@@ -812,6 +813,7 @@ export function wrapDevice(device: GPUDevice) {
         }
 
         struct FragOutput {
+          ${params.fragment.extraOutputs ?? ""}
           ${Object.entries(params.outputs)
             .map(
               ([name, value], i) =>

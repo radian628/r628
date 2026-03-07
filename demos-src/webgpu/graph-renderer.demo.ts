@@ -86,7 +86,7 @@ function inv4(m: Mat4): Mat4 {
     addEdge(
       graph,
       [src, dst],
-      [0, 255, 0, 255],
+      [0, Math.random() * 55 + 200, 0, 255],
     );
   }
 
@@ -187,7 +187,7 @@ function inv4(m: Mat4): Mat4 {
     })),
   );
 
-  const edgeThickness = 0.008;
+  const edgeThickness = 0.2;
 
   const edges = lines.pointInstanceBufferFormat.quickCreate(
     [...graph.edges].flatMap((v) => {
@@ -196,22 +196,40 @@ function inv4(m: Mat4): Mat4 {
         v.endpoints[1].data.position,
       );
 
-      return [
-        {
-          position: mix3(
-            0.6 / len,
+      const across = x => mix3(
+            x,
             v.endpoints[0].data.position,
             v.endpoints[1].data.position,
-          ),
+          )
+
+      return [
+        {
+          position: across(0.5 / len),
           color: v.data,
           size: edgeThickness,
         },
         {
-          position: mix3(
-            1 - 0.6 / len,
-            v.endpoints[0].data.position,
-            v.endpoints[1].data.position,
-          ),
+          position: across(0.1),
+          color: v.data,
+          size: edgeThickness * 0.25,
+        },
+        {
+          position: across(0.33),
+          color: v.data,
+          size: edgeThickness * 0.1,
+        },
+        {
+          position: across(0.67),
+          color: v.data,
+          size: edgeThickness * 0.1,
+        },
+        {
+          position: across(0.9),
+          color: v.data,
+          size: edgeThickness * 0.25,
+        },
+        {
+          position: across(1 - 0.5 / len),
           color: v.data,
           size: edgeThickness,
         },
@@ -262,8 +280,8 @@ function inv4(m: Mat4): Mat4 {
     const localXAxis = mulVec4ByMat4([1, 0, 0, 0], rotationMatrix);
     const localYAxis = mulVec4ByMat4([0, -1, 0, 0], rotationMatrix);
 
-    const r1 = rotate(xyz(localYAxis), -e.movementX * 0.001);
-    const r2 = rotate(xyz(localXAxis), e.movementY * 0.001);
+    const r1 = rotate(xyz(localYAxis), -e.movementX * 0.003);
+    const r2 = rotate(xyz(localXAxis), e.movementY * 0.003);
 
     rotationMatrix = mulMat4(rotationMatrix, mulMat4(r1, r2));
   });
@@ -278,7 +296,7 @@ function inv4(m: Mat4): Mat4 {
 
     viewerPos = add3(viewerPos, scale3(viewerVel, dt));
 
-    const accel = mulVec4ByMat4(
+    const accel = scale4(mulVec4ByMat4(
       [
         keysDown.has("d") ? -1 : keysDown.has("a") ? 1 : 0,
         keysDown.has("shift") ? 1 : keysDown.has(" ") ? -1 : 0,
@@ -286,7 +304,7 @@ function inv4(m: Mat4): Mat4 {
         0,
       ],
       rotationMatrix,
-    );
+    ), 3.0);
 
     viewerVel = add3(viewerVel, xyz(accel));
     viewerVel = scale3(viewerVel, 0.1 ** dt);
@@ -338,6 +356,14 @@ function inv4(m: Mat4): Mat4 {
       perFrame: graphPerFrameBindGroup,
     });
     pass.draw(6, graph.vertices.size);
+
+    // pipelineRenderpass(
+    //   lines.pointPipeline,
+    //   pass,
+    // )({
+    //   points: edges,
+    // });
+    // pass.draw(6, graph.edges.size * 3);
 
     pass.setPipeline(lines.linePipeline);
     pipelineRenderpass(
