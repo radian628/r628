@@ -135,7 +135,7 @@ export async function lineRenderer(
 
   const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
 
-  const blend: GPUBlendState = {
+  const blend: GPUBlendState | undefined = undefined; /* {
     color: {
       operation: "add",
       srcFactor: "one",
@@ -146,10 +146,10 @@ export async function lineRenderer(
       operation: "add",
       srcFactor: "one",
       // dstFactor: "one",
-      dstFactor: "one-minus-src-alpha",
+      dstFactor: "one-minus-src-alpha"
       // dstFactor: "zero",
     },
-  };
+  };*/
 
   // const blend = undefined;
 

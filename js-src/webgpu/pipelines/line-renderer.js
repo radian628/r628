@@ -23527,21 +23527,7 @@ async function lineRenderer(device, outputFormat) {
     })
   );
   const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
-  const blend = {
-    color: {
-      operation: "add",
-      srcFactor: "one",
-      dstFactor: "one-minus-src-alpha"
-      // dstFactor: "zero",
-    },
-    alpha: {
-      operation: "add",
-      srcFactor: "one",
-      // dstFactor: "one",
-      dstFactor: "one-minus-src-alpha"
-      // dstFactor: "zero",
-    }
-  };
+  const blend = void 0;
   const pointPipeline = await wdevice.pipeline({
     depthStencil: {
       format: "depth32float",

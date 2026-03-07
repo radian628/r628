@@ -21231,6 +21231,19 @@
     }
   };
 
+  // src/webgl/mesh.ts
+  function normalize(v) {
+    const len = Math.hypot(...v);
+    return scale3(v, 1 / len);
+  }
+  function rodrigues(v, k, theta) {
+    k = normalize(k);
+    return add3(
+      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+    );
+  }
+
   // src/audio/stream-audio.ts
   var import_fft = __toESM(require_fft());
   function createTrack(channels, sampleRate, constituents) {
@@ -22415,19 +22428,6 @@ fn perlinNoise3(P: vec3f) -> f32 {
       ).join("\n\n")
     }
   };
-
-  // src/webgl/mesh.ts
-  function normalize(v) {
-    const len = Math.hypot(...v);
-    return scale3(v, 1 / len);
-  }
-  function rodrigues(v, k, theta) {
-    k = normalize(k);
-    return add3(
-      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-    );
-  }
 
   // src/webgpu/gpudoc/ui.tsx
   var import_react4 = __toESM(require_react());

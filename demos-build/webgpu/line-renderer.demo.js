@@ -21422,6 +21422,36 @@
     }
   };
 
+  // src/webgl/mesh.ts
+  function normalize(v) {
+    const len = Math.hypot(...v);
+    return scale3(v, 1 / len);
+  }
+  function rodrigues(v, k, theta) {
+    k = normalize(k);
+    return add3(
+      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+    );
+  }
+  function rotate(axis, angle) {
+    return [
+      ...rodrigues([1, 0, 0], axis, angle),
+      0,
+      ...rodrigues([0, 1, 0], axis, angle),
+      0,
+      ...rodrigues([0, 0, 1], axis, angle),
+      0,
+      0,
+      0,
+      0,
+      1
+    ];
+  }
+  function translate(v) {
+    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
+  }
+
   // src/math/round.ts
   function roundUp(factor, x) {
     return Math.ceil(x / factor) * factor;
@@ -24088,36 +24118,6 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u) {
     ];
   }
 
-  // src/webgl/mesh.ts
-  function normalize(v) {
-    const len = Math.hypot(...v);
-    return scale3(v, 1 / len);
-  }
-  function rodrigues(v, k, theta) {
-    k = normalize(k);
-    return add3(
-      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-    );
-  }
-  function rotate(axis, angle) {
-    return [
-      ...rodrigues([1, 0, 0], axis, angle),
-      0,
-      ...rodrigues([0, 1, 0], axis, angle),
-      0,
-      ...rodrigues([0, 0, 1], axis, angle),
-      0,
-      0,
-      0,
-      0,
-      1
-    ];
-  }
-  function translate(v) {
-    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
-  }
-
   // src/webgpu/pipelines/line-renderer.ts
   async function lineRenderer(device, outputFormat) {
     const wdevice = wrapDevice(device);
@@ -24231,21 +24231,7 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u) {
       })
     );
     const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
-    const blend = {
-      color: {
-        operation: "add",
-        srcFactor: "one",
-        dstFactor: "one-minus-src-alpha"
-        // dstFactor: "zero",
-      },
-      alpha: {
-        operation: "add",
-        srcFactor: "one",
-        // dstFactor: "one",
-        dstFactor: "one-minus-src-alpha"
-        // dstFactor: "zero",
-      }
-    };
+    const blend = void 0;
     const pointPipeline = await wdevice.pipeline({
       depthStencil: {
         format: "depth32float",

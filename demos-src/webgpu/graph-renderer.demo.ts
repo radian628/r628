@@ -25,10 +25,16 @@ import {
   variadify,
   Vec3,
   Vec4,
+  Vertex,
   w,
   wrapDevice,
   xyz,
 } from "../../src";
+import GraphData from "./graph_with_xyz.json?raw";
+
+const graphData = JSON.parse(GraphData);
+
+console.log(graphData);
 
 type Node = { position: Vec3; color: Vec4 };
 
@@ -51,35 +57,55 @@ function inv4(m: Mat4): Mat4 {
 
   const graph: Graph<Node, Vec4> = createGraph();
 
-  const nodes = range(20000).map(
-    () =>
-      ({
-        position: [
-          Math.random() * 200 - 100,
-          Math.random() * 200 - 100,
-          Math.random() * 200 - 100,
-        ],
-        color: [
-          Math.random() * 255,
-          Math.random() * 255,
-          Math.random() * 255,
-          255,
-        ],
-      }) as Node,
-  );
+  let nodeMap = new Map<string, Vertex<Node, Vec4>>();
 
-  const verts = nodes.map((n) => addVertex(graph, n));
+  for (const n of graphData.nodes) {
+    nodeMap.set(
+      n.Id,
+      addVertex(graph, {
+        position: scale3([n.x, n.y, n.z], 100) as Vec3,
+        color: [255, 255, 255, 255],
+      }),
+    );
+  }
 
-  range(100000).map(() =>
+  for (const e of graphData.links) {
     addEdge(
       graph,
-      [pickrand(verts), pickrand(verts)],
-      scale4(
-        [Math.random() * 255, Math.random() * 255, Math.random() * 255, 255],
-        0.35,
-      ),
-    ),
-  );
+      [nodeMap.get(e.source)!, nodeMap.get(e.target)!],
+      [0, 255, 0, 255],
+    );
+  }
+
+  // const nodes = range(20000).map(
+  //   () =>
+  //     ({
+  //       position: [
+  //         Math.random() * 200 - 100,
+  //         Math.random() * 200 - 100,
+  //         Math.random() * 200 - 100,
+  //       ],
+  //       color: [
+  //         Math.random() * 255,
+  //         Math.random() * 255,
+  //         Math.random() * 255,
+  //         255,
+  //       ],
+  //     }) as Node,
+  // );
+
+  // const verts = nodes.map((n) => addVertex(graph, n));
+
+  // range(400_000).map(() =>
+  //   addEdge(
+  //     graph,
+  //     [pickrand(verts), pickrand(verts)],
+  //     scale4(
+  //       [Math.random() * 255, Math.random() * 255, Math.random() * 255, 255],
+  //       1,
+  //     ),
+  //   ),
+  // );
 
   // const v1 = addVertex(graph, n1);
   // const v2 = addVertex(graph, n2);
@@ -121,7 +147,8 @@ function inv4(m: Mat4): Mat4 {
   ctx.configure({
     device: device,
     format: navigator.gpu.getPreferredCanvasFormat(),
-    alphaMode: "premultiplied",
+    // alphaMode: "premultiplied",
+    alphaMode: "opaque",
   });
 
   const lines = await lineRenderer(
@@ -147,6 +174,8 @@ function inv4(m: Mat4): Mat4 {
     })),
   );
 
+  const edgeThickness = 0.008;
+
   const edges = lines.pointInstanceBufferFormat.quickCreate(
     [...graph.edges].flatMap((v) => {
       let len = distance3(
@@ -162,7 +191,7 @@ function inv4(m: Mat4): Mat4 {
             v.endpoints[1].data.position,
           ),
           color: v.data,
-          size: 0.01,
+          size: edgeThickness,
         },
         {
           position: mix3(
@@ -171,12 +200,12 @@ function inv4(m: Mat4): Mat4 {
             v.endpoints[1].data.position,
           ),
           color: v.data,
-          size: 0.01,
+          size: edgeThickness,
         },
         {
           position: [NaN, NaN, NaN],
           color: v.data,
-          size: 0.01,
+          size: edgeThickness,
         },
       ];
     }),
