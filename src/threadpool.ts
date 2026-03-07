@@ -54,7 +54,7 @@ type InterfacePerformanceStatisticsRecord<T extends InterfaceWithMethods> =
   Record<keyof T, PerformanceStatisticsRecord>;
 
 export function getPerformanceStatistics<T extends InterfaceWithMethods>(
-  records: PerformanceRecord<T>[]
+  records: PerformanceRecord<T>[],
 ): InterfacePerformanceStatisticsRecord<T> {
   return Object.fromEntries(
     Array.from(groupBy(records, (g) => g.name).entries()).map(([name, v]) => {
@@ -69,15 +69,15 @@ export function getPerformanceStatistics<T extends InterfaceWithMethods>(
           averageRuntime: totalRuntime / invocationCount,
           worstCaseRuntime: v.reduce(
             (prev, curr) => Math.max(prev, curr.runtime),
-            0
+            0,
           ),
           bestCaseRuntime: v.reduce(
             (prev, curr) => Math.min(prev, curr.runtime),
-            0
+            0,
           ),
         } satisfies PerformanceStatisticsRecord,
       ];
-    })
+    }),
   ) as InterfacePerformanceStatisticsRecord<T>;
 }
 
@@ -115,7 +115,7 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
   serialization?: {
     [K in keyof T]?: Pick<FunctionSerializer<T[K]>, SerializerMainThreaedProps>;
   },
-  t?: T
+  t?: T,
 ): {
   send: WorkerifyInterface<T>;
   sendToThread: (index: number) => WorkerifyInterface<T>;
@@ -146,7 +146,7 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
   function sendMessageToWorkerWithResponse(
     prop: string | symbol,
     args: any[],
-    workerIndex: number
+    workerIndex: number,
   ) {
     const worker = workers[workerIndex];
 
@@ -158,7 +158,7 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
     if (shouldRunInMain === "main") {
       if (!t)
         throw new Error(
-          "If a threadpool method is to run in the main thread, its interface should be provided to the main thread!"
+          "If a threadpool method is to run in the main thread, its interface should be provided to the main thread!",
         );
       const res = t[prop as keyof T](...args);
       performanceRecords.push(
@@ -170,7 +170,7 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
             metadata: serializationInfo?.getRuntimeMetadata?.(args, retval),
             thread: { type: "main" },
           };
-        })
+        }),
       );
       return res;
     }
@@ -194,7 +194,7 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
           args: await serializeArgs(args),
           id: myid,
         },
-        serialization?.[prop as keyof T]?.transferArgs?.(args) ?? []
+        serialization?.[prop as keyof T]?.transferArgs?.(args) ?? [],
       );
     });
 
@@ -207,7 +207,7 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
           metadata: serializationInfo?.getRuntimeMetadata?.(args, retval),
           thread: { type: "worker", workerId: workerIndex },
         };
-      })
+      }),
     );
 
     return res;
@@ -243,8 +243,8 @@ export function createRoundRobinThreadpool<T extends InterfaceWithMethods>(
         return async (...args: any[]) => {
           return await Promise.all(
             workers.map((w, i) =>
-              sendMessageToWorkerWithResponse(prop, args, i)
-            )
+              sendMessageToWorkerWithResponse(prop, args, i),
+            ),
           );
         };
       },
@@ -259,7 +259,7 @@ export function createRoundRobinThread<T extends InterfaceWithMethods>(
       FunctionSerializer<T[K]>,
       SerializerWorkerThreaedProps
     >;
-  }
+  },
 ) {
   self.addEventListener("message", async (e) => {
     const parseArgs = serialization?.[e.data.type]?.parseArgs ?? id;
@@ -278,7 +278,7 @@ export function createRoundRobinThread<T extends InterfaceWithMethods>(
         id: e.data.id,
       },
       // @ts-expect-error
-      serialization?.[e.data.type]?.transferRetVal?.(resp) ?? []
+      serialization?.[e.data.type]?.transferRetVal?.(resp) ?? [],
     );
   });
 }
@@ -291,24 +291,23 @@ export function createCombinedRoundRobinThreadpool<
   workerCount?: number,
   serialization?: {
     [K in keyof T]?: FunctionSerializer<T[K]>;
-  }
+  },
 ): ReturnType<typeof createRoundRobinThreadpool<T>> {
   if (eval("self.WorkerGlobalScope")) {
     createRoundRobinThread(getInterface(false), serialization);
-    // @ts-expect-error
     return;
   } else {
     return createRoundRobinThreadpool(
       src ?? (document.currentScript as HTMLScriptElement).src,
       workerCount,
       serialization,
-      getInterface(true)
+      getInterface(true),
     );
   }
 }
 
 export async function inMainThread<T>(
-  cb: () => T | Promise<T>
+  cb: () => T | Promise<T>,
 ): Promise<T | undefined> {
   if (eval("self.WorkerGlobalScope")) {
     return;

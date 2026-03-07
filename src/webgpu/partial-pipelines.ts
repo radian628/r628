@@ -61,7 +61,7 @@ type WrappedBindGroupSampler = {
 };
 
 type WrappedBindGroupUniformBuffer<Spec extends WGSLStructSpec> = {
-  type: "uniform-buffer";
+  type: "uniform-buffer" | "storage-buffer";
   name: string;
   format: Spec;
   visibility: number;
@@ -72,8 +72,18 @@ type WrappedBindGroupUniformBuffer<Spec extends WGSLStructSpec> = {
     };
   };
   wgsl: (groupIndex: number, bindingIndex: number) => string;
-  wgslStorage: (groupIndex: number, bindingIndex: number) => string;
+  wgslStorage: (
+    groupIndex: number,
+    bindingIndex: number,
+    access: "read" | "write" | "read_write",
+  ) => string;
   quickCreate(data: WGSLStructValues<Spec>): GPUBuffer & {
+    format: {
+      type: "uniform";
+      data: Spec;
+    };
+  };
+  reinterpret: (buf: GPUBuffer) => GPUBuffer & {
     format: {
       type: "uniform";
       data: Spec;
@@ -118,15 +128,20 @@ export type WrappedBindGroupVertexBuffer<
       data: {
         arrayStride: ArrayStride;
         attributes: Attrs;
+        stepMode: StepMode;
       };
     };
   };
-  instantiate(count: number): GPUBuffer & {
+  instantiate(
+    count: number,
+    extraUsage?: number,
+  ): GPUBuffer & {
     format: {
       type: "vertex";
       data: {
         arrayStride: ArrayStride;
         attributes: Attrs;
+        stepMode: StepMode;
       };
     };
   };
@@ -150,7 +165,11 @@ export type WrappedBindGroupVertexBuffer<
       };
     };
   };
-  wgslStorage: (groupIndex: number, bindingIndex: number) => string;
+  wgslStorage: (
+    groupIndex: number,
+    bindingIndex: number,
+    access: "read" | "write" | "read_write",
+  ) => string;
   visibility: number;
   readonly: boolean;
 };
@@ -196,6 +215,14 @@ type WrappedPipeline<
   shader: Shader;
   inputs: Inputs;
   outputs: Outputs;
+};
+
+type WrappedCompute<
+  BindGroups extends (WrappedBindGroupLayoutGeneric | undefined)[],
+  Shader extends WrappedShader,
+> = GPUComputePipeline & {
+  bindGroups: BindGroups;
+  shader: Shader;
 };
 
 type WrappedRenderPass = {};
@@ -422,7 +449,6 @@ export function pipelineRenderpass<Pipeline extends WrappedPipelineGeneric>(
   const inputNameToIndex = new Map(pipeline.inputs.map((b, i) => [b.name, i]));
 
   return (bindings) => {
-    console.log(bindGroupNameToIndex, bindings);
     for (const [k, v] of Object.entries(bindings)) {
       const bindGroupIndex = bindGroupNameToIndex.get(k);
       if (bindGroupIndex !== undefined) {
@@ -450,31 +476,40 @@ export function wrapDevice(device: GPUDevice) {
     uniformBuffer<Name extends string, Spec extends WGSLStructSpec>(
       name: Name,
       spec: Spec,
-    ) {
+      isStorage?: boolean,
+      settings?: {
+        visibility?: GPUShaderStageFlags;
+        usage?: GPUBufferUsageFlags;
+      },
+    ): WrappedBindGroupUniformBuffer<Spec> & { name: Name } {
       const [withLayouts] = generateLayouts([spec]);
       const gen = createLayoutGenerator(withLayouts);
 
       return {
-        type: "uniform-buffer" as const,
+        type: isStorage ? "storage-buffer" : ("uniform-buffer" as const),
         name,
         format: spec,
-        visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
+        visibility:
+          settings?.visibility ??
+          GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
         quickCreate(data: WGSLStructValues<Spec>) {
-          const gpubuf = this.instantiate();
+          const gpubuf = this.instantiate(1);
           const arrayBuf = new ArrayBuffer(withLayouts.size);
           gen(new DataView(arrayBuf), data);
           device.queue.writeBuffer(gpubuf, 0, arrayBuf);
           return gpubuf;
         },
-        instantiate(): GPUBuffer & {
+        instantiate(count: number): GPUBuffer & {
           format: {
             type: "uniform";
             data: Spec;
           };
         } {
           const buf = device.createBuffer({
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-            size: withLayouts.size,
+            usage:
+              settings?.usage ??
+              GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            size: withLayouts.size * count,
           });
 
           // @ts-expect-error
@@ -494,8 +529,16 @@ export function wrapDevice(device: GPUDevice) {
         wgsl(groupIndex: number, bindingIndex: number): string {
           return `@group(${groupIndex}) @binding(${bindingIndex}) var<uniform> ${name} : ${typeName(spec)};`;
         },
-        wgslStorage(groupIndex: number, bindingIndex: number): string {
-          return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage> ${name} : array<${typeName(spec)}>;`;
+        wgslStorage(
+          groupIndex: number,
+          bindingIndex: number,
+          access: "read" | "write" | "read_write",
+        ): string {
+          return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage, ${access}> ${name} : array<${typeName(spec)}>;`;
+        },
+        // @ts-expect-error
+        reinterpret(buf: GPUBuffer) {
+          return buf;
         },
       };
     },
@@ -510,6 +553,7 @@ export function wrapDevice(device: GPUDevice) {
         stride: ArrayStride;
         types: Types;
         stepMode: StepMode;
+        visibility: number;
       },
     ): WrappedBindGroupVertexBuffer<Name, ArrayStride, Types, StepMode> {
       let size = params.stride;
@@ -533,6 +577,7 @@ export function wrapDevice(device: GPUDevice) {
       // }
 
       return {
+        visibility: params.visibility,
         name,
         stepMode: params.stepMode,
         type: "vertex-buffer",
@@ -543,9 +588,12 @@ export function wrapDevice(device: GPUDevice) {
           return buf;
         },
         // @ts-expect-error
-        instantiate(count) {
+        instantiate(count, extraUsage?: number) {
           const buf = device.createBuffer({
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            usage:
+              GPUBufferUsage.VERTEX |
+              GPUBufferUsage.COPY_DST |
+              (extraUsage ?? 0),
             size: count * size,
           });
           return buf;
@@ -573,8 +621,6 @@ export function wrapDevice(device: GPUDevice) {
             }
             index++;
           }
-
-          console.log(attrViews, cpubuf);
 
           device.queue.writeBuffer(buf, 0, cpubuf);
           return buf;
@@ -609,12 +655,15 @@ export function wrapDevice(device: GPUDevice) {
                 },
               },
             };
-          } else if (e.type === "uniform-buffer") {
+          } else if (
+            e.type === "uniform-buffer" ||
+            e.type === "storage-buffer"
+          ) {
             return {
               binding: i,
               visibility: e.visibility,
               buffer: {
-                type: "uniform",
+                type: e.type === "storage-buffer" ? "storage" : "uniform",
               },
             };
           } else if (e.type === "vertex-buffer") {
@@ -690,7 +739,10 @@ export function wrapDevice(device: GPUDevice) {
         },
       };
     },
-    shader(code: string, stages: ShaderStage[] = ["vertex", "fragment"]) {
+    shader(
+      code: string,
+      stages: ShaderStage[] = ["vertex", "fragment", "compute"],
+    ) {
       const module = device.createShaderModule({
         code,
       });
@@ -788,6 +840,7 @@ export function wrapDevice(device: GPUDevice) {
 
       // ${params.depthStencil?.depthWriteEnabled ? `,\n  @builtin(frag_depth) depth : f32` : ""}
     },
+
     async pipelineRaw<
       BindGroups extends WrappedBindGroupLayoutGeneric[],
       Shader extends WrappedShader,
@@ -854,6 +907,87 @@ export function wrapDevice(device: GPUDevice) {
         vertex,
         fragment,
         depthStencil: params.depthStencil,
+        layout: device.createPipelineLayout({
+          bindGroupLayouts: params.bindGroups.map((bg, i) => bg),
+        }),
+      });
+
+      // @ts-expect-error
+      ppln.bindGroups = params.bindGroups;
+      // @ts-expect-error
+      ppln.shader = params.shader;
+      // @ts-expect-error
+      ppln.inputs = params.inputs;
+
+      // @ts-expect-error
+      return ppln;
+    },
+
+    async compute<BindGroups extends WrappedBindGroupLayoutGeneric[]>(params: {
+      bindGroups: BindGroups;
+      workgroupSize: Vec3;
+      shader: string;
+      globals?: string;
+      storageBufferAccess: Record<string, "read" | "write" | "read_write">;
+    }): Promise<WrappedCompute<BindGroups, any>> {
+      const requiredStructDefs = params.bindGroups.flatMap((bg) =>
+        bg.entries.flatMap((e) => {
+          if (e.type === "uniform-buffer" || e.type === "storage-buffer") {
+            return [e.format];
+          } else {
+            return [];
+          }
+        }),
+      );
+
+      const requiredBindings = params.bindGroups
+        .flatMap((bg, groupIndex) =>
+          bg.entries.flatMap((e, bindingIndex) => {
+            if (e.type === "uniform-buffer") {
+              return e.wgsl(groupIndex, bindingIndex);
+            } else if (
+              e.type === "vertex-buffer" ||
+              e.type === "storage-buffer"
+            ) {
+              return e.wgslStorage(
+                groupIndex,
+                bindingIndex,
+                params.storageBufferAccess[e.name] ?? "read",
+              );
+            } else {
+              return "";
+            }
+          }),
+        )
+        .join("\n");
+
+      const shaderSource = `
+${createWgslSerializers(...requiredStructDefs).code}          
+${requiredBindings}
+${params.globals ?? ""}
+
+@compute
+@workgroup_size(${params.workgroupSize.join(", ")})
+fn ComputeMain(@builtin(global_invocation_id) id: vec3u) {
+  ${params.shader}
+}
+          `;
+
+      return this.computeRaw({
+        bindGroups: params.bindGroups,
+        shader: this.shader(shaderSource, ["compute"]),
+      });
+    },
+
+    async computeRaw<
+      BindGroups extends WrappedBindGroupLayoutGeneric[],
+      Shader extends WrappedShader,
+    >(params: {
+      bindGroups: BindGroups;
+      shader: Shader;
+    }): Promise<WrappedCompute<BindGroups, Shader>> {
+      const ppln = await device.createComputePipelineAsync({
+        compute: params.shader,
         layout: device.createPipelineLayout({
           bindGroupLayouts: params.bindGroups.map((bg, i) => bg),
         }),

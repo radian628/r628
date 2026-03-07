@@ -12,13 +12,16 @@ import { struct, WGSLStructSpec } from "../wgsl-struct-layout-generator";
 
 export async function lineRenderer(
   device: GPUDevice,
-  outputFormat: GPUTextureFormat
+  outputFormat: GPUTextureFormat,
 ) {
   const wdevice = wrapDevice(device);
 
   const depthTexFormat = wdevice.texture("depth", {
     format: "depth32float",
   });
+
+  const EVERYWHERE =
+    GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
 
   const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
     types: [
@@ -30,6 +33,7 @@ export async function lineRenderer(
     ] as const,
     stride: 8,
     stepMode: "vertex",
+    visibility: EVERYWHERE,
   });
 
   const quad = geometryBufferFormat.quickCreate([
@@ -73,6 +77,7 @@ export async function lineRenderer(
     ] as const,
     stride: 20,
     stepMode: "instance",
+    visibility: EVERYWHERE,
   });
 
   const lineSegInstanceBufferFormat1 = wdevice.vertexBuffer("lineSegments1", {
@@ -95,6 +100,7 @@ export async function lineRenderer(
     ] as const,
     stride: 20,
     stepMode: "instance",
+    visibility: EVERYWHERE,
   });
   const lineSegInstanceBufferFormat2 = wdevice.vertexBuffer("lineSegments2", {
     types: [
@@ -116,6 +122,7 @@ export async function lineRenderer(
     ] as const,
     stride: 20,
     stepMode: "instance",
+    visibility: EVERYWHERE,
   });
 
   const uniforms = wdevice.uniformBuffer(
@@ -123,7 +130,7 @@ export async function lineRenderer(
     struct("Params", {
       mvp: "mat4x4f",
       viewportSize: "f32",
-    })
+    }),
   );
 
   const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
@@ -133,13 +140,17 @@ export async function lineRenderer(
       operation: "add",
       srcFactor: "one",
       dstFactor: "one-minus-src-alpha",
+      // dstFactor: "zero",
     },
     alpha: {
       operation: "add",
       srcFactor: "one",
       dstFactor: "one",
+      // dstFactor: "zero",
     },
   };
+
+  // const blend = undefined;
 
   const pointPipeline = await wdevice.pipeline({
     depthStencil: {
@@ -202,7 +213,12 @@ export async function lineRenderer(
       let pos1 = params.mvp * vec4f(vertex.position1, 1.0); 
       let pos2 = params.mvp * vec4f(vertex.position2, 1.0); 
 
-      let localy = normalize(cross(pos2.xyz - pos1.xyz, vec3(0.0, 0.0, 1.0)));
+      let offset = normalize(pos2.xy / pos2.w - pos1.xy / pos1.w);
+
+      var localy = vec3f(
+        -offset.y, offset.x 
+      , 0.0);
+
 
       let uv = vertex.geometryPosition * 0.5 + 0.5;
 
@@ -254,8 +270,185 @@ export async function lineRenderer(
     lineSegInstanceBufferFormat2,
     geometryBufferFormat,
     uniforms,
+    quad,
     perFrameBindGroup,
+    linePipeline,
     pointPipeline,
+    createEmptyLines(
+      count: number,
+      depthLoadOp: "clear" | "load",
+      extraUsage: number,
+    ) {
+      const perFrameUniforms = uniforms.instantiate(1);
+
+      const perFrame = perFrameBindGroup.instantiate({
+        params: perFrameUniforms,
+      });
+
+      const vertexBuf = pointInstanceBufferFormat.instantiate(
+        count,
+        extraUsage,
+      );
+
+      const pass = device.createRenderBundleEncoder({
+        colorFormats: [outputFormat],
+        depthStencilFormat: depthTexFormat.format,
+      });
+
+      pass.setPipeline(pointPipeline);
+
+      pipelineRenderpass(
+        pointPipeline,
+        pass,
+      )({
+        points: vertexBuf,
+        geometry: quad,
+        perFrame,
+      });
+
+      pass.draw(6, count);
+
+      pass.setPipeline(linePipeline);
+
+      pipelineRenderpass(
+        linePipeline,
+        pass,
+      )({
+        lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
+        lineSegments2: [
+          lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
+          20,
+        ],
+        geometry: quad,
+      });
+
+      pass.draw(6, count - 1);
+
+      const bundle = pass.finish();
+
+      return {
+        buffer: vertexBuf,
+        draw(target: GPUTexture, depthTarget: GPUTexture, transform: Mat4) {
+          uniforms.fill(perFrameUniforms, 0, {
+            viewportSize: Math.min(target.width, target.height),
+            mvp: transform,
+          });
+
+          const encoder = device.createCommandEncoder();
+
+          const pass = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                view: target,
+                loadOp: "load",
+                storeOp: "store",
+              },
+            ],
+            depthStencilAttachment: {
+              view: depthTarget,
+              depthClearValue: 1.0,
+              depthLoadOp: depthLoadOp,
+              depthStoreOp: "store",
+            },
+          });
+
+          pass.executeBundles([bundle]);
+
+          pass.end();
+
+          device.queue.submit([encoder.finish()]);
+        },
+      };
+    },
+    createLines(
+      points: Vec3[],
+      color: Vec4,
+      thickness: number,
+      depthLoadOp: "clear" | "load",
+    ) {
+      const perFrameUniforms = uniforms.instantiate(1);
+
+      const perFrame = perFrameBindGroup.instantiate({
+        params: perFrameUniforms,
+      });
+
+      const vertexBuf = pointInstanceBufferFormat.quickCreate(
+        points.map((position) => ({
+          position,
+          color,
+          size: thickness,
+        })),
+      );
+
+      const pass = device.createRenderBundleEncoder({
+        colorFormats: [outputFormat],
+        depthStencilFormat: depthTexFormat.format,
+      });
+
+      pass.setPipeline(pointPipeline);
+
+      pipelineRenderpass(
+        pointPipeline,
+        pass,
+      )({
+        points: vertexBuf,
+        geometry: quad,
+        perFrame,
+      });
+
+      pass.draw(6, points.length);
+
+      pass.setPipeline(linePipeline);
+
+      pipelineRenderpass(
+        linePipeline,
+        pass,
+      )({
+        lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
+        lineSegments2: [
+          lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
+          20,
+        ],
+        geometry: quad,
+      });
+
+      pass.draw(6, points.length - 1);
+
+      const bundle = pass.finish();
+
+      return {
+        draw(target: GPUTexture, depthTarget: GPUTexture, transform: Mat4) {
+          uniforms.fill(perFrameUniforms, 0, {
+            viewportSize: Math.min(target.width, target.height),
+            mvp: transform,
+          });
+
+          const encoder = device.createCommandEncoder();
+
+          const pass = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                view: target,
+                loadOp: "load",
+                storeOp: "store",
+              },
+            ],
+            depthStencilAttachment: {
+              view: depthTarget,
+              depthClearValue: 1.0,
+              depthLoadOp: depthLoadOp,
+              depthStoreOp: "store",
+            },
+          });
+
+          pass.executeBundles([bundle]);
+
+          pass.end();
+
+          device.queue.submit([encoder.finish()]);
+        },
+      };
+    },
     drawLinesSimple(
       target: GPUTexture,
       depthTarget: GPUTexture,
@@ -263,14 +456,14 @@ export async function lineRenderer(
       points: Vec3[],
       color: Vec4,
       thickness: number,
-      transform: Mat4
+      transform: Mat4,
     ) {
       const vertexBuf = pointInstanceBufferFormat.quickCreate(
         points.map((position) => ({
           position,
           color,
           size: thickness,
-        }))
+        })),
       );
 
       const encoder = device.createCommandEncoder();
@@ -302,7 +495,7 @@ export async function lineRenderer(
 
       pipelineRenderpass(
         pointPipeline,
-        pass
+        pass,
       )({
         points: vertexBuf,
         geometry: quad,
@@ -315,7 +508,7 @@ export async function lineRenderer(
 
       pipelineRenderpass(
         linePipeline,
-        pass
+        pass,
       )({
         lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
         lineSegments2: [

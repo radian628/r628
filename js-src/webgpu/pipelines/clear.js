@@ -22928,6 +22928,17 @@ var import_react15 = __toESM(require_react());
 var import_client2 = __toESM(require_client());
 
 // src/webgpu/wgsl-struct-layout-generator.ts
+function struct(name, members) {
+  return {
+    type: "struct",
+    name,
+    // @ts-expect-error
+    members: Object.entries(members).map(([k, v]) => [
+      k,
+      typeof v === "string" ? { type: { type: v } } : { type: v }
+    ])
+  };
+}
 function getAllStructs(specs) {
   const ret = [];
   function r(spec) {
@@ -23402,9 +23413,112 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u) {
     }
   };
 }
+
+// src/webgpu/pipelines/clear.ts
+async function clearRenderer(device, outputFormat) {
+  const wdevice = wrapDevice(device);
+  const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
+    types: [
+      {
+        name: "geometryPosition",
+        format: "float32x2",
+        offset: 0
+      }
+    ],
+    stride: 8,
+    stepMode: "vertex",
+    visibility: GPUShaderStage.VERTEX
+  });
+  const quad = geometryBufferFormat.quickCreate([
+    {
+      geometryPosition: [-1, -1]
+    },
+    {
+      geometryPosition: [1, -1]
+    },
+    {
+      geometryPosition: [-1, 1]
+    },
+    {
+      geometryPosition: [1, -1]
+    },
+    {
+      geometryPosition: [-1, 1]
+    },
+    {
+      geometryPosition: [1, 1]
+    }
+  ]);
+  const uniforms = wdevice.uniformBuffer(
+    "params",
+    struct("Params", {
+      clearColor: "vec4f"
+    })
+  );
+  const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
+  const pipeline = await wdevice.pipeline({
+    inputs: [geometryBufferFormat],
+    outputs: {
+      color: {
+        format: outputFormat
+      }
+    },
+    bindGroups: [perFrameBindGroup],
+    vertex: `
+    var frag: FragInput;
+    frag.position = vec4f(vertex.geometryPosition.xy, 1.0, 1.0);
+    return frag;
+`,
+    fragment: {
+      function: `
+      var pixel: FragOutput;
+      pixel.color = params.clearColor;
+      return pixel;
+      `,
+      struct: `@builtin(position) position : vec4f
+      `
+    }
+  });
+  const perFrameUniforms = uniforms.instantiate(1);
+  const perFrame = perFrameBindGroup.instantiate({
+    params: perFrameUniforms
+  });
+  const pass = device.createRenderBundleEncoder({
+    colorFormats: [outputFormat]
+  });
+  pass.setPipeline(pipeline);
+  pipelineRenderpass(
+    pipeline,
+    pass
+  )({
+    geometry: quad,
+    perFrame
+  });
+  pass.draw(6);
+  const bundle = pass.finish();
+  return {
+    clear(tex, color) {
+      uniforms.fill(perFrameUniforms, 0, {
+        clearColor: color
+      });
+      const encoder = device.createCommandEncoder();
+      const pass2 = encoder.beginRenderPass({
+        colorAttachments: [
+          {
+            view: tex,
+            loadOp: "clear",
+            storeOp: "store"
+          }
+        ]
+      });
+      pass2.executeBundles([bundle]);
+      pass2.end();
+      device.queue.submit([encoder.finish()]);
+    }
+  };
+}
 export {
-  pipelineRenderpass,
-  wrapDevice
+  clearRenderer
 };
 /*! Bundled license information:
 
