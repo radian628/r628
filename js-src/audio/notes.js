@@ -28,7 +28,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var require_Lexer = __commonJS({
   "node_modules/typescript-parsec/lib/Lexer.js"(exports) {
     "use strict";
-    var __extends = exports && exports.__extends || /* @__PURE__ */ function() {
+    var __extends = exports && exports.__extends || /* @__PURE__ */ (function() {
       var extendStatics = function(d, b) {
         extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
           d2.__proto__ = b2;
@@ -44,7 +44,7 @@ var require_Lexer = __commonJS({
         }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
       };
-    }();
+    })();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.buildLexer = exports.extractByTokenRange = exports.extractByPositionRange = exports.TokenRangeError = exports.TokenError = void 0;
     function posToString(pos) {
@@ -52,7 +52,7 @@ var require_Lexer = __commonJS({
     }
     var TokenError = (
       /** @class */
-      function(_super) {
+      (function(_super) {
         __extends(TokenError2, _super);
         function TokenError2(pos, errorMessage) {
           var _this = _super.call(this, posToString(pos) + ": " + errorMessage) || this;
@@ -61,12 +61,12 @@ var require_Lexer = __commonJS({
           return _this;
         }
         return TokenError2;
-      }(Error)
+      })(Error)
     );
     exports.TokenError = TokenError;
     var TokenRangeError = (
       /** @class */
-      function(_super) {
+      (function(_super) {
         __extends(TokenRangeError2, _super);
         function TokenRangeError2(first, next, errorMessage) {
           var _this = _super.call(this, posToString(first) + " - " + posToString(next) + ": " + errorMessage) || this;
@@ -76,7 +76,7 @@ var require_Lexer = __commonJS({
           return _this;
         }
         return TokenRangeError2;
-      }(Error)
+      })(Error)
     );
     exports.TokenRangeError = TokenRangeError;
     function extractByPositionRange(input, first, next) {
@@ -94,7 +94,7 @@ var require_Lexer = __commonJS({
     exports.extractByTokenRange = extractByTokenRange;
     var TokenImpl = (
       /** @class */
-      function() {
+      (function() {
         function TokenImpl2(lexer, input, kind, text, pos, keep) {
           this.lexer = lexer;
           this.input = input;
@@ -117,11 +117,11 @@ var require_Lexer = __commonJS({
           configurable: true
         });
         return TokenImpl2;
-      }()
+      })()
     );
     var LexerImpl = (
       /** @class */
-      function() {
+      (function() {
         function LexerImpl2(rules) {
           this.rules = rules;
           for (var _i = 0, _a = this.rules; _i < _a.length; _i++) {
@@ -187,7 +187,7 @@ var require_Lexer = __commonJS({
           }
         };
         return LexerImpl2;
-      }()
+      })()
     );
     function buildLexer2(rules) {
       return new LexerImpl(rules);
@@ -887,7 +887,7 @@ var require_Rule = __commonJS({
     var ParserInterface_1 = require_ParserInterface();
     var RuleImpl = (
       /** @class */
-      function() {
+      (function() {
         function RuleImpl2() {
         }
         RuleImpl2.prototype.setPattern = function(parser) {
@@ -900,7 +900,7 @@ var require_Rule = __commonJS({
           return this.parser.parse(token);
         };
         return RuleImpl2;
-      }()
+      })()
     );
     function rule2() {
       return new RuleImpl();
@@ -996,15 +996,15 @@ var require_ParserModule = __commonJS({
 var require_lib = __commonJS({
   "node_modules/typescript-parsec/lib/index.js"(exports) {
     "use strict";
-    var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
+    var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
       if (k2 === void 0) k2 = k;
       Object.defineProperty(o, k2, { enumerable: true, get: function() {
         return m[k];
       } });
-    } : function(o, m, k, k2) {
+    }) : (function(o, m, k, k2) {
       if (k2 === void 0) k2 = k;
       o[k2] = m[k];
-    });
+    }));
     var __exportStar = exports && exports.__exportStar || function(m, exports2) {
       for (var p in m) if (p !== "default" && !exports2.hasOwnProperty(p)) __createBinding(exports2, m, p);
     };

@@ -341,10 +341,10 @@ var require_wgsl_reflect_node = __commonJS({
         }
         case "rg11b10ufloat": {
           const t3 = new Uint32Array(e2.buffer, c2, 1)[0], n3 = (4192256 & t3) >> 11, s3 = (4290772992 & t3) >> 22;
-          return [k(2047 & t3), k(n3), function(e3) {
+          return [k(2047 & t3), k(n3), (function(e3) {
             const t4 = 112 + (e3 >> 5 & 31) << 23 | (31 & e3) << 18;
             return b[0] = t4, v[0];
-          }(s3), 1];
+          })(s3), 1];
         }
       }
       return null;
@@ -1608,7 +1608,7 @@ var require_wgsl_reflect_node = __commonJS({
       }
       setPixel(e2, t2, n2, s2, r2) {
         const o2 = this.texelByteSize, a2 = this.bytesPerRow, i2 = this.height, l2 = this.data[s2];
-        !function(e3, t3, n3, s3, r3, o3, a3, i3, l3, c2) {
+        !(function(e3, t3, n3, s3, r3, o3, a3, i3, l3, c2) {
           const u2 = s3 * (a3 >>= r3) * (o3 >>= r3) + n3 * a3 + t3 * i3;
           switch (l3) {
             case "r8unorm":
@@ -1682,7 +1682,7 @@ var require_wgsl_reflect_node = __commonJS({
             case "rg11b10ufloat":
               console.error("TODO: rg11b10ufloat not supported for writing");
           }
-        }(new Uint8Array(l2), e2, t2, n2, s2, i2, a2, o2, this.format, r2);
+        })(new Uint8Array(l2), e2, t2, n2, s2, i2, a2, o2, this.format, r2);
       }
     };
     exports.TokenClass = void 0, (z = exports.TokenClass || (exports.TokenClass = {}))[z.token = 0] = "token", z[z.keyword = 1] = "keyword", z[z.reserved = 2] = "reserved";
@@ -3604,12 +3604,12 @@ var require_wgsl_reflect_node = __commonJS({
             if (!o2.endsWith("h")) return console.error(`Unknown vector type ${a2}. Line ${e2.line}`), null;
             a2 = "f16";
           }
-          const i2 = function(e3, t4, n3) {
+          const i2 = (function(e3, t4, n3) {
             if (t4 === n3) return e3;
             const s3 = new Array(e3.length);
             for (let r3 = 0; r3 < e3.length; r3++) s3[r3] = tt(e3[r3], t4, n3);
             return s3;
-          }(Array.from(n2.data), r2, a2);
+          })(Array.from(n2.data), r2, a2);
           return new Fe(i2, this.getTypeInfo(s2));
         }
         return console.error(`TODO: bitcast for ${n2.typeInfo.name}. Line ${e2.line}`), null;
@@ -3799,7 +3799,7 @@ var require_wgsl_reflect_node = __commonJS({
             if (Re(r2) && Re(o2)) {
               const t4 = r2, a3 = o2;
               if (n2 instanceof Me && s2 instanceof Me) {
-                const r3 = function(e3, t5, n3, s3) {
+                const r3 = (function(e3, t5, n3, s3) {
                   if (void 0 === ft[t5.name] || void 0 === ft[s3.name]) return null;
                   const r4 = ft[t5.name][0], o4 = ft[t5.name][1], a4 = ft[s3.name][0];
                   if (r4 !== ft[s3.name][1]) return null;
@@ -3810,13 +3810,13 @@ var require_wgsl_reflect_node = __commonJS({
                     i4[t6 * a4 + s4] = l3;
                   }
                   return i4;
-                }(t4, n2.typeInfo, a3, s2.typeInfo);
+                })(t4, n2.typeInfo, a3, s2.typeInfo);
                 if (null === r3) return console.error(`Matrix multiplication failed. Line ${e2.line}.`), null;
                 const o3 = ft[s2.typeInfo.name][0], i3 = ft[n2.typeInfo.name][1], l2 = this.getTypeInfo(`mat${o3}x${i3}f`);
                 return new Me(r3, l2);
               }
               if (n2 instanceof Me && s2 instanceof Fe) {
-                const r3 = function(e3, t5, n3, s3) {
+                const r3 = (function(e3, t5, n3, s3) {
                   if (void 0 === ft[t5.name] || void 0 === ht[s3.name]) return null;
                   const r4 = ft[t5.name][0], o3 = ft[t5.name][1];
                   if (r4 !== n3.length) return null;
@@ -3827,11 +3827,11 @@ var require_wgsl_reflect_node = __commonJS({
                     a4[t6] = s4;
                   }
                   return a4;
-                }(t4, n2.typeInfo, a3, s2.typeInfo);
+                })(t4, n2.typeInfo, a3, s2.typeInfo);
                 return null === r3 ? (console.error(`Matrix vector multiplication failed. Line ${e2.line}.`), null) : new Fe(r3, s2.typeInfo);
               }
               if (n2 instanceof Fe && s2 instanceof Me) {
-                const r3 = function(e3, t5, n3, s3) {
+                const r3 = (function(e3, t5, n3, s3) {
                   if (void 0 === ht[t5.name] || void 0 === ft[s3.name]) return null;
                   const r4 = ft[s3.name][0], o3 = ft[s3.name][1];
                   if (o3 !== e3.length) return null;
@@ -3842,7 +3842,7 @@ var require_wgsl_reflect_node = __commonJS({
                     a4[t6] = s4;
                   }
                   return a4;
-                }(t4, n2.typeInfo, a3, s2.typeInfo);
+                })(t4, n2.typeInfo, a3, s2.typeInfo);
                 return null === r3 ? (console.error(`Matrix vector multiplication failed. Line ${e2.line}.`), null) : new Fe(r3, n2.typeInfo);
               }
               {

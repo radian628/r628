@@ -539,144 +539,52 @@ function assert(x) {
     throw new Error("Assertion failed.");
   }
 }
-var Bitstream = class _Bitstream {
-  constructor(bytes) {
-    this.bytes = bytes;
-    this.pos = 0;
-  }
-  seekToByte(byteOffset) {
-    this.pos = 8 * byteOffset;
-  }
-  readBit() {
-    const byteIndex = Math.floor(this.pos / 8);
-    const byte = this.bytes[byteIndex] ?? 0;
-    const bitIndex = 7 - (this.pos & 7);
-    const bit = (byte & 1 << bitIndex) >> bitIndex;
-    this.pos++;
-    return bit;
-  }
-  readBits(n) {
-    if (n === 1) {
-      return this.readBit();
-    }
-    let result = 0;
-    for (let i = 0; i < n; i++) {
-      result <<= 1;
-      result |= this.readBit();
-    }
-    return result;
-  }
-  writeBits(n, value) {
-    const end = this.pos + n;
-    for (let i = this.pos; i < end; i++) {
-      const byteIndex = Math.floor(i / 8);
-      let byte = this.bytes[byteIndex];
-      const bitIndex = 7 - (i & 7);
-      byte &= ~(1 << bitIndex);
-      byte |= (value & 1 << end - i - 1) >> end - i - 1 << bitIndex;
-      this.bytes[byteIndex] = byte;
-    }
-    this.pos = end;
-  }
-  readAlignedByte() {
-    if (this.pos % 8 !== 0) {
-      throw new Error("Bitstream is not byte-aligned.");
-    }
-    const byteIndex = this.pos / 8;
-    const byte = this.bytes[byteIndex] ?? 0;
-    this.pos += 8;
-    return byte;
-  }
-  skipBits(n) {
-    this.pos += n;
-  }
-  getBitsLeft() {
-    return this.bytes.length * 8 - this.pos;
-  }
-  clone() {
-    const clone = new _Bitstream(this.bytes);
-    clone.pos = this.pos;
-    return clone;
-  }
+var last = (arr) => {
+  return arr && arr[arr.length - 1];
 };
 var toUint8Array = (source) => {
-  if (source instanceof Uint8Array) {
+  if (source.constructor === Uint8Array) {
     return source;
-  } else if (source instanceof ArrayBuffer) {
-    return new Uint8Array(source);
-  } else {
+  } else if (ArrayBuffer.isView(source)) {
     return new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+  } else {
+    return new Uint8Array(source);
   }
 };
 var toDataView = (source) => {
-  if (source instanceof DataView) {
+  if (source.constructor === DataView) {
     return source;
-  } else if (source instanceof ArrayBuffer) {
-    return new DataView(source);
-  } else {
+  } else if (ArrayBuffer.isView(source)) {
     return new DataView(source.buffer, source.byteOffset, source.byteLength);
+  } else {
+    return new DataView(source);
   }
 };
-var textDecoder = new TextDecoder();
-var textEncoder = new TextEncoder();
-var invertObject = (object) => {
-  return Object.fromEntries(Object.entries(object).map(([key, value]) => [value, key]));
-};
-var COLOR_PRIMARIES_MAP = {
-  bt709: 1,
-  // ITU-R BT.709
-  bt470bg: 5,
-  // ITU-R BT.470BG
-  smpte170m: 6,
-  // ITU-R BT.601 525 - SMPTE 170M
-  bt2020: 9,
-  // ITU-R BT.202
-  smpte432: 12
-  // SMPTE EG 432-1
-};
-var COLOR_PRIMARIES_MAP_INVERSE = invertObject(COLOR_PRIMARIES_MAP);
-var TRANSFER_CHARACTERISTICS_MAP = {
-  "bt709": 1,
-  // ITU-R BT.709
-  "smpte170m": 6,
-  // SMPTE 170M
-  "linear": 8,
-  // Linear transfer characteristics
-  "iec61966-2-1": 13,
-  // IEC 61966-2-1
-  "pg": 16,
-  // Rec. ITU-R BT.2100-2 perceptual quantization (PQ) system
-  "hlg": 18
-  // Rec. ITU-R BT.2100-2 hybrid loggamma (HLG) system
-};
-var TRANSFER_CHARACTERISTICS_MAP_INVERSE = invertObject(TRANSFER_CHARACTERISTICS_MAP);
-var MATRIX_COEFFICIENTS_MAP = {
-  "rgb": 0,
-  // Identity
-  "bt709": 1,
-  // ITU-R BT.709
-  "bt470bg": 5,
-  // ITU-R BT.470BG
-  "smpte170m": 6,
-  // SMPTE 170M
-  "bt2020-ncl": 9
-  // ITU-R BT.2020-2 (non-constant luminance)
-};
-var MATRIX_COEFFICIENTS_MAP_INVERSE = invertObject(MATRIX_COEFFICIENTS_MAP);
+var textEncoder = /* @__PURE__ */ new TextEncoder();
 var isAllowSharedBufferSource = (x) => {
   return x instanceof ArrayBuffer || typeof SharedArrayBuffer !== "undefined" && x instanceof SharedArrayBuffer || ArrayBuffer.isView(x);
 };
 var AsyncMutex = class {
   constructor() {
     this.currentPromise = Promise.resolve();
+    this.pending = 0;
   }
   async acquire() {
     let resolver;
     const nextPromise = new Promise((resolve) => {
-      resolver = resolve;
+      let resolved = false;
+      resolver = () => {
+        if (resolved) {
+          return;
+        }
+        resolve();
+        this.pending--;
+        resolved = true;
+      };
     });
     const currentPromiseAlias = this.currentPromise;
     this.currentPromise = nextPromise;
+    this.pending++;
     await currentPromiseAlias;
     return resolver;
   }
@@ -746,6 +654,13 @@ var CallSerializer = class {
     return this.currentPromise = this.currentPromise.then(fn);
   }
 };
+var isWebKitCache = null;
+var isWebKit = () => {
+  if (isWebKitCache !== null) {
+    return isWebKitCache;
+  }
+  return isWebKitCache = !!(typeof navigator !== "undefined" && (navigator.vendor?.match(/apple/i) || /AppleWebKit/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent) || /\b(iPad|iPhone|iPod)\b/.test(navigator.userAgent)));
+};
 var keyValueIterator = function* (object) {
   for (const key in object) {
     const value = object[key];
@@ -762,13 +677,43 @@ var bytesToBase64 = (bytes) => {
   }
   return btoa(string);
 };
+var polyfillSymbolDispose = () => {
+  Symbol.dispose ??= Symbol("Symbol.dispose");
+};
 
-// node_modules/mediabunny/dist/modules/src/tags.js
+// node_modules/mediabunny/dist/modules/src/metadata.js
 var RichImageData = class {
   /** Creates a new {@link RichImageData}. */
   constructor(data, mimeType) {
     this.data = data;
     this.mimeType = mimeType;
+    if (!(data instanceof Uint8Array)) {
+      throw new TypeError("data must be a Uint8Array.");
+    }
+    if (typeof mimeType !== "string") {
+      throw new TypeError("mimeType must be a string.");
+    }
+  }
+};
+var AttachedFile = class {
+  /** Creates a new {@link AttachedFile}. */
+  constructor(data, mimeType, name, description) {
+    this.data = data;
+    this.mimeType = mimeType;
+    this.name = name;
+    this.description = description;
+    if (!(data instanceof Uint8Array)) {
+      throw new TypeError("data must be a Uint8Array.");
+    }
+    if (mimeType !== void 0 && typeof mimeType !== "string") {
+      throw new TypeError("mimeType, when provided, must be a string.");
+    }
+    if (name !== void 0 && typeof name !== "string") {
+      throw new TypeError("name, when provided, must be a string.");
+    }
+    if (description !== void 0 && typeof description !== "string") {
+      throw new TypeError("description, when provided, must be a string.");
+    }
   }
 };
 var validateMetadataTags = (tags) => {
@@ -838,11 +783,179 @@ var validateMetadataTags = (tags) => {
       throw new TypeError("tags.raw, when provided, must be an object.");
     }
     for (const value of Object.values(tags.raw)) {
-      if (value !== null && typeof value !== "string" && !(value instanceof Uint8Array) && !(value instanceof RichImageData)) {
-        throw new TypeError("Each value in tags.raw must be a string, Uint8Array, RichImageData, or null.");
+      if (value !== null && typeof value !== "string" && !(value instanceof Uint8Array) && !(value instanceof RichImageData) && !(value instanceof AttachedFile)) {
+        throw new TypeError("Each value in tags.raw must be a string, Uint8Array, RichImageData, AttachedFile, or null.");
       }
     }
   }
+};
+var validateTrackDisposition = (disposition) => {
+  if (!disposition || typeof disposition !== "object") {
+    throw new TypeError("disposition must be an object.");
+  }
+  if (disposition.default !== void 0 && typeof disposition.default !== "boolean") {
+    throw new TypeError("disposition.default must be a boolean.");
+  }
+  if (disposition.forced !== void 0 && typeof disposition.forced !== "boolean") {
+    throw new TypeError("disposition.forced must be a boolean.");
+  }
+  if (disposition.original !== void 0 && typeof disposition.original !== "boolean") {
+    throw new TypeError("disposition.original must be a boolean.");
+  }
+  if (disposition.commentary !== void 0 && typeof disposition.commentary !== "boolean") {
+    throw new TypeError("disposition.commentary must be a boolean.");
+  }
+  if (disposition.hearingImpaired !== void 0 && typeof disposition.hearingImpaired !== "boolean") {
+    throw new TypeError("disposition.hearingImpaired must be a boolean.");
+  }
+  if (disposition.visuallyImpaired !== void 0 && typeof disposition.visuallyImpaired !== "boolean") {
+    throw new TypeError("disposition.visuallyImpaired must be a boolean.");
+  }
+};
+
+// node_modules/mediabunny/dist/modules/shared/bitstream.js
+var Bitstream = class _Bitstream {
+  constructor(bytes) {
+    this.bytes = bytes;
+    this.pos = 0;
+  }
+  seekToByte(byteOffset) {
+    this.pos = 8 * byteOffset;
+  }
+  readBit() {
+    const byteIndex = Math.floor(this.pos / 8);
+    const byte = this.bytes[byteIndex] ?? 0;
+    const bitIndex = 7 - (this.pos & 7);
+    const bit = (byte & 1 << bitIndex) >> bitIndex;
+    this.pos++;
+    return bit;
+  }
+  readBits(n) {
+    if (n === 1) {
+      return this.readBit();
+    }
+    let result = 0;
+    for (let i = 0; i < n; i++) {
+      result <<= 1;
+      result |= this.readBit();
+    }
+    return result;
+  }
+  writeBits(n, value) {
+    const end = this.pos + n;
+    for (let i = this.pos; i < end; i++) {
+      const byteIndex = Math.floor(i / 8);
+      let byte = this.bytes[byteIndex];
+      const bitIndex = 7 - (i & 7);
+      byte &= ~(1 << bitIndex);
+      byte |= (value & 1 << end - i - 1) >> end - i - 1 << bitIndex;
+      this.bytes[byteIndex] = byte;
+    }
+    this.pos = end;
+  }
+  readAlignedByte() {
+    if (this.pos % 8 !== 0) {
+      throw new Error("Bitstream is not byte-aligned.");
+    }
+    const byteIndex = this.pos / 8;
+    const byte = this.bytes[byteIndex] ?? 0;
+    this.pos += 8;
+    return byte;
+  }
+  skipBits(n) {
+    this.pos += n;
+  }
+  getBitsLeft() {
+    return this.bytes.length * 8 - this.pos;
+  }
+  clone() {
+    const clone = new _Bitstream(this.bytes);
+    clone.pos = this.pos;
+    return clone;
+  }
+};
+
+// node_modules/mediabunny/dist/modules/shared/aac-misc.js
+var aacFrequencyTable = [
+  96e3,
+  88200,
+  64e3,
+  48e3,
+  44100,
+  32e3,
+  24e3,
+  22050,
+  16e3,
+  12e3,
+  11025,
+  8e3,
+  7350
+];
+var aacChannelMap = [-1, 1, 2, 3, 4, 5, 6, 8];
+var parseAacAudioSpecificConfig = (bytes) => {
+  if (!bytes || bytes.byteLength < 2) {
+    throw new TypeError("AAC description must be at least 2 bytes long.");
+  }
+  const bitstream = new Bitstream(bytes);
+  let objectType = bitstream.readBits(5);
+  if (objectType === 31) {
+    objectType = 32 + bitstream.readBits(6);
+  }
+  const frequencyIndex = bitstream.readBits(4);
+  let sampleRate = null;
+  if (frequencyIndex === 15) {
+    sampleRate = bitstream.readBits(24);
+  } else {
+    if (frequencyIndex < aacFrequencyTable.length) {
+      sampleRate = aacFrequencyTable[frequencyIndex];
+    }
+  }
+  const channelConfiguration = bitstream.readBits(4);
+  let numberOfChannels = null;
+  if (channelConfiguration >= 1 && channelConfiguration <= 7) {
+    numberOfChannels = aacChannelMap[channelConfiguration];
+  }
+  return {
+    objectType,
+    frequencyIndex,
+    sampleRate,
+    channelConfiguration,
+    numberOfChannels
+  };
+};
+var buildAacAudioSpecificConfig = (config) => {
+  let frequencyIndex = aacFrequencyTable.indexOf(config.sampleRate);
+  let customSampleRate = null;
+  if (frequencyIndex === -1) {
+    frequencyIndex = 15;
+    customSampleRate = config.sampleRate;
+  }
+  const channelConfiguration = aacChannelMap.indexOf(config.numberOfChannels);
+  if (channelConfiguration === -1) {
+    throw new TypeError(`Unsupported number of channels: ${config.numberOfChannels}`);
+  }
+  let bitCount = 5 + 4 + 4;
+  if (config.objectType >= 32) {
+    bitCount += 6;
+  }
+  if (frequencyIndex === 15) {
+    bitCount += 24;
+  }
+  const byteCount = Math.ceil(bitCount / 8);
+  const bytes = new Uint8Array(byteCount);
+  const bitstream = new Bitstream(bytes);
+  if (config.objectType < 32) {
+    bitstream.writeBits(5, config.objectType);
+  } else {
+    bitstream.writeBits(5, 31);
+    bitstream.writeBits(6, config.objectType - 32);
+  }
+  bitstream.writeBits(4, frequencyIndex);
+  if (frequencyIndex === 15) {
+    bitstream.writeBits(24, customSampleRate);
+  }
+  bitstream.writeBits(4, channelConfiguration);
+  return bytes;
 };
 
 // node_modules/mediabunny/dist/modules/src/codec.js
@@ -875,7 +988,9 @@ var NON_PCM_AUDIO_CODECS = [
   "opus",
   "mp3",
   "vorbis",
-  "flac"
+  "flac",
+  "ac3",
+  "eac3"
 ];
 var AUDIO_CODECS = [
   ...NON_PCM_AUDIO_CODECS,
@@ -901,12 +1016,16 @@ var buildAudioCodecString = (codec, numberOfChannels, sampleRate) => {
     return "vorbis";
   } else if (codec === "flac") {
     return "flac";
+  } else if (codec === "ac3") {
+    return "ac-3";
+  } else if (codec === "eac3") {
+    return "ec-3";
   } else if (PCM_AUDIO_CODECS.includes(codec)) {
     return codec;
   }
   throw new TypeError(`Unhandled codec '${codec}'.`);
 };
-var OPUS_INTERNAL_SAMPLE_RATE = 48e3;
+var OPUS_SAMPLE_RATE = 48e3;
 var PCM_CODEC_REGEX = /^pcm-([usf])(\d+)+(be)?$/;
 var parsePcmCodec = (codec) => {
   assert(PCM_AUDIO_CODECS.includes(codec));
@@ -952,6 +1071,10 @@ var inferCodecFromCodecString = (codecString) => {
     return "vorbis";
   } else if (codecString === "flac") {
     return "flac";
+  } else if (codecString === "ac-3" || codecString === "ac3") {
+    return "ac3";
+  } else if (codecString === "ec-3" || codecString === "eac3") {
+    return "eac3";
   } else if (codecString === "ulaw") {
     return "ulaw";
   } else if (codecString === "alaw") {
@@ -981,7 +1104,18 @@ var getAudioEncoderConfigExtension = (codec) => {
   }
   return {};
 };
-var VALID_AUDIO_CODEC_STRING_PREFIXES = ["mp4a", "mp3", "opus", "vorbis", "flac", "ulaw", "alaw", "pcm"];
+var VALID_AUDIO_CODEC_STRING_PREFIXES = [
+  "mp4a",
+  "mp3",
+  "opus",
+  "vorbis",
+  "flac",
+  "ulaw",
+  "alaw",
+  "pcm",
+  "ac-3",
+  "ec-3"
+];
 var validateAudioChunkMetadata = (metadata) => {
   if (!metadata) {
     throw new TypeError("Audio chunk metadata must be provided.");
@@ -999,7 +1133,7 @@ var validateAudioChunkMetadata = (metadata) => {
     throw new TypeError("Audio chunk metadata decoder configuration must specify a codec string.");
   }
   if (!VALID_AUDIO_CODEC_STRING_PREFIXES.some((prefix) => metadata.decoderConfig.codec.startsWith(prefix))) {
-    throw new TypeError("Audio chunk metadata decoder configuration codec string must be a valid audio codec string as specified in the WebCodecs Codec Registry.");
+    throw new TypeError("Audio chunk metadata decoder configuration codec string must be a valid audio codec string as specified in the Mediabunny Codec Registry.");
   }
   if (!Number.isInteger(metadata.decoderConfig.sampleRate) || metadata.decoderConfig.sampleRate <= 0) {
     throw new TypeError("Audio chunk metadata decoder configuration must specify a valid sampleRate (positive integer).");
@@ -1016,9 +1150,6 @@ var validateAudioChunkMetadata = (metadata) => {
     const validStrings = ["mp4a.40.2", "mp4a.40.02", "mp4a.40.5", "mp4a.40.05", "mp4a.40.29", "mp4a.67"];
     if (!validStrings.includes(metadata.decoderConfig.codec)) {
       throw new TypeError("Audio chunk metadata decoder configuration codec string for AAC must be a valid AAC codec string as specified in https://www.w3.org/TR/webcodecs-aac-codec-registration/.");
-    }
-    if (!metadata.decoderConfig.description) {
-      throw new TypeError("Audio chunk metadata decoder configuration for AAC must include a description, which is expected to be an AudioSpecificConfig as specified in ISO 14496-3.");
     }
   } else if (metadata.decoderConfig.codec.startsWith("mp3") || metadata.decoderConfig.codec.startsWith("mp4a")) {
     if (metadata.decoderConfig.codec !== "mp3" && metadata.decoderConfig.codec !== "mp4a.69" && metadata.decoderConfig.codec !== "mp4a.6B" && metadata.decoderConfig.codec !== "mp4a.6b") {
@@ -1046,6 +1177,14 @@ var validateAudioChunkMetadata = (metadata) => {
     if (!metadata.decoderConfig.description || metadata.decoderConfig.description.byteLength < minDescriptionSize) {
       throw new TypeError("Audio chunk metadata decoder configuration for FLAC must include a description, which is expected to adhere to the format described in https://www.w3.org/TR/webcodecs-flac-codec-registration/.");
     }
+  } else if (metadata.decoderConfig.codec.startsWith("ac-3") || metadata.decoderConfig.codec.startsWith("ac3")) {
+    if (metadata.decoderConfig.codec !== "ac-3") {
+      throw new TypeError('Audio chunk metadata decoder configuration codec string for AC-3 must be "ac-3".');
+    }
+  } else if (metadata.decoderConfig.codec.startsWith("ec-3") || metadata.decoderConfig.codec.startsWith("eac3")) {
+    if (metadata.decoderConfig.codec !== "ec-3") {
+      throw new TypeError('Audio chunk metadata decoder configuration codec string for EC-3 must be "ec-3".');
+    }
   } else if (metadata.decoderConfig.codec.startsWith("pcm") || metadata.decoderConfig.codec.startsWith("ulaw") || metadata.decoderConfig.codec.startsWith("alaw")) {
     if (!PCM_AUDIO_CODECS.includes(metadata.decoderConfig.codec)) {
       throw new TypeError(`Audio chunk metadata decoder configuration codec string for PCM must be one of the supported PCM codecs (${PCM_AUDIO_CODECS.join(", ")}).`);
@@ -1053,45 +1192,34 @@ var validateAudioChunkMetadata = (metadata) => {
   }
 };
 
-// node_modules/mediabunny/dist/modules/src/muxer.js
-var Muxer = class {
-  constructor(output) {
-    this.mutex = new AsyncMutex();
-    this.firstMediaStreamTimestamp = null;
-    this.trackTimestampInfo = /* @__PURE__ */ new WeakMap();
-    this.output = output;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onTrackClose(track) {
-  }
-  validateAndNormalizeTimestamp(track, timestampInSeconds, isKeyFrame) {
-    timestampInSeconds += track.source._timestampOffset;
-    let timestampInfo = this.trackTimestampInfo.get(track);
-    if (!timestampInfo) {
-      if (!isKeyFrame) {
-        throw new Error("First frame must be a key frame.");
-      }
-      timestampInfo = {
-        maxTimestamp: timestampInSeconds,
-        maxTimestampBeforeLastKeyFrame: timestampInSeconds
-      };
-      this.trackTimestampInfo.set(track, timestampInfo);
-    }
-    if (timestampInSeconds < 0) {
-      throw new Error(`Timestamps must be non-negative (got ${timestampInSeconds}s).`);
-    }
-    if (isKeyFrame) {
-      timestampInfo.maxTimestampBeforeLastKeyFrame = timestampInfo.maxTimestamp;
-    }
-    if (timestampInSeconds < timestampInfo.maxTimestampBeforeLastKeyFrame) {
-      throw new Error(`Timestamps cannot be smaller than the highest timestamp of the previous run (a run begins with a key frame and ends right before the next key frame). Got ${timestampInSeconds}s, but highest timestamp is ${timestampInfo.maxTimestampBeforeLastKeyFrame}s.`);
-    }
-    timestampInfo.maxTimestamp = Math.max(timestampInfo.maxTimestamp, timestampInSeconds);
-    return timestampInSeconds;
-  }
-};
-
 // node_modules/mediabunny/dist/modules/src/codec-data.js
+var AvcNalUnitType;
+(function(AvcNalUnitType2) {
+  AvcNalUnitType2[AvcNalUnitType2["NON_IDR_SLICE"] = 1] = "NON_IDR_SLICE";
+  AvcNalUnitType2[AvcNalUnitType2["SLICE_DPA"] = 2] = "SLICE_DPA";
+  AvcNalUnitType2[AvcNalUnitType2["SLICE_DPB"] = 3] = "SLICE_DPB";
+  AvcNalUnitType2[AvcNalUnitType2["SLICE_DPC"] = 4] = "SLICE_DPC";
+  AvcNalUnitType2[AvcNalUnitType2["IDR"] = 5] = "IDR";
+  AvcNalUnitType2[AvcNalUnitType2["SEI"] = 6] = "SEI";
+  AvcNalUnitType2[AvcNalUnitType2["SPS"] = 7] = "SPS";
+  AvcNalUnitType2[AvcNalUnitType2["PPS"] = 8] = "PPS";
+  AvcNalUnitType2[AvcNalUnitType2["AUD"] = 9] = "AUD";
+  AvcNalUnitType2[AvcNalUnitType2["SPS_EXT"] = 13] = "SPS_EXT";
+})(AvcNalUnitType || (AvcNalUnitType = {}));
+var HevcNalUnitType;
+(function(HevcNalUnitType2) {
+  HevcNalUnitType2[HevcNalUnitType2["RASL_N"] = 8] = "RASL_N";
+  HevcNalUnitType2[HevcNalUnitType2["RASL_R"] = 9] = "RASL_R";
+  HevcNalUnitType2[HevcNalUnitType2["BLA_W_LP"] = 16] = "BLA_W_LP";
+  HevcNalUnitType2[HevcNalUnitType2["RSV_IRAP_VCL23"] = 23] = "RSV_IRAP_VCL23";
+  HevcNalUnitType2[HevcNalUnitType2["VPS_NUT"] = 32] = "VPS_NUT";
+  HevcNalUnitType2[HevcNalUnitType2["SPS_NUT"] = 33] = "SPS_NUT";
+  HevcNalUnitType2[HevcNalUnitType2["PPS_NUT"] = 34] = "PPS_NUT";
+  HevcNalUnitType2[HevcNalUnitType2["AUD_NUT"] = 35] = "AUD_NUT";
+  HevcNalUnitType2[HevcNalUnitType2["PREFIX_SEI_NUT"] = 39] = "PREFIX_SEI_NUT";
+  HevcNalUnitType2[HevcNalUnitType2["SUFFIX_SEI_NUT"] = 40] = "SUFFIX_SEI_NUT";
+})(HevcNalUnitType || (HevcNalUnitType = {}));
+var ANNEX_B_START_CODE = new Uint8Array([0, 0, 0, 1]);
 var parseOpusIdentificationHeader = (bytes) => {
   const view = toDataView(bytes);
   const outputChannelCount = view.getUint8(9);
@@ -1218,6 +1346,1211 @@ var parseModesFromVorbisSetupPacket = (setupHeader) => {
     modeBlockflags[i] = bitstream.readBits(1);
   }
   return { modeBlockflags };
+};
+var FlacBlockType;
+(function(FlacBlockType2) {
+  FlacBlockType2[FlacBlockType2["STREAMINFO"] = 0] = "STREAMINFO";
+  FlacBlockType2[FlacBlockType2["VORBIS_COMMENT"] = 4] = "VORBIS_COMMENT";
+  FlacBlockType2[FlacBlockType2["PICTURE"] = 6] = "PICTURE";
+})(FlacBlockType || (FlacBlockType = {}));
+var createVorbisComments = (headerBytes, tags, writeImages) => {
+  const commentHeaderParts = [
+    headerBytes
+  ];
+  const vendorString = "Mediabunny";
+  const encodedVendorString = textEncoder.encode(vendorString);
+  let currentBuffer = new Uint8Array(4 + encodedVendorString.length);
+  let currentView = new DataView(currentBuffer.buffer);
+  currentView.setUint32(0, encodedVendorString.length, true);
+  currentBuffer.set(encodedVendorString, 4);
+  commentHeaderParts.push(currentBuffer);
+  const writtenTags = /* @__PURE__ */ new Set();
+  const addCommentTag = (key, value) => {
+    const joined = `${key}=${value}`;
+    const encoded = textEncoder.encode(joined);
+    currentBuffer = new Uint8Array(4 + encoded.length);
+    currentView = new DataView(currentBuffer.buffer);
+    currentView.setUint32(0, encoded.length, true);
+    currentBuffer.set(encoded, 4);
+    commentHeaderParts.push(currentBuffer);
+    writtenTags.add(key);
+  };
+  for (const { key, value } of keyValueIterator(tags)) {
+    switch (key) {
+      case "title":
+        {
+          addCommentTag("TITLE", value);
+        }
+        ;
+        break;
+      case "description":
+        {
+          addCommentTag("DESCRIPTION", value);
+        }
+        ;
+        break;
+      case "artist":
+        {
+          addCommentTag("ARTIST", value);
+        }
+        ;
+        break;
+      case "album":
+        {
+          addCommentTag("ALBUM", value);
+        }
+        ;
+        break;
+      case "albumArtist":
+        {
+          addCommentTag("ALBUMARTIST", value);
+        }
+        ;
+        break;
+      case "genre":
+        {
+          addCommentTag("GENRE", value);
+        }
+        ;
+        break;
+      case "date":
+        {
+          const rawVersion = tags.raw?.["DATE"] ?? tags.raw?.["date"];
+          if (rawVersion && typeof rawVersion === "string") {
+            addCommentTag("DATE", rawVersion);
+          } else {
+            addCommentTag("DATE", value.toISOString().slice(0, 10));
+          }
+        }
+        ;
+        break;
+      case "comment":
+        {
+          addCommentTag("COMMENT", value);
+        }
+        ;
+        break;
+      case "lyrics":
+        {
+          addCommentTag("LYRICS", value);
+        }
+        ;
+        break;
+      case "trackNumber":
+        {
+          addCommentTag("TRACKNUMBER", value.toString());
+        }
+        ;
+        break;
+      case "tracksTotal":
+        {
+          addCommentTag("TRACKTOTAL", value.toString());
+        }
+        ;
+        break;
+      case "discNumber":
+        {
+          addCommentTag("DISCNUMBER", value.toString());
+        }
+        ;
+        break;
+      case "discsTotal":
+        {
+          addCommentTag("DISCTOTAL", value.toString());
+        }
+        ;
+        break;
+      case "images":
+        {
+          if (!writeImages) {
+            break;
+          }
+          for (const image of value) {
+            const pictureType = image.kind === "coverFront" ? 3 : image.kind === "coverBack" ? 4 : 0;
+            const encodedMediaType = new Uint8Array(image.mimeType.length);
+            for (let i = 0; i < image.mimeType.length; i++) {
+              encodedMediaType[i] = image.mimeType.charCodeAt(i);
+            }
+            const encodedDescription = textEncoder.encode(image.description ?? "");
+            const buffer = new Uint8Array(4 + 4 + encodedMediaType.length + 4 + encodedDescription.length + 16 + 4 + image.data.length);
+            const view = toDataView(buffer);
+            view.setUint32(0, pictureType, false);
+            view.setUint32(4, encodedMediaType.length, false);
+            buffer.set(encodedMediaType, 8);
+            view.setUint32(8 + encodedMediaType.length, encodedDescription.length, false);
+            buffer.set(encodedDescription, 12 + encodedMediaType.length);
+            view.setUint32(28 + encodedMediaType.length + encodedDescription.length, image.data.length, false);
+            buffer.set(image.data, 32 + encodedMediaType.length + encodedDescription.length);
+            const encoded = bytesToBase64(buffer);
+            addCommentTag("METADATA_BLOCK_PICTURE", encoded);
+          }
+        }
+        ;
+        break;
+      case "raw":
+        {
+        }
+        ;
+        break;
+      default:
+        assertNever(key);
+    }
+  }
+  if (tags.raw) {
+    for (const key in tags.raw) {
+      const value = tags.raw[key] ?? tags.raw[key.toLowerCase()];
+      if (key === "vendor" || value == null || writtenTags.has(key)) {
+        continue;
+      }
+      if (typeof value === "string") {
+        addCommentTag(key, value);
+      }
+    }
+  }
+  const listLengthBuffer = new Uint8Array(4);
+  toDataView(listLengthBuffer).setUint32(0, writtenTags.size, true);
+  commentHeaderParts.splice(2, 0, listLengthBuffer);
+  const commentHeaderLength = commentHeaderParts.reduce((a, b) => a + b.length, 0);
+  const commentHeader = new Uint8Array(commentHeaderLength);
+  let pos = 0;
+  for (const part of commentHeaderParts) {
+    commentHeader.set(part, pos);
+    pos += part.length;
+  }
+  return commentHeader;
+};
+var AC3_FRAME_SIZES = [
+  // frmsizecod, [48kHz, 44.1kHz, 32kHz] in bytes
+  64 * 2,
+  69 * 2,
+  96 * 2,
+  64 * 2,
+  70 * 2,
+  96 * 2,
+  80 * 2,
+  87 * 2,
+  120 * 2,
+  80 * 2,
+  88 * 2,
+  120 * 2,
+  96 * 2,
+  104 * 2,
+  144 * 2,
+  96 * 2,
+  105 * 2,
+  144 * 2,
+  112 * 2,
+  121 * 2,
+  168 * 2,
+  112 * 2,
+  122 * 2,
+  168 * 2,
+  128 * 2,
+  139 * 2,
+  192 * 2,
+  128 * 2,
+  140 * 2,
+  192 * 2,
+  160 * 2,
+  174 * 2,
+  240 * 2,
+  160 * 2,
+  175 * 2,
+  240 * 2,
+  192 * 2,
+  208 * 2,
+  288 * 2,
+  192 * 2,
+  209 * 2,
+  288 * 2,
+  224 * 2,
+  243 * 2,
+  336 * 2,
+  224 * 2,
+  244 * 2,
+  336 * 2,
+  256 * 2,
+  278 * 2,
+  384 * 2,
+  256 * 2,
+  279 * 2,
+  384 * 2,
+  320 * 2,
+  348 * 2,
+  480 * 2,
+  320 * 2,
+  349 * 2,
+  480 * 2,
+  384 * 2,
+  417 * 2,
+  576 * 2,
+  384 * 2,
+  418 * 2,
+  576 * 2,
+  448 * 2,
+  487 * 2,
+  672 * 2,
+  448 * 2,
+  488 * 2,
+  672 * 2,
+  512 * 2,
+  557 * 2,
+  768 * 2,
+  512 * 2,
+  558 * 2,
+  768 * 2,
+  640 * 2,
+  696 * 2,
+  960 * 2,
+  640 * 2,
+  697 * 2,
+  960 * 2,
+  768 * 2,
+  835 * 2,
+  1152 * 2,
+  768 * 2,
+  836 * 2,
+  1152 * 2,
+  896 * 2,
+  975 * 2,
+  1344 * 2,
+  896 * 2,
+  976 * 2,
+  1344 * 2,
+  1024 * 2,
+  1114 * 2,
+  1536 * 2,
+  1024 * 2,
+  1115 * 2,
+  1536 * 2,
+  1152 * 2,
+  1253 * 2,
+  1728 * 2,
+  1152 * 2,
+  1254 * 2,
+  1728 * 2,
+  1280 * 2,
+  1393 * 2,
+  1920 * 2,
+  1280 * 2,
+  1394 * 2,
+  1920 * 2
+];
+var AC3_REGISTRATION_DESCRIPTOR = new Uint8Array([5, 4, 65, 67, 45, 51]);
+var EAC3_REGISTRATION_DESCRIPTOR = new Uint8Array([5, 4, 69, 65, 67, 51]);
+
+// node_modules/mediabunny/dist/modules/src/custom-coder.js
+var customAudioEncoders = [];
+
+// node_modules/mediabunny/dist/modules/src/packet.js
+var PLACEHOLDER_DATA = /* @__PURE__ */ new Uint8Array(0);
+var EncodedPacket = class _EncodedPacket {
+  /** Creates a new {@link EncodedPacket} from raw bytes and timing information. */
+  constructor(data, type, timestamp, duration, sequenceNumber = -1, byteLength, sideData) {
+    this.data = data;
+    this.type = type;
+    this.timestamp = timestamp;
+    this.duration = duration;
+    this.sequenceNumber = sequenceNumber;
+    if (data === PLACEHOLDER_DATA && byteLength === void 0) {
+      throw new Error("Internal error: byteLength must be explicitly provided when constructing metadata-only packets.");
+    }
+    if (byteLength === void 0) {
+      byteLength = data.byteLength;
+    }
+    if (!(data instanceof Uint8Array)) {
+      throw new TypeError("data must be a Uint8Array.");
+    }
+    if (type !== "key" && type !== "delta") {
+      throw new TypeError('type must be either "key" or "delta".');
+    }
+    if (!Number.isFinite(timestamp)) {
+      throw new TypeError("timestamp must be a number.");
+    }
+    if (!Number.isFinite(duration) || duration < 0) {
+      throw new TypeError("duration must be a non-negative number.");
+    }
+    if (!Number.isFinite(sequenceNumber)) {
+      throw new TypeError("sequenceNumber must be a number.");
+    }
+    if (!Number.isInteger(byteLength) || byteLength < 0) {
+      throw new TypeError("byteLength must be a non-negative integer.");
+    }
+    if (sideData !== void 0 && (typeof sideData !== "object" || !sideData)) {
+      throw new TypeError("sideData, when provided, must be an object.");
+    }
+    if (sideData?.alpha !== void 0 && !(sideData.alpha instanceof Uint8Array)) {
+      throw new TypeError("sideData.alpha, when provided, must be a Uint8Array.");
+    }
+    if (sideData?.alphaByteLength !== void 0 && (!Number.isInteger(sideData.alphaByteLength) || sideData.alphaByteLength < 0)) {
+      throw new TypeError("sideData.alphaByteLength, when provided, must be a non-negative integer.");
+    }
+    this.byteLength = byteLength;
+    this.sideData = sideData ?? {};
+    if (this.sideData.alpha && this.sideData.alphaByteLength === void 0) {
+      this.sideData.alphaByteLength = this.sideData.alpha.byteLength;
+    }
+  }
+  /**
+   * If this packet is a metadata-only packet. Metadata-only packets don't contain their packet data. They are the
+   * result of retrieving packets with {@link PacketRetrievalOptions.metadataOnly} set to `true`.
+   */
+  get isMetadataOnly() {
+    return this.data === PLACEHOLDER_DATA;
+  }
+  /** The timestamp of this packet in microseconds. */
+  get microsecondTimestamp() {
+    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.timestamp);
+  }
+  /** The duration of this packet in microseconds. */
+  get microsecondDuration() {
+    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.duration);
+  }
+  /** Converts this packet to an
+   * [`EncodedVideoChunk`](https://developer.mozilla.org/en-US/docs/Web/API/EncodedVideoChunk) for use with the
+   * WebCodecs API. */
+  toEncodedVideoChunk() {
+    if (this.isMetadataOnly) {
+      throw new TypeError("Metadata-only packets cannot be converted to a video chunk.");
+    }
+    if (typeof EncodedVideoChunk === "undefined") {
+      throw new Error("Your browser does not support EncodedVideoChunk.");
+    }
+    return new EncodedVideoChunk({
+      data: this.data,
+      type: this.type,
+      timestamp: this.microsecondTimestamp,
+      duration: this.microsecondDuration
+    });
+  }
+  /**
+   * Converts this packet to an
+   * [`EncodedVideoChunk`](https://developer.mozilla.org/en-US/docs/Web/API/EncodedVideoChunk) for use with the
+   * WebCodecs API, using the alpha side data instead of the color data. Throws if no alpha side data is defined.
+   */
+  alphaToEncodedVideoChunk(type = this.type) {
+    if (!this.sideData.alpha) {
+      throw new TypeError("This packet does not contain alpha side data.");
+    }
+    if (this.isMetadataOnly) {
+      throw new TypeError("Metadata-only packets cannot be converted to a video chunk.");
+    }
+    if (typeof EncodedVideoChunk === "undefined") {
+      throw new Error("Your browser does not support EncodedVideoChunk.");
+    }
+    return new EncodedVideoChunk({
+      data: this.sideData.alpha,
+      type,
+      timestamp: this.microsecondTimestamp,
+      duration: this.microsecondDuration
+    });
+  }
+  /** Converts this packet to an
+   * [`EncodedAudioChunk`](https://developer.mozilla.org/en-US/docs/Web/API/EncodedAudioChunk) for use with the
+   * WebCodecs API. */
+  toEncodedAudioChunk() {
+    if (this.isMetadataOnly) {
+      throw new TypeError("Metadata-only packets cannot be converted to an audio chunk.");
+    }
+    if (typeof EncodedAudioChunk === "undefined") {
+      throw new Error("Your browser does not support EncodedAudioChunk.");
+    }
+    return new EncodedAudioChunk({
+      data: this.data,
+      type: this.type,
+      timestamp: this.microsecondTimestamp,
+      duration: this.microsecondDuration
+    });
+  }
+  /**
+   * Creates an {@link EncodedPacket} from an
+   * [`EncodedVideoChunk`](https://developer.mozilla.org/en-US/docs/Web/API/EncodedVideoChunk) or
+   * [`EncodedAudioChunk`](https://developer.mozilla.org/en-US/docs/Web/API/EncodedAudioChunk). This method is useful
+   * for converting chunks from the WebCodecs API to `EncodedPacket` instances.
+   */
+  static fromEncodedChunk(chunk, sideData) {
+    if (!(chunk instanceof EncodedVideoChunk || chunk instanceof EncodedAudioChunk)) {
+      throw new TypeError("chunk must be an EncodedVideoChunk or EncodedAudioChunk.");
+    }
+    const data = new Uint8Array(chunk.byteLength);
+    chunk.copyTo(data);
+    return new _EncodedPacket(data, chunk.type, chunk.timestamp / 1e6, (chunk.duration ?? 0) / 1e6, void 0, void 0, sideData);
+  }
+  /** Clones this packet while optionally modifying the new packet's data. */
+  clone(options) {
+    if (options !== void 0 && (typeof options !== "object" || options === null)) {
+      throw new TypeError("options, when provided, must be an object.");
+    }
+    if (options?.data !== void 0 && !(options.data instanceof Uint8Array)) {
+      throw new TypeError("options.data, when provided, must be a Uint8Array.");
+    }
+    if (options?.type !== void 0 && options.type !== "key" && options.type !== "delta") {
+      throw new TypeError('options.type, when provided, must be either "key" or "delta".');
+    }
+    if (options?.timestamp !== void 0 && !Number.isFinite(options.timestamp)) {
+      throw new TypeError("options.timestamp, when provided, must be a number.");
+    }
+    if (options?.duration !== void 0 && !Number.isFinite(options.duration)) {
+      throw new TypeError("options.duration, when provided, must be a number.");
+    }
+    if (options?.sequenceNumber !== void 0 && !Number.isFinite(options.sequenceNumber)) {
+      throw new TypeError("options.sequenceNumber, when provided, must be a number.");
+    }
+    if (options?.sideData !== void 0 && (typeof options.sideData !== "object" || options.sideData === null)) {
+      throw new TypeError("options.sideData, when provided, must be an object.");
+    }
+    return new _EncodedPacket(options?.data ?? this.data, options?.type ?? this.type, options?.timestamp ?? this.timestamp, options?.duration ?? this.duration, options?.sequenceNumber ?? this.sequenceNumber, this.byteLength, options?.sideData ?? this.sideData);
+  }
+};
+
+// node_modules/mediabunny/dist/modules/src/pcm.js
+var toUlaw = (s16) => {
+  const MULAW_MAX = 8191;
+  const MULAW_BIAS = 33;
+  let number = s16;
+  let mask = 4096;
+  let sign = 0;
+  let position = 12;
+  let lsb = 0;
+  if (number < 0) {
+    number = -number;
+    sign = 128;
+  }
+  number += MULAW_BIAS;
+  if (number > MULAW_MAX) {
+    number = MULAW_MAX;
+  }
+  while ((number & mask) !== mask && position >= 5) {
+    mask >>= 1;
+    position--;
+  }
+  lsb = number >> position - 4 & 15;
+  return ~(sign | position - 5 << 4 | lsb) & 255;
+};
+var toAlaw = (s16) => {
+  const ALAW_MAX = 4095;
+  let mask = 2048;
+  let sign = 0;
+  let position = 11;
+  let lsb = 0;
+  let number = s16;
+  if (number < 0) {
+    number = -number;
+    sign = 128;
+  }
+  if (number > ALAW_MAX) {
+    number = ALAW_MAX;
+  }
+  while ((number & mask) !== mask && position >= 5) {
+    mask >>= 1;
+    position--;
+  }
+  lsb = number >> (position === 4 ? 1 : position - 4) & 15;
+  return (sign | position - 4 << 4 | lsb) ^ 85;
+};
+
+// node_modules/mediabunny/dist/modules/src/sample.js
+polyfillSymbolDispose();
+var lastVideoGcErrorLog = -Infinity;
+var lastAudioGcErrorLog = -Infinity;
+var finalizationRegistry = null;
+if (typeof FinalizationRegistry !== "undefined") {
+  finalizationRegistry = new FinalizationRegistry((value) => {
+    const now = Date.now();
+    if (value.type === "video") {
+      if (now - lastVideoGcErrorLog >= 1e3) {
+        console.error(`A VideoSample was garbage collected without first being closed. For proper resource management, make sure to call close() on all your VideoSamples as soon as you're done using them.`);
+        lastVideoGcErrorLog = now;
+      }
+      if (typeof VideoFrame !== "undefined" && value.data instanceof VideoFrame) {
+        value.data.close();
+      }
+    } else {
+      if (now - lastAudioGcErrorLog >= 1e3) {
+        console.error(`An AudioSample was garbage collected without first being closed. For proper resource management, make sure to call close() on all your AudioSamples as soon as you're done using them.`);
+        lastAudioGcErrorLog = now;
+      }
+      if (typeof AudioData !== "undefined" && value.data instanceof AudioData) {
+        value.data.close();
+      }
+    }
+  });
+}
+var VIDEO_SAMPLE_PIXEL_FORMATS = [
+  // 4:2:0 Y, U, V
+  "I420",
+  "I420P10",
+  "I420P12",
+  // 4:2:0 Y, U, V, A
+  "I420A",
+  "I420AP10",
+  "I420AP12",
+  // 4:2:2 Y, U, V
+  "I422",
+  "I422P10",
+  "I422P12",
+  // 4:2:2 Y, U, V, A
+  "I422A",
+  "I422AP10",
+  "I422AP12",
+  // 4:4:4 Y, U, V
+  "I444",
+  "I444P10",
+  "I444P12",
+  // 4:4:4 Y, U, V, A
+  "I444A",
+  "I444AP10",
+  "I444AP12",
+  // 4:2:0 Y, UV
+  "NV12",
+  // 4:4:4 RGBA
+  "RGBA",
+  // 4:4:4 RGBX (opaque)
+  "RGBX",
+  // 4:4:4 BGRA
+  "BGRA",
+  // 4:4:4 BGRX (opaque)
+  "BGRX"
+];
+var VIDEO_SAMPLE_PIXEL_FORMATS_SET = new Set(VIDEO_SAMPLE_PIXEL_FORMATS);
+var AUDIO_SAMPLE_FORMATS = /* @__PURE__ */ new Set(["f32", "f32-planar", "s16", "s16-planar", "s32", "s32-planar", "u8", "u8-planar"]);
+var AudioSample = class _AudioSample {
+  /** The presentation timestamp of the sample in microseconds. */
+  get microsecondTimestamp() {
+    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.timestamp);
+  }
+  /** The duration of the sample in microseconds. */
+  get microsecondDuration() {
+    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.duration);
+  }
+  /**
+   * Creates a new {@link AudioSample}, either from an existing
+   * [`AudioData`](https://developer.mozilla.org/en-US/docs/Web/API/AudioData) or from raw bytes specified in
+   * {@link AudioSampleInit}.
+   */
+  constructor(init) {
+    this._closed = false;
+    if (isAudioData(init)) {
+      if (init.format === null) {
+        throw new TypeError("AudioData with null format is not supported.");
+      }
+      this._data = init;
+      this.format = init.format;
+      this.sampleRate = init.sampleRate;
+      this.numberOfFrames = init.numberOfFrames;
+      this.numberOfChannels = init.numberOfChannels;
+      this.timestamp = init.timestamp / 1e6;
+      this.duration = init.numberOfFrames / init.sampleRate;
+    } else {
+      if (!init || typeof init !== "object") {
+        throw new TypeError("Invalid AudioDataInit: must be an object.");
+      }
+      if (!AUDIO_SAMPLE_FORMATS.has(init.format)) {
+        throw new TypeError("Invalid AudioDataInit: invalid format.");
+      }
+      if (!Number.isFinite(init.sampleRate) || init.sampleRate <= 0) {
+        throw new TypeError("Invalid AudioDataInit: sampleRate must be > 0.");
+      }
+      if (!Number.isInteger(init.numberOfChannels) || init.numberOfChannels === 0) {
+        throw new TypeError("Invalid AudioDataInit: numberOfChannels must be an integer > 0.");
+      }
+      if (!Number.isFinite(init?.timestamp)) {
+        throw new TypeError("init.timestamp must be a number.");
+      }
+      const numberOfFrames = init.data.byteLength / (getBytesPerSample(init.format) * init.numberOfChannels);
+      if (!Number.isInteger(numberOfFrames)) {
+        throw new TypeError("Invalid AudioDataInit: data size is not a multiple of frame size.");
+      }
+      this.format = init.format;
+      this.sampleRate = init.sampleRate;
+      this.numberOfFrames = numberOfFrames;
+      this.numberOfChannels = init.numberOfChannels;
+      this.timestamp = init.timestamp;
+      this.duration = numberOfFrames / init.sampleRate;
+      let dataBuffer;
+      if (init.data instanceof ArrayBuffer) {
+        dataBuffer = new Uint8Array(init.data);
+      } else if (ArrayBuffer.isView(init.data)) {
+        dataBuffer = new Uint8Array(init.data.buffer, init.data.byteOffset, init.data.byteLength);
+      } else {
+        throw new TypeError("Invalid AudioDataInit: data is not a BufferSource.");
+      }
+      const expectedSize = this.numberOfFrames * this.numberOfChannels * getBytesPerSample(this.format);
+      if (dataBuffer.byteLength < expectedSize) {
+        throw new TypeError("Invalid AudioDataInit: insufficient data size.");
+      }
+      this._data = dataBuffer;
+    }
+    finalizationRegistry?.register(this, { type: "audio", data: this._data }, this);
+  }
+  /** Returns the number of bytes required to hold the audio sample's data as specified by the given options. */
+  allocationSize(options) {
+    if (!options || typeof options !== "object") {
+      throw new TypeError("options must be an object.");
+    }
+    if (!Number.isInteger(options.planeIndex) || options.planeIndex < 0) {
+      throw new TypeError("planeIndex must be a non-negative integer.");
+    }
+    if (options.format !== void 0 && !AUDIO_SAMPLE_FORMATS.has(options.format)) {
+      throw new TypeError("Invalid format.");
+    }
+    if (options.frameOffset !== void 0 && (!Number.isInteger(options.frameOffset) || options.frameOffset < 0)) {
+      throw new TypeError("frameOffset must be a non-negative integer.");
+    }
+    if (options.frameCount !== void 0 && (!Number.isInteger(options.frameCount) || options.frameCount < 0)) {
+      throw new TypeError("frameCount must be a non-negative integer.");
+    }
+    if (this._closed) {
+      throw new Error("AudioSample is closed.");
+    }
+    const destFormat = options.format ?? this.format;
+    const frameOffset = options.frameOffset ?? 0;
+    if (frameOffset >= this.numberOfFrames) {
+      throw new RangeError("frameOffset out of range");
+    }
+    const copyFrameCount = options.frameCount !== void 0 ? options.frameCount : this.numberOfFrames - frameOffset;
+    if (copyFrameCount > this.numberOfFrames - frameOffset) {
+      throw new RangeError("frameCount out of range");
+    }
+    const bytesPerSample = getBytesPerSample(destFormat);
+    const isPlanar = formatIsPlanar(destFormat);
+    if (isPlanar && options.planeIndex >= this.numberOfChannels) {
+      throw new RangeError("planeIndex out of range");
+    }
+    if (!isPlanar && options.planeIndex !== 0) {
+      throw new RangeError("planeIndex out of range");
+    }
+    const elementCount = isPlanar ? copyFrameCount : copyFrameCount * this.numberOfChannels;
+    return elementCount * bytesPerSample;
+  }
+  /** Copies the audio sample's data to an ArrayBuffer or ArrayBufferView as specified by the given options. */
+  copyTo(destination, options) {
+    if (!isAllowSharedBufferSource(destination)) {
+      throw new TypeError("destination must be an ArrayBuffer or an ArrayBuffer view.");
+    }
+    if (!options || typeof options !== "object") {
+      throw new TypeError("options must be an object.");
+    }
+    if (!Number.isInteger(options.planeIndex) || options.planeIndex < 0) {
+      throw new TypeError("planeIndex must be a non-negative integer.");
+    }
+    if (options.format !== void 0 && !AUDIO_SAMPLE_FORMATS.has(options.format)) {
+      throw new TypeError("Invalid format.");
+    }
+    if (options.frameOffset !== void 0 && (!Number.isInteger(options.frameOffset) || options.frameOffset < 0)) {
+      throw new TypeError("frameOffset must be a non-negative integer.");
+    }
+    if (options.frameCount !== void 0 && (!Number.isInteger(options.frameCount) || options.frameCount < 0)) {
+      throw new TypeError("frameCount must be a non-negative integer.");
+    }
+    if (this._closed) {
+      throw new Error("AudioSample is closed.");
+    }
+    const { planeIndex, format, frameCount: optFrameCount, frameOffset: optFrameOffset } = options;
+    const srcFormat = this.format;
+    const destFormat = format ?? this.format;
+    if (!destFormat)
+      throw new Error("Destination format not determined");
+    const numFrames = this.numberOfFrames;
+    const numChannels = this.numberOfChannels;
+    const frameOffset = optFrameOffset ?? 0;
+    if (frameOffset >= numFrames) {
+      throw new RangeError("frameOffset out of range");
+    }
+    const copyFrameCount = optFrameCount !== void 0 ? optFrameCount : numFrames - frameOffset;
+    if (copyFrameCount > numFrames - frameOffset) {
+      throw new RangeError("frameCount out of range");
+    }
+    const destBytesPerSample = getBytesPerSample(destFormat);
+    const destIsPlanar = formatIsPlanar(destFormat);
+    if (destIsPlanar && planeIndex >= numChannels) {
+      throw new RangeError("planeIndex out of range");
+    }
+    if (!destIsPlanar && planeIndex !== 0) {
+      throw new RangeError("planeIndex out of range");
+    }
+    const destElementCount = destIsPlanar ? copyFrameCount : copyFrameCount * numChannels;
+    const requiredSize = destElementCount * destBytesPerSample;
+    if (destination.byteLength < requiredSize) {
+      throw new RangeError("Destination buffer is too small");
+    }
+    const destView = toDataView(destination);
+    const writeFn = getWriteFunction(destFormat);
+    if (isAudioData(this._data)) {
+      if (isWebKit() && numChannels > 2 && destFormat !== srcFormat) {
+        doAudioDataCopyToWebKitWorkaround(this._data, destView, srcFormat, destFormat, numChannels, planeIndex, frameOffset, copyFrameCount);
+      } else {
+        this._data.copyTo(destination, {
+          planeIndex,
+          frameOffset,
+          frameCount: copyFrameCount,
+          format: destFormat
+        });
+      }
+    } else {
+      const uint8Data = this._data;
+      const srcView = toDataView(uint8Data);
+      const readFn = getReadFunction(srcFormat);
+      const srcBytesPerSample = getBytesPerSample(srcFormat);
+      const srcIsPlanar = formatIsPlanar(srcFormat);
+      for (let i = 0; i < copyFrameCount; i++) {
+        if (destIsPlanar) {
+          const destOffset = i * destBytesPerSample;
+          let srcOffset;
+          if (srcIsPlanar) {
+            srcOffset = (planeIndex * numFrames + (i + frameOffset)) * srcBytesPerSample;
+          } else {
+            srcOffset = ((i + frameOffset) * numChannels + planeIndex) * srcBytesPerSample;
+          }
+          const normalized = readFn(srcView, srcOffset);
+          writeFn(destView, destOffset, normalized);
+        } else {
+          for (let ch = 0; ch < numChannels; ch++) {
+            const destIndex = i * numChannels + ch;
+            const destOffset = destIndex * destBytesPerSample;
+            let srcOffset;
+            if (srcIsPlanar) {
+              srcOffset = (ch * numFrames + (i + frameOffset)) * srcBytesPerSample;
+            } else {
+              srcOffset = ((i + frameOffset) * numChannels + ch) * srcBytesPerSample;
+            }
+            const normalized = readFn(srcView, srcOffset);
+            writeFn(destView, destOffset, normalized);
+          }
+        }
+      }
+    }
+  }
+  /** Clones this audio sample. */
+  clone() {
+    if (this._closed) {
+      throw new Error("AudioSample is closed.");
+    }
+    if (isAudioData(this._data)) {
+      const sample = new _AudioSample(this._data.clone());
+      sample.setTimestamp(this.timestamp);
+      return sample;
+    } else {
+      return new _AudioSample({
+        format: this.format,
+        sampleRate: this.sampleRate,
+        numberOfFrames: this.numberOfFrames,
+        numberOfChannels: this.numberOfChannels,
+        timestamp: this.timestamp,
+        data: this._data
+      });
+    }
+  }
+  /**
+   * Closes this audio sample, releasing held resources. Audio samples should be closed as soon as they are not
+   * needed anymore.
+   */
+  close() {
+    if (this._closed) {
+      return;
+    }
+    finalizationRegistry?.unregister(this);
+    if (isAudioData(this._data)) {
+      this._data.close();
+    } else {
+      this._data = new Uint8Array(0);
+    }
+    this._closed = true;
+  }
+  /**
+   * Converts this audio sample to an AudioData for use with the WebCodecs API. The AudioData returned by this
+   * method *must* be closed separately from this audio sample.
+   */
+  toAudioData() {
+    if (this._closed) {
+      throw new Error("AudioSample is closed.");
+    }
+    if (isAudioData(this._data)) {
+      if (this._data.timestamp === this.microsecondTimestamp) {
+        return this._data.clone();
+      } else {
+        if (formatIsPlanar(this.format)) {
+          const size = this.allocationSize({ planeIndex: 0, format: this.format });
+          const data = new ArrayBuffer(size * this.numberOfChannels);
+          for (let i = 0; i < this.numberOfChannels; i++) {
+            this.copyTo(new Uint8Array(data, i * size, size), { planeIndex: i, format: this.format });
+          }
+          return new AudioData({
+            format: this.format,
+            sampleRate: this.sampleRate,
+            numberOfFrames: this.numberOfFrames,
+            numberOfChannels: this.numberOfChannels,
+            timestamp: this.microsecondTimestamp,
+            data
+          });
+        } else {
+          const data = new ArrayBuffer(this.allocationSize({ planeIndex: 0, format: this.format }));
+          this.copyTo(data, { planeIndex: 0, format: this.format });
+          return new AudioData({
+            format: this.format,
+            sampleRate: this.sampleRate,
+            numberOfFrames: this.numberOfFrames,
+            numberOfChannels: this.numberOfChannels,
+            timestamp: this.microsecondTimestamp,
+            data
+          });
+        }
+      }
+    } else {
+      return new AudioData({
+        format: this.format,
+        sampleRate: this.sampleRate,
+        numberOfFrames: this.numberOfFrames,
+        numberOfChannels: this.numberOfChannels,
+        timestamp: this.microsecondTimestamp,
+        data: this._data.buffer instanceof ArrayBuffer ? this._data.buffer : this._data.slice()
+        // In the case of SharedArrayBuffer, convert to ArrayBuffer
+      });
+    }
+  }
+  /** Convert this audio sample to an AudioBuffer for use with the Web Audio API. */
+  toAudioBuffer() {
+    if (this._closed) {
+      throw new Error("AudioSample is closed.");
+    }
+    const audioBuffer = new AudioBuffer({
+      numberOfChannels: this.numberOfChannels,
+      length: this.numberOfFrames,
+      sampleRate: this.sampleRate
+    });
+    const dataBytes = new Float32Array(this.allocationSize({ planeIndex: 0, format: "f32-planar" }) / 4);
+    for (let i = 0; i < this.numberOfChannels; i++) {
+      this.copyTo(dataBytes, { planeIndex: i, format: "f32-planar" });
+      audioBuffer.copyToChannel(dataBytes, i);
+    }
+    return audioBuffer;
+  }
+  /** Sets the presentation timestamp of this audio sample, in seconds. */
+  setTimestamp(newTimestamp) {
+    if (!Number.isFinite(newTimestamp)) {
+      throw new TypeError("newTimestamp must be a number.");
+    }
+    this.timestamp = newTimestamp;
+  }
+  /** Calls `.close()`. */
+  [Symbol.dispose]() {
+    this.close();
+  }
+  /** @internal */
+  static *_fromAudioBuffer(audioBuffer, timestamp) {
+    if (!(audioBuffer instanceof AudioBuffer)) {
+      throw new TypeError("audioBuffer must be an AudioBuffer.");
+    }
+    const MAX_FLOAT_COUNT = 48e3 * 5;
+    const numberOfChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const totalFrames = audioBuffer.length;
+    const maxFramesPerChunk = Math.floor(MAX_FLOAT_COUNT / numberOfChannels);
+    let currentRelativeFrame = 0;
+    let remainingFrames = totalFrames;
+    while (remainingFrames > 0) {
+      const framesToCopy = Math.min(maxFramesPerChunk, remainingFrames);
+      const chunkData = new Float32Array(numberOfChannels * framesToCopy);
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        audioBuffer.copyFromChannel(chunkData.subarray(channel * framesToCopy, (channel + 1) * framesToCopy), channel, currentRelativeFrame);
+      }
+      yield new _AudioSample({
+        format: "f32-planar",
+        sampleRate,
+        numberOfFrames: framesToCopy,
+        numberOfChannels,
+        timestamp: timestamp + currentRelativeFrame / sampleRate,
+        data: chunkData
+      });
+      currentRelativeFrame += framesToCopy;
+      remainingFrames -= framesToCopy;
+    }
+  }
+  /**
+   * Creates AudioSamples from an AudioBuffer, starting at the given timestamp in seconds. Typically creates exactly
+   * one sample, but may create multiple if the AudioBuffer is exceedingly large.
+   */
+  static fromAudioBuffer(audioBuffer, timestamp) {
+    if (!(audioBuffer instanceof AudioBuffer)) {
+      throw new TypeError("audioBuffer must be an AudioBuffer.");
+    }
+    const MAX_FLOAT_COUNT = 48e3 * 5;
+    const numberOfChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const totalFrames = audioBuffer.length;
+    const maxFramesPerChunk = Math.floor(MAX_FLOAT_COUNT / numberOfChannels);
+    let currentRelativeFrame = 0;
+    let remainingFrames = totalFrames;
+    const result = [];
+    while (remainingFrames > 0) {
+      const framesToCopy = Math.min(maxFramesPerChunk, remainingFrames);
+      const chunkData = new Float32Array(numberOfChannels * framesToCopy);
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        audioBuffer.copyFromChannel(chunkData.subarray(channel * framesToCopy, (channel + 1) * framesToCopy), channel, currentRelativeFrame);
+      }
+      const audioSample = new _AudioSample({
+        format: "f32-planar",
+        sampleRate,
+        numberOfFrames: framesToCopy,
+        numberOfChannels,
+        timestamp: timestamp + currentRelativeFrame / sampleRate,
+        data: chunkData
+      });
+      result.push(audioSample);
+      currentRelativeFrame += framesToCopy;
+      remainingFrames -= framesToCopy;
+    }
+    return result;
+  }
+};
+var getBytesPerSample = (format) => {
+  switch (format) {
+    case "u8":
+    case "u8-planar":
+      return 1;
+    case "s16":
+    case "s16-planar":
+      return 2;
+    case "s32":
+    case "s32-planar":
+      return 4;
+    case "f32":
+    case "f32-planar":
+      return 4;
+    default:
+      throw new Error("Unknown AudioSampleFormat");
+  }
+};
+var formatIsPlanar = (format) => {
+  switch (format) {
+    case "u8-planar":
+    case "s16-planar":
+    case "s32-planar":
+    case "f32-planar":
+      return true;
+    default:
+      return false;
+  }
+};
+var getReadFunction = (format) => {
+  switch (format) {
+    case "u8":
+    case "u8-planar":
+      return (view, offset) => (view.getUint8(offset) - 128) / 128;
+    case "s16":
+    case "s16-planar":
+      return (view, offset) => view.getInt16(offset, true) / 32768;
+    case "s32":
+    case "s32-planar":
+      return (view, offset) => view.getInt32(offset, true) / 2147483648;
+    case "f32":
+    case "f32-planar":
+      return (view, offset) => view.getFloat32(offset, true);
+  }
+};
+var getWriteFunction = (format) => {
+  switch (format) {
+    case "u8":
+    case "u8-planar":
+      return (view, offset, value) => view.setUint8(offset, clamp2((value + 1) * 127.5, 0, 255));
+    case "s16":
+    case "s16-planar":
+      return (view, offset, value) => view.setInt16(offset, clamp2(Math.round(value * 32767), -32768, 32767), true);
+    case "s32":
+    case "s32-planar":
+      return (view, offset, value) => view.setInt32(offset, clamp2(Math.round(value * 2147483647), -2147483648, 2147483647), true);
+    case "f32":
+    case "f32-planar":
+      return (view, offset, value) => view.setFloat32(offset, value, true);
+  }
+};
+var isAudioData = (x) => {
+  return typeof AudioData !== "undefined" && x instanceof AudioData;
+};
+var doAudioDataCopyToWebKitWorkaround = (audioData, destView, srcFormat, destFormat, numChannels, planeIndex, frameOffset, copyFrameCount) => {
+  const readFn = getReadFunction(srcFormat);
+  const writeFn = getWriteFunction(destFormat);
+  const srcBytesPerSample = getBytesPerSample(srcFormat);
+  const destBytesPerSample = getBytesPerSample(destFormat);
+  const srcIsPlanar = formatIsPlanar(srcFormat);
+  const destIsPlanar = formatIsPlanar(destFormat);
+  if (destIsPlanar) {
+    if (srcIsPlanar) {
+      const data = new ArrayBuffer(copyFrameCount * srcBytesPerSample);
+      const dataView = toDataView(data);
+      audioData.copyTo(data, {
+        planeIndex,
+        frameOffset,
+        frameCount: copyFrameCount,
+        format: srcFormat
+      });
+      for (let i = 0; i < copyFrameCount; i++) {
+        const srcOffset = i * srcBytesPerSample;
+        const destOffset = i * destBytesPerSample;
+        const sample = readFn(dataView, srcOffset);
+        writeFn(destView, destOffset, sample);
+      }
+    } else {
+      const data = new ArrayBuffer(copyFrameCount * numChannels * srcBytesPerSample);
+      const dataView = toDataView(data);
+      audioData.copyTo(data, {
+        planeIndex: 0,
+        frameOffset,
+        frameCount: copyFrameCount,
+        format: srcFormat
+      });
+      for (let i = 0; i < copyFrameCount; i++) {
+        const srcOffset = (i * numChannels + planeIndex) * srcBytesPerSample;
+        const destOffset = i * destBytesPerSample;
+        const sample = readFn(dataView, srcOffset);
+        writeFn(destView, destOffset, sample);
+      }
+    }
+  } else {
+    if (srcIsPlanar) {
+      const planeSize = copyFrameCount * srcBytesPerSample;
+      const data = new ArrayBuffer(planeSize);
+      const dataView = toDataView(data);
+      for (let ch = 0; ch < numChannels; ch++) {
+        audioData.copyTo(data, {
+          planeIndex: ch,
+          frameOffset,
+          frameCount: copyFrameCount,
+          format: srcFormat
+        });
+        for (let i = 0; i < copyFrameCount; i++) {
+          const srcOffset = i * srcBytesPerSample;
+          const destOffset = (i * numChannels + ch) * destBytesPerSample;
+          const sample = readFn(dataView, srcOffset);
+          writeFn(destView, destOffset, sample);
+        }
+      }
+    } else {
+      const data = new ArrayBuffer(copyFrameCount * numChannels * srcBytesPerSample);
+      const dataView = toDataView(data);
+      audioData.copyTo(data, {
+        planeIndex: 0,
+        frameOffset,
+        frameCount: copyFrameCount,
+        format: srcFormat
+      });
+      for (let i = 0; i < copyFrameCount; i++) {
+        for (let ch = 0; ch < numChannels; ch++) {
+          const idx = i * numChannels + ch;
+          const srcOffset = idx * srcBytesPerSample;
+          const destOffset = idx * destBytesPerSample;
+          const sample = readFn(dataView, srcOffset);
+          writeFn(destView, destOffset, sample);
+        }
+      }
+    }
+  }
+};
+
+// node_modules/mediabunny/dist/modules/src/ogg/ogg-misc.js
+var OGGS = 1399285583;
+var OGG_CRC_POLYNOMIAL = 79764919;
+var OGG_CRC_TABLE = new Uint32Array(256);
+for (let n = 0; n < 256; n++) {
+  let crc = n << 24;
+  for (let k = 0; k < 8; k++) {
+    crc = crc & 2147483648 ? crc << 1 ^ OGG_CRC_POLYNOMIAL : crc << 1;
+  }
+  OGG_CRC_TABLE[n] = crc >>> 0 & 4294967295;
+}
+var computeOggPageCrc = (bytes) => {
+  const view = toDataView(bytes);
+  const originalChecksum = view.getUint32(22, true);
+  view.setUint32(22, 0, true);
+  let crc = 0;
+  for (let i = 0; i < bytes.length; i++) {
+    const byte = bytes[i];
+    crc = (crc << 8 ^ OGG_CRC_TABLE[crc >>> 24 ^ byte]) >>> 0;
+  }
+  view.setUint32(22, originalChecksum, true);
+  return crc;
+};
+var extractSampleMetadata = (data, codecInfo, vorbisLastBlocksize) => {
+  let durationInSamples = 0;
+  let currentBlocksize = null;
+  if (data.length > 0) {
+    if (codecInfo.codec === "vorbis") {
+      assert(codecInfo.vorbisInfo);
+      const vorbisModeCount = codecInfo.vorbisInfo.modeBlockflags.length;
+      const bitCount = ilog(vorbisModeCount - 1);
+      const modeMask = (1 << bitCount) - 1 << 1;
+      const modeNumber = (data[0] & modeMask) >> 1;
+      if (modeNumber >= codecInfo.vorbisInfo.modeBlockflags.length) {
+        throw new Error("Invalid mode number.");
+      }
+      let prevBlocksize = vorbisLastBlocksize;
+      const blockflag = codecInfo.vorbisInfo.modeBlockflags[modeNumber];
+      currentBlocksize = codecInfo.vorbisInfo.blocksizes[blockflag];
+      if (blockflag === 1) {
+        const prevMask = (modeMask | 1) + 1;
+        const flag = data[0] & prevMask ? 1 : 0;
+        prevBlocksize = codecInfo.vorbisInfo.blocksizes[flag];
+      }
+      durationInSamples = prevBlocksize !== null ? prevBlocksize + currentBlocksize >> 2 : 0;
+    } else if (codecInfo.codec === "opus") {
+      const toc = parseOpusTocByte(data);
+      durationInSamples = toc.durationInSamples;
+    }
+  }
+  return {
+    durationInSamples,
+    vorbisBlockSize: currentBlocksize
+  };
+};
+var buildOggMimeType = (info) => {
+  let string = "audio/ogg";
+  if (info.codecStrings) {
+    const uniqueCodecMimeTypes = [...new Set(info.codecStrings)];
+    string += `; codecs="${uniqueCodecMimeTypes.join(", ")}"`;
+  }
+  return string;
+};
+
+// node_modules/mediabunny/dist/modules/src/ogg/ogg-reader.js
+var MAX_PAGE_HEADER_SIZE = 27 + 255;
+var MAX_PAGE_SIZE = MAX_PAGE_HEADER_SIZE + 255 * 255;
+
+// node_modules/mediabunny/dist/modules/src/muxer.js
+var Muxer = class {
+  constructor(output) {
+    this.mutex = new AsyncMutex();
+    this.firstMediaStreamTimestamp = null;
+    this.trackTimestampInfo = /* @__PURE__ */ new WeakMap();
+    this.output = output;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onTrackClose(track) {
+  }
+  validateAndNormalizeTimestamp(track, timestampInSeconds, isKeyPacket) {
+    timestampInSeconds += track.source._timestampOffset;
+    let timestampInfo = this.trackTimestampInfo.get(track);
+    if (!timestampInfo) {
+      if (!isKeyPacket) {
+        throw new Error("First packet must be a key packet.");
+      }
+      timestampInfo = {
+        maxTimestamp: timestampInSeconds,
+        maxTimestampBeforeLastKeyPacket: timestampInSeconds
+      };
+      this.trackTimestampInfo.set(track, timestampInfo);
+    }
+    if (timestampInSeconds < 0) {
+      throw new Error(`Timestamps must be non-negative (got ${timestampInSeconds}s).`);
+    }
+    if (isKeyPacket) {
+      timestampInfo.maxTimestampBeforeLastKeyPacket = timestampInfo.maxTimestamp;
+    }
+    if (timestampInSeconds < timestampInfo.maxTimestampBeforeLastKeyPacket) {
+      throw new Error(`Timestamps cannot be smaller than the largest timestamp of the previous GOP (a GOP begins with a key packet and ends right before the next key packet). Got ${timestampInSeconds}s, but largest timestamp is ${timestampInfo.maxTimestampBeforeLastKeyPacket}s.`);
+    }
+    timestampInfo.maxTimestamp = Math.max(timestampInfo.maxTimestamp, timestampInSeconds);
+    return timestampInSeconds;
+  }
 };
 
 // node_modules/mediabunny/dist/modules/src/writer.js
@@ -1360,74 +2693,6 @@ var BufferTarget = class extends Target {
   }
 };
 
-// node_modules/mediabunny/dist/modules/src/ogg/ogg-misc.js
-var OGGS = 1399285583;
-var OGG_CRC_POLYNOMIAL = 79764919;
-var OGG_CRC_TABLE = new Uint32Array(256);
-for (let n = 0; n < 256; n++) {
-  let crc = n << 24;
-  for (let k = 0; k < 8; k++) {
-    crc = crc & 2147483648 ? crc << 1 ^ OGG_CRC_POLYNOMIAL : crc << 1;
-  }
-  OGG_CRC_TABLE[n] = crc >>> 0 & 4294967295;
-}
-var computeOggPageCrc = (bytes) => {
-  const view = toDataView(bytes);
-  const originalChecksum = view.getUint32(22, true);
-  view.setUint32(22, 0, true);
-  let crc = 0;
-  for (let i = 0; i < bytes.length; i++) {
-    const byte = bytes[i];
-    crc = (crc << 8 ^ OGG_CRC_TABLE[crc >>> 24 ^ byte]) >>> 0;
-  }
-  view.setUint32(22, originalChecksum, true);
-  return crc;
-};
-var extractSampleMetadata = (data, codecInfo, vorbisLastBlocksize) => {
-  let durationInSamples = 0;
-  let currentBlocksize = null;
-  if (data.length > 0) {
-    if (codecInfo.codec === "vorbis") {
-      assert(codecInfo.vorbisInfo);
-      const vorbisModeCount = codecInfo.vorbisInfo.modeBlockflags.length;
-      const bitCount = ilog(vorbisModeCount - 1);
-      const modeMask = (1 << bitCount) - 1 << 1;
-      const modeNumber = (data[0] & modeMask) >> 1;
-      if (modeNumber >= codecInfo.vorbisInfo.modeBlockflags.length) {
-        throw new Error("Invalid mode number.");
-      }
-      let prevBlocksize = vorbisLastBlocksize;
-      const blockflag = codecInfo.vorbisInfo.modeBlockflags[modeNumber];
-      currentBlocksize = codecInfo.vorbisInfo.blocksizes[blockflag];
-      if (blockflag === 1) {
-        const prevMask = (modeMask | 1) + 1;
-        const flag = data[0] & prevMask ? 1 : 0;
-        prevBlocksize = codecInfo.vorbisInfo.blocksizes[flag];
-      }
-      durationInSamples = prevBlocksize !== null ? prevBlocksize + currentBlocksize >> 2 : 0;
-    } else if (codecInfo.codec === "opus") {
-      const toc = parseOpusTocByte(data);
-      durationInSamples = toc.durationInSamples;
-    }
-  }
-  return {
-    durationInSamples,
-    vorbisBlockSize: currentBlocksize
-  };
-};
-var buildOggMimeType = (info) => {
-  let string = "audio/ogg";
-  if (info.codecStrings) {
-    const uniqueCodecMimeTypes = [...new Set(info.codecStrings)];
-    string += `; codecs="${uniqueCodecMimeTypes.join(", ")}"`;
-  }
-  return string;
-};
-
-// node_modules/mediabunny/dist/modules/src/ogg/ogg-reader.js
-var MAX_PAGE_HEADER_SIZE = 27 + 255;
-var MAX_PAGE_SIZE = MAX_PAGE_HEADER_SIZE + 255 * 255;
-
 // node_modules/mediabunny/dist/modules/src/ogg/ogg-muxer.js
 var PAGE_SIZE_TARGET = 8192;
 var OggMuxer = class extends Muxer {
@@ -1469,7 +2734,7 @@ var OggMuxer = class extends Muxer {
     const newTrackData = {
       track,
       serialNumber,
-      internalSampleRate: track.source._codec === "opus" ? OPUS_INTERNAL_SAMPLE_RATE : meta.decoderConfig.sampleRate,
+      internalSampleRate: track.source._codec === "opus" ? OPUS_SAMPLE_RATE : meta.decoderConfig.sampleRate,
       codecInfo: {
         codec: track.source._codec,
         vorbisInfo: null,
@@ -1483,7 +2748,8 @@ var OggMuxer = class extends Muxer {
       currentLacingValues: [],
       currentPageData: [],
       currentPageSize: 27,
-      currentPageStartsWithFreshPacket: true
+      currentPageStartsWithFreshPacket: true,
+      currentPageStartTimestampInSamples: 0
     };
     this.queueHeaderPackets(newTrackData, meta);
     this.trackDatas.push(newTrackData);
@@ -1531,21 +2797,21 @@ var OggMuxer = class extends Muxer {
       commentHeaderHeader[4] = 98;
       commentHeaderHeader[5] = 105;
       commentHeaderHeader[6] = 115;
-      const commentHeader = this.createVorbisComments(commentHeaderHeader);
+      const commentHeader = createVorbisComments(commentHeaderHeader, this.output._metadataTags, true);
       trackData.packetQueue.push({
         data: identificationHeader,
-        endGranulePosition: 0,
-        timestamp: 0,
+        timestampInSamples: 0,
+        durationInSamples: 0,
         forcePageFlush: true
       }, {
         data: commentHeader,
-        endGranulePosition: 0,
-        timestamp: 0,
+        timestampInSamples: 0,
+        durationInSamples: 0,
         forcePageFlush: false
       }, {
         data: setupHeader,
-        endGranulePosition: 0,
-        timestamp: 0,
+        timestampInSamples: 0,
+        durationInSamples: 0,
         forcePageFlush: true
         // The last header packet must flush the page
       });
@@ -1567,16 +2833,16 @@ var OggMuxer = class extends Muxer {
       const commentHeaderHeaderView = toDataView(commentHeaderHeader);
       commentHeaderHeaderView.setUint32(0, 1332770163, false);
       commentHeaderHeaderView.setUint32(4, 1415669619, false);
-      const commentHeader = this.createVorbisComments(commentHeaderHeader);
+      const commentHeader = createVorbisComments(commentHeaderHeader, this.output._metadataTags, true);
       trackData.packetQueue.push({
         data: identificationHeader,
-        endGranulePosition: 0,
-        timestamp: 0,
+        timestampInSamples: 0,
+        durationInSamples: 0,
         forcePageFlush: true
       }, {
         data: commentHeader,
-        endGranulePosition: 0,
-        timestamp: 0,
+        timestampInSamples: 0,
+        durationInSamples: 0,
         forcePageFlush: true
         // The last header packet must flush the page
       });
@@ -1584,168 +2850,6 @@ var OggMuxer = class extends Muxer {
         preSkip: parseOpusIdentificationHeader(identificationHeader).preSkip
       };
     }
-  }
-  createVorbisComments(headerBytes) {
-    const tags = this.output._metadataTags;
-    const commentHeaderParts = [
-      headerBytes
-    ];
-    let vendorString = "";
-    if (typeof tags.raw?.["vendor"] === "string") {
-      vendorString = tags.raw?.["vendor"];
-    }
-    const encodedVendorString = textEncoder.encode(vendorString);
-    let currentBuffer = new Uint8Array(4 + encodedVendorString.length);
-    let currentView = new DataView(currentBuffer.buffer);
-    currentView.setUint32(0, encodedVendorString.length, true);
-    currentBuffer.set(encodedVendorString, 4);
-    commentHeaderParts.push(currentBuffer);
-    const writtenTags = /* @__PURE__ */ new Set();
-    const addCommentTag = (key, value) => {
-      const joined = `${key}=${value}`;
-      const encoded = textEncoder.encode(joined);
-      currentBuffer = new Uint8Array(4 + encoded.length);
-      currentView = new DataView(currentBuffer.buffer);
-      currentView.setUint32(0, encoded.length, true);
-      currentBuffer.set(encoded, 4);
-      commentHeaderParts.push(currentBuffer);
-      writtenTags.add(key);
-    };
-    for (const { key, value } of keyValueIterator(tags)) {
-      switch (key) {
-        case "title":
-          {
-            addCommentTag("TITLE", value);
-          }
-          ;
-          break;
-        case "description":
-          {
-            addCommentTag("DESCRIPTION", value);
-          }
-          ;
-          break;
-        case "artist":
-          {
-            addCommentTag("ARTIST", value);
-          }
-          ;
-          break;
-        case "album":
-          {
-            addCommentTag("ALBUM", value);
-          }
-          ;
-          break;
-        case "albumArtist":
-          {
-            addCommentTag("ALBUMARTIST", value);
-          }
-          ;
-          break;
-        case "genre":
-          {
-            addCommentTag("GENRE", value);
-          }
-          ;
-          break;
-        case "date":
-          {
-            addCommentTag("DATE", value.toISOString().slice(0, 10));
-          }
-          ;
-          break;
-        case "comment":
-          {
-            addCommentTag("COMMENT", value);
-          }
-          ;
-          break;
-        case "lyrics":
-          {
-            addCommentTag("LYRICS", value);
-          }
-          ;
-          break;
-        case "trackNumber":
-          {
-            addCommentTag("TRACKNUMBER", value.toString());
-          }
-          ;
-          break;
-        case "tracksTotal":
-          {
-            addCommentTag("TRACKTOTAL", value.toString());
-          }
-          ;
-          break;
-        case "discNumber":
-          {
-            addCommentTag("DISCNUMBER", value.toString());
-          }
-          ;
-          break;
-        case "discsTotal":
-          {
-            addCommentTag("DISCTOTAL", value.toString());
-          }
-          ;
-          break;
-        case "images":
-          {
-            for (const image of value) {
-              const pictureType = image.kind === "coverFront" ? 3 : image.kind === "coverBack" ? 4 : 0;
-              const encodedMediaType = new Uint8Array(image.mimeType.length);
-              for (let i = 0; i < image.mimeType.length; i++) {
-                encodedMediaType[i] = image.mimeType.charCodeAt(i);
-              }
-              const encodedDescription = textEncoder.encode(image.description ?? "");
-              const buffer = new Uint8Array(4 + 4 + encodedMediaType.length + 4 + encodedDescription.length + 16 + 4 + image.data.length);
-              const view = toDataView(buffer);
-              view.setUint32(0, pictureType, false);
-              view.setUint32(4, encodedMediaType.length, false);
-              buffer.set(encodedMediaType, 8);
-              view.setUint32(8 + encodedMediaType.length, encodedDescription.length, false);
-              buffer.set(encodedDescription, 12 + encodedMediaType.length);
-              view.setUint32(28 + encodedMediaType.length + encodedDescription.length, image.data.length, false);
-              buffer.set(image.data, 32 + encodedMediaType.length + encodedDescription.length);
-              const encoded = bytesToBase64(buffer);
-              addCommentTag("METADATA_BLOCK_PICTURE", encoded);
-            }
-          }
-          ;
-          break;
-        case "raw":
-          {
-          }
-          ;
-          break;
-        default:
-          assertNever(key);
-      }
-    }
-    if (tags.raw) {
-      for (const key in tags.raw) {
-        const value = tags.raw[key];
-        if (key === "vendor" || value == null || writtenTags.has(key)) {
-          continue;
-        }
-        if (typeof value === "string") {
-          addCommentTag(key, value);
-        }
-      }
-    }
-    const listLengthBuffer = new Uint8Array(4);
-    toDataView(listLengthBuffer).setUint32(0, writtenTags.size, true);
-    commentHeaderParts.splice(2, 0, listLengthBuffer);
-    const commentHeaderLength = commentHeaderParts.reduce((a, b) => a + b.length, 0);
-    const commentHeader = new Uint8Array(commentHeaderLength);
-    let pos = 0;
-    for (const part of commentHeaderParts) {
-      commentHeader.set(part, pos);
-      pos += part.length;
-    }
-    return commentHeader;
   }
   async addEncodedAudioPacket(track, packet, meta) {
     const release = await this.mutex.acquire();
@@ -1758,8 +2862,8 @@ var OggMuxer = class extends Muxer {
       trackData.vorbisLastBlocksize = vorbisBlockSize;
       trackData.packetQueue.push({
         data: packet.data,
-        endGranulePosition: trackData.currentTimestampInSamples,
-        timestamp: currentTimestampInSamples / trackData.internalSampleRate,
+        timestampInSamples: currentTimestampInSamples,
+        durationInSamples,
         forcePageFlush: false
       });
       await this.interleavePages();
@@ -1780,7 +2884,7 @@ var OggMuxer = class extends Muxer {
   }
   async interleavePages(isFinalCall = false) {
     if (!this.bosPagesWritten) {
-      if (!this.allTracksAreKnown()) {
+      if (!this.allTracksAreKnown() && !isFinalCall) {
         return;
       }
       for (const trackData of this.trackDatas) {
@@ -1801,9 +2905,9 @@ var OggMuxer = class extends Muxer {
         if (!isFinalCall && trackData.packetQueue.length <= 1 && !trackData.track.source._closed) {
           break outer;
         }
-        if (trackData.packetQueue.length > 0 && trackData.packetQueue[0].timestamp < minTimestamp) {
+        if (trackData.packetQueue.length > 0 && trackData.packetQueue[0].timestampInSamples < minTimestamp) {
           trackWithMinTimestamp = trackData;
-          minTimestamp = trackData.packetQueue[0].timestamp;
+          minTimestamp = trackData.packetQueue[0].timestampInSamples;
         }
       }
       if (!trackWithMinTimestamp) {
@@ -1818,6 +2922,13 @@ var OggMuxer = class extends Muxer {
     }
   }
   writePacket(trackData, packet, isFinalPacket) {
+    const packetEndTimestampInSamples = packet.timestampInSamples + packet.durationInSamples;
+    if (this.format._options.maximumPageDuration !== void 0) {
+      const maxDurationInSamples = this.format._options.maximumPageDuration * trackData.internalSampleRate;
+      if (trackData.currentLacingValues.length > 0 && packetEndTimestampInSamples - trackData.currentPageStartTimestampInSamples > maxDurationInSamples) {
+        this.writePage(trackData, false);
+      }
+    }
     let remainingLength = packet.data.length;
     let dataStartOffset = 0;
     let dataOffset = 0;
@@ -1848,7 +2959,7 @@ var OggMuxer = class extends Muxer {
     const slice2 = packet.data.subarray(dataStartOffset);
     trackData.currentPageData.push(slice2);
     trackData.currentPageSize += slice2.length;
-    trackData.currentGranulePosition = packet.endGranulePosition;
+    trackData.currentGranulePosition = packetEndTimestampInSamples;
     if (trackData.currentPageSize >= PAGE_SIZE_TARGET || packet.forcePageFlush) {
       this.writePage(trackData, isFinalPacket);
     }
@@ -1887,6 +2998,7 @@ var OggMuxer = class extends Muxer {
     trackData.currentPageData.length = 0;
     trackData.currentPageSize = 27;
     trackData.currentPageStartsWithFreshPacket = true;
+    trackData.currentPageStartTimestampInSamples = trackData.currentGranulePosition;
     if (this.format._options.onPage) {
       this.writer.startTrackingWrites();
     }
@@ -1918,640 +3030,6 @@ var OggMuxer = class extends Muxer {
   }
 };
 
-// node_modules/mediabunny/dist/modules/src/custom-coder.js
-var customAudioEncoders = [];
-
-// node_modules/mediabunny/dist/modules/src/packet.js
-var PLACEHOLDER_DATA = new Uint8Array(0);
-var EncodedPacket = class _EncodedPacket {
-  /** Creates a new {@link EncodedPacket} from raw bytes and timing information. */
-  constructor(data, type, timestamp, duration, sequenceNumber = -1, byteLength) {
-    this.data = data;
-    this.type = type;
-    this.timestamp = timestamp;
-    this.duration = duration;
-    this.sequenceNumber = sequenceNumber;
-    if (data === PLACEHOLDER_DATA && byteLength === void 0) {
-      throw new Error("Internal error: byteLength must be explicitly provided when constructing metadata-only packets.");
-    }
-    if (byteLength === void 0) {
-      byteLength = data.byteLength;
-    }
-    if (!(data instanceof Uint8Array)) {
-      throw new TypeError("data must be a Uint8Array.");
-    }
-    if (type !== "key" && type !== "delta") {
-      throw new TypeError('type must be either "key" or "delta".');
-    }
-    if (!Number.isFinite(timestamp)) {
-      throw new TypeError("timestamp must be a number.");
-    }
-    if (!Number.isFinite(duration) || duration < 0) {
-      throw new TypeError("duration must be a non-negative number.");
-    }
-    if (!Number.isFinite(sequenceNumber)) {
-      throw new TypeError("sequenceNumber must be a number.");
-    }
-    if (!Number.isInteger(byteLength) || byteLength < 0) {
-      throw new TypeError("byteLength must be a non-negative integer.");
-    }
-    this.byteLength = byteLength;
-  }
-  /** If this packet is a metadata-only packet. Metadata-only packets don't contain their packet data. */
-  get isMetadataOnly() {
-    return this.data === PLACEHOLDER_DATA;
-  }
-  /** The timestamp of this packet in microseconds. */
-  get microsecondTimestamp() {
-    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.timestamp);
-  }
-  /** The duration of this packet in microseconds. */
-  get microsecondDuration() {
-    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.duration);
-  }
-  /** Converts this packet to an EncodedVideoChunk for use with the WebCodecs API. */
-  toEncodedVideoChunk() {
-    if (this.isMetadataOnly) {
-      throw new TypeError("Metadata-only packets cannot be converted to a video chunk.");
-    }
-    if (typeof EncodedVideoChunk === "undefined") {
-      throw new Error("Your browser does not support EncodedVideoChunk.");
-    }
-    return new EncodedVideoChunk({
-      data: this.data,
-      type: this.type,
-      timestamp: this.microsecondTimestamp,
-      duration: this.microsecondDuration
-    });
-  }
-  /** Converts this packet to an EncodedAudioChunk for use with the WebCodecs API. */
-  toEncodedAudioChunk() {
-    if (this.isMetadataOnly) {
-      throw new TypeError("Metadata-only packets cannot be converted to an audio chunk.");
-    }
-    if (typeof EncodedAudioChunk === "undefined") {
-      throw new Error("Your browser does not support EncodedAudioChunk.");
-    }
-    return new EncodedAudioChunk({
-      data: this.data,
-      type: this.type,
-      timestamp: this.microsecondTimestamp,
-      duration: this.microsecondDuration
-    });
-  }
-  /**
-   * Creates an EncodedPacket from an EncodedVideoChunk or EncodedAudioChunk. This method is useful for converting
-   * chunks from the WebCodecs API to EncodedPackets.
-   */
-  static fromEncodedChunk(chunk) {
-    if (!(chunk instanceof EncodedVideoChunk || chunk instanceof EncodedAudioChunk)) {
-      throw new TypeError("chunk must be an EncodedVideoChunk or EncodedAudioChunk.");
-    }
-    const data = new Uint8Array(chunk.byteLength);
-    chunk.copyTo(data);
-    return new _EncodedPacket(data, chunk.type, chunk.timestamp / 1e6, (chunk.duration ?? 0) / 1e6);
-  }
-  /** Clones this packet while optionally updating timing information. */
-  clone(options) {
-    if (options !== void 0 && (typeof options !== "object" || options === null)) {
-      throw new TypeError("options, when provided, must be an object.");
-    }
-    if (options?.timestamp !== void 0 && !Number.isFinite(options.timestamp)) {
-      throw new TypeError("options.timestamp, when provided, must be a number.");
-    }
-    if (options?.duration !== void 0 && !Number.isFinite(options.duration)) {
-      throw new TypeError("options.duration, when provided, must be a number.");
-    }
-    return new _EncodedPacket(this.data, this.type, options?.timestamp ?? this.timestamp, options?.duration ?? this.duration, this.sequenceNumber, this.byteLength);
-  }
-};
-
-// node_modules/mediabunny/dist/modules/src/pcm.js
-var toUlaw = (s16) => {
-  const MULAW_MAX = 8191;
-  const MULAW_BIAS = 33;
-  let number = s16;
-  let mask = 4096;
-  let sign = 0;
-  let position = 12;
-  let lsb = 0;
-  if (number < 0) {
-    number = -number;
-    sign = 128;
-  }
-  number += MULAW_BIAS;
-  if (number > MULAW_MAX) {
-    number = MULAW_MAX;
-  }
-  while ((number & mask) !== mask && position >= 5) {
-    mask >>= 1;
-    position--;
-  }
-  lsb = number >> position - 4 & 15;
-  return ~(sign | position - 5 << 4 | lsb) & 255;
-};
-var toAlaw = (s16) => {
-  const ALAW_MAX = 4095;
-  let mask = 2048;
-  let sign = 0;
-  let position = 11;
-  let lsb = 0;
-  let number = s16;
-  if (number < 0) {
-    number = -number;
-    sign = 128;
-  }
-  if (number > ALAW_MAX) {
-    number = ALAW_MAX;
-  }
-  while ((number & mask) !== mask && position >= 5) {
-    mask >>= 1;
-    position--;
-  }
-  lsb = number >> (position === 4 ? 1 : position - 4) & 15;
-  return (sign | position - 4 << 4 | lsb) ^ 85;
-};
-
-// node_modules/mediabunny/dist/modules/src/sample.js
-var AUDIO_SAMPLE_FORMATS = /* @__PURE__ */ new Set(["f32", "f32-planar", "s16", "s16-planar", "s32", "s32-planar", "u8", "u8-planar"]);
-var AudioSample = class _AudioSample {
-  /** The presentation timestamp of the sample in microseconds. */
-  get microsecondTimestamp() {
-    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.timestamp);
-  }
-  /** The duration of the sample in microseconds. */
-  get microsecondDuration() {
-    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.duration);
-  }
-  /**
-   * Creates a new {@link AudioSample}, either from an existing
-   * [`AudioData`](https://developer.mozilla.org/en-US/docs/Web/API/AudioData) or from raw bytes specified in
-   * {@link AudioSampleInit}.
-   */
-  constructor(init) {
-    this._closed = false;
-    if (isAudioData(init)) {
-      if (init.format === null) {
-        throw new TypeError("AudioData with null format is not supported.");
-      }
-      this._data = init;
-      this.format = init.format;
-      this.sampleRate = init.sampleRate;
-      this.numberOfFrames = init.numberOfFrames;
-      this.numberOfChannels = init.numberOfChannels;
-      this.timestamp = init.timestamp / 1e6;
-      this.duration = init.numberOfFrames / init.sampleRate;
-    } else {
-      if (!init || typeof init !== "object") {
-        throw new TypeError("Invalid AudioDataInit: must be an object.");
-      }
-      if (!AUDIO_SAMPLE_FORMATS.has(init.format)) {
-        throw new TypeError("Invalid AudioDataInit: invalid format.");
-      }
-      if (!Number.isFinite(init.sampleRate) || init.sampleRate <= 0) {
-        throw new TypeError("Invalid AudioDataInit: sampleRate must be > 0.");
-      }
-      if (!Number.isInteger(init.numberOfChannels) || init.numberOfChannels === 0) {
-        throw new TypeError("Invalid AudioDataInit: numberOfChannels must be an integer > 0.");
-      }
-      if (!Number.isFinite(init?.timestamp)) {
-        throw new TypeError("init.timestamp must be a number.");
-      }
-      const numberOfFrames = init.data.byteLength / (getBytesPerSample(init.format) * init.numberOfChannels);
-      if (!Number.isInteger(numberOfFrames)) {
-        throw new TypeError("Invalid AudioDataInit: data size is not a multiple of frame size.");
-      }
-      this.format = init.format;
-      this.sampleRate = init.sampleRate;
-      this.numberOfFrames = numberOfFrames;
-      this.numberOfChannels = init.numberOfChannels;
-      this.timestamp = init.timestamp;
-      this.duration = numberOfFrames / init.sampleRate;
-      let dataBuffer;
-      if (init.data instanceof ArrayBuffer) {
-        dataBuffer = new Uint8Array(init.data);
-      } else if (ArrayBuffer.isView(init.data)) {
-        dataBuffer = new Uint8Array(init.data.buffer, init.data.byteOffset, init.data.byteLength);
-      } else {
-        throw new TypeError("Invalid AudioDataInit: data is not a BufferSource.");
-      }
-      const expectedSize = this.numberOfFrames * this.numberOfChannels * getBytesPerSample(this.format);
-      if (dataBuffer.byteLength < expectedSize) {
-        throw new TypeError("Invalid AudioDataInit: insufficient data size.");
-      }
-      this._data = dataBuffer;
-    }
-  }
-  /** Returns the number of bytes required to hold the audio sample's data as specified by the given options. */
-  allocationSize(options) {
-    if (!options || typeof options !== "object") {
-      throw new TypeError("options must be an object.");
-    }
-    if (!Number.isInteger(options.planeIndex) || options.planeIndex < 0) {
-      throw new TypeError("planeIndex must be a non-negative integer.");
-    }
-    if (options.format !== void 0 && !AUDIO_SAMPLE_FORMATS.has(options.format)) {
-      throw new TypeError("Invalid format.");
-    }
-    if (options.frameOffset !== void 0 && (!Number.isInteger(options.frameOffset) || options.frameOffset < 0)) {
-      throw new TypeError("frameOffset must be a non-negative integer.");
-    }
-    if (options.frameCount !== void 0 && (!Number.isInteger(options.frameCount) || options.frameCount < 0)) {
-      throw new TypeError("frameCount must be a non-negative integer.");
-    }
-    if (this._closed) {
-      throw new Error("AudioSample is closed.");
-    }
-    const destFormat = options.format ?? this.format;
-    const frameOffset = options.frameOffset ?? 0;
-    if (frameOffset >= this.numberOfFrames) {
-      throw new RangeError("frameOffset out of range");
-    }
-    const copyFrameCount = options.frameCount !== void 0 ? options.frameCount : this.numberOfFrames - frameOffset;
-    if (copyFrameCount > this.numberOfFrames - frameOffset) {
-      throw new RangeError("frameCount out of range");
-    }
-    const bytesPerSample = getBytesPerSample(destFormat);
-    const isPlanar = formatIsPlanar(destFormat);
-    if (isPlanar && options.planeIndex >= this.numberOfChannels) {
-      throw new RangeError("planeIndex out of range");
-    }
-    if (!isPlanar && options.planeIndex !== 0) {
-      throw new RangeError("planeIndex out of range");
-    }
-    const elementCount = isPlanar ? copyFrameCount : copyFrameCount * this.numberOfChannels;
-    return elementCount * bytesPerSample;
-  }
-  /** Copies the audio sample's data to an ArrayBuffer or ArrayBufferView as specified by the given options. */
-  copyTo(destination, options) {
-    if (!isAllowSharedBufferSource(destination)) {
-      throw new TypeError("destination must be an ArrayBuffer or an ArrayBuffer view.");
-    }
-    if (!options || typeof options !== "object") {
-      throw new TypeError("options must be an object.");
-    }
-    if (!Number.isInteger(options.planeIndex) || options.planeIndex < 0) {
-      throw new TypeError("planeIndex must be a non-negative integer.");
-    }
-    if (options.format !== void 0 && !AUDIO_SAMPLE_FORMATS.has(options.format)) {
-      throw new TypeError("Invalid format.");
-    }
-    if (options.frameOffset !== void 0 && (!Number.isInteger(options.frameOffset) || options.frameOffset < 0)) {
-      throw new TypeError("frameOffset must be a non-negative integer.");
-    }
-    if (options.frameCount !== void 0 && (!Number.isInteger(options.frameCount) || options.frameCount < 0)) {
-      throw new TypeError("frameCount must be a non-negative integer.");
-    }
-    if (this._closed) {
-      throw new Error("AudioSample is closed.");
-    }
-    const { planeIndex, format, frameCount: optFrameCount, frameOffset: optFrameOffset } = options;
-    const destFormat = format ?? this.format;
-    if (!destFormat)
-      throw new Error("Destination format not determined");
-    const numFrames = this.numberOfFrames;
-    const numChannels = this.numberOfChannels;
-    const frameOffset = optFrameOffset ?? 0;
-    if (frameOffset >= numFrames) {
-      throw new RangeError("frameOffset out of range");
-    }
-    const copyFrameCount = optFrameCount !== void 0 ? optFrameCount : numFrames - frameOffset;
-    if (copyFrameCount > numFrames - frameOffset) {
-      throw new RangeError("frameCount out of range");
-    }
-    const destBytesPerSample = getBytesPerSample(destFormat);
-    const destIsPlanar = formatIsPlanar(destFormat);
-    if (destIsPlanar && planeIndex >= numChannels) {
-      throw new RangeError("planeIndex out of range");
-    }
-    if (!destIsPlanar && planeIndex !== 0) {
-      throw new RangeError("planeIndex out of range");
-    }
-    const destElementCount = destIsPlanar ? copyFrameCount : copyFrameCount * numChannels;
-    const requiredSize = destElementCount * destBytesPerSample;
-    if (destination.byteLength < requiredSize) {
-      throw new RangeError("Destination buffer is too small");
-    }
-    const destView = toDataView(destination);
-    const writeFn = getWriteFunction(destFormat);
-    if (isAudioData(this._data)) {
-      if (destIsPlanar) {
-        if (destFormat === "f32-planar") {
-          this._data.copyTo(destination, {
-            planeIndex,
-            frameOffset,
-            frameCount: copyFrameCount,
-            format: "f32-planar"
-          });
-        } else {
-          const tempBuffer = new ArrayBuffer(copyFrameCount * 4);
-          const tempArray = new Float32Array(tempBuffer);
-          this._data.copyTo(tempArray, {
-            planeIndex,
-            frameOffset,
-            frameCount: copyFrameCount,
-            format: "f32-planar"
-          });
-          const tempView = new DataView(tempBuffer);
-          for (let i = 0; i < copyFrameCount; i++) {
-            const destOffset = i * destBytesPerSample;
-            const sample = tempView.getFloat32(i * 4, true);
-            writeFn(destView, destOffset, sample);
-          }
-        }
-      } else {
-        const numCh = numChannels;
-        const temp = new Float32Array(copyFrameCount);
-        for (let ch = 0; ch < numCh; ch++) {
-          this._data.copyTo(temp, {
-            planeIndex: ch,
-            frameOffset,
-            frameCount: copyFrameCount,
-            format: "f32-planar"
-          });
-          for (let i = 0; i < copyFrameCount; i++) {
-            const destIndex = i * numCh + ch;
-            const destOffset = destIndex * destBytesPerSample;
-            writeFn(destView, destOffset, temp[i]);
-          }
-        }
-      }
-    } else {
-      const uint8Data = this._data;
-      const srcView = new DataView(uint8Data.buffer, uint8Data.byteOffset, uint8Data.byteLength);
-      const srcFormat = this.format;
-      const readFn = getReadFunction(srcFormat);
-      const srcBytesPerSample = getBytesPerSample(srcFormat);
-      const srcIsPlanar = formatIsPlanar(srcFormat);
-      for (let i = 0; i < copyFrameCount; i++) {
-        if (destIsPlanar) {
-          const destOffset = i * destBytesPerSample;
-          let srcOffset;
-          if (srcIsPlanar) {
-            srcOffset = (planeIndex * numFrames + (i + frameOffset)) * srcBytesPerSample;
-          } else {
-            srcOffset = ((i + frameOffset) * numChannels + planeIndex) * srcBytesPerSample;
-          }
-          const normalized = readFn(srcView, srcOffset);
-          writeFn(destView, destOffset, normalized);
-        } else {
-          for (let ch = 0; ch < numChannels; ch++) {
-            const destIndex = i * numChannels + ch;
-            const destOffset = destIndex * destBytesPerSample;
-            let srcOffset;
-            if (srcIsPlanar) {
-              srcOffset = (ch * numFrames + (i + frameOffset)) * srcBytesPerSample;
-            } else {
-              srcOffset = ((i + frameOffset) * numChannels + ch) * srcBytesPerSample;
-            }
-            const normalized = readFn(srcView, srcOffset);
-            writeFn(destView, destOffset, normalized);
-          }
-        }
-      }
-    }
-  }
-  /** Clones this audio sample. */
-  clone() {
-    if (this._closed) {
-      throw new Error("AudioSample is closed.");
-    }
-    if (isAudioData(this._data)) {
-      const sample = new _AudioSample(this._data.clone());
-      sample.setTimestamp(this.timestamp);
-      return sample;
-    } else {
-      return new _AudioSample({
-        format: this.format,
-        sampleRate: this.sampleRate,
-        numberOfFrames: this.numberOfFrames,
-        numberOfChannels: this.numberOfChannels,
-        timestamp: this.timestamp,
-        data: this._data
-      });
-    }
-  }
-  /**
-   * Closes this audio sample, releasing held resources. Audio samples should be closed as soon as they are not
-   * needed anymore.
-   */
-  close() {
-    if (this._closed) {
-      return;
-    }
-    if (isAudioData(this._data)) {
-      this._data.close();
-    } else {
-      this._data = new Uint8Array(0);
-    }
-    this._closed = true;
-  }
-  /**
-   * Converts this audio sample to an AudioData for use with the WebCodecs API. The AudioData returned by this
-   * method *must* be closed separately from this audio sample.
-   */
-  toAudioData() {
-    if (this._closed) {
-      throw new Error("AudioSample is closed.");
-    }
-    if (isAudioData(this._data)) {
-      if (this._data.timestamp === this.microsecondTimestamp) {
-        return this._data.clone();
-      } else {
-        if (formatIsPlanar(this.format)) {
-          const size = this.allocationSize({ planeIndex: 0, format: this.format });
-          const data = new ArrayBuffer(size * this.numberOfChannels);
-          for (let i = 0; i < this.numberOfChannels; i++) {
-            this.copyTo(new Uint8Array(data, i * size, size), { planeIndex: i, format: this.format });
-          }
-          return new AudioData({
-            format: this.format,
-            sampleRate: this.sampleRate,
-            numberOfFrames: this.numberOfFrames,
-            numberOfChannels: this.numberOfChannels,
-            timestamp: this.microsecondTimestamp,
-            data
-          });
-        } else {
-          const data = new ArrayBuffer(this.allocationSize({ planeIndex: 0, format: this.format }));
-          this.copyTo(data, { planeIndex: 0, format: this.format });
-          return new AudioData({
-            format: this.format,
-            sampleRate: this.sampleRate,
-            numberOfFrames: this.numberOfFrames,
-            numberOfChannels: this.numberOfChannels,
-            timestamp: this.microsecondTimestamp,
-            data
-          });
-        }
-      }
-    } else {
-      return new AudioData({
-        format: this.format,
-        sampleRate: this.sampleRate,
-        numberOfFrames: this.numberOfFrames,
-        numberOfChannels: this.numberOfChannels,
-        timestamp: this.microsecondTimestamp,
-        data: this._data
-      });
-    }
-  }
-  /** Convert this audio sample to an AudioBuffer for use with the Web Audio API. */
-  toAudioBuffer() {
-    if (this._closed) {
-      throw new Error("AudioSample is closed.");
-    }
-    const audioBuffer = new AudioBuffer({
-      numberOfChannels: this.numberOfChannels,
-      length: this.numberOfFrames,
-      sampleRate: this.sampleRate
-    });
-    const dataBytes = new Float32Array(this.allocationSize({ planeIndex: 0, format: "f32-planar" }) / 4);
-    for (let i = 0; i < this.numberOfChannels; i++) {
-      this.copyTo(dataBytes, { planeIndex: i, format: "f32-planar" });
-      audioBuffer.copyToChannel(dataBytes, i);
-    }
-    return audioBuffer;
-  }
-  /** Sets the presentation timestamp of this audio sample, in seconds. */
-  setTimestamp(newTimestamp) {
-    if (!Number.isFinite(newTimestamp)) {
-      throw new TypeError("newTimestamp must be a number.");
-    }
-    this.timestamp = newTimestamp;
-  }
-  /** @internal */
-  static *_fromAudioBuffer(audioBuffer, timestamp) {
-    if (!(audioBuffer instanceof AudioBuffer)) {
-      throw new TypeError("audioBuffer must be an AudioBuffer.");
-    }
-    const MAX_FLOAT_COUNT = 48e3 * 5;
-    const numberOfChannels = audioBuffer.numberOfChannels;
-    const sampleRate = audioBuffer.sampleRate;
-    const totalFrames = audioBuffer.length;
-    const maxFramesPerChunk = Math.floor(MAX_FLOAT_COUNT / numberOfChannels);
-    let currentRelativeFrame = 0;
-    let remainingFrames = totalFrames;
-    while (remainingFrames > 0) {
-      const framesToCopy = Math.min(maxFramesPerChunk, remainingFrames);
-      const chunkData = new Float32Array(numberOfChannels * framesToCopy);
-      for (let channel = 0; channel < numberOfChannels; channel++) {
-        audioBuffer.copyFromChannel(chunkData.subarray(channel * framesToCopy, (channel + 1) * framesToCopy), channel, currentRelativeFrame);
-      }
-      yield new _AudioSample({
-        format: "f32-planar",
-        sampleRate,
-        numberOfFrames: framesToCopy,
-        numberOfChannels,
-        timestamp: timestamp + currentRelativeFrame / sampleRate,
-        data: chunkData
-      });
-      currentRelativeFrame += framesToCopy;
-      remainingFrames -= framesToCopy;
-    }
-  }
-  /**
-   * Creates AudioSamples from an AudioBuffer, starting at the given timestamp in seconds. Typically creates exactly
-   * one sample, but may create multiple if the AudioBuffer is exceedingly large.
-   */
-  static fromAudioBuffer(audioBuffer, timestamp) {
-    if (!(audioBuffer instanceof AudioBuffer)) {
-      throw new TypeError("audioBuffer must be an AudioBuffer.");
-    }
-    const MAX_FLOAT_COUNT = 48e3 * 5;
-    const numberOfChannels = audioBuffer.numberOfChannels;
-    const sampleRate = audioBuffer.sampleRate;
-    const totalFrames = audioBuffer.length;
-    const maxFramesPerChunk = Math.floor(MAX_FLOAT_COUNT / numberOfChannels);
-    let currentRelativeFrame = 0;
-    let remainingFrames = totalFrames;
-    const result = [];
-    while (remainingFrames > 0) {
-      const framesToCopy = Math.min(maxFramesPerChunk, remainingFrames);
-      const chunkData = new Float32Array(numberOfChannels * framesToCopy);
-      for (let channel = 0; channel < numberOfChannels; channel++) {
-        audioBuffer.copyFromChannel(chunkData.subarray(channel * framesToCopy, (channel + 1) * framesToCopy), channel, currentRelativeFrame);
-      }
-      const audioSample = new _AudioSample({
-        format: "f32-planar",
-        sampleRate,
-        numberOfFrames: framesToCopy,
-        numberOfChannels,
-        timestamp: timestamp + currentRelativeFrame / sampleRate,
-        data: chunkData
-      });
-      result.push(audioSample);
-      currentRelativeFrame += framesToCopy;
-      remainingFrames -= framesToCopy;
-    }
-    return result;
-  }
-};
-var getBytesPerSample = (format) => {
-  switch (format) {
-    case "u8":
-    case "u8-planar":
-      return 1;
-    case "s16":
-    case "s16-planar":
-      return 2;
-    case "s32":
-    case "s32-planar":
-      return 4;
-    case "f32":
-    case "f32-planar":
-      return 4;
-    default:
-      throw new Error("Unknown AudioSampleFormat");
-  }
-};
-var formatIsPlanar = (format) => {
-  switch (format) {
-    case "u8-planar":
-    case "s16-planar":
-    case "s32-planar":
-    case "f32-planar":
-      return true;
-    default:
-      return false;
-  }
-};
-var getReadFunction = (format) => {
-  switch (format) {
-    case "u8":
-    case "u8-planar":
-      return (view, offset) => (view.getUint8(offset) - 128) / 128;
-    case "s16":
-    case "s16-planar":
-      return (view, offset) => view.getInt16(offset, true) / 32768;
-    case "s32":
-    case "s32-planar":
-      return (view, offset) => view.getInt32(offset, true) / 2147483648;
-    case "f32":
-    case "f32-planar":
-      return (view, offset) => view.getFloat32(offset, true);
-  }
-};
-var getWriteFunction = (format) => {
-  switch (format) {
-    case "u8":
-    case "u8-planar":
-      return (view, offset, value) => view.setUint8(offset, clamp2((value + 1) * 127.5, 0, 255));
-    case "s16":
-    case "s16-planar":
-      return (view, offset, value) => view.setInt16(offset, clamp2(Math.round(value * 32767), -32768, 32767), true);
-    case "s32":
-    case "s32-planar":
-      return (view, offset, value) => view.setInt32(offset, clamp2(Math.round(value * 2147483647), -2147483648, 2147483647), true);
-    case "f32":
-    case "f32-planar":
-      return (view, offset, value) => view.setFloat32(offset, value, true);
-  }
-};
-var isAudioData = (x) => {
-  return typeof AudioData !== "undefined" && x instanceof AudioData;
-};
-
 // node_modules/mediabunny/dist/modules/src/output-format.js
 var OutputFormat = class {
   /** Returns a list of video codecs that this output format can contain. */
@@ -2578,6 +3056,9 @@ var OggOutputFormat = class extends OutputFormat {
     if (!options || typeof options !== "object") {
       throw new TypeError("options must be an object.");
     }
+    if (options.maximumPageDuration !== void 0 && (!Number.isFinite(options.maximumPageDuration) || options.maximumPageDuration <= 0)) {
+      throw new TypeError("options.maximumPageDuration, when provided, must be a positive number.");
+    }
     if (options.onPage !== void 0 && typeof options.onPage !== "function") {
       throw new TypeError("options.onPage, when provided, must be a function.");
     }
@@ -2593,11 +3074,12 @@ var OggOutputFormat = class extends OutputFormat {
     return "Ogg";
   }
   getSupportedTrackCounts() {
+    const max = 2 ** 32;
     return {
       video: { min: 0, max: 0 },
-      audio: { min: 0, max: Infinity },
+      audio: { min: 0, max },
       subtitle: { min: 0, max: 0 },
-      total: { min: 1, max: 2 ** 32 }
+      total: { min: 1, max }
     };
   }
   get fileExtension() {
@@ -2612,6 +3094,9 @@ var OggOutputFormat = class extends OutputFormat {
     ];
   }
   get supportsVideoRotationMetadata() {
+    return false;
+  }
+  get supportsTimestampedMediaData() {
     return false;
   }
 };
@@ -2703,8 +3188,12 @@ var Quality = class {
       // 64kbps base for Opus
       mp3: 16e4,
       // 160kbps base for MP3
-      vorbis: 64e3
+      vorbis: 64e3,
       // 64kbps base for Vorbis
+      ac3: 384e3,
+      // 384kbps base for AC-3
+      eac3: 192e3
+      // 192kbps base for E-AC-3
     };
     const baseBitrate = baseRates[codec];
     if (!baseBitrate) {
@@ -2740,11 +3229,6 @@ var Quality = class {
     return Math.round(finalBitrate / 1e3) * 1e3;
   }
 };
-var QUALITY_VERY_LOW = new Quality(0.3);
-var QUALITY_LOW = new Quality(0.6);
-var QUALITY_MEDIUM = new Quality(1);
-var QUALITY_HIGH = new Quality(2);
-var QUALITY_VERY_HIGH = new Quality(4);
 
 // node_modules/mediabunny/dist/modules/src/media-source.js
 var MediaSource = class {
@@ -2806,11 +3290,10 @@ var MediaSource = class {
   }
   /** @internal */
   async _flushOrWaitForOngoingClose(forceClose) {
-    if (this._closingPromise) {
-      return this._closingPromise;
-    } else {
-      return this._flushAndClose(forceClose);
-    }
+    return this._closingPromise ??= (async () => {
+      await this._flushAndClose(forceClose);
+      this._closed = true;
+    })();
   }
 };
 var VideoSource = class extends MediaSource {
@@ -2851,7 +3334,8 @@ var AudioEncoderWrapper = class {
     this.customEncoder = null;
     this.customEncoderCallSerializer = new CallSerializer();
     this.customEncoderQueueSize = 0;
-    this.encoderError = null;
+    this.lastEndSampleIndex = null;
+    this.error = null;
   }
   async add(audioSample, shouldClose) {
     try {
@@ -2867,17 +3351,38 @@ var AudioEncoderWrapper = class {
       }
       if (!this.encoderInitialized) {
         if (!this.ensureEncoderPromise) {
-          void this.ensureEncoder(audioSample);
+          this.ensureEncoder(audioSample);
         }
         if (!this.encoderInitialized) {
           await this.ensureEncoderPromise;
         }
       }
       assert(this.encoderInitialized);
+      {
+        const startSampleIndex = Math.round(audioSample.timestamp * audioSample.sampleRate);
+        const endSampleIndex = Math.round((audioSample.timestamp + audioSample.duration) * audioSample.sampleRate);
+        if (this.lastEndSampleIndex === null) {
+          this.lastEndSampleIndex = endSampleIndex;
+        } else {
+          const sampleDiff = startSampleIndex - this.lastEndSampleIndex;
+          if (sampleDiff >= 64) {
+            const fillSample = new AudioSample({
+              data: new Float32Array(sampleDiff * audioSample.numberOfChannels),
+              format: "f32-planar",
+              sampleRate: audioSample.sampleRate,
+              numberOfChannels: audioSample.numberOfChannels,
+              numberOfFrames: sampleDiff,
+              timestamp: this.lastEndSampleIndex / audioSample.sampleRate
+            });
+            await this.add(fillSample, true);
+          }
+          this.lastEndSampleIndex += audioSample.numberOfFrames;
+        }
+      }
       if (this.customEncoder) {
         this.customEncoderQueueSize++;
         const clonedSample = audioSample.clone();
-        const promise = this.customEncoderCallSerializer.call(() => this.customEncoder.encode(clonedSample)).then(() => this.customEncoderQueueSize--).catch((error) => this.encoderError ??= error).finally(() => {
+        const promise = this.customEncoderCallSerializer.call(() => this.customEncoder.encode(clonedSample)).then(() => this.customEncoderQueueSize--).catch((error) => this.error ??= error).finally(() => {
           clonedSample.close();
         });
         if (this.customEncoderQueueSize >= 4) {
@@ -2949,11 +3454,7 @@ var AudioEncoderWrapper = class {
     }
   }
   ensureEncoder(audioSample) {
-    if (this.encoderInitialized) {
-      return;
-    }
-    const encoderError = new Error();
-    return this.ensureEncoderPromise = (async () => {
+    this.ensureEncoderPromise = (async () => {
       const { numberOfChannels, sampleRate } = audioSample;
       const encoderConfig = buildAudioEncoderConfig({
         numberOfChannels,
@@ -2974,7 +3475,9 @@ var AudioEncoderWrapper = class {
             throw new TypeError("The second argument passed to onPacket must be an object or undefined.");
           }
           this.encodingConfig.onEncodedPacket?.(packet, meta);
-          void this.muxer.addEncodedAudioPacket(this.source._connectedTrack, packet, meta);
+          void this.muxer.addEncodedAudioPacket(this.source._connectedTrack, packet, meta).catch((error) => {
+            this.error ??= error;
+          });
         };
         await this.customEncoder.init();
       } else if (PCM_AUDIO_CODECS.includes(this.encodingConfig.codec)) {
@@ -2987,15 +3490,35 @@ var AudioEncoderWrapper = class {
         if (!support.supported) {
           throw new Error(`This specific encoder configuration (${encoderConfig.codec}, ${encoderConfig.bitrate} bps, ${encoderConfig.numberOfChannels} channels, ${encoderConfig.sampleRate} Hz) is not supported by this browser. Consider using another codec or changing your audio parameters.`);
         }
+        const stack = new Error("Encoding error").stack;
         this.encoder = new AudioEncoder({
           output: (chunk, meta) => {
+            if (this.encodingConfig.codec === "aac" && meta?.decoderConfig) {
+              let needsDescriptionOverwrite = false;
+              if (!meta.decoderConfig.description || meta.decoderConfig.description.byteLength < 2) {
+                needsDescriptionOverwrite = true;
+              } else {
+                const audioSpecificConfig = parseAacAudioSpecificConfig(toUint8Array(meta.decoderConfig.description));
+                needsDescriptionOverwrite = audioSpecificConfig.objectType === 0;
+              }
+              if (needsDescriptionOverwrite) {
+                const objectType = Number(last(encoderConfig.codec.split(".")));
+                meta.decoderConfig.description = buildAacAudioSpecificConfig({
+                  objectType,
+                  numberOfChannels: meta.decoderConfig.numberOfChannels,
+                  sampleRate: meta.decoderConfig.sampleRate
+                });
+              }
+            }
             const packet = EncodedPacket.fromEncodedChunk(chunk);
             this.encodingConfig.onEncodedPacket?.(packet, meta);
-            void this.muxer.addEncodedAudioPacket(this.source._connectedTrack, packet, meta);
+            void this.muxer.addEncodedAudioPacket(this.source._connectedTrack, packet, meta).catch((error) => {
+              this.error ??= error;
+            });
           },
           error: (error) => {
-            error.stack = encoderError.stack;
-            this.encoderError ??= error;
+            error.stack = stack;
+            this.error ??= error;
           }
         });
         this.encoder.configure(encoderConfig);
@@ -3120,9 +3643,8 @@ var AudioEncoderWrapper = class {
     }
   }
   checkForEncoderError() {
-    if (this.encoderError) {
-      this.encoderError.stack = new Error().stack;
-      throw this.encoderError;
+    if (this.error) {
+      throw this.error;
     }
   }
 };
@@ -3177,6 +3699,12 @@ var validateBaseTrackMetadata = (metadata) => {
   if (metadata.name !== void 0 && typeof metadata.name !== "string") {
     throw new TypeError("metadata.name, when provided, must be a string.");
   }
+  if (metadata.disposition !== void 0) {
+    validateTrackDisposition(metadata.disposition);
+  }
+  if (metadata.maximumPacketCount !== void 0 && (!Number.isInteger(metadata.maximumPacketCount) || metadata.maximumPacketCount < 0)) {
+    throw new TypeError("metadata.maximumPacketCount, when provided, must be a non-negative integer.");
+  }
 };
 var Output = class {
   /**
@@ -3209,7 +3737,7 @@ var Output = class {
     this._writer = options.target._createWriter();
     this._muxer = options.format._createMuxer(this);
   }
-  /** Adds a video track to the output with the given source. Must be called before output is started. */
+  /** Adds a video track to the output with the given source. Can only be called before the output is started. */
   addVideoTrack(source, metadata = {}) {
     if (!(source instanceof VideoSource)) {
       throw new TypeError("source must be a VideoSource.");
@@ -3226,7 +3754,7 @@ var Output = class {
     }
     this._addTrack("video", source, metadata);
   }
-  /** Adds an audio track to the output with the given source. Must be called before output is started. */
+  /** Adds an audio track to the output with the given source. Can only be called before the output is started. */
   addAudioTrack(source, metadata = {}) {
     if (!(source instanceof AudioSource)) {
       throw new TypeError("source must be an AudioSource.");
@@ -3234,7 +3762,7 @@ var Output = class {
     validateBaseTrackMetadata(metadata);
     this._addTrack("audio", source, metadata);
   }
-  /** Adds a subtitle track to the output with the given source. Must be called before output is started. */
+  /** Adds a subtitle track to the output with the given source. Can only be called before the output is started. */
   addSubtitleTrack(source, metadata = {}) {
     if (!(source instanceof SubtitleSource)) {
       throw new TypeError("source must be a SubtitleSource.");
@@ -3246,7 +3774,7 @@ var Output = class {
    * Sets descriptive metadata tags about the media file, such as title, author, date, or cover art. When called
    * multiple times, only the metadata from the last call will be used.
    *
-   * Must be called before output is started.
+   * Can only be called before the output is started.
    */
   setMetadataTags(tags) {
     validateMetadataTags(tags);
@@ -3400,6 +3928,13 @@ var Output = class {
     })();
   }
 };
+
+// node_modules/mediabunny/dist/modules/src/index.js
+var MEDIABUNNY_LOADED_SYMBOL = Symbol.for("mediabunny loaded");
+if (globalThis[MEDIABUNNY_LOADED_SYMBOL]) {
+  console.error("[WARNING]\nMediabunny was loaded twice. This will likely cause Mediabunny not to work correctly. Check if multiple dependencies are importing different versions of Mediabunny, or if something is being bundled incorrectly.");
+}
+globalThis[MEDIABUNNY_LOADED_SYMBOL] = true;
 
 // src/audio/audio.ts
 function monoToStereo(mono) {
@@ -3659,26 +4194,28 @@ export {
 /*! Bundled license information:
 
 mediabunny/dist/modules/src/misc.js:
-mediabunny/dist/modules/src/tags.js:
+mediabunny/dist/modules/src/metadata.js:
+mediabunny/dist/modules/shared/bitstream.js:
+mediabunny/dist/modules/shared/aac-misc.js:
 mediabunny/dist/modules/src/codec.js:
-mediabunny/dist/modules/src/muxer.js:
 mediabunny/dist/modules/src/codec-data.js:
-mediabunny/dist/modules/src/writer.js:
-mediabunny/dist/modules/src/target.js:
-mediabunny/dist/modules/src/ogg/ogg-misc.js:
-mediabunny/dist/modules/src/ogg/ogg-reader.js:
-mediabunny/dist/modules/src/ogg/ogg-muxer.js:
 mediabunny/dist/modules/src/custom-coder.js:
 mediabunny/dist/modules/src/packet.js:
 mediabunny/dist/modules/src/pcm.js:
 mediabunny/dist/modules/src/sample.js:
+mediabunny/dist/modules/src/ogg/ogg-misc.js:
+mediabunny/dist/modules/src/ogg/ogg-reader.js:
+mediabunny/dist/modules/src/muxer.js:
+mediabunny/dist/modules/src/writer.js:
+mediabunny/dist/modules/src/target.js:
+mediabunny/dist/modules/src/ogg/ogg-muxer.js:
 mediabunny/dist/modules/src/output-format.js:
 mediabunny/dist/modules/src/encode.js:
 mediabunny/dist/modules/src/media-source.js:
 mediabunny/dist/modules/src/output.js:
 mediabunny/dist/modules/src/index.js:
   (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
+   * Copyright (c) 2026-present, Vanilagy and contributors
    *
    * This Source Code Form is subject to the terms of the Mozilla Public
    * License, v. 2.0. If a copy of the MPL was not distributed with this

@@ -95,7 +95,7 @@
         estimatedObjectsPerBucket,
         queryRect(bounds2) {
           const indexes = getBucketIndexes(bounds2);
-          return function* () {
+          return (function* () {
             for (const i of indexes) {
               const bktBaseIndex = i * bucketsArrayFixedSize;
               const bktInfo = buckets[bktBaseIndex];
@@ -109,7 +109,7 @@
                   yield of;
               }
             }
-          }();
+          })();
         },
         queryPoint(bounds2) {
           return this.queryRect({ a: bounds2, b: bounds2 });

@@ -11,6 +11,7 @@ import {
   lineRenderer,
   Mat4,
   mix3,
+  mul3,
   mulMat4,
   mulVec4ByMat4,
   perspectiveWebgpu,
@@ -30,7 +31,7 @@ import {
   wrapDevice,
   xyz,
 } from "../../src";
-import GraphData from "./graph_with_xyz.json?raw";
+import GraphData from "./graph_fixed.json?raw";
 
 const graphData = JSON.parse(GraphData);
 
@@ -61,18 +62,30 @@ function inv4(m: Mat4): Mat4 {
 
   for (const n of graphData.nodes) {
     nodeMap.set(
-      n.Id,
+      n.id,
       addVertex(graph, {
-        position: scale3([n.x, n.y, n.z], 100) as Vec3,
+      position: scale3(mul3([n.x, n.y, Math.log(n.z)], [0.001, 0.001, 70]), 0.2) as Vec3,
         color: [255, 255, 255, 255],
       }),
     );
   }
 
   for (const e of graphData.links) {
+    const src = nodeMap.get(e.source)
+    const dst = nodeMap.get(e.target);
+
+    if (!src) {
+      console.warn(`Endpoint '${e.source}' not found.`)
+      continue;
+    }
+    if (!dst) {
+      console.warn(`Endpoint '${e.target}' not found.`)
+      continue;
+    }
+
     addEdge(
       graph,
-      [nodeMap.get(e.source)!, nodeMap.get(e.target)!],
+      [src, dst],
       [0, 255, 0, 255],
     );
   }
@@ -213,7 +226,7 @@ function inv4(m: Mat4): Mat4 {
 
   const graphUniforms = lines.uniforms.quickCreate({
     mvp: variadify(mulMat4)(
-      perspectiveWebgpu(Math.PI / 2, 1, 0.1, 300),
+      perspectiveWebgpu(Math.PI / 2, 1, 0.1, 1000),
       translate([0, 0, -4]),
     ),
     viewportSize: canvas.width,
@@ -287,7 +300,7 @@ function inv4(m: Mat4): Mat4 {
 
     lines.uniforms.fill(graphUniforms, 0, {
       mvp: variadify(mulMat4)(
-        perspectiveWebgpu(Math.PI / 2, 1, 0.1, 100),
+        perspectiveWebgpu(Math.PI / 2, 1, 0.1, 1000),
         currTransform,
       ),
       viewportSize: canvas.width,
