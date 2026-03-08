@@ -58,15 +58,6 @@ function inv4(m: Mat4): Mat4 {
 (async () => {
   const graphData = (await ( await fetch("../assets/graph_fixed.json")).json());
 
-  console.log("bust cache")
-
-  console.log(graphData);
-  // const n1: Node = { position: [1, 1, 1] };
-  // const n2: Node = { position: [2, 1, 1] };
-  // const n3: Node = { position: [1, 2, 1] };
-  // const n4: Node = { position: [1, 1, 2] };
-
-
   const graph: Graph<Node, Vec4> = createGraph();
 
   let nodeMap = new Map<string, Vertex<Node, Vec4>>();
@@ -412,7 +403,6 @@ if (isNearby) {
       if (clipSpace[2] < 0) {
         elem.style.display = "block";
         elem.style.position = "absolute";
-        console.log(x)
         elem.style.left = `${rescale(x, aspect, -aspect, 0, window.innerWidth)}px`;
         elem.style.top = `${rescale(y + 0.5 / clipSpace[2], -1, 1, 0, window.innerHeight)}px`;
       } else {
