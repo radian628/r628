@@ -27988,7 +27988,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     document.addEventListener("mousedown", (e) => {
       if (e.target instanceof HTMLElement && e.target.tagName.toUpperCase() === "A")
         return;
-      if (window.matchMedia("(pointer: fine)")) {
+      if (!window.matchMedia("(pointer: coarse)")) {
         document.body.requestPointerLock();
       }
     });
@@ -28048,6 +28048,7 @@ border: 1px solid #888;
 background-color: #000a; 
 color: white;
 margin: 2px;
+user-select: none;
     `;
         forwardButton.addEventListener("touchstart", () => {
           keysDown.add(key);
