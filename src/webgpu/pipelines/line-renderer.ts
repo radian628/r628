@@ -129,7 +129,7 @@ export async function lineRenderer(
     "params",
     struct("Params", {
       mvp: "mat4x4f",
-      aspect: "f32"
+      aspect: "f32",
     }),
   );
 
@@ -277,6 +277,7 @@ export async function lineRenderer(
     geometryBufferFormat,
     uniforms,
     quad,
+    blend,
     perFrameBindGroup,
     linePipeline,
     pointPipeline,
@@ -495,7 +496,7 @@ export async function lineRenderer(
       const bg = perFrameBindGroup.instantiate({
         params: uniforms.quickCreate({
           mvp: transform,
-          aspect: target.width / target.height
+          aspect: target.width / target.height,
         }),
       });
 

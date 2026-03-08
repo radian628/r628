@@ -25789,6 +25789,7 @@ async function lineRenderer(device, outputFormat) {
     geometryBufferFormat,
     uniforms,
     quad,
+    blend,
     perFrameBindGroup,
     linePipeline,
     pointPipeline,

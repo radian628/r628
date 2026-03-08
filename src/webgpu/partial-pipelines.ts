@@ -71,6 +71,7 @@ type WrappedBindGroupUniformBuffer<Spec extends WGSLStructSpec> = {
       data: Spec;
     };
   };
+  fill: (buf: GPUBuffer, offset: number, data: WGSLStructValues<Spec>) => void;
   wgsl: (groupIndex: number, bindingIndex: number) => string;
   wgslStorage: (
     groupIndex: number,
