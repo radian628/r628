@@ -56,26 +56,29 @@ function inv4(m: Mat4): Mat4 {
 }
 
 (async () => {
-  const graphData = (await ( await fetch("../assets/graph_fixed.json")).json());
+  const graphData = (await ( await fetch("../assets/graph_with_positions.json")).json());
+
+  console.log(graphData)
 
   const graph: Graph<Node, Vec4> = createGraph();
 
   let nodeMap = new Map<string, Vertex<Node, Vec4>>();
 
   for (const n of graphData.nodes) {
-    const hash = stringHash(n.canon);
+    const hash = stringHash(n.canon ?? "");
 
     const r = (hash % 256) * 0.5 + 127;
     const g = ((hash >> 8) % 256) * 0.5 + 127;
     const b = ((hash >> 16) % 256) * 0.5 + 127;
 
     nodeMap.set(
-      n.id,
+      n.Id,
       addVertex(graph, {
-      position: scale3(mul3([n.x, n.y, Math.log(n.z)], [0.001, 0.001, 70]), 0.2) as Vec3,
+      // position: scale3(mul3([n.x, n.y, Math.log(n.z)], [0.001, 0.001, 70]), 0.2) as Vec3,
+        position: scale3([n.x, n.y, n.z], 0.1),
         color: [r, g, b, 255],
         initialized: false,
-        label: n.id
+        label: n.Id
       }),
     );
   }
