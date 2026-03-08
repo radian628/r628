@@ -759,6 +759,7 @@ export function wrapDevice(device: GPUDevice) {
       outputs: Outputs;
       globals?: string;
       vertex: string;
+      primitive?: GPUPrimitiveState;
       fragment?: {
         function: string;
         struct: string;
@@ -798,6 +799,7 @@ export function wrapDevice(device: GPUDevice) {
           : "";
 
       return this.pipelineRaw({
+        primitive: params.primitive,
         bindGroups: params.bindGroups,
         inputs: params.inputs,
         outputs: params.outputs,
@@ -854,6 +856,7 @@ export function wrapDevice(device: GPUDevice) {
       shader: Shader;
       inputs: Inputs;
       outputs: Outputs;
+      primitive?: GPUPrimitiveState;
       depthStencil?: GPUDepthStencilState;
     }): Promise<WrappedPipeline<BindGroups, Shader, Inputs, Outputs>> {
       let vertex = undefined;
@@ -913,6 +916,7 @@ export function wrapDevice(device: GPUDevice) {
         layout: device.createPipelineLayout({
           bindGroupLayouts: params.bindGroups.map((bg, i) => bg),
         }),
+        primitive: params.primitive,
       });
 
       // @ts-expect-error

@@ -42,6 +42,9 @@ import {
 } from "../../src";
 import stringHash from "string-hash";
 
+document.head.innerHTML += `<meta name="viewport" 
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>`;
+
 type Node = {
   position: Vec3;
   color: Vec4;
@@ -334,20 +337,113 @@ function inv4(m: Mat4): Mat4 {
       e.target.tagName.toUpperCase() === "A"
     )
       return;
-    document.body.requestPointerLock();
+
+    if (window.matchMedia("(pointer: fine)")) {
+      document.body.requestPointerLock();
+    }
+  });
+
+  const touches = new Map<number, { touch: Touch }>();
+
+  function updateTouches(e: TouchEvent) {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const t = e.changedTouches[i];
+      touches.set(t.identifier, {
+        touch: t,
+      });
+    }
+  }
+
+  function rotateBy(dx, dy) {
+    const localXAxis = mulVec4ByMat4([1, 0, 0, 0], rotationMatrix);
+    const localYAxis = mulVec4ByMat4([0, -1, 0, 0], rotationMatrix);
+
+    const r1 = rotate(xyz(localYAxis), dx);
+    const r2 = rotate(xyz(localXAxis), dy);
+
+    rotationMatrix = mulMat4(rotationMatrix, mulMat4(r1, r2));
+  }
+
+  canvas.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    updateTouches(e);
+  });
+
+  canvas.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+    if (e.changedTouches.length === 1) {
+      const t = e.changedTouches[0];
+      const prevT = touches.get(t.identifier)?.touch;
+
+      if (prevT) {
+        const dx = t.clientX - prevT.clientX;
+        const dy = t.clientY - prevT.clientY;
+
+        rotateBy(dx * 0.005, -dy * 0.005);
+      }
+    }
+    updateTouches(e);
+  });
+
+  canvas.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const t = e.changedTouches[i];
+      touches.delete(t.identifier);
+    }
   });
 
   document.addEventListener("mousemove", (e) => {
     if (document.pointerLockElement !== document.body) return;
-
-    const localXAxis = mulVec4ByMat4([1, 0, 0, 0], rotationMatrix);
-    const localYAxis = mulVec4ByMat4([0, -1, 0, 0], rotationMatrix);
-
-    const r1 = rotate(xyz(localYAxis), -e.movementX * 0.003);
-    const r2 = rotate(xyz(localXAxis), e.movementY * 0.003);
-
-    rotationMatrix = mulMat4(rotationMatrix, mulMat4(r1, r2));
+    rotateBy(-e.movementX * 0.003, e.movementY * 0.003);
   });
+
+  if (window.matchMedia("(pointer: coarse)")) {
+    const moveControls = document.createElement("div");
+    document.body.appendChild(moveControls);
+    moveControls.style = `
+position: absolute;
+bottom: 10px;
+left: 10px;    
+display: grid;
+z-index: 2;
+grid-template-areas:
+    ". up ."
+    ". forward ."
+    "left . right"
+    ". backward ."
+    ". down ."
+    `;
+
+    function mappedButton(text: string, gridArea: string, key: string) {
+      const forwardButton = document.createElement("button");
+      forwardButton.innerText = text;
+      forwardButton.style = `
+grid-area: ${gridArea};    
+height: 30px;
+border-radius: 5px;
+border: 1px solid #888;
+background-color: #000a; 
+color: white;
+margin: 2px;
+    `;
+      forwardButton.addEventListener("touchstart", () => {
+        keysDown.add(key);
+      });
+      forwardButton.addEventListener("touchend", () => {
+        keysDown.delete(key);
+      });
+
+      moveControls.appendChild(forwardButton);
+    }
+
+    mappedButton("Forward", "forward", "w");
+    mappedButton("Left", "left", "a");
+    mappedButton("Backward", "backward", "s");
+    mappedButton("Right", "right", "d");
+    mappedButton("Up", "up", " ");
+    mappedButton("Down", "down", "shift");
+  }
 
   let lastT = 0;
 
@@ -371,19 +467,19 @@ function inv4(m: Mat4): Mat4 {
         name: "color",
         offset: 12,
       },
-    ],
+    ] as const,
     stepMode: "vertex",
     visibility: GPUShaderStage.VERTEX,
   });
 
   const highPerfLinePipeline = await wdevice.pipeline({
-    bindGroups: [lines.perFrameBindGroup],
+    bindGroups: [lines.perFrameBindGroup] as const,
     depthStencil: {
       format: "depth32float",
       depthCompare: "less",
       depthWriteEnabled: true,
     },
-    inputs: [highPerfLineBufferFormat],
+    inputs: [highPerfLineBufferFormat] as const,
     outputs: {
       color: {
         format: navigator.gpu.getPreferredCanvasFormat(),
@@ -406,7 +502,29 @@ function inv4(m: Mat4): Mat4 {
     @location(0) color : vec4f,
     `,
     },
+    primitive: {
+      topology: "line-list",
+    },
   });
+
+  const edgesFast = highPerfLineBufferFormat.quickCreate(
+    [...graph.edges].flatMap((e) => {
+      const factor = Math.random() * 0.2 + 0.4;
+
+      const colorMul = [factor, factor, factor, 1] as Vec4;
+
+      return [
+        {
+          position: e.endpoints[0].data.position,
+          color: mul4(e.endpoints[0].data.color, colorMul),
+        },
+        {
+          position: e.endpoints[1].data.position,
+          color: mul4(e.endpoints[1].data.color, colorMul),
+        },
+      ];
+    }),
+  );
 
   let lineMode = "fancy" as "fast" | "fancy";
 
@@ -576,6 +694,16 @@ function inv4(m: Mat4): Mat4 {
         geometry: lines.quad,
       });
       pass.draw(6, graph.edges.size * 3 - 1);
+    } else if (lineMode === "fast") {
+      pass.setPipeline(highPerfLinePipeline);
+      pipelineRenderpass(
+        highPerfLinePipeline,
+        pass,
+      )({
+        perFrame: graphPerFrameBindGroup,
+        line: edgesFast,
+      });
+      pass.draw(graph.edges.size * 2);
     }
 
     pass.end();
@@ -602,7 +730,7 @@ function inv4(m: Mat4): Mat4 {
           stagingBuffer.getMappedRange().slice(),
         );
 
-        // console.log("GPU:", Number(range[1] - range[0]) / 1_000_000);
+        console.log("GPU:", Number(range[1] - range[0]) / 1_000_000);
         // console.log("CPU:", end - start);
         // console.log("CPU Before GPU Stuff:", beforeGpuStuff - start);
         // console.log("CPU-Side Clear:", afterClear - beforeGpuStuff);
@@ -619,7 +747,7 @@ function inv4(m: Mat4): Mat4 {
 
     // @ts-expect-error firefox is slow
     if (window.mozInnerScreenX) {
-      setTimeout(() => loop(loopIter * 50));
+      setTimeout(() => loop((loopIter * 1000) / 60), 1000 / 60);
     } else {
       requestAnimationFrame(loop);
     }
