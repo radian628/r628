@@ -222,7 +222,7 @@ export async function lineRenderer(
       let offset = normalize(pos2.xy / pos2.w - pos1.xy / pos1.w);
 
       var localy = vec3f(
-        -offset.y, offset.x 
+        -offset.y, offset.x * params.aspect
       , 0.0);
 
 
