@@ -322,6 +322,8 @@ function inv4(m: Mat4): Mat4 {
 
   let keysDown = new Set<string>();
 
+  const isDesktop = window.matchMedia("(pointer: fine)").matches;
+
   const multiTransform = variadify(mulMat4);
 
   document.addEventListener("keydown", (e) => {
@@ -338,7 +340,7 @@ function inv4(m: Mat4): Mat4 {
     )
       return;
 
-    if (!window.matchMedia("(pointer: coarse)")) {
+    if (isDesktop) {
       document.body.requestPointerLock();
     }
   });
@@ -398,7 +400,7 @@ function inv4(m: Mat4): Mat4 {
     rotateBy(-e.movementX * 0.003, e.movementY * 0.003);
   });
 
-  if (window.matchMedia("(pointer: coarse)")) {
+  if (!isDesktop) {
     const moveControls = document.createElement("div");
     document.body.appendChild(moveControls);
     moveControls.style = `
@@ -731,7 +733,7 @@ user-select: none;
           stagingBuffer.getMappedRange().slice(),
         );
 
-        console.log("GPU:", Number(range[1] - range[0]) / 1_000_000);
+        // console.log("GPU:", Number(range[1] - range[0]) / 1_000_000);
         // console.log("CPU:", end - start);
         // console.log("CPU Before GPU Stuff:", beforeGpuStuff - start);
         // console.log("CPU-Side Clear:", afterClear - beforeGpuStuff);

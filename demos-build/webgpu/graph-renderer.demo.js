@@ -27978,6 +27978,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     let viewerVel = [0, 0, 0];
     let rotationMatrix = rotate([0, 1, 0], 0.1);
     let keysDown = /* @__PURE__ */ new Set();
+    const isDesktop = window.matchMedia("(pointer: fine)").matches;
     const multiTransform = variadify(mulMat4);
     document.addEventListener("keydown", (e) => {
       keysDown.add(e.key.toLowerCase());
@@ -27988,7 +27989,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     document.addEventListener("mousedown", (e) => {
       if (e.target instanceof HTMLElement && e.target.tagName.toUpperCase() === "A")
         return;
-      if (!window.matchMedia("(pointer: coarse)")) {
+      if (isDesktop) {
         document.body.requestPointerLock();
       }
     });
@@ -28036,7 +28037,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       if (document.pointerLockElement !== document.body) return;
       rotateBy(-e.movementX * 3e-3, e.movementY * 3e-3);
     });
-    if (window.matchMedia("(pointer: coarse)")) {
+    if (!isDesktop) {
       let mappedButton = function(text, gridArea, key) {
         const forwardButton = document.createElement("button");
         forwardButton.innerText = text;
@@ -28318,7 +28319,6 @@ grid-template-areas:
           const range3 = new BigUint64Array(
             stagingBuffer.getMappedRange().slice()
           );
-          console.log("GPU:", Number(range3[1] - range3[0]) / 1e6);
           stagingBuffer.unmap();
         });
       }
