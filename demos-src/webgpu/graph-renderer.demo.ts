@@ -826,10 +826,10 @@ fn set_point(idx: u32, position: vec3f) {
     for (const outgoing of vert.outgoing) {
       const startIndex = vertToIndexMap.get(vert)!;
       const endIndex = vertToIndexMap.get(outgoing.endpoints[1])!;
+      unidirectionalEdgeList.push({ src: startIndex, dst: endIndex });
       if (startIndex === endIndex) continue;
       addEdgeToEdgesWithThisSrc(startIndex, endIndex);
       addEdgeToEdgesWithThisSrc(endIndex, startIndex);
-      unidirectionalEdgeList.push({ src: startIndex, dst: endIndex });
     }
   }
 
@@ -1234,7 +1234,7 @@ fn set_point(idx: u32, position: vec3f) {
       )({
         points: edges,
       });
-      pass.draw(6, graph.edges.size * 3);
+      pass.draw(6, graph.edges.size * 7);
 
       pass.setPipeline(lines.linePipeline);
       pipelineRenderpass(
@@ -1249,7 +1249,7 @@ fn set_point(idx: u32, position: vec3f) {
         perFrame: graphPerFrameBindGroup,
         geometry: lines.quad,
       });
-      pass.draw(6, graph.edges.size * 3 - 1);
+      pass.draw(6, graph.edges.size * 7 - 1);
     } else if (lineMode === "fast") {
       pass.setPipeline(highPerfLinePipeline);
       pipelineRenderpass(
