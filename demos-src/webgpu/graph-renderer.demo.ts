@@ -7,6 +7,7 @@ import {
   clearRenderer,
   createGraph,
   distance3,
+  generateLayouts,
   getDepthFirstTraversalOrder,
   Graph,
   hookGPUDevice,
@@ -66,13 +67,14 @@ function inv4(m: Mat4): Mat4 {
 }
 
 (async () => {
-  const graphData = await (
-    await fetch("../assets/graph_with_positions.json")
+  let graphData = await (
+    await fetch("../assets/crosslinksv3_(RELOADED).json")
   ).json();
 
-  graphData.nodes = graphData.nodes.slice(0, 2048);
+  graphData = graphData.filter((g) => g.x !== undefined);
 
-  // console.log(graphData);
+  console.log(graphData);
+  // graphData.nodes = graphData.nodes;
 
   const graph: Graph<Node, Vec4> = createGraph();
 
@@ -80,102 +82,77 @@ function inv4(m: Mat4): Mat4 {
 
   let i = 0;
 
-  for (const n of graphData.nodes) {
-    const hash = stringHash(n.canon ?? "");
+  // for (const n of graphData.nodes) {
+  //   const hash = stringHash(n.canon ?? "");
 
-    const r = (hash % 256) * 0.5 + 127;
-    const g = ((hash >> 8) % 256) * 0.5 + 127;
-    const b = ((hash >> 16) % 256) * 0.5 + 127;
+  //   const r = (hash % 256) * 0.5 + 127;
+  //   const g = ((hash >> 8) % 256) * 0.5 + 127;
+  //   const b = ((hash >> 16) % 256) * 0.5 + 127;
 
+  //   nodeMap.set(
+  //     n.Id,
+  //     addVertex(graph, {
+  //       // position: scale3(mul3([n.x, n.y, Math.log(n.z)], [0.001, 0.001, 70]), 0.2) as Vec3,
+  //       position: scale3([n.x, n.y, n.z], 0.1),
+  //       // position: scale3([n.x, n.y, n.z], 0.01),
+  //       // color: [255, (i / graphData.nodes.length) * 255, 255, 255],
+  //       color: [r, g, b, 255],
+  //       initialized: false,
+  //       label: n.Id,
+  //     }),
+  //   );
+  //   i++;
+  // }
+
+  // for (const e of graphData.links) {
+  //   const src = nodeMap.get(e.source);
+  //   const dst = nodeMap.get(e.target);
+
+  //   if (!src) {
+  //     console.warn(`Endpoint '${e.source}' not found.`);
+  //     continue;
+  //   }
+  //   if (!dst) {
+  //     console.warn(`Endpoint '${e.target}' not found.`);
+  //     continue;
+  //   }
+
+  //   addEdge(graph, [src, dst], [0, Math.random() * 55 + 200, 0, 255]);
+  // }
+
+  for (const n of graphData) {
     nodeMap.set(
-      n.Id,
+      n.url,
       addVertex(graph, {
-        // position: scale3(mul3([n.x, n.y, Math.log(n.z)], [0.001, 0.001, 70]), 0.2) as Vec3,
-        position: scale3([n.x, n.y, n.z], 0.1),
-        // position: scale3([n.x, n.y, n.z], 0.01),
-        color: [255, (i / graphData.nodes.length) * 255, 255, 255],
+        position: scale3([n.x, n.y, n.z], 0.03),
+        color: [255, 255, 255, 255],
         initialized: false,
-        label: n.Id,
+        label: n.url.replace("http://scp-wiki.wikidot.com", ""),
       }),
     );
-    i++;
+  }
+
+  for (const n of graphData) {
+    for (const link of n.other) {
+      const src = nodeMap.get(n.url);
+      const dst = nodeMap.get(link.trim());
+
+      if (!src) {
+        console.warn(`Endpoint '${n.url}' not found.`);
+        continue;
+      }
+      if (!dst) {
+        console.warn(`Endpoint '${link}' not found.`);
+        continue;
+      }
+
+      addEdge(graph, [src, dst], [127, 127, 127, 255]);
+    }
   }
 
   const vertsArray = [...graph.vertices];
 
   const vertGroups = splitBy(vertsArray, 500);
-
-  for (const e of graphData.links) {
-    const src = nodeMap.get(e.source);
-    const dst = nodeMap.get(e.target);
-
-    if (!src) {
-      // console.warn(`Endpoint '${e.source}' not found.`);
-      continue;
-    }
-    if (!dst) {
-      // console.warn(`Endpoint '${e.target}' not found.`);
-      continue;
-    }
-
-    addEdge(graph, [src, dst], [0, Math.random() * 55 + 200, 0, 255]);
-  }
-
-  const order = getDepthFirstTraversalOrder(graph);
-
-  let r = 0;
-  let g = 255;
-  let b = 0;
-
-  // for (const o of order) {
-  //   o.data.color = [r,g,b, 255];
-
-  //   r = clamp(r + Math.random() * 10 - 5, 127, 255)
-  //   g = clamp(g + Math.random() * 10 - 5, 127, 255)
-  //   b = clamp(b + Math.random() * 10 - 5, 127, 255)
-  // }
-
-  // const nodes = range(20000).map(
-  //   () =>
-  //     ({
-  //       position: [
-  //         Math.random() * 200 - 100,
-  //         Math.random() * 200 - 100,
-  //         Math.random() * 200 - 100,
-  //       ],
-  //       color: [
-  //         Math.random() * 255,
-  //         Math.random() * 255,
-  //         Math.random() * 255,
-  //         255,
-  //       ],
-  //     }) as Node,
-  // );
-
-  // const verts = nodes.map((n) => addVertex(graph, n));
-
-  // range(400_000).map(() =>
-  //   addEdge(
-  //     graph,
-  //     [pickrand(verts), pickrand(verts)],
-  //     scale4(
-  //       [Math.random() * 255, Math.random() * 255, Math.random() * 255, 255],
-  //       1,
-  //     ),
-  //   ),
-  // );
-
-  // const v1 = addVertex(graph, n1);
-  // const v2 = addVertex(graph, n2);
-  // const v3 = addVertex(graph, n3);
-  // const v4 = addVertex(graph, n4);
-
-  // addEdge(graph, [v1, v2], 0);
-  // addEdge(graph, [v1, v3], 0);
-  // addEdge(graph, [v1, v4], 0);
-  // addEdge(graph, [v2, v3], 0);
-  // addEdge(graph, [v2, v4], 0);
-  // addEdge(graph, [v3, v4], 0);
 
   function fail(msg: string) {
     window.alert(msg);
@@ -243,7 +220,7 @@ function inv4(m: Mat4): Mat4 {
     [...graph.vertices].map((v, i) => ({
       position: v.data.position,
       color: v.data.color,
-      size: i === 0 ? 25 : 0.5,
+      size: 0.5,
     })),
     {
       usage:
@@ -319,6 +296,12 @@ function inv4(m: Mat4): Mat4 {
         },
       ];
     }),
+    {
+      usage:
+        GPUBufferUsage.VERTEX |
+        GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.STORAGE,
+    },
   );
 
   const graphUniforms = lines.uniforms.instantiate(1);
@@ -543,48 +526,29 @@ user-select: none;
     }),
   );
 
-  const bodiesFormat = wdevice.uniformBuffer(
-    "bodies",
-    struct("Body", {
-      position: "vec3f",
-      velocity: "vec3f",
-      mass: "f32",
-      force: "f32",
-    }),
-    true,
-    {
-      visibility: GPUShaderStage.COMPUTE,
-      usage:
-        GPUBufferUsage.COPY_SRC |
-        GPUBufferUsage.COPY_DST |
-        GPUBufferUsage.STORAGE,
-    },
-  );
-  const accelsFormat = wdevice.uniformBuffer(
+  const bodyStruct = struct("Body", {
+    position: "vec3f",
+    velocity: "vec3f",
+    mass: "f32",
+    force: "f32",
+  });
+
+  console.log(generateLayouts([bodyStruct]));
+
+  const bodiesFormat = wdevice.storageBuffer("bodies", bodyStruct);
+  const accelsFormat = wdevice.storageBuffer(
     "accels",
     struct("Accels", {
       accel: "vec3f",
     }),
-    true,
-    {
-      visibility: GPUShaderStage.COMPUTE,
-      usage:
-        GPUBufferUsage.COPY_SRC |
-        GPUBufferUsage.COPY_DST |
-        GPUBufferUsage.STORAGE,
-    },
   );
-  const accelCalcUniformsFormat = wdevice.uniformBuffer(
+  const accelCalcUniformsFormat = wdevice.uniformBufferForComputeShader(
     "params",
     struct("Params", {
       body_offset: "u32",
       target_offset: "u32",
       accel_stride: "u32",
     }),
-    false,
-    {
-      visibility: GPUShaderStage.COMPUTE,
-    },
   );
 
   const accelCalcBindGroupFormat = wdevice.bindGroup(
@@ -625,8 +589,6 @@ user-select: none;
 
   let force = norm_offset / (dist * dist) * body.force;
 
-  let accel = force / force_target.mass; 
-
   accels[id.y * params.accel_stride + id.x].accel = force;
 `,
   });
@@ -641,9 +603,9 @@ user-select: none;
   
   let accel = accels[id.x].accel;
   
-  bodies[id.x].velocity += accel * 1.0 * 0.2;
+  bodies[id.x].velocity += accel * 1.0 * 0.2 / bodies[id.x].mass;
   bodies[id.x].position += bodies[id.x].velocity * 0.2;
-  // bodies[id.x].velocity *= 0.9;
+  bodies[id.x].velocity *= 0.9;
     
     `,
   });
@@ -658,14 +620,14 @@ user-select: none;
     },
   );
 
-  const transferBodyInfoToLinesBindGroupFormat = wdevice.bindGroup(
+  const transferBodyInfoToPointsBindGroupFormat = wdevice.bindGroup(
     "nbody",
     bodiesFormat,
     genericBufferFormat,
   );
 
-  const transferBodyInfoToLines = await wdevice.compute({
-    bindGroups: [transferBodyInfoToLinesBindGroupFormat],
+  const transferBodyInfoToPointsPipeline = await wdevice.compute({
+    bindGroups: [transferBodyInfoToPointsBindGroupFormat],
     workgroupSize: [32, 1, 1],
     storageBufferAccess: {
       bodies: "read_write",
@@ -673,58 +635,250 @@ user-select: none;
     },
     shader: `
       let i = id.x;
-      if (i > arrayLength(&bodies)) { return; }
+      if (i >= arrayLength(&bodies)) { return; }
       generic[i * 5].data = bitcast<u32>(bodies[i].position.x);
       generic[i * 5 + 1].data = bitcast<u32>(bodies[i].position.y);
       generic[i * 5 + 2].data = bitcast<u32>(bodies[i].position.z);
+      // generic[i * 5 + 4].data = 0xffffffff - u32(floor(bodies[i].force));
     `,
   });
 
-  let arrs = [];
-
-  // for (let i = 0; i < 6; i++) {
-  const bodies = bodiesFormat.quickCreateMany(
-    [...graph.vertices].map((vert, i, a) => {
-      return i === 0
-        ? {
-            mass: 30000,
-            force: 60000,
-            velocity: [0, 0, 0],
-            position: [0, 0, -200],
-          }
-        : (() => {
-            const angle = 1 * ((Math.PI * 2) / a.length) * i + 4.2;
-
-            return {
-              mass: 1,
-              force: 2,
-              velocity: [
-                15 * Math.cos(angle) + Math.random() * 1 - 0.5,
-                15 * Math.sin(angle) + Math.random() * 1 - 0.5,
-                Math.random(),
-              ],
-              position: [
-                (Math.random() * 20 + 90) * Math.cos(angle + Math.PI / 2) +
-                  Math.random() -
-                  0.5,
-                (Math.random() * 20 + 90) * Math.sin(angle + Math.PI / 2) +
-                  Math.random() -
-                  0.5,
-                Math.random() - 200,
-              ],
-            };
-          })();
+  const edgesBufferFormat = wdevice.storageBuffer(
+    "edges",
+    struct("Edge", {
+      src: "u32",
+      dst: "u32",
     }),
   );
-  // console.log("vert count", graph.vertices.size);
+
+  const accelVectorPairsFormat = wdevice.storageBuffer(
+    "accel_vectors",
+    struct("AccelVectors", {
+      to_src: "vec3f",
+    }),
+  );
+
+  const edgeLocationMapFormat = wdevice.storageBuffer(
+    "edge_loc_map",
+    struct("EdgeLoc", {
+      location: "u32",
+      count: "u32",
+    }),
+  );
+
+  const calcEdgeForcesBindGroupFormat = wdevice.bindGroup(
+    "bg",
+    edgesBufferFormat,
+    accelVectorPairsFormat,
+    bodiesFormat,
+  );
+
+  const calcEdgeForcesPipeline = await wdevice.compute({
+    bindGroups: [calcEdgeForcesBindGroupFormat] as const,
+    workgroupSize: [32, 1, 1],
+    storageBufferAccess: {
+      bodies: "read_write",
+      edges: "read_write",
+      accel_vectors: "read_write",
+    },
+    shader: `
+    let i = id.x;
+    if (i >= arrayLength(&edges)) {
+      return;
+    } 
+
+    let edge = edges[i];
+    let src = bodies[edges[i].src]; 
+    let dst = bodies[edges[i].dst]; 
+
+    let offset = dst.position - src.position;
+    let dist = length(offset);
+    let offset_norm = offset / dist;
+
+    let mag = dist * 0.02;
+
+    accel_vectors[i].to_src = mag * offset_norm;
+    // accel_vectors[i].to_src = vec3f(1.0, 0.0, 0.0);
+    `,
+  });
+
+  const sumEdgeForcesBindGroupFormat = wdevice.bindGroup(
+    "bg",
+    accelVectorPairsFormat,
+    edgeLocationMapFormat,
+    accelsFormat,
+  );
+
+  const sumEdgeForcesPipeline = await wdevice.compute({
+    bindGroups: [sumEdgeForcesBindGroupFormat] as const,
+    workgroupSize: [32, 1, 1],
+    storageBufferAccess: {
+      accel_vectors: "read_write",
+      edge_loc_map: "read_write",
+      accels: "read_write",
+    },
+    shader: `
+    let i = id.x;
+    if (i >= arrayLength(&accels)) {
+      return; 
+    }
+    
+    let edge_index_start = edge_loc_map[i].location;
+    let edge_index_end = edge_index_start + edge_loc_map[i].count;
+
+    for (var j = edge_index_start; j < edge_index_end; j++) {
+      accels[i].accel += accel_vectors[j].to_src;
+    }
+
+    `,
+  });
+
+  const transferBodyInfoToLinesBindGroupFormat = wdevice.bindGroup(
+    "nbody",
+    bodiesFormat,
+    genericBufferFormat,
+    edgesBufferFormat,
+  );
+
+  const transferBodyInfoToLinesPipeline = await wdevice.compute({
+    bindGroups: [transferBodyInfoToLinesBindGroupFormat],
+    workgroupSize: [32, 1, 1],
+    storageBufferAccess: {
+      bodies: "read_write",
+      generic: "read_write",
+      edges: "read_write",
+    },
+    globals: `
+fn set_point(idx: u32, position: vec3f) {
+  let i = idx * 5;
+  generic[i].data = bitcast<u32>(position.x);
+  generic[i + 1].data = bitcast<u32>(position.y);
+  generic[i + 2].data = bitcast<u32>(position.z);
+}    
+    `,
+    shader: `
+      let i = id.x;
+      if (i >= arrayLength(&edges)) { return; }
+
+      let src = bodies[edges[i].src];
+      let dst = bodies[edges[i].dst];
+
+      let ipt = i * 7;
+
+      let dist = length(src.position - dst.position);
+      let margin = 0.8 / dist; 
+
+      set_point(ipt, mix(src.position, dst.position, margin));
+      set_point(ipt + 1, mix(src.position, dst.position, 0.1));
+      set_point(ipt + 2, mix(src.position, dst.position, 0.33));
+      set_point(ipt + 3, mix(src.position, dst.position, 0.67));
+      set_point(ipt + 4, mix(src.position, dst.position, 0.9));
+      set_point(ipt + 5, mix(src.position, dst.position, 1 - margin));
+    `,
+  });
+
+  const edgeList: {
+    src: number;
+    dst: number;
+  }[] = [];
+  const unidirectionalEdgeList: {
+    src: number;
+    dst: number;
+  }[] = [];
+
+  const edgeLocMap: {
+    location: number;
+    count: number;
+  }[] = [];
+
+  const vertToIndexMap = new Map([...graph.vertices].map((e, i) => [e, i]));
+
+  const edgesWithThisSrc = new Map<number, { src: number; dst: number }[]>();
+
+  const addEdgeToEdgesWithThisSrc = (src: number, dst: number) =>
+    edgesWithThisSrc.set(
+      src,
+      (edgesWithThisSrc.get(src) ?? []).concat({ src, dst }),
+    );
+
+  for (const vert of graph.vertices) {
+    // let location = edgeList.length;
+    for (const outgoing of vert.outgoing) {
+      const startIndex = vertToIndexMap.get(vert)!;
+      const endIndex = vertToIndexMap.get(outgoing.endpoints[1])!;
+      if (startIndex === endIndex) continue;
+      addEdgeToEdgesWithThisSrc(startIndex, endIndex);
+      addEdgeToEdgesWithThisSrc(endIndex, startIndex);
+      unidirectionalEdgeList.push({ src: startIndex, dst: endIndex });
+    }
+  }
+
+  for (let i = 0; i < graph.vertices.size; i++) {
+    const edges = edgesWithThisSrc.get(i) ?? [];
+
+    let location = edgeList.length;
+
+    for (const e of edges) edgeList.push(e);
+
+    let count = edgeList.length - location;
+    edgeLocMap.push({ location, count });
+  }
+
+  const edgesBuffer = edgesBufferFormat.quickCreateMany(edgeList);
+  const unidirectionalEdgesBuffer = edgesBufferFormat.quickCreateMany(
+    unidirectionalEdgeList,
+  );
+  const edgeLocMapBuffer = edgeLocationMapFormat.quickCreateMany(edgeLocMap);
+
+  const accelVectorPairsBuffer = accelVectorPairsFormat.instantiate(
+    edgeList.length,
+  );
+
+  const bodies = bodiesFormat.quickCreateMany(
+    [...graph.vertices].map((vert, i, a) => {
+      return {
+        mass: 1,
+        force: -4,
+        velocity: [0, 0, 0],
+        position: vert.data.position,
+      };
+      // return i === 0
+      //   ? {
+      //       mass: 30000,
+      //       force: 60000,
+      //       velocity: [0, 0, 0],
+      //       position: [0, 0, -200],
+      //     }
+      //   : (() => {
+      //       const angle = 1 * ((Math.PI * 2) / a.length) * i + 4.2;
+
+      //       return {
+      //         mass: 1,
+      //         force: 2,
+      //         velocity: [
+      //           15 * Math.cos(angle) + Math.random() * 1 - 0.5,
+      //           15 * Math.sin(angle) + Math.random() * 1 - 0.5,
+      //           Math.random(),
+      //         ],
+      //         position: [
+      //           (Math.random() * 20 + 90) * Math.cos(angle + Math.PI / 2) +
+      //             Math.random() -
+      //             0.5,
+      //           (Math.random() * 20 + 90) * Math.sin(angle + Math.PI / 2) +
+      //             Math.random() -
+      //             0.5,
+      //           Math.random() - 200,
+      //         ],
+      //       };
+      //     })();
+    }),
+  );
 
   const accelUpdateBatchSize = 256;
 
   const accelUpdateBatchCount = Math.ceil(
     graph.vertices.size / accelUpdateBatchSize,
   );
-
-  console.log(accelUpdateBatchSize, accelUpdateBatchCount);
 
   const accel_stride = Math.ceil(graph.vertices.size / 32) * 32;
 
@@ -802,48 +956,62 @@ user-select: none;
     device.queue.submit([enc.finish()]);
   }
 
+  const calcEdgeForcesBindGroup = calcEdgeForcesBindGroupFormat.instantiate({
+    edges: edgesBuffer,
+    bodies: bodies,
+    accel_vectors: accelVectorPairsBuffer,
+  });
+
+  const sumEdgeForcesBindGroup = sumEdgeForcesBindGroupFormat.instantiate({
+    accel_vectors: accelVectorPairsBuffer,
+    accels: accelsFinal,
+    edge_loc_map: edgeLocMapBuffer,
+  });
+
   function moveBodies() {
     const workgroups = Math.ceil(graph.vertices.size / 32);
 
     const enc = device.createCommandEncoder();
     let pass = enc.beginComputePass();
+
+    pass.setPipeline(calcEdgeForcesPipeline);
+    pass.setBindGroup(0, calcEdgeForcesBindGroup);
+    const perEdgeWorkgroups = Math.ceil(edgeList.length / 32);
+    pass.dispatchWorkgroups(perEdgeWorkgroups);
+
+    pass.setPipeline(sumEdgeForcesPipeline);
+    pass.setBindGroup(0, sumEdgeForcesBindGroup);
+    pass.dispatchWorkgroups(workgroups);
+
     pass.setPipeline(applyPhysicsPipeline);
     pass.setBindGroup(0, applyPhysicsBindGroup);
     pass.dispatchWorkgroups(workgroups);
 
-    pass.setPipeline(transferBodyInfoToLines);
-    const transferBodyInfoToLinesBindGroup =
-      transferBodyInfoToLinesBindGroupFormat.instantiate({
+    pass.setPipeline(transferBodyInfoToPointsPipeline);
+    const transferBodyInfoToPointsBindGroup =
+      transferBodyInfoToPointsBindGroupFormat.instantiate({
         bodies,
         generic: genericBufferFormat.reinterpret(vertices),
       });
-    pass.setBindGroup(0, transferBodyInfoToLinesBindGroup);
+    pass.setBindGroup(0, transferBodyInfoToPointsBindGroup);
     pass.dispatchWorkgroups(workgroups);
+
+    pass.setPipeline(transferBodyInfoToLinesPipeline);
+    const transferBodyInfoToLinesBindGroup =
+      transferBodyInfoToLinesBindGroupFormat.instantiate({
+        bodies,
+        generic: genericBufferFormat.reinterpret(edges),
+        edges: unidirectionalEdgesBuffer,
+      });
+    pass.setBindGroup(0, transferBodyInfoToLinesBindGroup);
+    pass.dispatchWorkgroups(Math.ceil(unidirectionalEdgeList.length / 32));
 
     pass.end();
     device.queue.submit([enc.finish()]);
   }
 
-  // console.log(new Float32Array(await quickMap(device, bodies)));
-  // arrs.push(new Float32Array(await quickMap(device, res.dstBuffer)));
-  // }
-
-  // for (let i = 0; i < arrs[0].length; i++) {
-  //   let v1 = arrs[0][i];
-
-  //   for (let j = 1; j < arrs.length; j++) {
-  //     const vx = arrs[j][i];
-  //     if (v1 !== vx) {
-  //       console.log(`Index ${i}, trial ${j} mismatch! (${v1} != ${vx})`);
-  //     }
-  //   }
-  // }
-
-  // console.log(arrs);
-
-  // console.log("DONE");
-
-  let lineMode = "none" as "fast" | "fancy" | "none";
+  let lineMode = "fancy" as "fast" | "fancy" | "none";
+  let physicsMode = "none" as "none" | "physics";
 
   let amortizedPhysicsStepIndex = Math.floor(accelUpdateBatchCount / 2);
 
@@ -854,24 +1022,26 @@ user-select: none;
     let dt = (t - lastT) / 1000;
     lastT = t;
 
-    for (let i = 0; i < 1; i++) {
-      const calcAccelOffset =
-        (amortizedPhysicsStepIndex % accelUpdateBatchCount) *
-        accelUpdateBatchSize;
+    if (physicsMode === "physics") {
+      for (let i = 0; i < 5; i++) {
+        const calcAccelOffset =
+          (amortizedPhysicsStepIndex % accelUpdateBatchCount) *
+          accelUpdateBatchSize;
 
-      calculateAcceleration(
-        calcAccelOffset,
-        Math.min(accelUpdateBatchSize, graph.vertices.size - calcAccelOffset),
-      );
+        calculateAcceleration(
+          calcAccelOffset,
+          Math.min(accelUpdateBatchSize, graph.vertices.size - calcAccelOffset),
+        );
 
-      if (
-        amortizedPhysicsStepIndex % accelUpdateBatchCount ===
-        accelUpdateBatchCount - 1
-      ) {
-        moveBodies();
+        if (
+          amortizedPhysicsStepIndex % accelUpdateBatchCount ===
+          accelUpdateBatchCount - 1
+        ) {
+          moveBodies();
+        }
+
+        amortizedPhysicsStepIndex++;
       }
-
-      amortizedPhysicsStepIndex++;
     }
 
     viewerPos = add3(viewerPos, scale3(viewerVel, dt));

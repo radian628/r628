@@ -484,6 +484,31 @@ export function pipelineRenderpass<Pipeline extends WrappedPipelineGeneric>(
 
 export function wrapDevice(device: GPUDevice) {
   const wdevice = {
+    storageBuffer<Name extends string, Spec extends WGSLStructSpec>(
+      name: Name,
+      spec: Spec,
+      settings?: {
+        visibility?: GPUShaderStageFlags;
+        usage?: GPUBufferUsageFlags;
+      },
+    ) {
+      return wdevice.uniformBuffer<Name, Spec>(name, spec, true, {
+        visibility: GPUShaderStage.COMPUTE,
+        usage:
+          GPUBufferUsage.STORAGE |
+          GPUBufferUsage.COPY_SRC |
+          GPUBufferUsage.COPY_DST,
+        ...settings,
+      });
+    },
+    uniformBufferForComputeShader<
+      Name extends string,
+      Spec extends WGSLStructSpec,
+    >(name: Name, spec: Spec) {
+      return wdevice.uniformBuffer<Name, Spec>(name, spec, false, {
+        visibility: GPUShaderStage.COMPUTE,
+      });
+    },
     uniformBuffer<Name extends string, Spec extends WGSLStructSpec>(
       name: Name,
       spec: Spec,

@@ -209,8 +209,8 @@ export function generateLayouts(
 
         for (const [memberName, member] of spec.members) {
           determineIndividualLayoutSizeAndAlignment(member.type);
-          member.offset = currOffset;
-          currOffset += roundUp(member.type.align, member.type.size);
+          member.offset = roundUp(member.type.align, currOffset);
+          currOffset = member.offset + member.type.size;
         }
 
         const lastMember = spec.members.at(-1)![1];
