@@ -68,20 +68,25 @@ function inv4(m: Mat4): Mat4 {
 }
 
 (async () => {
+  const params = new URLSearchParams(window.location.search);
+
+  const tags = params.get("tags")?.split(",");
+
   let graphData = await (
     await fetch("../assets/crosslinksv3_(RELOADED).json")
   ).json();
 
-  graphData = graphData.filter(
-    (g) =>
-      typeof g.x === "number" &&
-      typeof g.y === "number" &&
-      typeof g.z === "number" &&
-      !isNaN(g.x) &&
-      !isNaN(g.y) &&
-      !isNaN(g.z),
-  );
-  // .filter((g) => g.tags.includes("on-guard-43"));
+  graphData = graphData
+    .filter(
+      (g) =>
+        typeof g.x === "number" &&
+        typeof g.y === "number" &&
+        typeof g.z === "number" &&
+        !isNaN(g.x) &&
+        !isNaN(g.y) &&
+        !isNaN(g.z),
+    )
+    .filter((g) => !tags || g.tags?.some((t) => tags.includes(t)));
 
   console.log(argmax(graphData, (g) => Math.abs(g.x)));
   console.log(argmax(graphData, (g) => Math.abs(g.y)));
@@ -138,7 +143,7 @@ function inv4(m: Mat4): Mat4 {
     nodeMap.set(
       n.url,
       addVertex(graph, {
-        position: scale3([n.x, n.y, n.z], 0.03),
+        position: scale3([n.x, n.y, n.z], 0.005),
         color: [255, 255, 255, 255],
         initialized: false,
         label: n.url.replace("http://scp-wiki.wikidot.com", ""),
@@ -166,7 +171,9 @@ function inv4(m: Mat4): Mat4 {
 
   const vertsArray = [...graph.vertices];
 
-  const vertGroups = splitBy(vertsArray, 500);
+  const labelVertsArray = [...graph.vertices].map((vert) => ({ ...vert.data }));
+
+  const vertGroups = splitBy(labelVertsArray, 500);
 
   function fail(msg: string) {
     window.alert(msg);
@@ -240,6 +247,7 @@ function inv4(m: Mat4): Mat4 {
       usage:
         GPUBufferUsage.VERTEX |
         GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.COPY_SRC |
         GPUBufferUsage.STORAGE,
     },
   );
@@ -461,10 +469,7 @@ user-select: none;
 
   let lastT = 0;
 
-  const labels = new Map<
-    string,
-    { elem: HTMLElement; vert: Vertex<Node, Vec4> }
-  >();
+  const labels = new Map<string, { elem: HTMLElement; vert: Node }>();
 
   let loopIter = 0;
 
@@ -602,7 +607,7 @@ user-select: none;
   let dist = max(2.0, rawdist);
   let norm_offset = normalize(offset);
 
-  let force = norm_offset / (dist * dist) * body.force;
+  let force = norm_offset / (dist * dist) * body.force * select(1.0, -4.0, dist > 200.0);
 
   accels[id.y * params.accel_stride + id.x].accel = select(force, vec3f(0), rawdist < 0.00001);
 `,
@@ -1025,8 +1030,6 @@ fn set_point(idx: u32, position: vec3f) {
     device.queue.submit([enc.finish()]);
   }
 
-  const params = new URLSearchParams(window.location.search);
-
   const isPhysicsEnabled = params.get("physics") === "true";
 
   let physicsCalculationsPerFrame = Number(
@@ -1107,33 +1110,50 @@ fn set_point(idx: u32, position: vec3f) {
     });
 
     for (const n of vertGroups[loopIter % vertGroups.length]) {
-      const isNearby = distance3(n.data.position, scale3(viewerPos, -1)) < 20;
+      const isNearby = distance3(n.position, scale3(viewerPos, -1)) < 20;
 
-      const labelElem = labels.get(n.data.label);
+      const labelElem = labels.get(n.label);
 
       if (isNearby) {
         if (!labelElem) {
           const newLabelElem = document.createElement("a");
-          newLabelElem.href = `https://scp-wiki.wikidot.com${n.data.label}`;
+          newLabelElem.href = `https://scp-wiki.wikidot.com${n.label}`;
           newLabelElem.target = "_blank";
-          newLabelElem.innerText = n.data.label.slice(1);
+          newLabelElem.innerText = n.label.slice(1);
           newLabelElem.style = `color: white; background-color: #000b; padding: 5px; transform: translateX(-50%); font-family: sans-serif;`;
           document.body.appendChild(newLabelElem);
-          labels.set(n.data.label, {
+          labels.set(n.label, {
             elem: newLabelElem,
             vert: n,
           });
         }
       } else {
         if (labelElem) {
-          labels.delete(n.data.label);
+          labels.delete(n.label);
           labelElem.elem.parentElement.removeChild(labelElem.elem);
         }
       }
     }
 
+    if (loopIter % 5 === 0) {
+      (async () => {
+        const buf = new Float32Array(await quickMap(device, vertices));
+
+        let stride = 5;
+        let i = 0;
+        for (const v of labelVertsArray) {
+          v.position = [
+            buf[i * stride],
+            buf[i * stride + 1],
+            buf[i * stride + 2],
+          ];
+          i++;
+        }
+      })();
+    }
+
     for (const [id, { elem, vert }] of labels) {
-      const worldSpace: Vec4 = vert.data.position.concat(1) as Vec4;
+      const worldSpace: Vec4 = vert.position.concat(1) as Vec4;
 
       const clipSpace = mulMat4ByVec4(currTransform, worldSpace);
 

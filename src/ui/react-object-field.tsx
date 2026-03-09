@@ -6,7 +6,7 @@ export type ObjectFieldComponent<T, AdditionalProps> = (
   props: {
     value: T;
     setValue: (t: T) => void;
-  } & AdditionalProps
+  } & AdditionalProps,
 ) => JSX.Element;
 
 export type ObjectFieldComponents = Record<
@@ -38,7 +38,7 @@ export type ToNativeObject<T extends ObjectFieldLayout<any>> = {
 };
 
 export function objectFieldDataToNativeObject<T extends ObjectFieldLayout<any>>(
-  t: T
+  t: T,
 ): ToNativeObject<T> {
   // @ts-expect-error
   return Object.fromEntries(Object.entries(t).map(([k, v]) => [k, v.value]));
@@ -57,7 +57,6 @@ export function ObjectField<
             {v.label ? <label>{v.label}</label> : <></>}
             <Comp
               value={v.value}
-              // @ts-expect-error
               setValue={(val) => {
                 props.setValue({
                   ...props.value,
@@ -79,7 +78,7 @@ export function ObjectField<
 
 export function useObjectFieldLayout<C extends ObjectFieldComponents>() {
   return function <T extends ObjectFieldLayout<C>>(
-    t: T
+    t: T,
   ): [T, Dispatch<SetStateAction<T>>] {
     return useState(t);
   };
