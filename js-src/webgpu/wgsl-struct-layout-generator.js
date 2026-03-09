@@ -23304,11 +23304,6 @@ var OneDimensionalSpatialHashTable = class {
   }
 };
 
-// src/math/round.ts
-function roundUp(factor, x) {
-  return Math.ceil(x / factor) * factor;
-}
-
 // src/webgpu/wgsl-snippets.ts
 var WgslSnippets = {
   unitQuadSigned: {
@@ -23979,6 +23974,11 @@ var WGSL_TYPE_DATATYPES = {
   mat4x4f: "f32",
   mat4x4f16: "f16"
 };
+
+// src/math/round.ts
+function roundUp(factor, x) {
+  return Math.ceil(x / factor) * factor;
+}
 
 // src/audio/stream-audio.ts
 var import_fft = __toESM(require_fft());

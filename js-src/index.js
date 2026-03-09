@@ -27495,40 +27495,6 @@ function roundUp(factor, x2) {
   return Math.ceil(x2 / factor) * factor;
 }
 
-// src/math/noise.ts
-function fract(x2) {
-  return x2 - Math.floor(x2);
-}
-function simpleRandVec2ToFloat(co) {
-  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
-}
-function simpleRandVec2ToVec2(co) {
-  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
-}
-function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
-  const fp = [Math.floor(p[0]), Math.floor(p[1])];
-  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
-  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
-  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
-  const v42 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
-  const o1 = sub2(p, fp);
-  const o2 = sub2(o1, [1, 0]);
-  const o3 = sub2(o1, [0, 1]);
-  const o4 = sub2(o1, [1, 1]);
-  const d1 = dot2(v1, o1);
-  const d2 = dot2(v2, o2);
-  const d3 = dot2(v3, o3);
-  const d4 = dot2(v42, o4);
-  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
-  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
-  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
-}
-function boxMullerTransform(u) {
-  const a = Math.sqrt(-2 * Math.log(u[0]));
-  const b = 2 * Math.PI * u[1];
-  return [a * Math.cos(b), a * Math.sin(b)];
-}
-
 // src/webgpu/converters.ts
 var TEXTURE_FORMAT_TO_DEPTH_SAMPLER_TYPE = {
   depth16unorm: "depth",
@@ -34260,6 +34226,40 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
+// src/math/noise.ts
+function fract(x2) {
+  return x2 - Math.floor(x2);
+}
+function simpleRandVec2ToFloat(co) {
+  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
+}
+function simpleRandVec2ToVec2(co) {
+  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
+}
+function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
+  const fp = [Math.floor(p[0]), Math.floor(p[1])];
+  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
+  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
+  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
+  const v42 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
+  const o1 = sub2(p, fp);
+  const o2 = sub2(o1, [1, 0]);
+  const o3 = sub2(o1, [0, 1]);
+  const o4 = sub2(o1, [1, 1]);
+  const d1 = dot2(v1, o1);
+  const d2 = dot2(v2, o2);
+  const d3 = dot2(v3, o3);
+  const d4 = dot2(v42, o4);
+  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
+  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
+  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
+}
+function boxMullerTransform(u) {
+  const a = Math.sqrt(-2 * Math.log(u[0]));
+  const b = 2 * Math.PI * u[1];
+  return [a * Math.cos(b), a * Math.sin(b)];
+}
+
 // src/curve/quadratic-curve-to-svg.ts
 function quadraticCurveToPath(curve, sigfigs, offset) {
   let startPoint = curve[0].a;
@@ -34495,6 +34495,666 @@ function bezierPreview(beziers, size) {
   }
   ctx.stroke();
   return c;
+}
+
+// src/webgpu/pipelines/parallel-sum.ts
+async function parallelSum(device, settings) {
+  const WORKGROUP_SIZE_X = 32;
+  const { datatype } = settings;
+  const wdevice = wrapDevice(device);
+  const bufferFormat = wdevice.uniformBuffer(
+    "items",
+    struct("Items", {
+      item: datatype
+    }),
+    true,
+    {
+      visibility: GPUShaderStage.COMPUTE,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE
+    }
+  );
+  const itemsInFormat = bufferFormat.withName("items_in");
+  const itemsOutFormat = bufferFormat.withName("items_out");
+  const uniformsFormat = wdevice.uniformBuffer(
+    "params",
+    struct("Params", {
+      countToSum: "u32",
+      count: "u32",
+      sumStrideSrc: "u32",
+      sumStrideDst: "u32"
+    }),
+    false,
+    { visibility: GPUShaderStage.COMPUTE }
+  );
+  const bufferBindGroupFormat = wdevice.bindGroup(
+    "buffers",
+    // @ts-expect-error
+    itemsInFormat,
+    itemsOutFormat
+  );
+  const uniformBindGroupFormat = wdevice.bindGroup("uniforms", uniformsFormat);
+  const pipeline = await wdevice.compute({
+    bindGroups: [uniformBindGroupFormat, bufferBindGroupFormat],
+    workgroupSize: [WORKGROUP_SIZE_X, 1, 1],
+    storageBufferAccess: { items_in: "read_write", items_out: "read_write" },
+    shader: `
+        let i = id.x;
+        let sum_index = id.y;
+
+        var sum: ${datatype} = ${datatype}(0);
+        for (var j = 0u; j < params.countToSum; j += 1u) {
+          let src_local_idx = i * params.countToSum + j;
+          let src_idx = src_local_idx + sum_index * params.sumStrideSrc;
+          sum += select(${datatype}(0), items_in[src_idx].item, src_local_idx < params.count);
+        }
+
+        items_out[i + sum_index * params.sumStrideDst].item = sum;
+      `
+  });
+  const packBindGroupFormat = wdevice.bindGroup(
+    "bindGroup",
+    // @ts-expect-error
+    itemsInFormat,
+    itemsOutFormat
+    // packUniformsFormat
+  );
+  const packResultsPipeline = await wdevice.compute({
+    bindGroups: [bufferBindGroupFormat],
+    workgroupSize: [WORKGROUP_SIZE_X, 1, 1],
+    storageBufferAccess: { items_in: "read_write", items_out: "read_write" },
+    shader: `
+        let i = id.x;
+        items_out[i] = items_in[i * ${WORKGROUP_SIZE_X}];
+    `
+  });
+  return {
+    pipeline,
+    bufferFormat,
+    bufferSummer(params) {
+      const bufA = params.a;
+      const bufB = params.b;
+      const pingpong1 = bufferBindGroupFormat.instantiate({
+        items_in: itemsInFormat.reinterpret(bufA),
+        items_out: itemsOutFormat.reinterpret(bufB)
+      });
+      const pingpong2 = bufferBindGroupFormat.instantiate({
+        items_in: itemsInFormat.reinterpret(bufB),
+        items_out: itemsOutFormat.reinterpret(bufA)
+      });
+      return (params2) => {
+        let { pass, countPerIter, size, sumCount, sumStride } = params2;
+        sumCount ??= 1;
+        sumStride ??= 0;
+        const iters = Math.ceil(Math.log(size) / Math.log(countPerIter));
+        let counts = [];
+        let countTemp = size;
+        for (let i = 0; i < iters + 1; i++) {
+          counts.push(countTemp);
+          countTemp = Math.ceil(countTemp / countPerIter);
+        }
+        const uniformBindGroups = range(iters).map((i) => {
+          const uniforms = {
+            countToSum: countPerIter,
+            count: counts[i],
+            sumStrideSrc: i === 0 ? sumStride : Math.ceil(counts[i] / WORKGROUP_SIZE_X) * WORKGROUP_SIZE_X,
+            sumStrideDst: Math.ceil(counts[i + 1] / WORKGROUP_SIZE_X) * WORKGROUP_SIZE_X
+          };
+          const uniformBuf = uniformsFormat.quickCreate(uniforms);
+          const uniformBindGroup = uniformBindGroupFormat.instantiate({
+            params: uniformBuf
+          });
+          return uniformBindGroup;
+        });
+        for (let i = 0; i < iters; i++) {
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, uniformBindGroups[i]);
+          pass.setBindGroup(1, i % 2 ? pingpong2 : pingpong1);
+          let wgcount = Math.ceil(counts[i] / countPerIter / WORKGROUP_SIZE_X);
+          pass.dispatchWorkgroups(wgcount, sumCount);
+        }
+        pass.setPipeline(packResultsPipeline);
+        pass.setBindGroup(0, iters % 2 ? pingpong2 : pingpong1);
+        pass.dispatchWorkgroups(sumCount);
+        return {
+          dstBuffer: iters % 2 === 0 ? bufB : bufA
+        };
+      };
+    }
+  };
+}
+
+// src/webgpu/pipelines/line-renderer.ts
+async function lineRenderer(device, outputFormat) {
+  const wdevice = wrapDevice(device);
+  const depthTexFormat = wdevice.texture("depth", {
+    format: "depth32float"
+  });
+  const EVERYWHERE = GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
+  const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
+    types: [
+      {
+        name: "geometryPosition",
+        format: "float32x2",
+        offset: 0
+      }
+    ],
+    stride: 8,
+    stepMode: "vertex",
+    visibility: EVERYWHERE
+  });
+  const quad = geometryBufferFormat.quickCreate([
+    {
+      geometryPosition: [-1, -1]
+    },
+    {
+      geometryPosition: [1, -1]
+    },
+    {
+      geometryPosition: [-1, 1]
+    },
+    {
+      geometryPosition: [1, -1]
+    },
+    {
+      geometryPosition: [-1, 1]
+    },
+    {
+      geometryPosition: [1, 1]
+    }
+  ]);
+  const pointInstanceBufferFormat = wdevice.vertexBuffer("points", {
+    types: [
+      {
+        name: "position",
+        format: "float32x3",
+        offset: 0
+      },
+      {
+        name: "size",
+        format: "float32",
+        offset: 12
+      },
+      {
+        name: "color",
+        format: "unorm8x4",
+        offset: 16
+      }
+    ],
+    stride: 20,
+    stepMode: "instance",
+    visibility: EVERYWHERE
+  });
+  const lineSegInstanceBufferFormat1 = wdevice.vertexBuffer("lineSegments1", {
+    types: [
+      {
+        name: "position1",
+        format: "float32x3",
+        offset: 0
+      },
+      {
+        name: "size1",
+        format: "float32",
+        offset: 12
+      },
+      {
+        name: "color1",
+        format: "unorm8x4",
+        offset: 16
+      }
+    ],
+    stride: 20,
+    stepMode: "instance",
+    visibility: EVERYWHERE
+  });
+  const lineSegInstanceBufferFormat2 = wdevice.vertexBuffer("lineSegments2", {
+    types: [
+      {
+        name: "position2",
+        format: "float32x3",
+        offset: 0
+      },
+      {
+        name: "size2",
+        format: "float32",
+        offset: 12
+      },
+      {
+        name: "color2",
+        format: "unorm8x4",
+        offset: 16
+      }
+    ],
+    stride: 20,
+    stepMode: "instance",
+    visibility: EVERYWHERE
+  });
+  const uniforms = wdevice.uniformBuffer(
+    "params",
+    struct("Params", {
+      mvp: "mat4x4f",
+      aspect: "f32"
+    })
+  );
+  const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
+  const blend = void 0;
+  const pointPipeline = await wdevice.pipeline({
+    depthStencil: {
+      format: "depth32float",
+      depthCompare: "less",
+      depthWriteEnabled: true
+    },
+    inputs: [pointInstanceBufferFormat, geometryBufferFormat],
+    outputs: {
+      color: {
+        format: outputFormat,
+        blend
+      }
+    },
+    bindGroups: [perFrameBindGroup],
+    vertex: `
+      var frag: FragInput;
+      let pos = params.mvp * vec4f(vertex.position, 1.0); 
+      frag.position = vec4f(pos.xy + 
+        vertex.geometryPosition * vertex.size
+        * vec2f(1.0, params.aspect)
+      , pos.zw);
+      frag.signedUv = vertex.geometryPosition;
+      frag.color = vertex.color;
+      frag.size = vertex.size;
+      return frag;
+    `,
+    fragment: {
+      function: `
+      var pixel: FragOutput;
+
+      let mag = length(input.signedUv);
+
+      if (mag > 1.0) { discard; }
+      pixel.color = input.color;
+
+      return pixel;`,
+      struct: `@builtin(position) position : vec4f,
+@location(0) color : vec4f,
+@location(1) signedUv : vec2f,
+@location(2) size : f32,`
+    }
+  });
+  const linePipeline = await wdevice.pipeline({
+    depthStencil: {
+      format: "depth32float",
+      depthCompare: "less",
+      depthWriteEnabled: true
+    },
+    inputs: [
+      lineSegInstanceBufferFormat1,
+      lineSegInstanceBufferFormat2,
+      geometryBufferFormat
+    ],
+    outputs: {
+      color: {
+        format: outputFormat,
+        blend
+      }
+    },
+    bindGroups: [perFrameBindGroup],
+    vertex: `
+      var frag: FragInput;
+      let pos1 = params.mvp * vec4f(vertex.position1, 1.0); 
+      let pos2 = params.mvp * vec4f(vertex.position2, 1.0); 
+
+      let offset = normalize(pos2.xy / pos2.w - pos1.xy / pos1.w);
+
+      var localy = vec3f(
+        -offset.y, offset.x * params.aspect
+      , 0.0);
+
+
+      let uv = vertex.geometryPosition * 0.5 + 0.5;
+
+      let size = mix(
+        vertex.size1,
+        vertex.size2,
+        uv.x 
+      );
+
+      frag.position = vec4f(
+        mix(
+          pos1.xy,
+          pos2.xy,
+          uv.x 
+        ), 
+        mix(
+          pos1.zw,
+          pos2.zw,
+          uv.x 
+        )
+      ) + vec4f(
+        localy * vertex.geometryPosition.y * size, 
+        0.0  
+      );
+
+      frag.color = mix(vertex.color1, vertex.color2, uv.x);
+
+      frag.size = size / frag.position.z;
+      frag.signedUv = vertex.geometryPosition;
+
+      return frag;
+    `,
+    fragment: {
+      function: `
+      var pixel: FragOutput;
+      pixel.color = input.color;
+      return pixel;`,
+      struct: `@location(0) color : vec4f,
+@builtin(position) position : vec4f,
+@location(1) signedUv : vec2f,
+@location(2) size : f32,`
+    }
+  });
+  return {
+    depthTexFormat,
+    pointInstanceBufferFormat,
+    lineSegInstanceBufferFormat1,
+    lineSegInstanceBufferFormat2,
+    geometryBufferFormat,
+    uniforms,
+    quad,
+    blend,
+    perFrameBindGroup,
+    linePipeline,
+    pointPipeline,
+    createEmptyLines(count, depthLoadOp) {
+      const perFrameUniforms = uniforms.instantiate(1);
+      const perFrame = perFrameBindGroup.instantiate({
+        params: perFrameUniforms
+      });
+      const vertexBuf = pointInstanceBufferFormat.instantiate(count);
+      const pass = device.createRenderBundleEncoder({
+        colorFormats: [outputFormat],
+        depthStencilFormat: depthTexFormat.format
+      });
+      pass.setPipeline(pointPipeline);
+      pipelineRenderpass(
+        pointPipeline,
+        pass
+      )({
+        points: vertexBuf,
+        geometry: quad,
+        perFrame
+      });
+      pass.draw(6, count);
+      pass.setPipeline(linePipeline);
+      pipelineRenderpass(
+        linePipeline,
+        pass
+      )({
+        lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
+        lineSegments2: [
+          lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
+          20
+        ],
+        geometry: quad
+      });
+      pass.draw(6, count - 1);
+      const bundle = pass.finish();
+      return {
+        buffer: vertexBuf,
+        draw(target, depthTarget, transform) {
+          uniforms.fill(perFrameUniforms, 0, {
+            aspect: target.width / target.height,
+            mvp: transform
+          });
+          const encoder = device.createCommandEncoder();
+          const pass2 = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                view: target,
+                loadOp: "load",
+                storeOp: "store"
+              }
+            ],
+            depthStencilAttachment: {
+              view: depthTarget,
+              depthClearValue: 1,
+              depthLoadOp,
+              depthStoreOp: "store"
+            }
+          });
+          pass2.executeBundles([bundle]);
+          pass2.end();
+          device.queue.submit([encoder.finish()]);
+        }
+      };
+    },
+    createLines(points, color, thickness, depthLoadOp) {
+      const perFrameUniforms = uniforms.instantiate(1);
+      const perFrame = perFrameBindGroup.instantiate({
+        params: perFrameUniforms
+      });
+      const vertexBuf = pointInstanceBufferFormat.quickCreate(
+        points.map((position) => ({
+          position,
+          color,
+          size: thickness
+        }))
+      );
+      const pass = device.createRenderBundleEncoder({
+        colorFormats: [outputFormat],
+        depthStencilFormat: depthTexFormat.format
+      });
+      pass.setPipeline(pointPipeline);
+      pipelineRenderpass(
+        pointPipeline,
+        pass
+      )({
+        points: vertexBuf,
+        geometry: quad,
+        perFrame
+      });
+      pass.draw(6, points.length);
+      pass.setPipeline(linePipeline);
+      pipelineRenderpass(
+        linePipeline,
+        pass
+      )({
+        lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
+        lineSegments2: [
+          lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
+          20
+        ],
+        geometry: quad
+      });
+      pass.draw(6, points.length - 1);
+      const bundle = pass.finish();
+      return {
+        draw(target, depthTarget, transform) {
+          uniforms.fill(perFrameUniforms, 0, {
+            aspect: target.width / target.height,
+            mvp: transform
+          });
+          const encoder = device.createCommandEncoder();
+          const pass2 = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                view: target,
+                loadOp: "load",
+                storeOp: "store"
+              }
+            ],
+            depthStencilAttachment: {
+              view: depthTarget,
+              depthClearValue: 1,
+              depthLoadOp,
+              depthStoreOp: "store"
+            }
+          });
+          pass2.executeBundles([bundle]);
+          pass2.end();
+          device.queue.submit([encoder.finish()]);
+        }
+      };
+    },
+    drawLinesSimple(target, depthTarget, depthLoadOp, points, color, thickness, transform) {
+      const vertexBuf = pointInstanceBufferFormat.quickCreate(
+        points.map((position) => ({
+          position,
+          color,
+          size: thickness
+        }))
+      );
+      const encoder = device.createCommandEncoder();
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [
+          {
+            view: target,
+            loadOp: "load",
+            storeOp: "store"
+          }
+        ],
+        depthStencilAttachment: {
+          view: depthTarget,
+          depthClearValue: 1,
+          depthLoadOp,
+          depthStoreOp: "store"
+        }
+      });
+      pass.setPipeline(pointPipeline);
+      const bg = perFrameBindGroup.instantiate({
+        params: uniforms.quickCreate({
+          mvp: transform,
+          aspect: target.width / target.height
+        })
+      });
+      pipelineRenderpass(
+        pointPipeline,
+        pass
+      )({
+        points: vertexBuf,
+        geometry: quad,
+        perFrame: bg
+      });
+      pass.draw(6, points.length);
+      pass.setPipeline(linePipeline);
+      pipelineRenderpass(
+        linePipeline,
+        pass
+      )({
+        lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
+        lineSegments2: [
+          lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
+          20
+        ],
+        geometry: quad
+      });
+      pass.draw(6, points.length - 1);
+      pass.end();
+      device.queue.submit([encoder.finish()]);
+    }
+  };
+}
+
+// src/webgpu/pipelines/clear.ts
+async function clearRenderer(device, outputFormat) {
+  const wdevice = wrapDevice(device);
+  const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
+    types: [
+      {
+        name: "geometryPosition",
+        format: "float32x2",
+        offset: 0
+      }
+    ],
+    stride: 8,
+    stepMode: "vertex",
+    visibility: GPUShaderStage.VERTEX
+  });
+  const quad = geometryBufferFormat.quickCreate([
+    {
+      geometryPosition: [-1, -1]
+    },
+    {
+      geometryPosition: [1, -1]
+    },
+    {
+      geometryPosition: [-1, 1]
+    },
+    {
+      geometryPosition: [1, -1]
+    },
+    {
+      geometryPosition: [-1, 1]
+    },
+    {
+      geometryPosition: [1, 1]
+    }
+  ]);
+  const uniforms = wdevice.uniformBuffer(
+    "params",
+    struct("Params", {
+      clearColor: "vec4f"
+    })
+  );
+  const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
+  const pipeline = await wdevice.pipeline({
+    inputs: [geometryBufferFormat],
+    outputs: {
+      color: {
+        format: outputFormat
+      }
+    },
+    bindGroups: [perFrameBindGroup],
+    vertex: `
+    var frag: FragInput;
+    frag.position = vec4f(vertex.geometryPosition.xy, 1.0, 1.0);
+    return frag;
+`,
+    fragment: {
+      function: `
+      var pixel: FragOutput;
+      pixel.color = params.clearColor;
+      return pixel;
+      `,
+      struct: `@builtin(position) position : vec4f
+      `
+    }
+  });
+  const perFrameUniforms = uniforms.instantiate(1);
+  const perFrame = perFrameBindGroup.instantiate({
+    params: perFrameUniforms
+  });
+  const pass = device.createRenderBundleEncoder({
+    colorFormats: [outputFormat]
+  });
+  pass.setPipeline(pipeline);
+  pipelineRenderpass(
+    pipeline,
+    pass
+  )({
+    geometry: quad,
+    perFrame
+  });
+  pass.draw(6);
+  const bundle = pass.finish();
+  return {
+    clear(tex, color) {
+      uniforms.fill(perFrameUniforms, 0, {
+        clearColor: color
+      });
+      const encoder = device.createCommandEncoder();
+      const pass2 = encoder.beginRenderPass({
+        colorAttachments: [
+          {
+            view: tex,
+            loadOp: "clear",
+            storeOp: "store"
+          }
+        ]
+      });
+      pass2.executeBundles([bundle]);
+      pass2.end();
+      device.queue.submit([encoder.finish()]);
+    }
+  };
 }
 
 // src/webgpu/gpudoc/ui.tsx
@@ -35374,666 +36034,6 @@ function hookGPUDevice(device, passthrough = false) {
     return gpuDebugWindow({ textures, buffers, device });
   };
   return device;
-}
-
-// src/webgpu/pipelines/parallel-sum.ts
-async function parallelSum(device, settings) {
-  const WORKGROUP_SIZE_X = 32;
-  const { datatype } = settings;
-  const wdevice = wrapDevice(device);
-  const bufferFormat = wdevice.uniformBuffer(
-    "items",
-    struct("Items", {
-      item: datatype
-    }),
-    true,
-    {
-      visibility: GPUShaderStage.COMPUTE,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE
-    }
-  );
-  const itemsInFormat = bufferFormat.withName("items_in");
-  const itemsOutFormat = bufferFormat.withName("items_out");
-  const uniformsFormat = wdevice.uniformBuffer(
-    "params",
-    struct("Params", {
-      countToSum: "u32",
-      count: "u32",
-      sumStrideSrc: "u32",
-      sumStrideDst: "u32"
-    }),
-    false,
-    { visibility: GPUShaderStage.COMPUTE }
-  );
-  const bufferBindGroupFormat = wdevice.bindGroup(
-    "buffers",
-    // @ts-expect-error
-    itemsInFormat,
-    itemsOutFormat
-  );
-  const uniformBindGroupFormat = wdevice.bindGroup("uniforms", uniformsFormat);
-  const pipeline = await wdevice.compute({
-    bindGroups: [uniformBindGroupFormat, bufferBindGroupFormat],
-    workgroupSize: [WORKGROUP_SIZE_X, 1, 1],
-    storageBufferAccess: { items_in: "read_write", items_out: "read_write" },
-    shader: `
-        let i = id.x;
-        let sum_index = id.y;
-
-        var sum: ${datatype} = ${datatype}(0);
-        for (var j = 0u; j < params.countToSum; j += 1u) {
-          let src_local_idx = i * params.countToSum + j;
-          let src_idx = src_local_idx + sum_index * params.sumStrideSrc;
-          sum += select(${datatype}(0), items_in[src_idx].item, src_local_idx < params.count);
-        }
-
-        items_out[i + sum_index * params.sumStrideDst].item = sum;
-      `
-  });
-  const packBindGroupFormat = wdevice.bindGroup(
-    "bindGroup",
-    // @ts-expect-error
-    itemsInFormat,
-    itemsOutFormat
-    // packUniformsFormat
-  );
-  const packResultsPipeline = await wdevice.compute({
-    bindGroups: [bufferBindGroupFormat],
-    workgroupSize: [WORKGROUP_SIZE_X, 1, 1],
-    storageBufferAccess: { items_in: "read_write", items_out: "read_write" },
-    shader: `
-        let i = id.x;
-        items_out[i] = items_in[i * ${WORKGROUP_SIZE_X}];
-    `
-  });
-  return {
-    pipeline,
-    bufferFormat,
-    bufferSummer(params) {
-      const bufA = params.a;
-      const bufB = params.b;
-      const pingpong1 = bufferBindGroupFormat.instantiate({
-        items_in: itemsInFormat.reinterpret(bufA),
-        items_out: itemsOutFormat.reinterpret(bufB)
-      });
-      const pingpong2 = bufferBindGroupFormat.instantiate({
-        items_in: itemsInFormat.reinterpret(bufB),
-        items_out: itemsOutFormat.reinterpret(bufA)
-      });
-      return (params2) => {
-        let { pass, countPerIter, size, sumCount, sumStride } = params2;
-        sumCount ??= 1;
-        sumStride ??= 0;
-        const iters = Math.ceil(Math.log(size) / Math.log(countPerIter));
-        let counts = [];
-        let countTemp = size;
-        for (let i = 0; i < iters + 1; i++) {
-          counts.push(countTemp);
-          countTemp = Math.ceil(countTemp / countPerIter);
-        }
-        const uniformBindGroups = range(iters).map((i) => {
-          const uniforms = {
-            countToSum: countPerIter,
-            count: counts[i],
-            sumStrideSrc: i === 0 ? sumStride : Math.ceil(counts[i] / WORKGROUP_SIZE_X) * WORKGROUP_SIZE_X,
-            sumStrideDst: Math.ceil(counts[i + 1] / WORKGROUP_SIZE_X) * WORKGROUP_SIZE_X
-          };
-          const uniformBuf = uniformsFormat.quickCreate(uniforms);
-          const uniformBindGroup = uniformBindGroupFormat.instantiate({
-            params: uniformBuf
-          });
-          return uniformBindGroup;
-        });
-        for (let i = 0; i < iters; i++) {
-          pass.setPipeline(pipeline);
-          pass.setBindGroup(0, uniformBindGroups[i]);
-          pass.setBindGroup(1, i % 2 ? pingpong2 : pingpong1);
-          let wgcount = Math.ceil(counts[i] / countPerIter / WORKGROUP_SIZE_X);
-          pass.dispatchWorkgroups(wgcount, sumCount);
-        }
-        pass.setPipeline(packResultsPipeline);
-        pass.setBindGroup(0, iters % 2 ? pingpong2 : pingpong1);
-        pass.dispatchWorkgroups(sumCount);
-        return {
-          dstBuffer: iters % 2 === 0 ? bufB : bufA
-        };
-      };
-    }
-  };
-}
-
-// src/webgpu/pipelines/line-renderer.ts
-async function lineRenderer(device, outputFormat) {
-  const wdevice = wrapDevice(device);
-  const depthTexFormat = wdevice.texture("depth", {
-    format: "depth32float"
-  });
-  const EVERYWHERE = GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
-  const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
-    types: [
-      {
-        name: "geometryPosition",
-        format: "float32x2",
-        offset: 0
-      }
-    ],
-    stride: 8,
-    stepMode: "vertex",
-    visibility: EVERYWHERE
-  });
-  const quad = geometryBufferFormat.quickCreate([
-    {
-      geometryPosition: [-1, -1]
-    },
-    {
-      geometryPosition: [1, -1]
-    },
-    {
-      geometryPosition: [-1, 1]
-    },
-    {
-      geometryPosition: [1, -1]
-    },
-    {
-      geometryPosition: [-1, 1]
-    },
-    {
-      geometryPosition: [1, 1]
-    }
-  ]);
-  const pointInstanceBufferFormat = wdevice.vertexBuffer("points", {
-    types: [
-      {
-        name: "position",
-        format: "float32x3",
-        offset: 0
-      },
-      {
-        name: "size",
-        format: "float32",
-        offset: 12
-      },
-      {
-        name: "color",
-        format: "unorm8x4",
-        offset: 16
-      }
-    ],
-    stride: 20,
-    stepMode: "instance",
-    visibility: EVERYWHERE
-  });
-  const lineSegInstanceBufferFormat1 = wdevice.vertexBuffer("lineSegments1", {
-    types: [
-      {
-        name: "position1",
-        format: "float32x3",
-        offset: 0
-      },
-      {
-        name: "size1",
-        format: "float32",
-        offset: 12
-      },
-      {
-        name: "color1",
-        format: "unorm8x4",
-        offset: 16
-      }
-    ],
-    stride: 20,
-    stepMode: "instance",
-    visibility: EVERYWHERE
-  });
-  const lineSegInstanceBufferFormat2 = wdevice.vertexBuffer("lineSegments2", {
-    types: [
-      {
-        name: "position2",
-        format: "float32x3",
-        offset: 0
-      },
-      {
-        name: "size2",
-        format: "float32",
-        offset: 12
-      },
-      {
-        name: "color2",
-        format: "unorm8x4",
-        offset: 16
-      }
-    ],
-    stride: 20,
-    stepMode: "instance",
-    visibility: EVERYWHERE
-  });
-  const uniforms = wdevice.uniformBuffer(
-    "params",
-    struct("Params", {
-      mvp: "mat4x4f",
-      aspect: "f32"
-    })
-  );
-  const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
-  const blend = void 0;
-  const pointPipeline = await wdevice.pipeline({
-    depthStencil: {
-      format: "depth32float",
-      depthCompare: "less",
-      depthWriteEnabled: true
-    },
-    inputs: [pointInstanceBufferFormat, geometryBufferFormat],
-    outputs: {
-      color: {
-        format: outputFormat,
-        blend
-      }
-    },
-    bindGroups: [perFrameBindGroup],
-    vertex: `
-      var frag: FragInput;
-      let pos = params.mvp * vec4f(vertex.position, 1.0); 
-      frag.position = vec4f(pos.xy + 
-        vertex.geometryPosition * vertex.size
-        * vec2f(1.0, params.aspect)
-      , pos.zw);
-      frag.signedUv = vertex.geometryPosition;
-      frag.color = vertex.color;
-      frag.size = vertex.size;
-      return frag;
-    `,
-    fragment: {
-      function: `
-      var pixel: FragOutput;
-
-      let mag = length(input.signedUv);
-
-      if (mag > 1.0) { discard; }
-      pixel.color = input.color;
-
-      return pixel;`,
-      struct: `@builtin(position) position : vec4f,
-@location(0) color : vec4f,
-@location(1) signedUv : vec2f,
-@location(2) size : f32,`
-    }
-  });
-  const linePipeline = await wdevice.pipeline({
-    depthStencil: {
-      format: "depth32float",
-      depthCompare: "less",
-      depthWriteEnabled: true
-    },
-    inputs: [
-      lineSegInstanceBufferFormat1,
-      lineSegInstanceBufferFormat2,
-      geometryBufferFormat
-    ],
-    outputs: {
-      color: {
-        format: outputFormat,
-        blend
-      }
-    },
-    bindGroups: [perFrameBindGroup],
-    vertex: `
-      var frag: FragInput;
-      let pos1 = params.mvp * vec4f(vertex.position1, 1.0); 
-      let pos2 = params.mvp * vec4f(vertex.position2, 1.0); 
-
-      let offset = normalize(pos2.xy / pos2.w - pos1.xy / pos1.w);
-
-      var localy = vec3f(
-        -offset.y, offset.x * params.aspect
-      , 0.0);
-
-
-      let uv = vertex.geometryPosition * 0.5 + 0.5;
-
-      let size = mix(
-        vertex.size1,
-        vertex.size2,
-        uv.x 
-      );
-
-      frag.position = vec4f(
-        mix(
-          pos1.xy,
-          pos2.xy,
-          uv.x 
-        ), 
-        mix(
-          pos1.zw,
-          pos2.zw,
-          uv.x 
-        )
-      ) + vec4f(
-        localy * vertex.geometryPosition.y * size, 
-        0.0  
-      );
-
-      frag.color = mix(vertex.color1, vertex.color2, uv.x);
-
-      frag.size = size / frag.position.z;
-      frag.signedUv = vertex.geometryPosition;
-
-      return frag;
-    `,
-    fragment: {
-      function: `
-      var pixel: FragOutput;
-      pixel.color = input.color;
-      return pixel;`,
-      struct: `@location(0) color : vec4f,
-@builtin(position) position : vec4f,
-@location(1) signedUv : vec2f,
-@location(2) size : f32,`
-    }
-  });
-  return {
-    depthTexFormat,
-    pointInstanceBufferFormat,
-    lineSegInstanceBufferFormat1,
-    lineSegInstanceBufferFormat2,
-    geometryBufferFormat,
-    uniforms,
-    quad,
-    blend,
-    perFrameBindGroup,
-    linePipeline,
-    pointPipeline,
-    createEmptyLines(count, depthLoadOp) {
-      const perFrameUniforms = uniforms.instantiate(1);
-      const perFrame = perFrameBindGroup.instantiate({
-        params: perFrameUniforms
-      });
-      const vertexBuf = pointInstanceBufferFormat.instantiate(count);
-      const pass = device.createRenderBundleEncoder({
-        colorFormats: [outputFormat],
-        depthStencilFormat: depthTexFormat.format
-      });
-      pass.setPipeline(pointPipeline);
-      pipelineRenderpass(
-        pointPipeline,
-        pass
-      )({
-        points: vertexBuf,
-        geometry: quad,
-        perFrame
-      });
-      pass.draw(6, count);
-      pass.setPipeline(linePipeline);
-      pipelineRenderpass(
-        linePipeline,
-        pass
-      )({
-        lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
-        lineSegments2: [
-          lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
-          20
-        ],
-        geometry: quad
-      });
-      pass.draw(6, count - 1);
-      const bundle = pass.finish();
-      return {
-        buffer: vertexBuf,
-        draw(target, depthTarget, transform) {
-          uniforms.fill(perFrameUniforms, 0, {
-            aspect: target.width / target.height,
-            mvp: transform
-          });
-          const encoder = device.createCommandEncoder();
-          const pass2 = encoder.beginRenderPass({
-            colorAttachments: [
-              {
-                view: target,
-                loadOp: "load",
-                storeOp: "store"
-              }
-            ],
-            depthStencilAttachment: {
-              view: depthTarget,
-              depthClearValue: 1,
-              depthLoadOp,
-              depthStoreOp: "store"
-            }
-          });
-          pass2.executeBundles([bundle]);
-          pass2.end();
-          device.queue.submit([encoder.finish()]);
-        }
-      };
-    },
-    createLines(points, color, thickness, depthLoadOp) {
-      const perFrameUniforms = uniforms.instantiate(1);
-      const perFrame = perFrameBindGroup.instantiate({
-        params: perFrameUniforms
-      });
-      const vertexBuf = pointInstanceBufferFormat.quickCreate(
-        points.map((position) => ({
-          position,
-          color,
-          size: thickness
-        }))
-      );
-      const pass = device.createRenderBundleEncoder({
-        colorFormats: [outputFormat],
-        depthStencilFormat: depthTexFormat.format
-      });
-      pass.setPipeline(pointPipeline);
-      pipelineRenderpass(
-        pointPipeline,
-        pass
-      )({
-        points: vertexBuf,
-        geometry: quad,
-        perFrame
-      });
-      pass.draw(6, points.length);
-      pass.setPipeline(linePipeline);
-      pipelineRenderpass(
-        linePipeline,
-        pass
-      )({
-        lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
-        lineSegments2: [
-          lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
-          20
-        ],
-        geometry: quad
-      });
-      pass.draw(6, points.length - 1);
-      const bundle = pass.finish();
-      return {
-        draw(target, depthTarget, transform) {
-          uniforms.fill(perFrameUniforms, 0, {
-            aspect: target.width / target.height,
-            mvp: transform
-          });
-          const encoder = device.createCommandEncoder();
-          const pass2 = encoder.beginRenderPass({
-            colorAttachments: [
-              {
-                view: target,
-                loadOp: "load",
-                storeOp: "store"
-              }
-            ],
-            depthStencilAttachment: {
-              view: depthTarget,
-              depthClearValue: 1,
-              depthLoadOp,
-              depthStoreOp: "store"
-            }
-          });
-          pass2.executeBundles([bundle]);
-          pass2.end();
-          device.queue.submit([encoder.finish()]);
-        }
-      };
-    },
-    drawLinesSimple(target, depthTarget, depthLoadOp, points, color, thickness, transform) {
-      const vertexBuf = pointInstanceBufferFormat.quickCreate(
-        points.map((position) => ({
-          position,
-          color,
-          size: thickness
-        }))
-      );
-      const encoder = device.createCommandEncoder();
-      const pass = encoder.beginRenderPass({
-        colorAttachments: [
-          {
-            view: target,
-            loadOp: "load",
-            storeOp: "store"
-          }
-        ],
-        depthStencilAttachment: {
-          view: depthTarget,
-          depthClearValue: 1,
-          depthLoadOp,
-          depthStoreOp: "store"
-        }
-      });
-      pass.setPipeline(pointPipeline);
-      const bg = perFrameBindGroup.instantiate({
-        params: uniforms.quickCreate({
-          mvp: transform,
-          aspect: target.width / target.height
-        })
-      });
-      pipelineRenderpass(
-        pointPipeline,
-        pass
-      )({
-        points: vertexBuf,
-        geometry: quad,
-        perFrame: bg
-      });
-      pass.draw(6, points.length);
-      pass.setPipeline(linePipeline);
-      pipelineRenderpass(
-        linePipeline,
-        pass
-      )({
-        lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
-        lineSegments2: [
-          lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
-          20
-        ],
-        geometry: quad
-      });
-      pass.draw(6, points.length - 1);
-      pass.end();
-      device.queue.submit([encoder.finish()]);
-    }
-  };
-}
-
-// src/webgpu/pipelines/clear.ts
-async function clearRenderer(device, outputFormat) {
-  const wdevice = wrapDevice(device);
-  const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
-    types: [
-      {
-        name: "geometryPosition",
-        format: "float32x2",
-        offset: 0
-      }
-    ],
-    stride: 8,
-    stepMode: "vertex",
-    visibility: GPUShaderStage.VERTEX
-  });
-  const quad = geometryBufferFormat.quickCreate([
-    {
-      geometryPosition: [-1, -1]
-    },
-    {
-      geometryPosition: [1, -1]
-    },
-    {
-      geometryPosition: [-1, 1]
-    },
-    {
-      geometryPosition: [1, -1]
-    },
-    {
-      geometryPosition: [-1, 1]
-    },
-    {
-      geometryPosition: [1, 1]
-    }
-  ]);
-  const uniforms = wdevice.uniformBuffer(
-    "params",
-    struct("Params", {
-      clearColor: "vec4f"
-    })
-  );
-  const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
-  const pipeline = await wdevice.pipeline({
-    inputs: [geometryBufferFormat],
-    outputs: {
-      color: {
-        format: outputFormat
-      }
-    },
-    bindGroups: [perFrameBindGroup],
-    vertex: `
-    var frag: FragInput;
-    frag.position = vec4f(vertex.geometryPosition.xy, 1.0, 1.0);
-    return frag;
-`,
-    fragment: {
-      function: `
-      var pixel: FragOutput;
-      pixel.color = params.clearColor;
-      return pixel;
-      `,
-      struct: `@builtin(position) position : vec4f
-      `
-    }
-  });
-  const perFrameUniforms = uniforms.instantiate(1);
-  const perFrame = perFrameBindGroup.instantiate({
-    params: perFrameUniforms
-  });
-  const pass = device.createRenderBundleEncoder({
-    colorFormats: [outputFormat]
-  });
-  pass.setPipeline(pipeline);
-  pipelineRenderpass(
-    pipeline,
-    pass
-  )({
-    geometry: quad,
-    perFrame
-  });
-  pass.draw(6);
-  const bundle = pass.finish();
-  return {
-    clear(tex, color) {
-      uniforms.fill(perFrameUniforms, 0, {
-        clearColor: color
-      });
-      const encoder = device.createCommandEncoder();
-      const pass2 = encoder.beginRenderPass({
-        colorAttachments: [
-          {
-            view: tex,
-            loadOp: "clear",
-            storeOp: "store"
-          }
-        ]
-      });
-      pass2.executeBundles([bundle]);
-      pass2.end();
-      device.queue.submit([encoder.finish()]);
-    }
-  };
 }
 
 // src/ui/use-latest.tsx

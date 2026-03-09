@@ -3,6 +3,7 @@ import {
   add3,
   addEdge,
   addVertex,
+  argmax,
   clamp,
   clearRenderer,
   createGraph,
@@ -71,7 +72,20 @@ function inv4(m: Mat4): Mat4 {
     await fetch("../assets/crosslinksv3_(RELOADED).json")
   ).json();
 
-  graphData = graphData.filter((g) => g.x !== undefined);
+  graphData = graphData.filter(
+    (g) =>
+      typeof g.x === "number" &&
+      typeof g.y === "number" &&
+      typeof g.z === "number" &&
+      !isNaN(g.x) &&
+      !isNaN(g.y) &&
+      !isNaN(g.z),
+  );
+  // .filter((g) => g.tags.includes("on-guard-43"));
+
+  console.log(argmax(graphData, (g) => Math.abs(g.x)));
+  console.log(argmax(graphData, (g) => Math.abs(g.y)));
+  console.log(argmax(graphData, (g) => Math.abs(g.z)));
 
   console.log(graphData);
   // graphData.nodes = graphData.nodes;
@@ -138,11 +152,11 @@ function inv4(m: Mat4): Mat4 {
       const dst = nodeMap.get(link.trim());
 
       if (!src) {
-        console.warn(`Endpoint '${n.url}' not found.`);
+        // console.warn(`Endpoint '${n.url}' not found.`);
         continue;
       }
       if (!dst) {
-        console.warn(`Endpoint '${link}' not found.`);
+        // console.warn(`Endpoint '${link}' not found.`);
         continue;
       }
 
@@ -584,12 +598,13 @@ user-select: none;
   let force_target = bodies[target_index];
 
   let offset = body.position - force_target.position;
-  let dist = max(2.0, length(offset));
+  let rawdist = length(offset);
+  let dist = max(2.0, rawdist);
   let norm_offset = normalize(offset);
 
   let force = norm_offset / (dist * dist) * body.force;
 
-  accels[id.y * params.accel_stride + id.x].accel = force;
+  accels[id.y * params.accel_stride + id.x].accel = select(force, vec3f(0), rawdist < 0.00001);
 `,
   });
 
@@ -1010,8 +1025,20 @@ fn set_point(idx: u32, position: vec3f) {
     device.queue.submit([enc.finish()]);
   }
 
+  const params = new URLSearchParams(window.location.search);
+
+  const isPhysicsEnabled = params.get("physics") === "true";
+
+  let physicsCalculationsPerFrame = Number(
+    params.get("physicsCalculationsPerFrame") ?? "5",
+  );
+
+  console.log(physicsCalculationsPerFrame);
+
   let lineMode = "fancy" as "fast" | "fancy" | "none";
-  let physicsMode = "none" as "none" | "physics";
+  let physicsMode = (isPhysicsEnabled ? "physics" : "none") as
+    | "none"
+    | "physics";
 
   let amortizedPhysicsStepIndex = Math.floor(accelUpdateBatchCount / 2);
 
@@ -1023,7 +1050,7 @@ fn set_point(idx: u32, position: vec3f) {
     lastT = t;
 
     if (physicsMode === "physics") {
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < physicsCalculationsPerFrame; i++) {
         const calcAccelOffset =
           (amortizedPhysicsStepIndex % accelUpdateBatchCount) *
           accelUpdateBatchSize;
