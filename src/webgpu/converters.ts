@@ -248,7 +248,7 @@ export const TEXTURE_FORMAT_TO_WGSL_TYPE_LUT = {
 
 export function getCopyFootprintPerTexel(
   fmt: TextureFormat,
-  aspect: "all" | "depth-only" | "stencil-only" = "all"
+  aspect: "all" | "depth-only" | "stencil-only" = "all",
 ) {
   if (aspect === "stencil-only") {
     if (fmt === "depth24plus-stencil8" || fmt === "depth32float-stencil8") {
@@ -562,6 +562,8 @@ export const WGSL_TYPE_DATATYPES = {
   mat4x4f: "f32",
   mat4x4f16: "f16",
 } as const;
+
+export type WGSLPrimitive = keyof typeof WGSL_TYPE_DATATYPES;
 
 export const WGSL_BASE_TYPE_TO_SAMPLER_TYPE = {
   i32: "sint",

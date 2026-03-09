@@ -22843,30 +22843,164 @@ var require_client = __commonJS({
   }
 });
 
-// src/stringutils.ts
-function delimitedSequenceRegex(start, end) {
-  return new RegExp(
-    RegExp.escape(start) + "[\\s\\S]*?" + RegExp.escape(end),
-    "g"
-  );
-}
-function makeDelimitedReplacements(str2, replacements) {
-  for (const r of replacements) {
-    str2 = str2.replaceAll(
-      typeof r.delimiter === "string" ? delimitedSequenceRegex(r.delimiter, r.delimiter) : (
-        // @ts-expect-error
-        delimitedSequenceRegex(r.start, r.end)
-      ),
-      r.replaceWith
-    );
+// src/range.ts
+function range(hi) {
+  let arr = [];
+  for (let i = 0; i < hi && i < 1e7; i++) {
+    arr.push(i);
   }
-  return str2;
+  return arr;
 }
-
-// raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/simple-filter.wgsl?raw
-var simple_filter_default = "/*TEXTURES*/\r\n\r\n/*TEXTURES*/\r\n\r\n\r\n/*GLOBALS*/\r\n\r\n/*GLOBALS*/\r\n\r\nstruct FragInput {\r\n  @builtin(position) position : vec4f,\r\n  @location(0) uv : vec2f,\r\n}\r\n\r\n@vertex\r\nfn VSMain(@builtin(vertex_index) vertexIndex: u32) -> FragInput {\r\n  var output: FragInput;\r\n\r\n  output.position = vec4(array(\r\n    vec2( 1.0,  1.0),\r\n    vec2( 1.0, -1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2( 1.0,  1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2(-1.0,  1.0),\r\n  )[vertexIndex], 0.5, 1.0);\r\n\r\n  output.uv = array(\r\n    vec2(1.0, 0.0),\r\n    vec2(1.0, 1.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(1.0, 0.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(0.0, 0.0),\r\n  )[vertexIndex];\r\n\r\n  return output;\r\n}\r\n\r\nstruct Output {\r\n/*OUTPUT_STRUCT*/\r\n\r\n/*OUTPUT_STRUCT*/\r\n}\r\n\r\n@fragment\r\nfn FSMain(@location(0) uv : vec2f) -> Output  {\r\n  /*FRAGMENT_BODY*/\r\n\r\n  /*FRAGMENT_BODY*/\r\n}";
+function smartRangeMap(n, cb2) {
+  const a = range(n);
+  const res1 = a.map((i, index, arr) => {
+    return {
+      remap(lo, hi, inclEnd) {
+        return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
+      },
+      remapCenter(lo, hi) {
+        return (i + 1) / (n + 1) * (hi - lo) + lo;
+      },
+      segment(lo, hi) {
+        return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
+      },
+      slidingWindow(arr2) {
+        return [arr2[i], arr2[i + 1]];
+      },
+      randkf() {
+        if (i === 0) return 0;
+        if (i === n - 1) return 100;
+        const lo = i / (n - 2) * 100;
+        const hi = (i + 1) / (n - 2) * 100;
+        return rand(lo, hi);
+      },
+      get(arr2) {
+        return arr2[i];
+      },
+      i,
+      next: i + 1,
+      end: () => i === n - 1,
+      start: () => i === 0
+    };
+  });
+  const res = res1.map(cb2);
+  return res;
+}
+function smartRange(n) {
+  return smartRangeMap(n, id);
+}
+function id(x) {
+  return x;
+}
+function rand(lo, hi, random) {
+  if (!random) random = () => Math.random();
+  return random() * (hi - lo) + lo;
+}
 
 // src/webgpu/converters.ts
+var TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT = {
+  r8unorm: "float",
+  r8snorm: "float",
+  r8uint: "uint",
+  r8sint: "sint",
+  r16unorm: "float",
+  r16snorm: "float",
+  r16uint: "uint",
+  r16sint: "sint",
+  r16float: "float",
+  rg8unorm: "float",
+  rg8snorm: "float",
+  rg8uint: "uint",
+  rg8sint: "sint",
+  r32uint: "uint",
+  r32sint: "sint",
+  r32float: "float",
+  rg16unorm: "float",
+  rg16snorm: "float",
+  rg16uint: "uint",
+  rg16sint: "sint",
+  rg16float: "float",
+  rgba8unorm: "float",
+  "rgba8unorm-srgb": "float",
+  rgba8snorm: "float",
+  rgba8uint: "uint",
+  rgba8sint: "sint",
+  bgra8unorm: "float",
+  "bgra8unorm-srgb": "float",
+  rgb9e5ufloat: "float",
+  rgb10a2uint: "uint",
+  rgb10a2unorm: "float",
+  rg11b10ufloat: "float",
+  rg32uint: "uint",
+  rg32sint: "sint",
+  rg32float: "float",
+  rgba16unorm: "float",
+  rgba16snorm: "float",
+  rgba16uint: "uint",
+  rgba16sint: "sint",
+  rgba16float: "float",
+  rgba32uint: "uint",
+  rgba32sint: "sint",
+  rgba32float: "float",
+  stencil8: "uint",
+  depth16unorm: "depth",
+  depth24plus: "depth",
+  "depth24plus-stencil8": "depth",
+  depth32float: "depth",
+  "depth32float-stencil8": "depth",
+  "bc1-rgba-unorm": "float",
+  "bc1-rgba-unorm-srgb": "float",
+  "bc2-rgba-unorm": "float",
+  "bc2-rgba-unorm-srgb": "float",
+  "bc3-rgba-unorm": "float",
+  "bc3-rgba-unorm-srgb": "float",
+  "bc4-r-unorm": "float",
+  "bc4-r-snorm": "float",
+  "bc5-rg-unorm": "float",
+  "bc5-rg-snorm": "float",
+  "bc6h-rgb-ufloat": "float",
+  "bc6h-rgb-float": "float",
+  "bc7-rgba-unorm": "float",
+  "bc7-rgba-unorm-srgb": "float",
+  "etc2-rgb8unorm": "float",
+  "etc2-rgb8unorm-srgb": "float",
+  "etc2-rgb8a1unorm": "float",
+  "etc2-rgb8a1unorm-srgb": "float",
+  "etc2-rgba8unorm": "float",
+  "etc2-rgba8unorm-srgb": "float",
+  "eac-r11unorm": "f32",
+  "eac-r11snorm": "f32",
+  "eac-rg11unorm": "vec2f",
+  "eac-rg11snorm": "vec2f",
+  "astc-4x4-unorm": "float",
+  "astc-4x4-unorm-srgb": "float",
+  "astc-5x4-unorm": "float",
+  "astc-5x4-unorm-srgb": "float",
+  "astc-5x5-unorm": "float",
+  "astc-5x5-unorm-srgb": "float",
+  "astc-6x5-unorm": "float",
+  "astc-6x5-unorm-srgb": "float",
+  "astc-6x6-unorm": "float",
+  "astc-6x6-unorm-srgb": "float",
+  "astc-8x5-unorm": "float",
+  "astc-8x5-unorm-srgb": "float",
+  "astc-8x6-unorm": "float",
+  "astc-8x6-unorm-srgb": "float",
+  "astc-8x8-unorm": "float",
+  "astc-8x8-unorm-srgb": "float",
+  "astc-10x5-unorm": "float",
+  "astc-10x5-unorm-srgb": "float",
+  "astc-10x6-unorm": "float",
+  "astc-10x6-unorm-srgb": "float",
+  "astc-10x8-unorm": "float",
+  "astc-10x8-unorm-srgb": "float",
+  "astc-10x10-unorm": "float",
+  "astc-10x10-unorm-srgb": "float",
+  "astc-12x10-unorm": "float",
+  "astc-12x10-unorm-srgb": "float",
+  "astc-12x12-unorm": "float",
+  "astc-12x12-unorm-srgb": "float"
+};
 var TEXTURE_FORMAT_TO_WGSL_TYPE_LUT = {
   r8unorm: "f32",
   r8snorm: "f32",
@@ -23122,59 +23256,206 @@ var WGSL_TYPE_DATATYPES = {
   mat4x4f: "f32",
   mat4x4f16: "f16"
 };
-
-// src/range.ts
-function range(hi) {
-  let arr = [];
-  for (let i = 0; i < hi && i < 1e7; i++) {
-    arr.push(i);
+var VERTEX_FORMAT_TO_ELEMENT_SIZE = {
+  uint8: 1,
+  uint8x2: 1,
+  uint8x4: 1,
+  sint8: 1,
+  sint8x2: 1,
+  sint8x4: 1,
+  unorm8: 1,
+  unorm8x2: 1,
+  unorm8x4: 1,
+  snorm8: 1,
+  snorm8x2: 1,
+  snorm8x4: 1,
+  uint16: 2,
+  uint16x2: 2,
+  uint16x4: 2,
+  sint16: 2,
+  sint16x2: 2,
+  sint16x4: 2,
+  unorm16: 2,
+  unorm16x2: 2,
+  unorm16x4: 2,
+  snorm16: 2,
+  snorm16x2: 2,
+  snorm16x4: 2,
+  float16: 2,
+  float16x2: 2,
+  float16x4: 2,
+  float32: 4,
+  float32x2: 4,
+  float32x3: 4,
+  float32x4: 4,
+  uint32: 4,
+  uint32x2: 4,
+  uint32x3: 4,
+  uint32x4: 4,
+  sint32: 4,
+  sint32x2: 4,
+  sint32x3: 4,
+  sint32x4: 4,
+  "unorm10-10-10-2": 1,
+  "unorm8x4-bgra": 1
+};
+var VERTEX_FORMAT_TO_ELEMENT_COUNT = {
+  uint8: 1,
+  uint8x2: 2,
+  uint8x4: 4,
+  sint8: 1,
+  sint8x2: 2,
+  sint8x4: 4,
+  unorm8: 1,
+  unorm8x2: 2,
+  unorm8x4: 4,
+  snorm8: 1,
+  snorm8x2: 2,
+  snorm8x4: 4,
+  uint16: 1,
+  uint16x2: 2,
+  uint16x4: 4,
+  sint16: 1,
+  sint16x2: 2,
+  sint16x4: 4,
+  unorm16: 1,
+  unorm16x2: 2,
+  unorm16x4: 4,
+  snorm16: 1,
+  snorm16x2: 2,
+  snorm16x4: 4,
+  float16: 1,
+  float16x2: 2,
+  float16x4: 4,
+  float32: 1,
+  float32x2: 2,
+  float32x3: 3,
+  float32x4: 4,
+  uint32: 1,
+  uint32x2: 2,
+  uint32x3: 3,
+  uint32x4: 4,
+  sint32: 1,
+  sint32x2: 2,
+  sint32x3: 3,
+  sint32x4: 4,
+  "unorm10-10-10-2": 4,
+  "unorm8x4-bgra": 4
+};
+var VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR = {
+  uint8: Uint8Array,
+  uint8x2: Uint8Array,
+  uint8x4: Uint8Array,
+  sint8: Int8Array,
+  sint8x2: Int8Array,
+  sint8x4: Int8Array,
+  unorm8: Uint8Array,
+  unorm8x2: Uint8Array,
+  unorm8x4: Uint8Array,
+  snorm8: Int8Array,
+  snorm8x2: Int8Array,
+  snorm8x4: Int8Array,
+  uint16: Uint16Array,
+  uint16x2: Uint16Array,
+  uint16x4: Uint16Array,
+  sint16: Int16Array,
+  sint16x2: Int16Array,
+  sint16x4: Int16Array,
+  unorm16: Uint16Array,
+  unorm16x2: Uint16Array,
+  unorm16x4: Uint16Array,
+  snorm16: Int16Array,
+  snorm16x2: Int16Array,
+  snorm16x4: Int16Array,
+  float16: Float16Array,
+  float16x2: Float16Array,
+  float16x4: Float16Array,
+  float32: Float32Array,
+  float32x2: Float32Array,
+  float32x3: Float32Array,
+  float32x4: Float32Array,
+  uint32: Uint32Array,
+  uint32x2: Uint32Array,
+  uint32x3: Uint32Array,
+  uint32x4: Uint32Array,
+  sint32: Int32Array,
+  sint32x2: Int32Array,
+  sint32x3: Int32Array,
+  sint32x4: Int32Array,
+  "unorm10-10-10-2": Uint8Array,
+  "unorm8x4-bgra": Uint8Array
+};
+var VERTEX_FORMAT_TO_WGSL_BASE_TYPE = {
+  uint8: "u32",
+  uint8x2: "u32",
+  uint8x4: "u32",
+  sint8: "i32",
+  sint8x2: "i32",
+  sint8x4: "i32",
+  unorm8: "f32",
+  unorm8x2: "f32",
+  unorm8x4: "f32",
+  snorm8: "f32",
+  snorm8x2: "f32",
+  snorm8x4: "f32",
+  uint16: "u32",
+  uint16x2: "u32",
+  uint16x4: "u32",
+  sint16: "i32",
+  sint16x2: "i32",
+  sint16x4: "i32",
+  unorm16: "f32",
+  unorm16x2: "f32",
+  unorm16x4: "f32",
+  snorm16: "f32",
+  snorm16x2: "f32",
+  snorm16x4: "f32",
+  float16: "f32",
+  float16x2: "f32",
+  float16x4: "f32",
+  float32: "f32",
+  float32x2: "f32",
+  float32x3: "f32",
+  float32x4: "f32",
+  uint32: "u32",
+  uint32x2: "u32",
+  uint32x3: "u32",
+  uint32x4: "u32",
+  sint32: "i32",
+  sint32x2: "i32",
+  sint32x3: "i32",
+  sint32x4: "i32",
+  "unorm10-10-10-2": "f32",
+  "unorm8x4-bgra": "f32"
+};
+var WGSL_DATA_TYPES = {
+  f32: {
+    1: "f32",
+    2: "vec2f",
+    3: "vec3f",
+    4: "vec4f"
+  },
+  f16: {
+    1: "f16",
+    2: "vec2f16",
+    3: "vec3f16",
+    4: "vec4f16"
+  },
+  u32: {
+    1: "u32",
+    2: "vec2u",
+    3: "vec3u",
+    4: "vec4u"
+  },
+  i32: {
+    1: "i32",
+    2: "vec2i",
+    3: "vec3i",
+    4: "vec4i"
   }
-  return arr;
-}
-function smartRangeMap(n, cb2) {
-  const a = range(n);
-  const res1 = a.map((i, index, arr) => {
-    return {
-      remap(lo, hi, inclEnd) {
-        return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
-      },
-      remapCenter(lo, hi) {
-        return (i + 1) / (n + 1) * (hi - lo) + lo;
-      },
-      segment(lo, hi) {
-        return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
-      },
-      slidingWindow(arr2) {
-        return [arr2[i], arr2[i + 1]];
-      },
-      randkf() {
-        if (i === 0) return 0;
-        if (i === n - 1) return 100;
-        const lo = i / (n - 2) * 100;
-        const hi = (i + 1) / (n - 2) * 100;
-        return rand(lo, hi);
-      },
-      get(arr2) {
-        return arr2[i];
-      },
-      i,
-      next: i + 1,
-      end: () => i === n - 1,
-      start: () => i === 0
-    };
-  });
-  const res = res1.map(cb2);
-  return res;
-}
-function smartRange(n) {
-  return smartRangeMap(n, id);
-}
-function id(x) {
-  return x;
-}
-function rand(lo, hi, random) {
-  if (!random) random = () => Math.random();
-  return random() * (hi - lo) + lo;
+};
+function vertexFormatToWgslType(vertexFormat) {
+  return WGSL_DATA_TYPES[VERTEX_FORMAT_TO_WGSL_BASE_TYPE[vertexFormat]][VERTEX_FORMAT_TO_ELEMENT_COUNT[vertexFormat]];
 }
 
 // src/array-utils.ts
@@ -23398,6 +23679,9 @@ function arrayToMapKeys(arr, f) {
 }
 function arrayToObjKeys(arr, f) {
   return map2obj(arrayToMapKeys(arr, f));
+}
+function arrayToObjEntries(arr, f) {
+  return Object.fromEntries(arr.map(f));
 }
 function mapObjValues(obj, callback) {
   return mapObjEntries(obj, (k, v) => [k, callback(k, v)]);
@@ -24793,6 +25077,39 @@ function struct(name, members) {
     ])
   };
 }
+function getAllStructs(specs) {
+  const ret = [];
+  function r(spec) {
+    if (spec.type === "struct") {
+      ret.push(spec);
+      for (const [n, m] of Array.isArray(spec.members) ? spec.members : Object.entries(spec.members)) {
+        r(m.type);
+      }
+    } else if (spec.type === "array") {
+      r(spec.member);
+    }
+  }
+  for (const s of specs) r(s);
+  return ret;
+}
+function makeCodeForType(type) {
+  if (type.type === "struct") return type.name;
+  if (type.type === "array")
+    return `array<${makeCodeForType(type.member)}${type.count ? ", " + type.count : ""}>`;
+  return type.type;
+}
+function structsCode(spec) {
+  let out = "";
+  const allTypesToDefine = new Map(
+    getAllStructs(spec).map((s) => [s.name, s])
+  ).values();
+  for (const t of allTypesToDefine) {
+    out += `struct ${t.name} {
+  ${(Array.isArray(t.members) ? t.members : Object.entries(t.members)).map((m) => `${m[0]}: ${makeCodeForType(m[1].type)},`).join("\n  ")}
+}`;
+  }
+  return out;
+}
 function generateLayouts(specs) {
   const clone = structuredClone(specs);
   const determineIndividualLayoutSizeAndAlignment = memo(
@@ -24864,257 +25181,499 @@ function createLayoutGenerator(spec) {
   const fnbody = createSetters(spec, 0, 0, [], "src");
   return new Function("dst", "src", fnbody);
 }
-
-// src/webgpu/simple-filter.ts
-function createSimpleFilterShader(params) {
-  return makeDelimitedReplacements(simple_filter_default, [
-    {
-      delimiter: "/*TEXTURES*/",
-      replaceWith: params.textures
-    },
-    {
-      delimiter: "/*GLOBALS*/",
-      replaceWith: params.globals
-    },
-    {
-      delimiter: "/*OUTPUT_STRUCT*/",
-      replaceWith: params.outputStruct
-    },
-    {
-      delimiter: "/*FRAGMENT_BODY*/",
-      replaceWith: params.fragmentBody
-    }
-  ]);
-}
-function createSimpleFilterPipeline(device, spec) {
-  let fragmentBody = "";
-  let bindings = "";
-  let bindingIndex = 0;
-  const inputEntries = Object.entries(spec.inputs);
-  const samplers = [];
-  let hasInputs = inputEntries.length > 0;
-  if (hasInputs) {
-    for (const s of spec.samplers ?? [{}]) {
-      bindings += `@group(0) @binding(${bindingIndex})
-var sampler${bindingIndex}: sampler;
-`;
-      samplers.push(device.createSampler(s));
-      bindingIndex++;
-    }
-  }
-  bindingIndex = 0;
-  const nameToInputMap = /* @__PURE__ */ new Map();
-  const nameToOutputMap = /* @__PURE__ */ new Map();
-  let uniformBindGroupIndex = hasInputs ? 2 : 0;
-  for (const [name, value] of inputEntries) {
-    bindings += `@group(1) @binding(${bindingIndex}) 
-var tex_${name}: ${value.dimensionality ?? "texture_2d"}<${value.type ?? "f32"}>;`;
-    nameToInputMap.set(name, bindingIndex);
-    fragmentBody += !value.dimensionality ? `  var ${name} = textureSample(tex_${name}, sampler${value.sampleWith ?? 0}, uv);
-` : "";
-    bindingIndex++;
-  }
-  let outputStruct = "";
-  let outputBindingIndex = 0;
-  for (const [name, value] of Object.entries(spec.outputs)) {
-    outputStruct += `  @location(${outputBindingIndex}) ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]},
-`;
-    nameToOutputMap.set(name, outputBindingIndex);
-    fragmentBody += `  var ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]};
-`;
-    outputBindingIndex++;
-  }
-  fragmentBody += spec.source;
-  fragmentBody += `
-  var OUTPUT: Output;
-`;
-  const outputsEntries = Object.entries(spec.outputs);
-  for (const [name, value] of outputsEntries) {
-    fragmentBody += `  OUTPUT.${name} = ${name};
-`;
-  }
-  fragmentBody += "return OUTPUT;";
-  let globals = "";
-  globals += spec.globals ?? "";
-  if (spec.uniforms) {
-    globals += `@group(${uniformBindGroupIndex}) @binding(0) var<uniform> params : Params;
-struct Params {
-`;
-    for (const [uniformName, uniformType] of Object.entries(
-      spec.uniforms ?? {}
-    )) {
-      globals += `  ${uniformName}: ${uniformType},
-`;
-    }
-    globals += "}";
-  }
-  const shaderSource = createSimpleFilterShader({
-    textures: bindings,
-    globals,
-    outputStruct,
-    fragmentBody
-  });
-  const [uniformLayouts] = spec.uniforms ? (
-    // @ts-expect-error
-    generateLayouts([struct("Params", spec.uniforms)])
-  ) : void 0;
-  const uniformGenerator = createLayoutGenerator(uniformLayouts);
-  const module = device.createShaderModule({
-    code: shaderSource
-  });
-  const pipeline = device.createRenderPipeline({
-    layout: "auto",
-    vertex: { module },
-    fragment: {
-      module,
-      targets: outputsEntries.map(([name, value]) => ({
-        format: value
-      }))
-    }
-  });
-  const samplerBindGroup = hasInputs ? device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: samplers.map((s, i) => ({
-      resource: s,
-      binding: i
-    }))
-  }) : void 0;
+function createWgslSerializers(...ss) {
+  const layouts = generateLayouts(ss);
+  const gens = layouts.map((l) => ({
+    dataLayout: l,
+    gen: createLayoutGenerator(l)
+  }));
   return {
-    pipeline,
-    makeUniformBuffer() {
-      const buffer = device.createBuffer({
-        size: 1024,
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
-      });
-      const bindGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
-        entries: [
-          {
-            resource: buffer,
-            binding: 0
-          }
-        ]
-      });
-      const ret = {
-        buffer,
-        bindGroup,
-        setBuffer(values) {
-          const buf = new ArrayBuffer(uniformLayouts.size);
-          uniformGenerator(new DataView(buf), values);
-          device.queue.writeBuffer(buffer, 0, buf);
-          return ret;
+    code: structsCode(layouts),
+    generators: gens
+  };
+}
+function typeName(spec) {
+  if (spec.type === "struct") return spec.name;
+  if (spec.type === "array")
+    return `array<${typeName(spec.member)}, ${spec.count}>`;
+  return spec.type;
+}
+
+// src/webgpu/partial-pipelines.ts
+function wrapDevice(device) {
+  const wdevice = {
+    uniformBuffer(name, spec, isStorage, settings) {
+      const [withLayouts] = generateLayouts([spec]);
+      const gen = createLayoutGenerator(withLayouts);
+      return {
+        withName(name2) {
+          return wdevice.uniformBuffer(name2, spec, isStorage, settings);
+        },
+        type: isStorage ? "storage-buffer" : "uniform-buffer",
+        name,
+        format: spec,
+        visibility: settings?.visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
+        quickCreate(data) {
+          const gpubuf = this.instantiate(1);
+          const arrayBuf = new ArrayBuffer(withLayouts.size);
+          gen(new DataView(arrayBuf), data);
+          device.queue.writeBuffer(gpubuf, 0, arrayBuf);
+          return gpubuf;
+        },
+        quickCreateMany(data) {
+          const gpubuf = this.instantiate(data.length);
+          const arrayBuf = new ArrayBuffer(withLayouts.size * data.length);
+          for (let i = 0; i < data.length; i++)
+            gen(new DataView(arrayBuf, i * withLayouts.size), data[i]);
+          device.queue.writeBuffer(gpubuf, 0, arrayBuf);
+          return gpubuf;
+        },
+        instantiate(count) {
+          const buf = device.createBuffer({
+            usage: settings?.usage ?? GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            size: withLayouts.size * count
+          });
+          buf.format = {
+            type: "uniform",
+            data: spec
+          };
+          return buf;
+        },
+        fill(buf, offset, data) {
+          const cpubuf = new ArrayBuffer(withLayouts.size);
+          gen(new DataView(cpubuf), data);
+          device.queue.writeBuffer(buf, offset, cpubuf);
+        },
+        wgsl(groupIndex, bindingIndex) {
+          return `@group(${groupIndex}) @binding(${bindingIndex}) var<uniform> ${name} : ${typeName(spec)};`;
+        },
+        wgslStorage(groupIndex, bindingIndex, access) {
+          return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage, ${access}> ${name} : array<${typeName(spec)}>;`;
+        },
+        // @ts-expect-error
+        reinterpret(buf) {
+          return buf;
         }
       };
-      return ret;
     },
-    withInputs(inputs) {
-      const inputTextureBindGroup = hasInputs ? device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(1),
-        entries: inputEntries.map(([name, value], i) => ({
-          resource: inputs[name],
-          binding: i
-        }))
-      }) : void 0;
+    vertexBuffer(name, params) {
+      let size = params.stride;
       return {
-        withDedicatedUniformBuffer(existingBufferInfo) {
-          const uniformBuffer = existingBufferInfo?.buffer ?? device.createBuffer({
-            size: uniformLayouts.size,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
-          });
-          const uniformBufferOffset = existingBufferInfo?.offset ?? 0;
-          const uniformBindGroup = device.createBindGroup({
-            layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
-            entries: [
-              {
-                binding: 0,
-                resource: uniformBuffer
-              }
-            ]
-          });
-          function record(bundleEncoder) {
-            bundleEncoder.setPipeline(pipeline);
-            if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
-            if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
-            bundleEncoder.setBindGroup(uniformBindGroupIndex, uniformBindGroup);
-            bundleEncoder.draw(6);
-          }
-          const defaultBundleEncoder = device.createRenderBundleEncoder({
-            colorFormats: outputsEntries.map((o) => o[1])
-          });
-          record(defaultBundleEncoder);
-          const bundle = defaultBundleEncoder.finish();
-          return {
-            run: (encoder, outputs) => {
-              const pass = encoder.beginRenderPass({
-                colorAttachments: outputsEntries.map(
-                  ([name, value]) => outputs[name] instanceof GPUTextureView ? {
-                    view: outputs[name],
-                    clearValue: [0, 0, 0, 1],
-                    loadOp: "clear",
-                    storeOp: "store"
-                  } : outputs[name]
-                )
-              });
-              pass.executeBundles([bundle]);
-              pass.end();
-            },
-            bundle,
-            runWithRenderPass: (pass) => {
-              pass.executeBundles([bundle]);
-            },
-            record,
-            setUniforms(values) {
-              const buf = new ArrayBuffer(uniformLayouts.size);
-              uniformGenerator(new DataView(buf), values);
-              device.queue.writeBuffer(uniformBuffer, uniformBufferOffset, buf);
-            }
-          };
+        visibility: params.visibility,
+        name,
+        stepMode: params.stepMode,
+        type: "vertex-buffer",
+        arrayStride: size,
+        attributes: params.types,
+        // @ts-expect-error
+        reinterpret(buf) {
+          return buf;
         },
-        withUniforms: (uniforms) => {
-          function record(bundleEncoder) {
-            bundleEncoder.setPipeline(pipeline);
-            if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
-            if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
-            if (uniforms)
-              bundleEncoder.setBindGroup(
-                uniformBindGroupIndex,
-                uniforms.bindGroup
-              );
-            bundleEncoder.draw(6);
-          }
-          const defaultBundleEncoder = device.createRenderBundleEncoder({
-            colorFormats: outputsEntries.map((o) => o[1])
+        // @ts-expect-error
+        instantiate(count, descriptor) {
+          const buf = device.createBuffer({
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            size: count * size,
+            ...descriptor
           });
-          record(defaultBundleEncoder);
-          const bundle = defaultBundleEncoder.finish();
-          return {
-            run: (encoder, outputs) => {
-              const pass = encoder.beginRenderPass({
-                colorAttachments: outputsEntries.map(
-                  ([name, value]) => outputs[name] instanceof GPUTextureView ? {
-                    view: outputs[name],
-                    clearValue: [0, 0, 0, 1],
-                    loadOp: "clear",
-                    storeOp: "store"
-                  } : outputs[name]
-                )
-              });
-              pass.executeBundles([bundle]);
-              pass.end();
-            },
-            bundle,
-            runWithRenderPass: (pass) => {
-              pass.executeBundles([bundle]);
-            },
-            record
-          };
+          return buf;
+        },
+        quickCreate(data, descriptor) {
+          const buf = this.instantiate(data.length, descriptor);
+          const cpubuf = new ArrayBuffer(size * data.length);
+          const attrViews = arrayToObjEntries(params.types, (attr) => [
+            attr.name,
+            new VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR[attr.format](cpubuf)
+          ]);
+          let index = 0;
+          for (const d of data) {
+            for (const a of params.types) {
+              const view = attrViews[a.name];
+              const elementSize = VERTEX_FORMAT_TO_ELEMENT_SIZE[a.format];
+              const elementCount = VERTEX_FORMAT_TO_ELEMENT_COUNT[a.format];
+              for (let i = 0; i < elementCount; i++) {
+                const byteOffset = index * size + a.offset;
+                const elementOffset = byteOffset / elementSize + i;
+                view[elementOffset] = elementCount === 1 ? d[a.name] : d[a.name][i];
+              }
+            }
+            index++;
+          }
+          device.queue.writeBuffer(buf, 0, cpubuf);
+          return buf;
         }
+      };
+    },
+    bindGroup(name, ...entries) {
+      const layout = device.createBindGroupLayout({
+        entries: entries.map((e, i) => {
+          if (e.type === "texture") {
+            return {
+              binding: i,
+              visibility: e.visibility,
+              layout: {
+                texture: {
+                  sampleType: TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT[e.format],
+                  multisampled: e.multisampled,
+                  viewDimension: e.viewDimension
+                }
+              }
+            };
+          } else if (e.type === "uniform-buffer" || e.type === "storage-buffer") {
+            return {
+              binding: i,
+              visibility: e.visibility,
+              buffer: {
+                type: e.type === "storage-buffer" ? "storage" : "uniform"
+              }
+            };
+          } else if (e.type === "vertex-buffer") {
+            return {
+              binding: i,
+              visibility: e.visibility,
+              buffer: {
+                type: e.readonly ? "read-only-storage" : "storage"
+              }
+            };
+          }
+        })
+      });
+      layout.entries = entries;
+      layout.name = name;
+      layout.instantiate = (params) => {
+        const bg = device.createBindGroup({
+          layout,
+          entries: entries.map((e, i) => ({
+            binding: i,
+            resource: params[e.name]
+          }))
+        });
+        return bg;
+      };
+      return layout;
+    },
+    texture(name, params) {
+      return {
+        name,
+        type: "texture",
+        format: params.format,
+        visibility: params.visibility,
+        // @ts-expect-error
+        viewDimension: params.viewDimension ?? "2d",
+        // @ts-expect-error
+        multisampled: params.multisampled ?? false,
+        instantiate(resolution, usage) {
+          return device.createTexture({
+            size: resolution,
+            usage,
+            format: params.format
+          });
+        }
+      };
+    },
+    shader(code, stages = ["vertex", "fragment", "compute"]) {
+      const module = device.createShaderModule({
+        code
+      });
+      return { module, stages };
+    },
+    async pipeline(params) {
+      const requiredStructDefs = params.bindGroups.flatMap(
+        (bg) => bg.entries.flatMap((e) => {
+          if (e.type === "uniform-buffer") {
+            return [e.format];
+          } else {
+            return [];
+          }
+        })
+      );
+      const requiredBindings = params.bindGroups.flatMap(
+        (bg, groupIndex) => bg.entries.flatMap((e, bindingIndex) => {
+          if (e.type === "uniform-buffer") {
+            return e.wgsl(groupIndex, bindingIndex);
+          } else {
+            return "";
+          }
+        })
+      ).join("\n");
+      let shaderLoc = 0;
+      const vertexStruct = params.inputs.length > 0 ? `struct Vertex {
+        ${params.inputs.flatMap((i) => i.attributes.map((attr) => `@location(${shaderLoc++}) ${attr.name}: ${vertexFormatToWgslType(attr.format)}`)).join(",\n")}
+      }` : "";
+      return this.pipelineRaw({
+        primitive: params.primitive,
+        bindGroups: params.bindGroups,
+        inputs: params.inputs,
+        outputs: params.outputs,
+        depthStencil: params.depthStencil,
+        shader: this.shader(
+          `
+        ${createWgslSerializers(...requiredStructDefs).code}
+        ${requiredBindings}
+        ${params.globals ?? ""}
+        ${vertexStruct}
+
+        struct FragInput {
+          ${params.fragment?.struct ?? ""}
+        }
+
+        struct FragOutput {
+          ${params.fragment.extraOutputs ?? ""}
+          ${Object.entries(params.outputs).map(
+            ([name, value], i) => `@location(${i}) ${name} : ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[typeof value === "string" ? value : value.format]}`
+          ).join(",\n  ")}
+        }
+
+        @vertex
+        fn VSMain(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32, ${vertexStruct ? "vertex: Vertex" : ""}) -> FragInput {
+          ${params.vertex} 
+        }
+
+      ${params.fragment ? `@fragment
+        fn FSMain(input : FragInput) -> FragOutput {
+          ${params.fragment.function}
+        }` : ""}
+        `,
+          params.fragment ? ["vertex", "fragment"] : ["vertex"]
+        )
+      });
+    },
+    async pipelineRaw(params) {
+      let vertex = void 0;
+      if (params.shader.stages.includes("vertex")) {
+        const buffers = [];
+        let shaderLoc = 0;
+        for (const b of params.inputs) {
+          let currBuffer = {
+            arrayStride: b.arrayStride,
+            stepMode: b.stepMode,
+            attributes: []
+          };
+          buffers.push(currBuffer);
+          for (const a of b.attributes) {
+            currBuffer.attributes.push({
+              format: a.format,
+              offset: a.offset,
+              shaderLocation: shaderLoc
+            });
+            shaderLoc++;
+          }
+        }
+        vertex = {
+          module: params.shader.module,
+          buffers
+        };
+      }
+      let fragment = void 0;
+      if (params.shader.stages.includes("fragment")) {
+        fragment = {
+          module: params.shader.module,
+          targets: Object.values(params.outputs).map(
+            (e) => typeof e === "string" ? { format: e } : e?.type === "texture" ? {
+              format: e.format
+            } : e
+          )
+        };
+      }
+      const ppln = await device.createRenderPipelineAsync({
+        vertex,
+        fragment,
+        depthStencil: params.depthStencil,
+        layout: device.createPipelineLayout({
+          bindGroupLayouts: params.bindGroups.map((bg, i) => bg)
+        }),
+        primitive: params.primitive
+      });
+      ppln.bindGroups = params.bindGroups;
+      ppln.shader = params.shader;
+      ppln.inputs = params.inputs;
+      return ppln;
+    },
+    async compute(params) {
+      const requiredStructDefs = params.bindGroups.flatMap(
+        (bg) => bg.entries.flatMap((e) => {
+          if (e.type === "uniform-buffer" || e.type === "storage-buffer") {
+            return [e.format];
+          } else {
+            return [];
+          }
+        })
+      );
+      const requiredBindings = params.bindGroups.flatMap(
+        (bg, groupIndex) => bg.entries.flatMap((e, bindingIndex) => {
+          if (e.type === "uniform-buffer") {
+            return e.wgsl(groupIndex, bindingIndex);
+          } else if (e.type === "vertex-buffer" || e.type === "storage-buffer") {
+            return e.wgslStorage(
+              groupIndex,
+              bindingIndex,
+              params.storageBufferAccess[e.name] ?? "read"
+            );
+          } else {
+            return "";
+          }
+        })
+      ).join("\n");
+      const shaderSource = `
+${createWgslSerializers(...requiredStructDefs).code}          
+${requiredBindings}
+${params.globals ?? ""}
+
+@compute
+@workgroup_size(${params.workgroupSize.join(", ")})
+fn ComputeMain(@builtin(global_invocation_id) id: vec3u) {
+  ${params.shader}
+}
+          `;
+      console.log(shaderSource);
+      return this.computeRaw({
+        bindGroups: params.bindGroups,
+        shader: this.shader(shaderSource, ["compute"])
+      });
+    },
+    async computeRaw(params) {
+      const ppln = await device.createComputePipelineAsync({
+        compute: params.shader,
+        layout: device.createPipelineLayout({
+          bindGroupLayouts: params.bindGroups.map((bg, i) => bg)
+        })
+      });
+      ppln.bindGroups = params.bindGroups;
+      ppln.shader = params.shader;
+      ppln.inputs = params.inputs;
+      return ppln;
+    }
+  };
+  return wdevice;
+}
+
+// src/webgpu/pipelines/parallel-sum.ts
+async function parallelSum(device, settings) {
+  const WORKGROUP_SIZE_X = 32;
+  const { datatype } = settings;
+  const wdevice = wrapDevice(device);
+  const bufferFormat = wdevice.uniformBuffer(
+    "items",
+    struct("Items", {
+      item: datatype
+    }),
+    true,
+    {
+      visibility: GPUShaderStage.COMPUTE,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE
+    }
+  );
+  const itemsInFormat = bufferFormat.withName("items_in");
+  const itemsOutFormat = bufferFormat.withName("items_out");
+  const uniformsFormat = wdevice.uniformBuffer(
+    "params",
+    struct("Params", {
+      countToSum: "u32",
+      count: "u32",
+      sumStrideSrc: "u32",
+      sumStrideDst: "u32"
+    }),
+    false,
+    { visibility: GPUShaderStage.COMPUTE }
+  );
+  const bufferBindGroupFormat = wdevice.bindGroup(
+    "buffers",
+    // @ts-expect-error
+    itemsInFormat,
+    itemsOutFormat
+  );
+  const uniformBindGroupFormat = wdevice.bindGroup("uniforms", uniformsFormat);
+  const pipeline = await wdevice.compute({
+    bindGroups: [uniformBindGroupFormat, bufferBindGroupFormat],
+    workgroupSize: [WORKGROUP_SIZE_X, 1, 1],
+    storageBufferAccess: { items_in: "read_write", items_out: "read_write" },
+    shader: `
+        let i = id.x;
+        let sum_index = id.y;
+
+        var sum: ${datatype} = ${datatype}(0);
+        for (var j = 0u; j < params.countToSum; j += 1u) {
+          let src_local_idx = i * params.countToSum + j;
+          let src_idx = src_local_idx + sum_index * params.sumStrideSrc;
+          sum += select(${datatype}(0), items_in[src_idx].item, src_local_idx < params.count);
+        }
+
+        items_out[i + sum_index * params.sumStrideDst].item = sum;
+      `
+  });
+  const packBindGroupFormat = wdevice.bindGroup(
+    "bindGroup",
+    // @ts-expect-error
+    itemsInFormat,
+    itemsOutFormat
+    // packUniformsFormat
+  );
+  const packResultsPipeline = await wdevice.compute({
+    bindGroups: [bufferBindGroupFormat],
+    workgroupSize: [WORKGROUP_SIZE_X, 1, 1],
+    storageBufferAccess: { items_in: "read_write", items_out: "read_write" },
+    shader: `
+        let i = id.x;
+        items_out[i] = items_in[i * ${WORKGROUP_SIZE_X}];
+    `
+  });
+  return {
+    pipeline,
+    bufferFormat,
+    bufferSummer(params) {
+      const bufA = params.a;
+      const bufB = params.b;
+      const pingpong1 = bufferBindGroupFormat.instantiate({
+        items_in: itemsInFormat.reinterpret(bufA),
+        items_out: itemsOutFormat.reinterpret(bufB)
+      });
+      const pingpong2 = bufferBindGroupFormat.instantiate({
+        items_in: itemsInFormat.reinterpret(bufB),
+        items_out: itemsOutFormat.reinterpret(bufA)
+      });
+      return (params2) => {
+        let { pass, countPerIter, size, sumCount, sumStride } = params2;
+        sumCount ??= 1;
+        sumStride ??= 0;
+        const iters = Math.ceil(Math.log(size) / Math.log(countPerIter));
+        let counts = [];
+        let countTemp = size;
+        for (let i = 0; i < iters + 1; i++) {
+          counts.push(countTemp);
+          countTemp = Math.ceil(countTemp / countPerIter);
+        }
+        const uniformBindGroups = range(iters).map((i) => {
+          const uniforms = {
+            countToSum: countPerIter,
+            count: counts[i],
+            sumStrideSrc: i === 0 ? sumStride : Math.ceil(counts[i] / WORKGROUP_SIZE_X) * WORKGROUP_SIZE_X,
+            sumStrideDst: Math.ceil(counts[i + 1] / WORKGROUP_SIZE_X) * WORKGROUP_SIZE_X
+          };
+          const uniformBuf = uniformsFormat.quickCreate(uniforms);
+          const uniformBindGroup = uniformBindGroupFormat.instantiate({
+            params: uniformBuf
+          });
+          return uniformBindGroup;
+        });
+        for (let i = 0; i < iters; i++) {
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, uniformBindGroups[i]);
+          pass.setBindGroup(1, i % 2 ? pingpong2 : pingpong1);
+          let wgcount = Math.ceil(counts[i] / countPerIter / WORKGROUP_SIZE_X);
+          pass.dispatchWorkgroups(wgcount, sumCount);
+        }
+        pass.setPipeline(packResultsPipeline);
+        pass.setBindGroup(0, iters % 2 ? pingpong2 : pingpong1);
+        pass.dispatchWorkgroups(sumCount);
+        return {
+          dstBuffer: iters % 2 === 0 ? bufB : bufA
+        };
       };
     }
   };
 }
 export {
-  createSimpleFilterPipeline
+  parallelSum
 };
 /*! Bundled license information:
 

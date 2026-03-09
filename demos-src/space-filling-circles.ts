@@ -1,6 +1,5 @@
-import { addEdge, addVertex, createGraph, Vertex } from "../src/graph";
 import { add2, scale2, sub2, Vec2 } from "../src/math/vector";
-import { cartesianProduct, range, smartRange } from "../src/range";
+import { range, smartRange } from "../src/range";
 import { Circle, inCircle, spatialHashTable } from "../src/spatial-hash-table";
 
 const LINE_COUNT = 100;
@@ -28,7 +27,7 @@ const eyeballs = spatialHashTable<Eyeball>(
       a: sub2(e.pos, [maxRadius, maxRadius]),
       b: add2(e.pos, [maxRadius, maxRadius]),
     };
-  }
+  },
 );
 
 for (const i of smartRange(10000000)) {

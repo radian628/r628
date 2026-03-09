@@ -55,7 +55,7 @@ export function struct<
   >,
 >(
   name: Name,
-  members: Members
+  members: Members,
 ): GenerateWGSLStructFromCompactRepr<Name, Members> {
   return {
     type: "struct",
@@ -73,7 +73,7 @@ export function array<
   Member extends WGSLStructSpec | keyof typeof WGSL_TYPE_ALIGNMENTS,
 >(
   count: Count,
-  member: Member
+  member: Member,
 ): {
   type: "array";
   count: Count;
@@ -88,7 +88,7 @@ export function array<
 }
 
 export function primitive<T extends keyof typeof WGSL_TYPE_ALIGNMENTS>(
-  type: T
+  type: T,
 ) {
   return { type };
 }
@@ -151,7 +151,7 @@ export type WGSLStructValues<T> = T extends WGSLStructSpec
 // }>;
 
 function getAllStructs(
-  specs: WGSLStructSpecWithOffsets[]
+  specs: WGSLStructSpecWithOffsets[],
 ): (WGSLStructSpecStruct & {})[] {
   const ret: WGSLStructSpecStruct[] = [];
 
@@ -184,7 +184,9 @@ function makeCodeForType(type: WGSLStructSpec): string {
 function structsCode(spec: WGSLStructSpecWithOffsets[]): string {
   let out: string = "";
 
-  const allTypesToDefine = getAllStructs(spec);
+  const allTypesToDefine = new Map(
+    getAllStructs(spec).map((s) => [s.name, s]),
+  ).values();
 
   for (const t of allTypesToDefine) {
     out += `struct ${t.name} {
@@ -196,7 +198,7 @@ function structsCode(spec: WGSLStructSpecWithOffsets[]): string {
 }
 
 export function generateLayouts(
-  specs: WGSLStructSpec[]
+  specs: WGSLStructSpec[],
 ): WGSLStructSpecWithOffsets[] {
   const clone = structuredClone(specs) as WGSLStructSpecWithOffsets[];
 
@@ -224,7 +226,7 @@ export function generateLayouts(
         spec.size = WGSL_TYPE_SIZES[spec.type];
         spec.align = WGSL_TYPE_ALIGNMENTS[spec.type];
       }
-    }
+    },
   );
 
   for (const e of clone) {
@@ -235,7 +237,7 @@ export function generateLayouts(
 }
 
 function wgslDataTypeToDataViewSetter(
-  dt: (typeof WGSL_TYPE_DATATYPES)[keyof typeof WGSL_TYPE_DATATYPES]
+  dt: (typeof WGSL_TYPE_DATATYPES)[keyof typeof WGSL_TYPE_DATATYPES],
 ) {
   return {
     i32: "setInt32",
@@ -246,7 +248,7 @@ function wgslDataTypeToDataViewSetter(
 }
 
 function wgslDataTypeToDataViewGetter(
-  dt: (typeof WGSL_TYPE_DATATYPES)[keyof typeof WGSL_TYPE_DATATYPES]
+  dt: (typeof WGSL_TYPE_DATATYPES)[keyof typeof WGSL_TYPE_DATATYPES],
 ) {
   return {
     i32: "getInt32",
@@ -257,14 +259,14 @@ function wgslDataTypeToDataViewGetter(
 }
 
 export function createLayoutGenerator<S extends WGSLStructSpecWithOffsets>(
-  spec: S
+  spec: S,
 ) {
   function createSetters(
     spec: WGSLStructSpecWithOffsets,
     baseOffset: number,
     arrayNestingLevel: number,
     extraOffsets: string[],
-    accessor: string
+    accessor: string,
   ): string {
     if (spec.type === "struct") {
       return spec.members
@@ -274,8 +276,8 @@ export function createLayoutGenerator<S extends WGSLStructSpecWithOffsets>(
             baseOffset + member.offset,
             arrayNestingLevel,
             extraOffsets,
-            accessor + `.${name}`
-          )
+            accessor + `.${name}`,
+          ),
         )
         .join("\n");
     } else if (spec.type === "array") {
@@ -305,14 +307,14 @@ export function createLayoutGenerator<S extends WGSLStructSpecWithOffsets>(
 
   return new Function("dst", "src", fnbody) as (
     dst: DataView,
-    src: WGSLStructValues<S>
+    src: WGSLStructValues<S>,
   ) => void;
 }
 
 export function readWgslLayout<S extends WGSLStructSpecWithOffsets>(
   spec: S,
   view: DataView,
-  offset = 0
+  offset = 0,
 ): WGSLStructValues<S> {
   if (spec.type === "struct") {
     // @ts-expect-error
@@ -320,13 +322,13 @@ export function readWgslLayout<S extends WGSLStructSpecWithOffsets>(
       spec.members.map(([name, value]) => [
         name,
         readWgslLayout(value.type, view, offset + value.offset),
-      ])
+      ]),
     );
   } else if (spec.type === "array") {
     const elemSize = roundUp(spec.member.align, spec.member.size);
     // @ts-expect-error
     return range(spec.count).map((i) =>
-      readWgslLayout(spec.member, view, offset + i * elemSize)
+      readWgslLayout(spec.member, view, offset + i * elemSize),
     );
   } else {
     const count = WGSL_TYPE_ELEMENT_COUNTS[spec.type];

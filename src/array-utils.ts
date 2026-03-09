@@ -12,9 +12,9 @@ export function interleave<T>(arr: T[], cb: (before: T, after: T) => T): T[] {
 }
 
 export function splitBy<T>(arr: T[], amount: number): T[][] {
-  let outarr: T[][] = [[]];
+  let outarr: T[][] = [];
   for (let i = 0; i < arr.length; i++) {
-    if (i % amount === amount - 1) outarr.push([]);
+    if (i % amount === 0) outarr.push([]);
     outarr.at(-1)!.push(arr[i]);
   }
   return outarr;
@@ -64,14 +64,14 @@ export function permute<T>(arr: T[]): T[][] {
   if (arr.length === 0) return [[]];
   return permute(arr.slice(1)).flatMap((p) =>
     range(p.length + 1).map((i) =>
-      p.slice(0, i).concat([arr[0]]).concat(p.slice(i))
-    )
+      p.slice(0, i).concat([arr[0]]).concat(p.slice(i)),
+    ),
   );
 }
 
 function cartesianProductInner<Ts extends any[][]>(
   ts: Ts,
-  arr: any[]
+  arr: any[],
 ): { [K in keyof Ts]: Ts[K][number] }[] {
   // @ts-expect-error
   if (ts.length === 0) return [arr];

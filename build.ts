@@ -7,13 +7,17 @@ import { wgslPlugin } from "./src-node/esbuild-wgsl-plugin";
 import { rawQueryParamPlugin } from "./src-node/esbuild-raw-query-param";
 import copy from "esbuild-plugin-copy";
 
+const demoToBuild = process.argv[2];
+
+const buildAll = !demoToBuild;
+
 const codegenFiles = await glob("**/*.codegen.ts", {
   ignore: "node_modules/**",
 });
 await Promise.all(
   codegenFiles.map((c) => {
     Bun.spawn(["bun", "run", c]);
-  })
+  }),
 );
 
 const libFiles = [
@@ -23,57 +27,61 @@ const libFiles = [
 
 await fs.writeFile(
   "src/index.ts",
-  libFiles.map((e) => `export * from "./${path.relative("src", e)}"\n`)
+  libFiles.map((e) => `export * from "./${path.relative("src", e)}"\n`),
 );
 
-await esbuild.build({
-  entryPoints: libFiles,
-  outdir: "js-src",
-  minify: false,
-  bundle: true,
-  format: "esm",
-  plugins: [rawQueryParamPlugin, ],
-});
+if (buildAll) {
+  await esbuild.build({
+    entryPoints: libFiles,
+    outdir: "js-src",
+    minify: false,
+    bundle: true,
+    format: "esm",
+    plugins: [rawQueryParamPlugin],
+  });
 
-await esbuild.build({
-  entryPoints: ["src-node/**/*.ts"],
-  outdir: "js-src-node",
-  minify: false,
-  bundle: true,
-  platform: "node",
-  external: ["esbuild"],
-  format: "esm",
-  plugins: [rawQueryParamPlugin, copy({
-    resolveFrom:"cwd",
-    assets: {
-      from: ["./assets/*"],
-      to: ["./demos-build/assets"]
-    }
-  })],
-});
+  await esbuild.build({
+    entryPoints: ["src-node/**/*.ts"],
+    outdir: "js-src-node",
+    minify: false,
+    bundle: true,
+    platform: "node",
+    external: ["esbuild"],
+    format: "esm",
+    plugins: [
+      rawQueryParamPlugin,
+      copy({
+        resolveFrom: "cwd",
+        assets: {
+          from: ["./assets/*"],
+          to: ["./demos-build/assets"],
+        },
+      }),
+    ],
+  });
 
-const reactDemos = await esbuild.build({
-  entryPoints: ["demos-src/**/*.react-demo.*"],
-  outdir: "demos-build",
-  minify: false,
-  bundle: true,
-  format: "iife",
-  write: false,
-  loader: { ".tsx": "tsx" },
-  jsx: "automatic",
-  plugins: [rawQueryParamPlugin],
-});
+  const reactDemos = await esbuild.build({
+    entryPoints: ["demos-src/**/*.react-demo.*"],
+    outdir: "demos-build",
+    minify: false,
+    bundle: true,
+    format: "iife",
+    write: false,
+    loader: { ".tsx": "tsx" },
+    jsx: "automatic",
+    plugins: [rawQueryParamPlugin],
+  });
 
-for (let out of reactDemos.outputFiles) {
-  const dst =
-    "./demos/react/" +
-    out.path
-      .split("/")
-      .at(-1)!
-      .replace(/\.react-demo\.js$/g, ".html");
-  fs.writeFile(
-    dst,
-    `
+  for (let out of reactDemos.outputFiles) {
+    const dst =
+      "./demos/react/" +
+      out.path
+        .split("/")
+        .at(-1)!
+        .replace(/\.react-demo\.js$/g, ".html");
+    fs.writeFile(
+      dst,
+      `
 <!DOCTYPE html>
 <html>
 <head></head> 
@@ -83,12 +91,15 @@ for (let out of reactDemos.outputFiles) {
     ${new TextDecoder().decode(out.contents)}
   </script>
 </body>
-    `
-  );
+    `,
+    );
+  }
 }
 
 const nonReactDemos = await esbuild.build({
-  entryPoints: ["demos-src/**/*.demo.*"],
+  entryPoints: [
+    buildAll ? "demos-src/**/*.demo.*" : `demos-src/**/${demoToBuild}.demo.*`,
+  ],
   outdir: "demos-build",
   minify: false,
   bundle: true,

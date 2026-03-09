@@ -65,6 +65,9 @@ type WrappedBindGroupUniformBuffer<Spec extends WGSLStructSpec> = {
   name: string;
   format: Spec;
   visibility: number;
+  withName<Name2 extends string>(
+    name2: Name2,
+  ): WrappedBindGroupUniformBuffer<Spec> & { name: Name2 };
   instantiate(count: number): GPUBuffer & {
     format: {
       type: "uniform";
@@ -79,6 +82,12 @@ type WrappedBindGroupUniformBuffer<Spec extends WGSLStructSpec> = {
     access: "read" | "write" | "read_write",
   ) => string;
   quickCreate(data: WGSLStructValues<Spec>): GPUBuffer & {
+    format: {
+      type: "uniform";
+      data: Spec;
+    };
+  };
+  quickCreateMany(data: WGSLStructValues<Spec>[]): GPUBuffer & {
     format: {
       type: "uniform";
       data: Spec;
@@ -123,6 +132,7 @@ export type WrappedBindGroupVertexBuffer<
         VERTEX_FORMAT_TO_JS_TYPE[Attrs[N]["format"]],
       ];
     }>[],
+    descriptor?: Partial<GPUBufferDescriptor>,
   ): GPUBuffer & {
     format: {
       type: "vertex";
@@ -135,7 +145,7 @@ export type WrappedBindGroupVertexBuffer<
   };
   instantiate(
     count: number,
-    extraUsage?: number,
+    descriptor?: GPUBufferDescriptor,
   ): GPUBuffer & {
     format: {
       type: "vertex";
@@ -473,7 +483,7 @@ export function pipelineRenderpass<Pipeline extends WrappedPipelineGeneric>(
 }
 
 export function wrapDevice(device: GPUDevice) {
-  return {
+  const wdevice = {
     uniformBuffer<Name extends string, Spec extends WGSLStructSpec>(
       name: Name,
       spec: Spec,
@@ -487,6 +497,9 @@ export function wrapDevice(device: GPUDevice) {
       const gen = createLayoutGenerator(withLayouts);
 
       return {
+        withName<Name2 extends string>(name2: Name2) {
+          return wdevice.uniformBuffer(name2, spec, isStorage, settings);
+        },
         type: isStorage ? "storage-buffer" : ("uniform-buffer" as const),
         name,
         format: spec,
@@ -497,6 +510,14 @@ export function wrapDevice(device: GPUDevice) {
           const gpubuf = this.instantiate(1);
           const arrayBuf = new ArrayBuffer(withLayouts.size);
           gen(new DataView(arrayBuf), data);
+          device.queue.writeBuffer(gpubuf, 0, arrayBuf);
+          return gpubuf;
+        },
+        quickCreateMany(data: WGSLStructValues<Spec>[]) {
+          const gpubuf = this.instantiate(data.length);
+          const arrayBuf = new ArrayBuffer(withLayouts.size * data.length);
+          for (let i = 0; i < data.length; i++)
+            gen(new DataView(arrayBuf, i * withLayouts.size), data[i]);
           device.queue.writeBuffer(gpubuf, 0, arrayBuf);
           return gpubuf;
         },
@@ -589,18 +610,16 @@ export function wrapDevice(device: GPUDevice) {
           return buf;
         },
         // @ts-expect-error
-        instantiate(count, extraUsage?: number) {
+        instantiate(count, descriptor) {
           const buf = device.createBuffer({
-            usage:
-              GPUBufferUsage.VERTEX |
-              GPUBufferUsage.COPY_DST |
-              (extraUsage ?? 0),
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
             size: count * size,
+            ...descriptor,
           });
           return buf;
         },
-        quickCreate(data) {
-          const buf = this.instantiate(data.length);
+        quickCreate(data, descriptor) {
+          const buf = this.instantiate(data.length, descriptor);
           const cpubuf = new ArrayBuffer(size * data.length);
           const attrViews = arrayToObjEntries(params.types, (attr) => [
             attr.name,
@@ -980,6 +999,7 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u) {
 }
           `;
 
+      console.log(shaderSource);
       return this.computeRaw({
         bindGroups: params.bindGroups,
         shader: this.shader(shaderSource, ["compute"]),
@@ -1011,4 +1031,6 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u) {
       return ppln;
     },
   };
+
+  return wdevice;
 }

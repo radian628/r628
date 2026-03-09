@@ -57,7 +57,7 @@ export async function readPixels(params: {
       bytesPerRow,
       rowsPerImage,
     },
-    area
+    area,
   );
 
   device.queue.submit([enc.finish()]);
@@ -76,7 +76,7 @@ export async function readPixels(params: {
 export async function readPixelsToCpuBuffer(
   params: Parameters<typeof readPixels>[0] & {
     cpuBuffer?: ArrayBuffer;
-  }
+  },
 ) {
   const { tex } = params;
 
@@ -107,4 +107,28 @@ export async function readPixelsToCpuBuffer(
     rowsPerImage: mappedBuffer.rowsPerImage,
     size,
   };
+}
+
+export async function quickMap(
+  device: GPUDevice,
+  buf: GPUBuffer,
+  size?: number,
+  offset?: number,
+) {
+  const staging = device.createBuffer({
+    size: size ?? buf.size,
+    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+  });
+
+  const enc = device.createCommandEncoder();
+  enc.copyBufferToBuffer(buf, offset ?? 0, staging, 0, size ?? buf.size);
+  device.queue.submit([enc.finish()]);
+
+  await device.queue.onSubmittedWorkDone();
+
+  await staging.mapAsync(GPUMapMode.READ, offset ?? 0, size ?? buf.size);
+
+  const range = staging.getMappedRange(0, size ?? buf.size).slice();
+  staging.unmap();
+  return range;
 }

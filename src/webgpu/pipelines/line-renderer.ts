@@ -281,21 +281,14 @@ export async function lineRenderer(
     perFrameBindGroup,
     linePipeline,
     pointPipeline,
-    createEmptyLines(
-      count: number,
-      depthLoadOp: "clear" | "load",
-      extraUsage: number,
-    ) {
+    createEmptyLines(count: number, depthLoadOp: "clear" | "load") {
       const perFrameUniforms = uniforms.instantiate(1);
 
       const perFrame = perFrameBindGroup.instantiate({
         params: perFrameUniforms,
       });
 
-      const vertexBuf = pointInstanceBufferFormat.instantiate(
-        count,
-        extraUsage,
-      );
+      const vertexBuf = pointInstanceBufferFormat.instantiate(count);
 
       const pass = device.createRenderBundleEncoder({
         colorFormats: [outputFormat],

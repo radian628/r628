@@ -20,9 +20,11 @@ import {
   mulMat4,
   mulMat4ByVec4,
   mulVec4ByMat4,
+  parallelSum,
   perspectiveWebgpu,
   pickrand,
   pipelineRenderpass,
+  quickMap,
   range,
   rescale,
   rotate,
@@ -68,11 +70,15 @@ function inv4(m: Mat4): Mat4 {
     await fetch("../assets/graph_with_positions.json")
   ).json();
 
-  console.log(graphData);
+  graphData.nodes = graphData.nodes.slice(0, 2048);
+
+  // console.log(graphData);
 
   const graph: Graph<Node, Vec4> = createGraph();
 
   let nodeMap = new Map<string, Vertex<Node, Vec4>>();
+
+  let i = 0;
 
   for (const n of graphData.nodes) {
     const hash = stringHash(n.canon ?? "");
@@ -86,11 +92,13 @@ function inv4(m: Mat4): Mat4 {
       addVertex(graph, {
         // position: scale3(mul3([n.x, n.y, Math.log(n.z)], [0.001, 0.001, 70]), 0.2) as Vec3,
         position: scale3([n.x, n.y, n.z], 0.1),
-        color: [r, g, b, 255],
+        // position: scale3([n.x, n.y, n.z], 0.01),
+        color: [255, (i / graphData.nodes.length) * 255, 255, 255],
         initialized: false,
         label: n.Id,
       }),
     );
+    i++;
   }
 
   const vertsArray = [...graph.vertices];
@@ -102,11 +110,11 @@ function inv4(m: Mat4): Mat4 {
     const dst = nodeMap.get(e.target);
 
     if (!src) {
-      console.warn(`Endpoint '${e.source}' not found.`);
+      // console.warn(`Endpoint '${e.source}' not found.`);
       continue;
     }
     if (!dst) {
-      console.warn(`Endpoint '${e.target}' not found.`);
+      // console.warn(`Endpoint '${e.target}' not found.`);
       continue;
     }
 
@@ -232,11 +240,17 @@ function inv4(m: Mat4): Mat4 {
   window.addEventListener("resize", handleResize);
 
   const vertices = lines.pointInstanceBufferFormat.quickCreate(
-    [...graph.vertices].map((v) => ({
+    [...graph.vertices].map((v, i) => ({
       position: v.data.position,
       color: v.data.color,
-      size: 0.5,
+      size: i === 0 ? 25 : 0.5,
     })),
+    {
+      usage:
+        GPUBufferUsage.VERTEX |
+        GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.STORAGE,
+    },
   );
 
   const edgeThickness = 0.2;
@@ -529,7 +543,309 @@ user-select: none;
     }),
   );
 
-  let lineMode = "fancy" as "fast" | "fancy";
+  const bodiesFormat = wdevice.uniformBuffer(
+    "bodies",
+    struct("Body", {
+      position: "vec3f",
+      velocity: "vec3f",
+      mass: "f32",
+      force: "f32",
+    }),
+    true,
+    {
+      visibility: GPUShaderStage.COMPUTE,
+      usage:
+        GPUBufferUsage.COPY_SRC |
+        GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.STORAGE,
+    },
+  );
+  const accelsFormat = wdevice.uniformBuffer(
+    "accels",
+    struct("Accels", {
+      accel: "vec3f",
+    }),
+    true,
+    {
+      visibility: GPUShaderStage.COMPUTE,
+      usage:
+        GPUBufferUsage.COPY_SRC |
+        GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.STORAGE,
+    },
+  );
+  const accelCalcUniformsFormat = wdevice.uniformBuffer(
+    "params",
+    struct("Params", {
+      body_offset: "u32",
+      target_offset: "u32",
+      accel_stride: "u32",
+    }),
+    false,
+    {
+      visibility: GPUShaderStage.COMPUTE,
+    },
+  );
+
+  const accelCalcBindGroupFormat = wdevice.bindGroup(
+    "nbody",
+    bodiesFormat,
+    accelsFormat,
+    accelCalcUniformsFormat,
+  );
+
+  const applyPhysicsBindGroupFormat = wdevice.bindGroup(
+    "nbody",
+    bodiesFormat,
+    accelsFormat,
+  );
+
+  const sumVec3s = await parallelSum(device, { datatype: "vec3f" });
+
+  const accelCalcPipeline = await wdevice.compute({
+    bindGroups: [accelCalcBindGroupFormat] as const,
+    workgroupSize: [16, 16, 1],
+    storageBufferAccess: { bodies: "read_write", accels: "read_write" },
+    shader: `
+  let body_count = arrayLength(&bodies);
+
+  let body_index = id.x + params.body_offset;
+  let target_index = id.y + params.target_offset; 
+
+  if (body_index == target_index) { return; }
+  if (body_index >= body_count) { return; }
+  if (target_index >= body_count) { return; }
+
+  let body = bodies[body_index];
+  let force_target = bodies[target_index];
+
+  let offset = body.position - force_target.position;
+  let dist = max(2.0, length(offset));
+  let norm_offset = normalize(offset);
+
+  let force = norm_offset / (dist * dist) * body.force;
+
+  let accel = force / force_target.mass; 
+
+  accels[id.y * params.accel_stride + id.x].accel = force;
+`,
+  });
+
+  const applyPhysicsPipeline = await wdevice.compute({
+    bindGroups: [applyPhysicsBindGroupFormat] as const,
+    workgroupSize: [32, 1, 1],
+    storageBufferAccess: { bodies: "read_write", accels: "read_write" },
+    shader: `
+
+  if (id.x >= arrayLength(&bodies)) { return; }
+  
+  let accel = accels[id.x].accel;
+  
+  bodies[id.x].velocity += accel * 1.0 * 0.2;
+  bodies[id.x].position += bodies[id.x].velocity * 0.2;
+  // bodies[id.x].velocity *= 0.9;
+    
+    `,
+  });
+
+  const genericBufferFormat = await wdevice.uniformBuffer(
+    "generic",
+    struct("Generic", { data: "u32" }),
+    true,
+    {
+      visibility: GPUShaderStage.COMPUTE,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+    },
+  );
+
+  const transferBodyInfoToLinesBindGroupFormat = wdevice.bindGroup(
+    "nbody",
+    bodiesFormat,
+    genericBufferFormat,
+  );
+
+  const transferBodyInfoToLines = await wdevice.compute({
+    bindGroups: [transferBodyInfoToLinesBindGroupFormat],
+    workgroupSize: [32, 1, 1],
+    storageBufferAccess: {
+      bodies: "read_write",
+      generic: "read_write",
+    },
+    shader: `
+      let i = id.x;
+      if (i > arrayLength(&bodies)) { return; }
+      generic[i * 5].data = bitcast<u32>(bodies[i].position.x);
+      generic[i * 5 + 1].data = bitcast<u32>(bodies[i].position.y);
+      generic[i * 5 + 2].data = bitcast<u32>(bodies[i].position.z);
+    `,
+  });
+
+  let arrs = [];
+
+  // for (let i = 0; i < 6; i++) {
+  const bodies = bodiesFormat.quickCreateMany(
+    [...graph.vertices].map((vert, i, a) => {
+      return i === 0
+        ? {
+            mass: 30000,
+            force: 60000,
+            velocity: [0, 0, 0],
+            position: [0, 0, -200],
+          }
+        : (() => {
+            const angle = 1 * ((Math.PI * 2) / a.length) * i + 4.2;
+
+            return {
+              mass: 1,
+              force: 2,
+              velocity: [
+                15 * Math.cos(angle) + Math.random() * 1 - 0.5,
+                15 * Math.sin(angle) + Math.random() * 1 - 0.5,
+                Math.random(),
+              ],
+              position: [
+                (Math.random() * 20 + 90) * Math.cos(angle + Math.PI / 2) +
+                  Math.random() -
+                  0.5,
+                (Math.random() * 20 + 90) * Math.sin(angle + Math.PI / 2) +
+                  Math.random() -
+                  0.5,
+                Math.random() - 200,
+              ],
+            };
+          })();
+    }),
+  );
+  // console.log("vert count", graph.vertices.size);
+
+  const accelUpdateBatchSize = 256;
+
+  const accelUpdateBatchCount = Math.ceil(
+    graph.vertices.size / accelUpdateBatchSize,
+  );
+
+  console.log(accelUpdateBatchSize, accelUpdateBatchCount);
+
+  const accel_stride = Math.ceil(graph.vertices.size / 32) * 32;
+
+  const tempAccels = accelsFormat.quickCreateMany(
+    range(accel_stride * accelUpdateBatchSize).map(() => ({
+      accel: [0, 0, 0],
+    })),
+  );
+
+  const tempAccels2 = accelsFormat.quickCreateMany(
+    range(accel_stride * accelUpdateBatchSize).map(() => ({
+      accel: [0, 0, 0],
+    })),
+  );
+
+  const accelsFinal = accelsFormat.instantiate(graph.vertices.size);
+
+  const accelCalcBindGroups = range(accelUpdateBatchCount).map((i) => {
+    const accelsCalcUniforms = accelCalcUniformsFormat.quickCreate({
+      body_offset: 0,
+      target_offset: i * accelUpdateBatchSize,
+      accel_stride,
+    });
+    return accelCalcBindGroupFormat.instantiate({
+      bodies,
+      accels: tempAccels,
+      params: accelsCalcUniforms,
+    });
+  });
+
+  const applyPhysicsBindGroup = applyPhysicsBindGroupFormat.instantiate({
+    bodies,
+    accels: accelsFinal,
+  });
+
+  function calculateAcceleration(offset: number, count: number) {
+    const workgroups = Math.ceil(count / 32);
+
+    const enc = device.createCommandEncoder();
+    enc.clearBuffer(tempAccels);
+    enc.clearBuffer(tempAccels2);
+    let pass = enc.beginComputePass();
+    pass.setPipeline(accelCalcPipeline);
+    pass.setBindGroup(
+      0,
+      accelCalcBindGroups[Math.round(offset / accelUpdateBatchSize)],
+    );
+    pass.dispatchWorkgroups(
+      Math.ceil(graph.vertices.size / 16),
+      Math.ceil(count / 16),
+      1,
+    );
+
+    // TODO: let buffersummer specify an explicit dst buffer
+    const res = sumVec3s.bufferSummer({
+      a: sumVec3s.bufferFormat.reinterpret(tempAccels),
+      b: sumVec3s.bufferFormat.reinterpret(tempAccels2),
+    })({
+      pass,
+      countPerIter: 16,
+      size: graph.vertices.size,
+      sumCount: count,
+      sumStride: accel_stride,
+    });
+    pass.end();
+
+    enc.copyBufferToBuffer(
+      res.dstBuffer,
+      0,
+      accelsFinal,
+      offset * 16,
+      count * 16,
+    );
+
+    device.queue.submit([enc.finish()]);
+  }
+
+  function moveBodies() {
+    const workgroups = Math.ceil(graph.vertices.size / 32);
+
+    const enc = device.createCommandEncoder();
+    let pass = enc.beginComputePass();
+    pass.setPipeline(applyPhysicsPipeline);
+    pass.setBindGroup(0, applyPhysicsBindGroup);
+    pass.dispatchWorkgroups(workgroups);
+
+    pass.setPipeline(transferBodyInfoToLines);
+    const transferBodyInfoToLinesBindGroup =
+      transferBodyInfoToLinesBindGroupFormat.instantiate({
+        bodies,
+        generic: genericBufferFormat.reinterpret(vertices),
+      });
+    pass.setBindGroup(0, transferBodyInfoToLinesBindGroup);
+    pass.dispatchWorkgroups(workgroups);
+
+    pass.end();
+    device.queue.submit([enc.finish()]);
+  }
+
+  // console.log(new Float32Array(await quickMap(device, bodies)));
+  // arrs.push(new Float32Array(await quickMap(device, res.dstBuffer)));
+  // }
+
+  // for (let i = 0; i < arrs[0].length; i++) {
+  //   let v1 = arrs[0][i];
+
+  //   for (let j = 1; j < arrs.length; j++) {
+  //     const vx = arrs[j][i];
+  //     if (v1 !== vx) {
+  //       console.log(`Index ${i}, trial ${j} mismatch! (${v1} != ${vx})`);
+  //     }
+  //   }
+  // }
+
+  // console.log(arrs);
+
+  // console.log("DONE");
+
+  let lineMode = "none" as "fast" | "fancy" | "none";
+
+  let amortizedPhysicsStepIndex = Math.floor(accelUpdateBatchCount / 2);
 
   async function loop(t) {
     const start = performance.now();
@@ -537,6 +853,26 @@ user-select: none;
 
     let dt = (t - lastT) / 1000;
     lastT = t;
+
+    for (let i = 0; i < 1; i++) {
+      const calcAccelOffset =
+        (amortizedPhysicsStepIndex % accelUpdateBatchCount) *
+        accelUpdateBatchSize;
+
+      calculateAcceleration(
+        calcAccelOffset,
+        Math.min(accelUpdateBatchSize, graph.vertices.size - calcAccelOffset),
+      );
+
+      if (
+        amortizedPhysicsStepIndex % accelUpdateBatchCount ===
+        accelUpdateBatchCount - 1
+      ) {
+        moveBodies();
+      }
+
+      amortizedPhysicsStepIndex++;
+    }
 
     viewerPos = add3(viewerPos, scale3(viewerVel, dt));
 

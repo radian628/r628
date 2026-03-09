@@ -194,7 +194,22 @@ async function readPixelsToCpuBuffer(params) {
     size
   };
 }
+async function quickMap(device, buf, size, offset) {
+  const staging = device.createBuffer({
+    size: size ?? buf.size,
+    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+  });
+  const enc = device.createCommandEncoder();
+  enc.copyBufferToBuffer(buf, offset ?? 0, staging, 0, size ?? buf.size);
+  device.queue.submit([enc.finish()]);
+  await device.queue.onSubmittedWorkDone();
+  await staging.mapAsync(GPUMapMode.READ, offset ?? 0, size ?? buf.size);
+  const range = staging.getMappedRange(0, size ?? buf.size).slice();
+  staging.unmap();
+  return range;
+}
 export {
+  quickMap,
   readPixels,
   readPixelsSizeReq,
   readPixelsToCpuBuffer
