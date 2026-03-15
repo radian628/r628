@@ -714,6 +714,8 @@ import { keyboardInput } from "../../src/ui/keyboard-input";
     octreeMetadataFormat,
     octreeCountersNonatomicFormat,
     nextfreesNonatomicFormat,
+    computeIndirectBufferFormat,
+    activeNodesInfoFormat,
   );
 
   const initRootNodePipeline = await wdevice.compute({
@@ -735,6 +737,10 @@ import { keyboardInput } from "../../src/ui/keyboard-input";
     nextfrees.node_metadata = 1u;
     nextfrees.counters = 1u;
     nextfrees.active_nodes_index = 0u;
+
+    active_nodes_info.count = 1u;
+
+    compute_indirect.workgroups = vec3u(1, 1, 1);
     `,
   });
 
@@ -986,117 +992,279 @@ import { keyboardInput } from "../../src/ui/keyboard-input";
     bodyCount: number;
     octreeCapacity: number;
     octreeDepth: number;
-  }) {}
+  }) {
+    const octreeNodeBuffer = octreeNodeFormat.instantiate(
+      params.octreeCapacity,
+    );
+    const octreeMetadataBuffer = octreeMetadataFormat.instantiate(
+      params.octreeCapacity,
+    );
+    const octreeCountersBuffer = octreeCountersFormat.instantiate(
+      params.octreeCapacity,
+    );
+    const bodiesOrderBuffer1 = bodyOrderFormat.instantiate(params.bodyCount);
+    const bodiesOrderBuffer2 = bodyOrderFormat.instantiate(params.bodyCount);
+    const nextfreesBuffer = nextfreesFormat.instantiate(1);
+    const nodeBodyAssignmentsBuffer = bodyNodeAssignmentsFormat.instantiate(
+      params.bodyCount,
+    );
+    const bodyNodeChildSubOffsetsBuffer =
+      bodyNodeChildSubOffsetsFormat.instantiate(params.bodyCount);
+    const activeNodesBuffer1 = bodyNodeAssignmentsFormat.instantiate(
+      params.octreeCapacity,
+    );
+    const activeNodesBuffer2 = bodyNodeAssignmentsFormat.instantiate(
+      params.octreeCapacity,
+    );
+    const activeNodesInfoBuffer = activeNodesInfoFormat.instantiate(1);
+    const computeIndirectBuffer = computeIndirectBufferFormat.instantiate(1);
+
+    const assignBodiesBindGroups = range(2).map((i) =>
+      assignBodiesBindGroupFormat.instantiate({
+        body_node_assignments: nodeBodyAssignmentsBuffer,
+        body_node_child_sub_offsets: bodyNodeChildSubOffsetsBuffer,
+        octree_counters: octreeCountersBuffer,
+        octree_nodes: octreeNodeBuffer,
+        body_order: [bodiesOrderBuffer1, bodiesOrderBuffer1][i],
+        bodies: params.bodies,
+        octree_metadata: octreeMetadataBuffer,
+      }),
+    );
+
+    const createNewNodesBindGroup = range(2).map((i) =>
+      createNewNodesBindGroupFormat.instantiate({
+        active_nodes_in: [activeNodesBuffer1, activeNodesBuffer2][i],
+        active_nodes_out: [activeNodesBuffer2, activeNodesBuffer1][i],
+        active_nodes_info: activeNodesInfoBuffer,
+        nextfrees: nextfreesBuffer,
+        octree_nodes: octreeNodeBuffer,
+        octree_metadata: octreeMetadataBuffer,
+        octree_counters:
+          octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer),
+      }),
+    );
+
+    const reorderBodiesBindGroups = range(2).map((i) =>
+      reorderBodiesBindGroupFormat.instantiate({
+        body_order_in: [bodiesOrderBuffer1, bodiesOrderBuffer2][i],
+        body_order_out: [bodiesOrderBuffer2, bodiesOrderBuffer1][i],
+        body_node_assignments: nodeBodyAssignmentsBuffer,
+        body_node_child_sub_offsets: bodyNodeChildSubOffsetsBuffer,
+        octree_nodes: octreeNodeBuffer,
+        bodies: params.bodies,
+      }),
+    );
+
+    const setupNextIterationBindGroup =
+      setupNextIterationBindGroupFormat.instantiate({
+        compute_indirect: computeIndirectBuffer,
+        nextfrees: nextfreesBuffer,
+        active_nodes_info: activeNodesInfoBuffer,
+      });
+
+    const aggPrefixSum = setupAggregatedBodyPrefixSum({
+      bodies: bodiesBuffer,
+      count: bodiesData.length,
+      bodyOrder: bodiesOrderBuffer1,
+    });
+
+    const minMaxReduce = setupMinMaxReduction({
+      bodies: bodiesBuffer,
+      count: bodiesData.length,
+    });
+
+    const initRootNodeBindGroup = initRootNodeBindGroupFormat.instantiate({
+      bodies: params.bodies,
+      octree_metadata: octreeMetadataBuffer,
+      octree_nodes: octreeNodeBuffer,
+      nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
+      vecs: minMaxReduce.minmax,
+      octree_counters:
+        octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer),
+      compute_indirect: computeIndirectBuffer,
+      active_nodes_info: activeNodesInfoBuffer,
+    });
+
+    const initPerBodyStateBindGroup =
+      initPerBodyStateBindGroupFormat.instantiate({
+        body_order: bodiesOrderBuffer1,
+        body_node_assignments: nodeBodyAssignmentsBuffer,
+      });
+
+    const aggregateMassInOctreeBindGroup =
+      aggregateMassInOctreeBindGroupFormat.instantiate({
+        octree_metadata: octreeMetadataBuffer,
+        octree_nodes: octreeNodeBuffer,
+        agg_bodies: aggPrefixSum.aggBodies,
+        nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
+      });
+
+    return {
+      octreeNodeBuffer,
+      octreeMetadataBuffer,
+      octreeCountersBuffer,
+      bodiesOrderBuffer1,
+      bodiesOrderBuffer2,
+      nextfreesBuffer,
+      nodeBodyAssignmentsBuffer,
+      bodyNodeChildSubOffsetsBuffer,
+      activeNodesBuffer1,
+      activeNodesBuffer2,
+      activeNodesInfoBuffer,
+      run: (pass: GPUComputePassEncoder) => {
+        minMaxReduce.run(pass);
+
+        pass.setPipeline(initRootNodePipeline);
+        pass.setBindGroup(0, initRootNodeBindGroup);
+        pass.dispatchWorkgroups(1, 1, 1);
+
+        pass.setPipeline(initPerBodyStatePipeline);
+        pass.setBindGroup(0, initPerBodyStateBindGroup);
+        pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+
+        for (let i = 0; i < params.octreeDepth; i++) {
+          pass.setPipeline(assignBodiesPipeline);
+          pass.setBindGroup(0, assignBodiesBindGroups[i % 2]);
+          pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+
+          pass.setPipeline(createNewNodesPipeline);
+          pass.setBindGroup(0, createNewNodesBindGroup[i % 2]);
+          pass.dispatchWorkgroupsIndirect(computeIndirectBuffer, 0);
+
+          pass.setPipeline(reorderBodiesPipeline);
+          pass.setBindGroup(0, reorderBodiesBindGroups[i % 2]);
+          pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+
+          pass.setPipeline(setupNextIterationPipeline);
+          pass.setBindGroup(0, setupNextIterationBindGroup);
+          pass.dispatchWorkgroups(1, 1, 1);
+        }
+
+        aggPrefixSum.run(pass);
+
+        pass.setPipeline(aggregateMassInOctreePipeline);
+        pass.setBindGroup(0, aggregateMassInOctreeBindGroup);
+        pass.dispatchWorkgroups(1, 1, 1);
+      },
+    };
+  }
 
   const bodiesBuffer = bodiesFormat.quickCreateMany(bodiesData);
-  const octreeNodeBuffer = octreeNodeFormat.quickCreateMany(octreeNodeData);
-  const octreeMetadataBuffer =
-    octreeMetadataFormat.quickCreateMany(octreeMetadata);
-  const octreeCountersBuffer =
-    octreeCountersFormat.quickCreateMany(octreeCounters);
-  const bodiesOrderBuffer1 = bodyOrderFormat.quickCreateMany(bodiesOrder);
-  const bodiesOrderBuffer2 = bodyOrderFormat.quickCreateMany(bodiesOrder);
-  const nextfreesBuffer = nextfreesFormat.quickCreate(nextfrees);
-  const nodeBodyAssignmentsBuffer =
-    bodyNodeAssignmentsFormat.quickCreateMany(nodeBodyAssignments);
-  const bodyNodeChildSubOffsetsBuffer =
-    bodyNodeChildSubOffsetsFormat.quickCreateMany(bodyNodeChildSubOffsets);
-  const activeNodesBuffer1 = bodyNodeAssignmentsFormat.instantiate(256);
-  const activeNodesBuffer2 = bodyNodeAssignmentsFormat.instantiate(256);
-  const activeNodesInfoBuffer =
-    activeNodesInfoFormat.quickCreate(activeNodesInfo);
-  const computeIndirectBuffer = computeIndirectBufferFormat.quickCreate({
-    workgroups: [1, 1, 1],
-  });
+  // const octreeNodeBuffer = octreeNodeFormat.quickCreateMany(octreeNodeData);
+  // const octreeMetadataBuffer =
+  //   octreeMetadataFormat.quickCreateMany(octreeMetadata);
+  // const octreeCountersBuffer =
+  //   octreeCountersFormat.quickCreateMany(octreeCounters);
+  // const bodiesOrderBuffer1 = bodyOrderFormat.quickCreateMany(bodiesOrder);
+  // const bodiesOrderBuffer2 = bodyOrderFormat.quickCreateMany(bodiesOrder);
+  // const nextfreesBuffer = nextfreesFormat.quickCreate(nextfrees);
+  // const nodeBodyAssignmentsBuffer =
+  //   bodyNodeAssignmentsFormat.quickCreateMany(nodeBodyAssignments);
+  // const bodyNodeChildSubOffsetsBuffer =
+  //   bodyNodeChildSubOffsetsFormat.quickCreateMany(bodyNodeChildSubOffsets);
+  // const activeNodesBuffer1 = bodyNodeAssignmentsFormat.instantiate(256);
+  // const activeNodesBuffer2 = bodyNodeAssignmentsFormat.instantiate(256);
+  // const activeNodesInfoBuffer =
+  //   activeNodesInfoFormat.quickCreate(activeNodesInfo);
+  // const computeIndirectBuffer = computeIndirectBufferFormat.quickCreate({
+  //   workgroups: [1, 1, 1],
+  // });
 
   const barnesHutUniforms = barnesHutUniformsFormat.quickCreate({
     min_width_over_distance_ratio: 0.1,
     timestep: 0.002,
   });
 
-  const assignBodiesBindGroups = range(2).map((i) =>
-    assignBodiesBindGroupFormat.instantiate({
-      body_node_assignments: nodeBodyAssignmentsBuffer,
-      body_node_child_sub_offsets: bodyNodeChildSubOffsetsBuffer,
-      octree_counters: octreeCountersBuffer,
-      octree_nodes: octreeNodeBuffer,
-      body_order: [bodiesOrderBuffer1, bodiesOrderBuffer1][i],
-      bodies: bodiesBuffer,
-      octree_metadata: octreeMetadataBuffer,
-    }),
-  );
+  // const assignBodiesBindGroups = range(2).map((i) =>
+  //   assignBodiesBindGroupFormat.instantiate({
+  //     body_node_assignments: nodeBodyAssignmentsBuffer,
+  //     body_node_child_sub_offsets: bodyNodeChildSubOffsetsBuffer,
+  //     octree_counters: octreeCountersBuffer,
+  //     octree_nodes: octreeNodeBuffer,
+  //     body_order: [bodiesOrderBuffer1, bodiesOrderBuffer1][i],
+  //     bodies: bodiesBuffer,
+  //     octree_metadata: octreeMetadataBuffer,
+  //   }),
+  // );
 
-  const createNewNodesBindGroup = range(2).map((i) =>
-    createNewNodesBindGroupFormat.instantiate({
-      active_nodes_in: [activeNodesBuffer1, activeNodesBuffer2][i],
-      active_nodes_out: [activeNodesBuffer2, activeNodesBuffer1][i],
-      active_nodes_info: activeNodesInfoBuffer,
-      nextfrees: nextfreesBuffer,
-      octree_nodes: octreeNodeBuffer,
-      octree_metadata: octreeMetadataBuffer,
-      octree_counters:
-        octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer),
-    }),
-  );
+  // const createNewNodesBindGroup = range(2).map((i) =>
+  //   createNewNodesBindGroupFormat.instantiate({
+  //     active_nodes_in: [activeNodesBuffer1, activeNodesBuffer2][i],
+  //     active_nodes_out: [activeNodesBuffer2, activeNodesBuffer1][i],
+  //     active_nodes_info: activeNodesInfoBuffer,
+  //     nextfrees: nextfreesBuffer,
+  //     octree_nodes: octreeNodeBuffer,
+  //     octree_metadata: octreeMetadataBuffer,
+  //     octree_counters:
+  //       octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer),
+  //   }),
+  // );
 
-  const reorderBodiesBindGroups = range(2).map((i) =>
-    reorderBodiesBindGroupFormat.instantiate({
-      body_order_in: [bodiesOrderBuffer1, bodiesOrderBuffer2][i],
-      body_order_out: [bodiesOrderBuffer2, bodiesOrderBuffer1][i],
-      body_node_assignments: nodeBodyAssignmentsBuffer,
-      body_node_child_sub_offsets: bodyNodeChildSubOffsetsBuffer,
-      octree_nodes: octreeNodeBuffer,
-      bodies: bodiesBuffer,
-    }),
-  );
+  // const reorderBodiesBindGroups = range(2).map((i) =>
+  //   reorderBodiesBindGroupFormat.instantiate({
+  //     body_order_in: [bodiesOrderBuffer1, bodiesOrderBuffer2][i],
+  //     body_order_out: [bodiesOrderBuffer2, bodiesOrderBuffer1][i],
+  //     body_node_assignments: nodeBodyAssignmentsBuffer,
+  //     body_node_child_sub_offsets: bodyNodeChildSubOffsetsBuffer,
+  //     octree_nodes: octreeNodeBuffer,
+  //     bodies: bodiesBuffer,
+  //   }),
+  // );
 
-  const setupNextIterationBindGroup =
-    setupNextIterationBindGroupFormat.instantiate({
-      compute_indirect: computeIndirectBuffer,
-      nextfrees: nextfreesBuffer,
-      active_nodes_info: activeNodesInfoBuffer,
-    });
+  // const setupNextIterationBindGroup =
+  //   setupNextIterationBindGroupFormat.instantiate({
+  //     compute_indirect: computeIndirectBuffer,
+  //     nextfrees: nextfreesBuffer,
+  //     active_nodes_info: activeNodesInfoBuffer,
+  //   });
 
-  const aggPrefixSum = setupAggregatedBodyPrefixSum({
+  // const aggPrefixSum = setupAggregatedBodyPrefixSum({
+  //   bodies: bodiesBuffer,
+  //   count: bodiesData.length,
+  //   bodyOrder: bodiesOrderBuffer1,
+  // });
+
+  // const minMaxReduce = setupMinMaxReduction({
+  //   bodies: bodiesBuffer,
+  //   count: bodiesData.length,
+  // });
+
+  // const aggregateMassInOctreeBindGroup =
+  //   aggregateMassInOctreeBindGroupFormat.instantiate({
+  //     octree_metadata: octreeMetadataBuffer,
+  //     octree_nodes: octreeNodeBuffer,
+  //     agg_bodies: aggPrefixSum.aggBodies,
+  //     nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
+  //   });
+
+  // const initRootNodeBindGroup = initRootNodeBindGroupFormat.instantiate({
+  //   bodies: bodiesBuffer,
+  //   octree_metadata: octreeMetadataBuffer,
+  //   octree_nodes: octreeNodeBuffer,
+  //   nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
+  //   vecs: minMaxReduce.minmax,
+  //   octree_counters:
+  //     octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer),
+  // });
+
+  // const initPerBodyStateBindGroup = initPerBodyStateBindGroupFormat.instantiate(
+  //   {
+  //     body_order: bodiesOrderBuffer1,
+  //     body_node_assignments: nodeBodyAssignmentsBuffer,
+  //   },
+  // );
+
+  const octree = setupOctree({
     bodies: bodiesBuffer,
-    count: bodiesData.length,
-    bodyOrder: bodiesOrderBuffer1,
+    bodyCount: bodiesData.length,
+    octreeCapacity: 256,
+    octreeDepth: 20,
   });
-
-  const minMaxReduce = setupMinMaxReduction({
-    bodies: bodiesBuffer,
-    count: bodiesData.length,
-  });
-
-  const aggregateMassInOctreeBindGroup =
-    aggregateMassInOctreeBindGroupFormat.instantiate({
-      octree_metadata: octreeMetadataBuffer,
-      octree_nodes: octreeNodeBuffer,
-      agg_bodies: aggPrefixSum.aggBodies,
-      nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
-    });
-
-  const initRootNodeBindGroup = initRootNodeBindGroupFormat.instantiate({
-    bodies: bodiesBuffer,
-    octree_metadata: octreeMetadataBuffer,
-    octree_nodes: octreeNodeBuffer,
-    nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
-    vecs: minMaxReduce.minmax,
-    octree_counters:
-      octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer),
-  });
-
-  const initPerBodyStateBindGroup = initPerBodyStateBindGroupFormat.instantiate(
-    {
-      body_order: bodiesOrderBuffer1,
-      body_node_assignments: nodeBodyAssignmentsBuffer,
-    },
-  );
 
   const applyBarnesHutBindGroup = applyBarnesHutBindGroupFormat.instantiate({
     bodies: bodiesBuffer,
-    octree_metadata: octreeMetadataBuffer,
-    octree_nodes: octreeNodeBuffer,
+    octree_metadata: octree.octreeMetadataBuffer,
+    octree_nodes: octree.octreeNodeBuffer,
     params: barnesHutUniforms,
   });
 
@@ -1105,39 +1273,41 @@ import { keyboardInput } from "../../src/ui/keyboard-input";
   const enc = device.createCommandEncoder();
   const pass = enc.beginComputePass();
 
-  minMaxReduce.run(pass);
+  // minMaxReduce.run(pass);
 
-  pass.setPipeline(initRootNodePipeline);
-  pass.setBindGroup(0, initRootNodeBindGroup);
-  pass.dispatchWorkgroups(1, 1, 1);
+  // pass.setPipeline(initRootNodePipeline);
+  // pass.setBindGroup(0, initRootNodeBindGroup);
+  // pass.dispatchWorkgroups(1, 1, 1);
 
-  pass.setPipeline(initPerBodyStatePipeline);
-  pass.setBindGroup(0, initPerBodyStateBindGroup);
-  pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+  // pass.setPipeline(initPerBodyStatePipeline);
+  // pass.setBindGroup(0, initPerBodyStateBindGroup);
+  // pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
 
-  for (let i = 0; i < 10; i++) {
-    pass.setPipeline(assignBodiesPipeline);
-    pass.setBindGroup(0, assignBodiesBindGroups[i % 2]);
-    pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+  // for (let i = 0; i < 10; i++) {
+  //   pass.setPipeline(assignBodiesPipeline);
+  //   pass.setBindGroup(0, assignBodiesBindGroups[i % 2]);
+  //   pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
 
-    pass.setPipeline(createNewNodesPipeline);
-    pass.setBindGroup(0, createNewNodesBindGroup[i % 2]);
-    pass.dispatchWorkgroupsIndirect(computeIndirectBuffer, 0);
+  //   pass.setPipeline(createNewNodesPipeline);
+  //   pass.setBindGroup(0, createNewNodesBindGroup[i % 2]);
+  //   pass.dispatchWorkgroupsIndirect(computeIndirectBuffer, 0);
 
-    pass.setPipeline(reorderBodiesPipeline);
-    pass.setBindGroup(0, reorderBodiesBindGroups[i % 2]);
-    pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+  //   pass.setPipeline(reorderBodiesPipeline);
+  //   pass.setBindGroup(0, reorderBodiesBindGroups[i % 2]);
+  //   pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
 
-    pass.setPipeline(setupNextIterationPipeline);
-    pass.setBindGroup(0, setupNextIterationBindGroup);
-    pass.dispatchWorkgroups(1, 1, 1);
-  }
+  //   pass.setPipeline(setupNextIterationPipeline);
+  //   pass.setBindGroup(0, setupNextIterationBindGroup);
+  //   pass.dispatchWorkgroups(1, 1, 1);
+  // }
 
-  aggPrefixSum.run(pass);
+  // aggPrefixSum.run(pass);
 
-  pass.setPipeline(aggregateMassInOctreePipeline);
-  pass.setBindGroup(0, aggregateMassInOctreeBindGroup);
-  pass.dispatchWorkgroups(1, 1, 1);
+  // pass.setPipeline(aggregateMassInOctreePipeline);
+  // pass.setBindGroup(0, aggregateMassInOctreeBindGroup);
+  // pass.dispatchWorkgroups(1, 1, 1);
+
+  octree.run(pass);
 
   pass.setPipeline(applyBarnesHutPipeline);
   pass.setBindGroup(0, applyBarnesHutBindGroup);
@@ -1151,22 +1321,26 @@ import { keyboardInput } from "../../src/ui/keyboard-input";
     await quickMapWithFormat(
       bodyNodeAssignmentsFormat.format,
       device,
-      nodeBodyAssignmentsBuffer,
+      octree.nodeBodyAssignmentsBuffer,
     ),
   );
 
-  // console.log(
-  //   "octree nodes",
-  //   await quickMapWithFormat(octreeNodeFormat.format, device, octreeNodeBuffer),
-  // );
-  // console.log(
-  //   "octree metadata",
-  //   await quickMapWithFormat(
-  //     octreeMetadataFormat.format,
-  //     device,
-  //     octreeMetadataBuffer,
-  //   ),
-  // );
+  console.log(
+    "octree nodes",
+    await quickMapWithFormat(
+      octreeNodeFormat.format,
+      device,
+      octree.octreeNodeBuffer,
+    ),
+  );
+  console.log(
+    "octree metadata",
+    await quickMapWithFormat(
+      octreeMetadataFormat.format,
+      device,
+      octree.octreeMetadataBuffer,
+    ),
+  );
   // console.log(
   //   "octree counters",
   //   await quickMapWithFormat(
