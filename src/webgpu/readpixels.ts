@@ -1,10 +1,17 @@
 import { roundUp } from "../math/round";
 import { sub3, Vec3 } from "../math/vector";
+import { range } from "../range";
 import {
   getCopyFootprintPerTexel,
   TEXEL_BLOCK_COPY_FOOTPRINTS,
   TextureFormat,
 } from "./converters";
+import {
+  generateLayouts,
+  readWgslLayout,
+  WGSLStructSpec,
+  WGSLStructValues,
+} from "./wgsl-struct-layout-generator";
 
 export function readPixelsSizeReq(params: {
   format: TextureFormat;
@@ -131,4 +138,21 @@ export async function quickMap(
   const range = staging.getMappedRange(0, size ?? buf.size).slice();
   staging.unmap();
   return range;
+}
+
+export async function quickMapWithFormat<S extends WGSLStructSpec>(
+  format: S,
+  device: GPUDevice,
+  buf: GPUBuffer,
+  size?: number,
+  offset?: number,
+): Promise<WGSLStructValues<S>> {
+  const [withLayouts] = generateLayouts([format]);
+
+  const v = new DataView(await quickMap(device, buf, size, offset));
+
+  // @ts-expect-error
+  return range(Math.floor(v.byteLength / withLayouts.size)).map((i) =>
+    readWgslLayout(withLayouts, v, i * withLayouts.size),
+  );
 }

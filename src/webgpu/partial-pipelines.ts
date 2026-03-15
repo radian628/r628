@@ -490,6 +490,7 @@ export function wrapDevice(device: GPUDevice) {
       settings?: {
         visibility?: GPUShaderStageFlags;
         usage?: GPUBufferUsageFlags;
+        arrayify?: boolean;
       },
     ) {
       return wdevice.uniformBuffer<Name, Spec>(name, spec, true, {
@@ -516,6 +517,7 @@ export function wrapDevice(device: GPUDevice) {
       settings?: {
         visibility?: GPUShaderStageFlags;
         usage?: GPUBufferUsageFlags;
+        arrayify?: boolean;
       },
     ): WrappedBindGroupUniformBuffer<Spec> & { name: Name } {
       const [withLayouts] = generateLayouts([spec]);
@@ -581,7 +583,7 @@ export function wrapDevice(device: GPUDevice) {
           bindingIndex: number,
           access: "read" | "write" | "read_write",
         ): string {
-          return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage, ${access}> ${name} : array<${typeName(spec)}>;`;
+          return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage, ${access}> ${name} : ${(settings.arrayify ?? true) ? `array<${typeName(spec)}>;` : typeName(spec) + ";"}`;
         },
         // @ts-expect-error
         reinterpret(buf: GPUBuffer) {
@@ -979,7 +981,7 @@ export function wrapDevice(device: GPUDevice) {
       workgroupSize: Vec3;
       shader: string;
       globals?: string;
-      storageBufferAccess: Record<string, "read" | "write" | "read_write">;
+      storageBufferAccess?: Record<string, "read" | "write" | "read_write">;
     }): Promise<WrappedCompute<BindGroups, any>> {
       const requiredStructDefs = params.bindGroups.flatMap((bg) =>
         bg.entries.flatMap((e) => {
@@ -1003,7 +1005,7 @@ export function wrapDevice(device: GPUDevice) {
               return e.wgslStorage(
                 groupIndex,
                 bindingIndex,
-                params.storageBufferAccess[e.name] ?? "read",
+                params.storageBufferAccess?.[e.name] ?? "read_write",
               );
             } else {
               return "";
@@ -1019,7 +1021,7 @@ ${params.globals ?? ""}
 
 @compute
 @workgroup_size(${params.workgroupSize.join(", ")})
-fn ComputeMain(@builtin(global_invocation_id) id: vec3u) {
+fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocation_id) local_id: vec3u) {
   ${params.shader}
 }
           `;

@@ -24847,24 +24847,6 @@ fn perlinNoise3(P: vec3f) -> f32 {
       ).join("\n\n")
     }
   };
-  function useWgslSnippetsRaw(ss) {
-    return "\n" + ss.map((s) => `// IMPORTED_SNIPPET: ${s}
-${WgslSnippets[s].src}`).join("\n\n");
-  }
-  function snippetWithDependencies(sn, deps = /* @__PURE__ */ new Set()) {
-    deps.add(sn);
-    for (const d of WgslSnippets[sn]?.deps ?? []) {
-      snippetWithDependencies(d, deps);
-    }
-    return deps;
-  }
-  function useWgslSnippets(str2) {
-    const snippetNames = str2.split(/\s+/g);
-    const withdeps = new Set(
-      snippetNames.flatMap((s) => [...snippetWithDependencies(s)])
-    );
-    return useWgslSnippetsRaw([...withdeps]);
-  }
 
   // raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/simple-filter.wgsl?raw
   var simple_filter_default = "/*TEXTURES*/\r\n\r\n/*TEXTURES*/\r\n\r\n\r\n/*GLOBALS*/\r\n\r\n/*GLOBALS*/\r\n\r\nstruct FragInput {\r\n  @builtin(position) position : vec4f,\r\n  @location(0) uv : vec2f,\r\n}\r\n\r\n@vertex\r\nfn VSMain(@builtin(vertex_index) vertexIndex: u32) -> FragInput {\r\n  var output: FragInput;\r\n\r\n  output.position = vec4(array(\r\n    vec2( 1.0,  1.0),\r\n    vec2( 1.0, -1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2( 1.0,  1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2(-1.0,  1.0),\r\n  )[vertexIndex], 0.5, 1.0);\r\n\r\n  output.uv = array(\r\n    vec2(1.0, 0.0),\r\n    vec2(1.0, 1.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(1.0, 0.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(0.0, 0.0),\r\n  )[vertexIndex];\r\n\r\n  return output;\r\n}\r\n\r\nstruct Output {\r\n/*OUTPUT_STRUCT*/\r\n\r\n/*OUTPUT_STRUCT*/\r\n}\r\n\r\n@fragment\r\nfn FSMain(@location(0) uv : vec2f) -> Output  {\r\n  /*FRAGMENT_BODY*/\r\n\r\n  /*FRAGMENT_BODY*/\r\n}";
@@ -25187,32 +25169,22 @@ struct Params {
       size
     };
   }
+  async function quickMap(device, buf, size, offset) {
+    const staging = device.createBuffer({
+      size: size ?? buf.size,
+      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+    });
+    const enc = device.createCommandEncoder();
+    enc.copyBufferToBuffer(buf, offset ?? 0, staging, 0, size ?? buf.size);
+    device.queue.submit([enc.finish()]);
+    await device.queue.onSubmittedWorkDone();
+    await staging.mapAsync(GPUMapMode.READ, offset ?? 0, size ?? buf.size);
+    const range2 = staging.getMappedRange(0, size ?? buf.size).slice();
+    staging.unmap();
+    return range2;
+  }
 
   // src/webgpu/partial-pipelines.ts
-  function pipelineRenderpass(pipeline, pass) {
-    const bindGroupNameToIndex = new Map(
-      pipeline.bindGroups.map((b, i) => [b.name, i])
-    );
-    const inputNameToIndex = new Map(pipeline.inputs.map((b, i) => [b.name, i]));
-    return (bindings) => {
-      for (const [k, v] of Object.entries(bindings)) {
-        const bindGroupIndex = bindGroupNameToIndex.get(k);
-        if (bindGroupIndex !== void 0) {
-          pass.setBindGroup(bindGroupIndex, v);
-          continue;
-        }
-        const inputIndex = inputNameToIndex.get(k);
-        if (inputIndex !== void 0) {
-          pass.setVertexBuffer(
-            inputIndex,
-            ...Array.isArray(v) ? v : [v]
-          );
-          continue;
-        }
-        throw new Error(`Bound pipeline does not have attribute '${k}'.`);
-      }
-    };
-  }
   function wrapDevice(device) {
     const wdevice = {
       storageBuffer(name, spec, settings) {
@@ -27086,7 +27058,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
   var import_react15 = __toESM(require_react());
   var import_client2 = __toESM(require_client());
 
-  // demos-src/webgpu/mandelbrot-partial-pipelines.demo.ts
+  // demos-src/webgpu/spinlock.demo.ts
   (async () => {
     function fail(msg) {
       window.alert(msg);
@@ -27097,7 +27069,11 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       fail("No GPU adapter!");
       return;
     }
-    const device = hookGPUDevice(await adapter.requestDevice());
+    const device = hookGPUDevice(
+      await adapter.requestDevice({
+        requiredFeatures: ["timestamp-query"]
+      })
+    );
     device.addEventListener(
       "uncapturederror",
       (event) => console.error(event.error)
@@ -27105,142 +27081,55 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     if (!device) {
       fail("No GPU device!");
     }
-    const canvas = document.createElement("canvas");
-    document.body.appendChild(canvas);
-    canvas.width = 1024;
-    canvas.height = 1024;
-    const ctx = canvas.getContext("webgpu");
-    ctx.configure({
-      device,
-      format: navigator.gpu.getPreferredCanvasFormat()
-    });
     const wdevice = wrapDevice(device);
-    const uniformStruct = struct("Params", {
-      corner1: "vec2f",
-      corner2: "vec2f",
-      iters: "u32"
-    });
-    const uniformBufferFormat = wdevice.uniformBuffer("params", uniformStruct);
-    const bindGroupFormat = wdevice.bindGroup("bg", uniformBufferFormat);
-    console.log(createWgslSerializers(uniformStruct).code);
-    const colorTexture = wdevice.texture("color", {
-      format: "rgba8unorm"
-    });
-    const quadBufferFormat = wdevice.vertexBuffer("vertex", {
-      types: [
-        {
-          name: "position",
-          format: "float32x2",
-          offset: 0
-        }
-      ],
-      stride: 8,
-      stepMode: "vertex"
-    });
-    const bufRaw = device.createBuffer({
-      size: 4 * 2 * 6,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX
-    });
-    device.queue.writeBuffer(
-      bufRaw,
-      0,
-      new Float32Array([1, 1, 1, -1, -1, -1, 1, 1, -1, -1, -1, 1])
+    const bufFormat = wdevice.storageBuffer(
+      "buf",
+      struct("Buf", {
+        lock: "atomic<u32>",
+        data: "f32"
+      })
     );
-    const quadBuffer = quadBufferFormat.reinterpret(bufRaw);
-    const pipeline = await wdevice.pipeline({
-      inputs: [quadBufferFormat],
-      bindGroups: [bindGroupFormat],
-      outputs: { color: colorTexture },
-      globals: `${useWgslSnippets("perlinNoise unitQuadUnsigned unitQuadSigned")}`,
-      vertex: `
-  var output: FragInput;
-  output.position = vec4(vertex.position, 0.5, 1.0);
-  output.uv = output.position.xy * 0.5 + 0.5;
-  return output;
-    `,
-      fragment: {
-        function: `
-  let c = 
-    mix(params.corner1, params.corner2, input.uv);
-
-  var z = vec2f(0.0);
-
-  var escaped = false;
-
-  for (var i = 0u; i < params.iters; i++) {
-    z = vec2f(
-      z.x * z.x - z.y * z.y,
-      2.0 * z.x * z.y
-    ) + c; 
-
-    if (length(z) > 2.0) {
-      escaped = true;
-      break;
+    const bgFormat = wdevice.bindGroup("bg", bufFormat);
+    const ppln = await wdevice.compute({
+      bindGroups: [bgFormat],
+      storageBufferAccess: { buf: "read_write" },
+      workgroupSize: [32, 1, 1],
+      globals: `
+fn lock() {
+  while (true) {
+    let res = atomicCompareExchangeWeak(&buf[0].lock, 0, 1);
+    if (res.exchanged) {
+      return;
     }
   }
+} 
 
-  if (escaped) {
-    return vec4f(1.0, 0.0, 1.0, 1.0); 
-  } else {
-    return vec4f(vec2f(perlinNoise2(input.uv * 10.0)), 0.0, 1.0); 
-  }
-      `,
-        struct: `
-@builtin(position) position : vec4f,
-@location(0) uv : vec2f,      
-      `
-      }
+fn unlock() {
+  atomicStore(&buf[0].lock, 0);
+}
+    `,
+      shader: `
+      if (local_id.x != 0) { return; }
+      lock();
+      buf[0].data += 1.0; 
+      unlock();
+    `
     });
-    const uniformBuffer = uniformBufferFormat.instantiate();
-    uniformBufferFormat.fill(uniformBuffer, 0, {
-      corner1: [-2, -2],
-      corner2: [2, 2],
-      iters: 32
+    const buf = bufFormat.quickCreate({
+      lock: 0,
+      data: 0
     });
-    const bindGroup = bindGroupFormat.instantiate({
-      params: uniformBuffer
+    const bg = bgFormat.instantiate({
+      buf
     });
-    const tex = colorTexture.instantiate(
-      [1024, 1024],
-      GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
-    );
-    const encoder = device.createCommandEncoder();
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [
-        {
-          clearValue: [1, 0, 0, 1],
-          loadOp: "clear",
-          storeOp: "store",
-          view: tex.createView()
-        }
-      ]
-    });
-    const bind = pipelineRenderpass(pipeline, pass);
-    pass.setPipeline(pipeline);
-    bind({
-      bg: bindGroup,
-      vertex: quadBuffer
-    });
-    pass.draw(6);
+    const enc = device.createCommandEncoder();
+    const pass = enc.beginComputePass();
+    pass.setPipeline(ppln);
+    pass.setBindGroup(0, bg);
+    pass.dispatchWorkgroups(3e3, 3e3, 1);
     pass.end();
-    const displayer = textureDisplayer(device);
-    displayer.displayTexture2d(
-      {
-        tex: tex.createView(),
-        samplerType: "float",
-        cornerA: [0, 0],
-        cornerB: [1, 1],
-        blackEquiv: [0, 0, 0, 0],
-        whiteEquiv: [1, 1, 1, 1]
-      },
-      {
-        tex: ctx.getCurrentTexture().createView(),
-        format: navigator.gpu.getPreferredCanvasFormat()
-      },
-      encoder
-    );
-    device.queue.submit([encoder.finish()]);
-    document.body.appendChild(device.getDebugView());
+    device.queue.submit([enc.finish()]);
+    console.log(new Float32Array(await quickMap(device, buf)));
   })();
 })();
 /*! Bundled license information:

@@ -1672,7 +1672,7 @@
           }
           throw thenable;
         }
-        function mapIntoArray(children, array, escapedPrefix, nameSoFar, callback) {
+        function mapIntoArray(children, array2, escapedPrefix, nameSoFar, callback) {
           var type = typeof children;
           if ("undefined" === type || "boolean" === type) children = null;
           var invokeCallback = false;
@@ -1693,7 +1693,7 @@
                   case REACT_LAZY_TYPE:
                     return invokeCallback = children._init, mapIntoArray(
                       invokeCallback(children._payload),
-                      array,
+                      array2,
                       escapedPrefix,
                       nameSoFar,
                       callback
@@ -1704,7 +1704,7 @@
             invokeCallback = children;
             callback = callback(invokeCallback);
             var childKey = "" === nameSoFar ? "." + getElementKey(invokeCallback, 0) : nameSoFar;
-            isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array, escapedPrefix, "", function(c) {
+            isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array2, escapedPrefix, "", function(c) {
               return c;
             })) : null != callback && (isValidElement(callback) && (null != callback.key && (invokeCallback && invokeCallback.key === callback.key || checkKeyStringCoercion(callback.key)), escapedPrefix = cloneAndReplaceKey(
               callback,
@@ -1712,7 +1712,7 @@
                 userProvidedKeyEscapeRegex,
                 "$&/"
               ) + "/") + childKey
-            ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array.push(callback));
+            ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array2.push(callback));
             return 1;
           }
           invokeCallback = 0;
@@ -1721,7 +1721,7 @@
             for (var i = 0; i < children.length; i++)
               nameSoFar = children[i], type = childKey + getElementKey(nameSoFar, i), invokeCallback += mapIntoArray(
                 nameSoFar,
-                array,
+                array2,
                 escapedPrefix,
                 type,
                 callback
@@ -1732,7 +1732,7 @@
             ), didWarnAboutMaps = true), children = i.call(children), i = 0; !(nameSoFar = children.next()).done; )
               nameSoFar = nameSoFar.value, type = childKey + getElementKey(nameSoFar, i++), invokeCallback += mapIntoArray(
                 nameSoFar,
-                array,
+                array2,
                 escapedPrefix,
                 type,
                 callback
@@ -1741,14 +1741,14 @@
             if ("function" === typeof children.then)
               return mapIntoArray(
                 resolveThenable(children),
-                array,
+                array2,
                 escapedPrefix,
                 nameSoFar,
                 callback
               );
-            array = String(children);
+            array2 = String(children);
             throw Error(
-              "Objects are not valid as a React child (found: " + ("[object Object]" === array ? "object with keys {" + Object.keys(children).join(", ") + "}" : array) + "). If you meant to render a collection of children, use an array instead."
+              "Objects are not valid as a React child (found: " + ("[object Object]" === array2 ? "object with keys {" + Object.keys(children).join(", ") + "}" : array2) + "). If you meant to render a collection of children, use an array instead."
             );
           }
           return invokeCallback;
@@ -3000,11 +3000,11 @@
         function warnForMissingKey() {
         }
         function setToSortedString(set) {
-          var array = [];
+          var array2 = [];
           set.forEach(function(value) {
-            array.push(value);
+            array2.push(value);
           });
-          return array.sort().join(", ");
+          return array2.sort().join(", ");
         }
         function createFiber(tag, pendingProps, key, mode) {
           return new FiberNode(tag, pendingProps, key, mode);
@@ -5585,9 +5585,9 @@
           topLevelEventsToReactNames.set(domEventName, reactName);
           registerTwoPhaseEvent(reactName, [domEventName]);
         }
-        function getArrayKind(array) {
-          for (var kind = EMPTY_ARRAY, i = 0; i < array.length; i++) {
-            var value = array[i];
+        function getArrayKind(array2) {
+          for (var kind = EMPTY_ARRAY, i = 0; i < array2.length; i++) {
+            var value = array2[i];
             if ("object" === typeof value && null !== value)
               if (isArrayImpl(value) && 2 === value.length && "string" === typeof value[0]) {
                 if (kind !== EMPTY_ARRAY && kind !== ENTRIES_ARRAY)
@@ -8481,8 +8481,8 @@
           if (null == memoCache) {
             var current2 = currentlyRenderingFiber.alternate;
             null !== current2 && (current2 = current2.updateQueue, null !== current2 && (current2 = current2.memoCache, null != current2 && (memoCache = {
-              data: current2.data.map(function(array) {
-                return array.slice();
+              data: current2.data.map(function(array2) {
+                return array2.slice();
               }),
               index: 0
             })));
@@ -24209,6 +24209,14 @@
       ])
     };
   }
+  function array(count, member) {
+    return {
+      type: "array",
+      count,
+      // @ts-expect-error
+      member: typeof member === "string" ? { type: member } : member
+    };
+  }
   function getAllStructs(specs) {
     const ret = [];
     function r(spec) {
@@ -24280,6 +24288,14 @@
       f16: "setFloat16"
     }[dt];
   }
+  function wgslDataTypeToDataViewGetter(dt) {
+    return {
+      i32: "getInt32",
+      u32: "getUint32",
+      f32: "getFloat32",
+      f16: "getFloat16"
+    }[dt];
+  }
   function createLayoutGenerator(spec) {
     function createSetters(spec2, baseOffset, arrayNestingLevel, extraOffsets, accessor) {
       if (spec2.type === "struct") {
@@ -24312,6 +24328,31 @@
     }
     const fnbody = createSetters(spec, 0, 0, [], "src");
     return new Function("dst", "src", fnbody);
+  }
+  function readWgslLayout(spec, view, offset = 0) {
+    if (spec.type === "struct") {
+      return Object.fromEntries(
+        spec.members.map(([name, value]) => [
+          name,
+          readWgslLayout(value.type, view, offset + value.offset)
+        ])
+      );
+    } else if (spec.type === "array") {
+      const elemSize = roundUp(spec.member.align, spec.member.size);
+      return range(spec.count).map(
+        (i) => readWgslLayout(spec.member, view, offset + i * elemSize)
+      );
+    } else {
+      const count = WGSL_TYPE_ELEMENT_COUNTS[spec.type];
+      const elemType = WGSL_TYPE_DATATYPES[spec.type];
+      const getter = wgslDataTypeToDataViewGetter(elemType);
+      const elemSize = WGSL_TYPE_SIZES[elemType];
+      let arr = [];
+      for (let i = 0; i < count; i++) {
+        arr.push(view[getter](offset + i * elemSize, true));
+      }
+      return count === 1 ? arr[0] : arr;
+    }
   }
   function createWgslSerializers(...ss) {
     const layouts = generateLayouts(ss);
@@ -24847,24 +24888,6 @@ fn perlinNoise3(P: vec3f) -> f32 {
       ).join("\n\n")
     }
   };
-  function useWgslSnippetsRaw(ss) {
-    return "\n" + ss.map((s) => `// IMPORTED_SNIPPET: ${s}
-${WgslSnippets[s].src}`).join("\n\n");
-  }
-  function snippetWithDependencies(sn, deps = /* @__PURE__ */ new Set()) {
-    deps.add(sn);
-    for (const d of WgslSnippets[sn]?.deps ?? []) {
-      snippetWithDependencies(d, deps);
-    }
-    return deps;
-  }
-  function useWgslSnippets(str2) {
-    const snippetNames = str2.split(/\s+/g);
-    const withdeps = new Set(
-      snippetNames.flatMap((s) => [...snippetWithDependencies(s)])
-    );
-    return useWgslSnippetsRaw([...withdeps]);
-  }
 
   // raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/simple-filter.wgsl?raw
   var simple_filter_default = "/*TEXTURES*/\r\n\r\n/*TEXTURES*/\r\n\r\n\r\n/*GLOBALS*/\r\n\r\n/*GLOBALS*/\r\n\r\nstruct FragInput {\r\n  @builtin(position) position : vec4f,\r\n  @location(0) uv : vec2f,\r\n}\r\n\r\n@vertex\r\nfn VSMain(@builtin(vertex_index) vertexIndex: u32) -> FragInput {\r\n  var output: FragInput;\r\n\r\n  output.position = vec4(array(\r\n    vec2( 1.0,  1.0),\r\n    vec2( 1.0, -1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2( 1.0,  1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2(-1.0,  1.0),\r\n  )[vertexIndex], 0.5, 1.0);\r\n\r\n  output.uv = array(\r\n    vec2(1.0, 0.0),\r\n    vec2(1.0, 1.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(1.0, 0.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(0.0, 0.0),\r\n  )[vertexIndex];\r\n\r\n  return output;\r\n}\r\n\r\nstruct Output {\r\n/*OUTPUT_STRUCT*/\r\n\r\n/*OUTPUT_STRUCT*/\r\n}\r\n\r\n@fragment\r\nfn FSMain(@location(0) uv : vec2f) -> Output  {\r\n  /*FRAGMENT_BODY*/\r\n\r\n  /*FRAGMENT_BODY*/\r\n}";
@@ -25187,32 +25210,29 @@ struct Params {
       size
     };
   }
+  async function quickMap(device, buf, size, offset) {
+    const staging = device.createBuffer({
+      size: size ?? buf.size,
+      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+    });
+    const enc = device.createCommandEncoder();
+    enc.copyBufferToBuffer(buf, offset ?? 0, staging, 0, size ?? buf.size);
+    device.queue.submit([enc.finish()]);
+    await device.queue.onSubmittedWorkDone();
+    await staging.mapAsync(GPUMapMode.READ, offset ?? 0, size ?? buf.size);
+    const range2 = staging.getMappedRange(0, size ?? buf.size).slice();
+    staging.unmap();
+    return range2;
+  }
+  async function quickMapWithFormat(format, device, buf, size, offset) {
+    const [withLayouts] = generateLayouts([format]);
+    const v = new DataView(await quickMap(device, buf, size, offset));
+    return range(Math.floor(v.byteLength / withLayouts.size)).map(
+      (i) => readWgslLayout(withLayouts, v, i * withLayouts.size)
+    );
+  }
 
   // src/webgpu/partial-pipelines.ts
-  function pipelineRenderpass(pipeline, pass) {
-    const bindGroupNameToIndex = new Map(
-      pipeline.bindGroups.map((b, i) => [b.name, i])
-    );
-    const inputNameToIndex = new Map(pipeline.inputs.map((b, i) => [b.name, i]));
-    return (bindings) => {
-      for (const [k, v] of Object.entries(bindings)) {
-        const bindGroupIndex = bindGroupNameToIndex.get(k);
-        if (bindGroupIndex !== void 0) {
-          pass.setBindGroup(bindGroupIndex, v);
-          continue;
-        }
-        const inputIndex = inputNameToIndex.get(k);
-        if (inputIndex !== void 0) {
-          pass.setVertexBuffer(
-            inputIndex,
-            ...Array.isArray(v) ? v : [v]
-          );
-          continue;
-        }
-        throw new Error(`Bound pipeline does not have attribute '${k}'.`);
-      }
-    };
-  }
   function wrapDevice(device) {
     const wdevice = {
       storageBuffer(name, spec, settings) {
@@ -27086,7 +27106,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
   var import_react15 = __toESM(require_react());
   var import_client2 = __toESM(require_client());
 
-  // demos-src/webgpu/mandelbrot-partial-pipelines.demo.ts
+  // demos-src/webgpu/octree3.demo.ts
   (async () => {
     function fail(msg) {
       window.alert(msg);
@@ -27097,7 +27117,11 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       fail("No GPU adapter!");
       return;
     }
-    const device = hookGPUDevice(await adapter.requestDevice());
+    const device = hookGPUDevice(
+      await adapter.requestDevice({
+        requiredFeatures: ["timestamp-query"]
+      })
+    );
     device.addEventListener(
       "uncapturederror",
       (event) => console.error(event.error)
@@ -27105,142 +27129,458 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     if (!device) {
       fail("No GPU device!");
     }
-    const canvas = document.createElement("canvas");
-    document.body.appendChild(canvas);
-    canvas.width = 1024;
-    canvas.height = 1024;
-    const ctx = canvas.getContext("webgpu");
-    ctx.configure({
-      device,
-      format: navigator.gpu.getPreferredCanvasFormat()
-    });
     const wdevice = wrapDevice(device);
-    const uniformStruct = struct("Params", {
-      corner1: "vec2f",
-      corner2: "vec2f",
-      iters: "u32"
-    });
-    const uniformBufferFormat = wdevice.uniformBuffer("params", uniformStruct);
-    const bindGroupFormat = wdevice.bindGroup("bg", uniformBufferFormat);
-    console.log(createWgslSerializers(uniformStruct).code);
-    const colorTexture = wdevice.texture("color", {
-      format: "rgba8unorm"
-    });
-    const quadBufferFormat = wdevice.vertexBuffer("vertex", {
-      types: [
-        {
-          name: "position",
-          format: "float32x2",
-          offset: 0
-        }
-      ],
-      stride: 8,
-      stepMode: "vertex"
-    });
-    const bufRaw = device.createBuffer({
-      size: 4 * 2 * 6,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX
-    });
-    device.queue.writeBuffer(
-      bufRaw,
-      0,
-      new Float32Array([1, 1, 1, -1, -1, -1, 1, 1, -1, -1, -1, 1])
+    const octreeNodeFormat = wdevice.storageBuffer(
+      "octree_nodes",
+      struct("OctreeNode", {
+        child_idx: "u32",
+        data_start_idx: "u32",
+        data_end_idx: "u32",
+        metadata_idx: "u32"
+      })
     );
-    const quadBuffer = quadBufferFormat.reinterpret(bufRaw);
-    const pipeline = await wdevice.pipeline({
-      inputs: [quadBufferFormat],
-      bindGroups: [bindGroupFormat],
-      outputs: { color: colorTexture },
-      globals: `${useWgslSnippets("perlinNoise unitQuadUnsigned unitQuadSigned")}`,
-      vertex: `
-  var output: FragInput;
-  output.position = vec4(vertex.position, 0.5, 1.0);
-  output.uv = output.position.xy * 0.5 + 0.5;
-  return output;
-    `,
-      fragment: {
-        function: `
-  let c = 
-    mix(params.corner1, params.corner2, input.uv);
-
-  var z = vec2f(0.0);
-
-  var escaped = false;
-
-  for (var i = 0u; i < params.iters; i++) {
-    z = vec2f(
-      z.x * z.x - z.y * z.y,
-      2.0 * z.x * z.y
-    ) + c; 
-
-    if (length(z) > 2.0) {
-      escaped = true;
-      break;
-    }
-  }
-
-  if (escaped) {
-    return vec4f(1.0, 0.0, 1.0, 1.0); 
-  } else {
-    return vec4f(vec2f(perlinNoise2(input.uv * 10.0)), 0.0, 1.0); 
-  }
-      `,
-        struct: `
-@builtin(position) position : vec4f,
-@location(0) uv : vec2f,      
-      `
+    const octreeNodeMetadataFormat = wdevice.storageBuffer(
+      "octree_metadata",
+      struct("OctreeMetadata", {
+        min_corner: "vec3f",
+        counters_idx: "u32",
+        max_corner: "vec3f"
+      })
+    );
+    const octreeCountersFormat = wdevice.storageBuffer(
+      "octree_counters",
+      struct("OctreeCounters", {
+        counters: array(8, "atomic<u32>")
+      })
+    );
+    const octreeCountersNonatomicFormat = wdevice.storageBuffer(
+      "octree_counters",
+      struct("OctreeCounters", {
+        counters: array(8, "u32")
+      })
+    );
+    const bodiesFormat = wdevice.storageBuffer(
+      "bodies",
+      struct("Body", {
+        mass: "f32",
+        position: "vec3f",
+        velocity: "vec3f"
+      })
+    );
+    const nextfreesFormat = wdevice.storageBuffer(
+      "nextfrees",
+      struct("Nextfrees", {
+        node: "atomic<u32>",
+        node_metadata: "atomic<u32>",
+        counters: "atomic<u32>",
+        active_nodes_index: "atomic<u32>"
+      }),
+      { arrayify: false }
+    );
+    const bodyNodeAssignmentsFormat = wdevice.storageBuffer(
+      "body_node_assignments",
+      struct("NodeIdx", {
+        node_idx: "u32"
+      })
+    );
+    const bodyNodeAssignmentsInFormat = bodyNodeAssignmentsFormat.withName(
+      "body_node_assignments_in"
+    );
+    const bodyNodeAssignmentsOutFormat = bodyNodeAssignmentsFormat.withName(
+      "body_node_assignments_out"
+    );
+    const bodyNodeChildSubOffsetsFormat = bodyNodeAssignmentsFormat.withName(
+      "body_node_child_sub_offsets"
+    );
+    const activeNodesInfoFormat = wdevice.storageBuffer(
+      "active_nodes_info",
+      struct("ActiveNodesInfo", {
+        count: "u32"
+      }),
+      { arrayify: false }
+    );
+    const bodyOrderFormat = wdevice.storageBuffer(
+      "body_order",
+      struct("BodyIdx", {
+        body_idx: "u32"
+      })
+    );
+    const bodyOrderInFormat = bodyOrderFormat.withName("body_order_in");
+    const bodyOrderOutFormat = bodyOrderFormat.withName("body_order_out");
+    const activeNodesInFormat = bodyNodeAssignmentsFormat.withName("active_nodes_in");
+    const activeNodesOutFormat = bodyNodeAssignmentsFormat.withName("active_nodes_out");
+    const computeIndirectBufferFormat = wdevice.storageBuffer(
+      "compute_indirect",
+      struct("ComputeIndirect", {
+        workgroups: "vec3u"
+      }),
+      {
+        arrayify: false,
+        usage: GPUBufferUsage.INDIRECT | GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE
       }
-    });
-    const uniformBuffer = uniformBufferFormat.instantiate();
-    uniformBufferFormat.fill(uniformBuffer, 0, {
-      corner1: [-2, -2],
-      corner2: [2, 2],
-      iters: 32
-    });
-    const bindGroup = bindGroupFormat.instantiate({
-      params: uniformBuffer
-    });
-    const tex = colorTexture.instantiate(
-      [1024, 1024],
-      GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     );
-    const encoder = device.createCommandEncoder();
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [
-        {
-          clearValue: [1, 0, 0, 1],
-          loadOp: "clear",
-          storeOp: "store",
-          view: tex.createView()
-        }
-      ]
+    const assignBodiesBindGroupFormat = wdevice.bindGroup(
+      "bg",
+      bodyNodeAssignmentsFormat,
+      bodyNodeChildSubOffsetsFormat,
+      octreeNodeFormat,
+      octreeCountersFormat,
+      bodyOrderFormat,
+      bodiesFormat,
+      octreeNodeMetadataFormat
+    );
+    const assignBodiesPipeline = await wdevice.compute({
+      bindGroups: [assignBodiesBindGroupFormat],
+      workgroupSize: [32, 1, 1],
+      shader: `
+    if (id.x >= arrayLength(&body_node_assignments)) {
+      return; 
+    }
+
+    let body_idx = body_order[id.x].body_idx;
+    let body = bodies[body_idx];
+    let parent_node_idx = body_node_assignments[body_idx].node_idx;
+    let parent_node = octree_nodes[parent_node_idx];
+    let parent_node_metadata = octree_metadata[parent_node.metadata_idx];
+
+    if (parent_node.child_idx == 4294967295u) {
+      return; 
+    }
+
+    let min_corner = parent_node_metadata.min_corner;
+    let max_corner = parent_node_metadata.max_corner;
+
+    let halfway = (min_corner + max_corner) / 2;
+
+    let child_offset = 
+        select(0u, 4u, halfway.z < body.position.z)
+      + select(0u, 2u, halfway.y < body.position.y)
+      + select(0u, 1u, halfway.x < body.position.x);
+  
+    body_node_child_sub_offsets[body_idx].node_idx = 
+      atomicAdd(
+        &octree_counters[parent_node_metadata.counters_idx].counters[child_offset],
+        1u
+      );
+
+    body_node_assignments[body_idx].node_idx = 
+      parent_node.child_idx + child_offset;
+    `
     });
-    const bind = pipelineRenderpass(pipeline, pass);
-    pass.setPipeline(pipeline);
-    bind({
-      bg: bindGroup,
-      vertex: quadBuffer
+    const createNewNodesBindGroupFormat = wdevice.bindGroup(
+      "bg",
+      activeNodesInFormat,
+      activeNodesOutFormat,
+      octreeNodeMetadataFormat,
+      nextfreesFormat,
+      octreeNodeFormat,
+      octreeCountersNonatomicFormat,
+      activeNodesInfoFormat
+    );
+    const createNewNodesPipeline = await wdevice.compute({
+      bindGroups: [createNewNodesBindGroupFormat],
+      workgroupSize: [32, 1, 1],
+      shader: `
+    if (id.x >= active_nodes_info.count) {
+      return; 
+    } 
+
+    let parent_node_idx = active_nodes_in[id.x].node_idx;
+    let parent_node = octree_nodes[parent_node_idx];
+    let parent_node_metadata = octree_metadata[parent_node.metadata_idx];
+    let parent_node_counters = 
+      octree_counters[parent_node_metadata.counters_idx].counters; 
+    let p = parent_node_counters; 
+    let child_count = p[0] + p[1] + p[2] + p[3] + p[4] + p[5] + p[6] + p[7];
+
+    if (child_count == 0 || child_count == 1) {
+      return; 
+    }
+
+    let min_corner = parent_node_metadata.min_corner;
+    let max_corner = parent_node_metadata.max_corner;
+    let halfway = (min_corner + max_corner) / 2;
+    let half_extent = (max_corner - min_corner) / 2;
+
+    let prefix_sum = array(
+      0,
+      p[0],
+      p[0] + p[1],
+      p[0] + p[1] + p[2],
+      p[0] + p[1] + p[2] + p[3],
+      p[0] + p[1] + p[2] + p[3] + p[4],
+      p[0] + p[1] + p[2] + p[3] + p[4] + p[5],
+      p[0] + p[1] + p[2] + p[3] + p[4] + p[5] + p[6],
+    );
+
+    for (var i = 0u; i < 8u; i++) {
+      let child_node_idx = parent_node.child_idx + i;
+      octree_nodes[child_node_idx].child_idx = 4294967295u;
+
+      if (parent_node_counters[i] == 0u) {
+        continue;
+      } 
+
+      octree_nodes[child_node_idx].data_start_idx = 
+        parent_node.data_start_idx + prefix_sum[i];
+      octree_nodes[child_node_idx].data_end_idx = 
+        parent_node.data_start_idx + prefix_sum[i] + p[i];
+
+      let metadata_idx = atomicAdd(&nextfrees.node_metadata, 1u);
+      octree_nodes[child_node_idx].metadata_idx = metadata_idx;
+
+      let offset = vec3f(
+          select(0.0, half_extent.x, i % 2u == 1u), 
+          select(0.0, half_extent.y, (i / 2u) % 2u == 1u), 
+          select(0.0, half_extent.z, (i / 4u) % 2u == 1u) 
+        );
+
+      octree_metadata[metadata_idx].min_corner = min_corner + offset;
+      octree_metadata[metadata_idx].max_corner = halfway + offset;
+
+      if (parent_node_counters[i] > 1u) {
+        octree_metadata[metadata_idx].counters_idx = 
+          atomicAdd(&nextfrees.counters, 1u);
+        octree_nodes[child_node_idx].child_idx = 
+          atomicAdd(&nextfrees.node, 8u);
+        let active_idx = atomicAdd(&nextfrees.active_nodes_index, 1u);
+        active_nodes_out[active_idx].node_idx = child_node_idx;
+      }
+    }
+
+    `
     });
-    pass.draw(6);
+    const reorderBodiesBindGroupFormat = wdevice.bindGroup(
+      "bg",
+      bodyOrderInFormat,
+      bodyOrderOutFormat,
+      bodyNodeAssignmentsFormat,
+      bodyNodeChildSubOffsetsFormat,
+      octreeNodeFormat,
+      bodiesFormat
+    );
+    const reorderBodiesPipeline = await wdevice.compute({
+      bindGroups: [reorderBodiesBindGroupFormat],
+      workgroupSize: [32, 1, 1],
+      shader: `
+    if (id.x >= arrayLength(&body_node_assignments)) {
+      return; 
+    }
+
+    let body_idx = body_order_in[id.x].body_idx;
+    let body = bodies[body_idx];
+
+    let node_idx = body_node_assignments[body_idx].node_idx;
+    let node = octree_nodes[node_idx];
+    let start = node.data_start_idx;
+    let sub_offset = body_node_child_sub_offsets[body_idx].node_idx;
+
+    body_order_out[start + sub_offset].body_idx = body_idx;
+    `
+    });
+    const setupNextIterationBindGroupFormat = wdevice.bindGroup(
+      "bg",
+      computeIndirectBufferFormat,
+      nextfreesFormat,
+      activeNodesInfoFormat
+    );
+    const setupNextIterationPipeline = await wdevice.compute({
+      bindGroups: [setupNextIterationBindGroupFormat],
+      workgroupSize: [1, 1, 1],
+      shader: `
+      let active_nodes_count = atomicLoad(&nextfrees.active_nodes_index);
+      compute_indirect.workgroups = vec3u(
+        active_nodes_count / 32 + 1u,
+        1u,
+        1u
+      );
+      active_nodes_info.count = active_nodes_count;
+      atomicStore(&nextfrees.active_nodes_index, 0u);
+    `
+    });
+    const bodiesData = [
+      {
+        mass: 1,
+        velocity: [0, 0, 0],
+        position: [0.9, 0.1, 0.1]
+      },
+      {
+        mass: 1,
+        velocity: [0, 0, 0],
+        position: [0.9, 0.9, 0.9]
+      },
+      {
+        mass: 1,
+        velocity: [0, 0, 0],
+        position: [0.3, 0.3, 0.3]
+      },
+      {
+        mass: 1,
+        velocity: [0, 0, 0],
+        position: [0.7, 0.7, 0.7]
+      }
+    ];
+    const OCTREE_CAP = 256;
+    const octreeNodeData = [
+      {
+        data_start_idx: 0,
+        data_end_idx: bodiesData.length,
+        child_idx: 1,
+        metadata_idx: 0
+      },
+      ...range(OCTREE_CAP - 1).map(() => ({
+        data_start_idx: 0,
+        data_end_idx: 0,
+        child_idx: 0,
+        metadata_idx: 0
+      }))
+    ];
+    const octreeMetadata = [
+      {
+        min_corner: [0, 0, 0],
+        max_corner: [1, 1, 1],
+        counters_idx: 0
+      },
+      ...range(OCTREE_CAP - 1).map(() => ({
+        min_corner: [0, 0, 0],
+        max_corner: [0, 0, 0],
+        counters_idx: 0
+      }))
+    ];
+    const octreeCounters = range(OCTREE_CAP).map(() => ({
+      counters: [0, 0, 0, 0, 0, 0, 0, 0]
+    }));
+    const bodiesOrder = bodiesData.map((b, i) => ({ body_idx: i }));
+    const nextfrees = {
+      node: 9,
+      node_metadata: 1,
+      counters: 1,
+      active_nodes_index: 0
+    };
+    const nodeBodyAssignments = bodiesOrder.map(() => ({ node_idx: 0 }));
+    const bodyNodeChildSubOffsets = nodeBodyAssignments;
+    const activeNodesInfo = {
+      count: 1
+    };
+    const bodiesBuffer = bodiesFormat.quickCreateMany(bodiesData);
+    const octreeNodeBuffer = octreeNodeFormat.quickCreateMany(octreeNodeData);
+    const octreeMetadataBuffer = octreeNodeMetadataFormat.quickCreateMany(octreeMetadata);
+    const octreeCountersBuffer = octreeCountersFormat.quickCreateMany(octreeCounters);
+    const bodiesOrderBuffer1 = bodyOrderFormat.quickCreateMany(bodiesOrder);
+    const bodiesOrderBuffer2 = bodyOrderFormat.quickCreateMany(bodiesOrder);
+    const nextfreesBuffer = nextfreesFormat.quickCreate(nextfrees);
+    const nodeBodyAssignmentsBuffer = bodyNodeAssignmentsFormat.quickCreateMany(nodeBodyAssignments);
+    const bodyNodeChildSubOffsetsBuffer = bodyNodeChildSubOffsetsFormat.quickCreateMany(bodyNodeChildSubOffsets);
+    const activeNodesBuffer1 = bodyNodeAssignmentsFormat.instantiate(256);
+    const activeNodesBuffer2 = bodyNodeAssignmentsFormat.instantiate(256);
+    const activeNodesInfoBuffer = activeNodesInfoFormat.quickCreate(activeNodesInfo);
+    const computeIndirectBuffer = computeIndirectBufferFormat.instantiate(1);
+    const assignBodiesBindGroups = range(2).map(
+      (i) => assignBodiesBindGroupFormat.instantiate({
+        body_node_assignments: nodeBodyAssignmentsBuffer,
+        body_node_child_sub_offsets: bodyNodeChildSubOffsetsBuffer,
+        octree_counters: octreeCountersBuffer,
+        octree_nodes: octreeNodeBuffer,
+        body_order: [bodiesOrderBuffer1, bodiesOrderBuffer1][i],
+        bodies: bodiesBuffer,
+        octree_metadata: octreeMetadataBuffer
+      })
+    );
+    const createNewNodesBindGroup = range(2).map(
+      (i) => createNewNodesBindGroupFormat.instantiate({
+        active_nodes_in: [activeNodesBuffer1, activeNodesBuffer2][i],
+        active_nodes_out: [activeNodesBuffer2, activeNodesBuffer1][i],
+        active_nodes_info: activeNodesInfoBuffer,
+        nextfrees: nextfreesBuffer,
+        octree_nodes: octreeNodeBuffer,
+        octree_metadata: octreeMetadataBuffer,
+        octree_counters: octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer)
+      })
+    );
+    const reorderBodiesBindGroups = range(2).map(
+      (i) => reorderBodiesBindGroupFormat.instantiate({
+        body_order_in: [bodiesOrderBuffer1, bodiesOrderBuffer2][i],
+        body_order_out: [bodiesOrderBuffer2, bodiesOrderBuffer1][i],
+        body_node_assignments: nodeBodyAssignmentsBuffer,
+        body_node_child_sub_offsets: bodyNodeChildSubOffsetsBuffer,
+        octree_nodes: octreeNodeBuffer,
+        bodies: bodiesBuffer
+      })
+    );
+    const setupNextIterationBindGroup = setupNextIterationBindGroupFormat.instantiate({
+      compute_indirect: computeIndirectBuffer,
+      nextfrees: nextfreesBuffer,
+      active_nodes_info: activeNodesInfoBuffer
+    });
+    const enc = device.createCommandEncoder();
+    const pass = enc.beginComputePass();
+    pass.setPipeline(assignBodiesPipeline);
+    pass.setBindGroup(0, assignBodiesBindGroups[0]);
+    pass.dispatchWorkgroups(1, 1, 1);
+    pass.setPipeline(createNewNodesPipeline);
+    pass.setBindGroup(0, createNewNodesBindGroup[0]);
+    pass.dispatchWorkgroups(1, 1, 1);
+    pass.setPipeline(reorderBodiesPipeline);
+    pass.setBindGroup(0, reorderBodiesBindGroups[0]);
+    pass.dispatchWorkgroups(1, 1, 1);
+    pass.setPipeline(setupNextIterationPipeline);
+    pass.setBindGroup(0, setupNextIterationBindGroup);
+    pass.dispatchWorkgroups(1, 1, 1);
+    pass.setPipeline(assignBodiesPipeline);
+    pass.setBindGroup(0, assignBodiesBindGroups[1]);
+    pass.dispatchWorkgroups(1, 1, 1);
+    pass.setPipeline(createNewNodesPipeline);
+    pass.setBindGroup(0, createNewNodesBindGroup[1]);
+    pass.dispatchWorkgroups(1, 1, 1);
+    pass.setPipeline(reorderBodiesPipeline);
+    pass.setBindGroup(0, reorderBodiesBindGroups[1]);
+    pass.dispatchWorkgroups(1, 1, 1);
     pass.end();
-    const displayer = textureDisplayer(device);
-    displayer.displayTexture2d(
-      {
-        tex: tex.createView(),
-        samplerType: "float",
-        cornerA: [0, 0],
-        cornerB: [1, 1],
-        blackEquiv: [0, 0, 0, 0],
-        whiteEquiv: [1, 1, 1, 1]
-      },
-      {
-        tex: ctx.getCurrentTexture().createView(),
-        format: navigator.gpu.getPreferredCanvasFormat()
-      },
-      encoder
+    device.queue.submit([enc.finish()]);
+    console.log(
+      "body-to-node assignments",
+      await quickMapWithFormat(
+        bodyNodeAssignmentsFormat.format,
+        device,
+        nodeBodyAssignmentsBuffer
+      )
     );
-    device.queue.submit([encoder.finish()]);
-    document.body.appendChild(device.getDebugView());
+    console.log(
+      "octree nodes",
+      await quickMapWithFormat(octreeNodeFormat.format, device, octreeNodeBuffer)
+    );
+    console.log(
+      "octree metadata",
+      await quickMapWithFormat(
+        octreeNodeMetadataFormat.format,
+        device,
+        octreeMetadataBuffer
+      )
+    );
+    console.log(
+      "octree counters",
+      await quickMapWithFormat(
+        octreeCountersFormat.format,
+        device,
+        octreeCountersBuffer
+      )
+    );
+    console.log(
+      "body order in",
+      await quickMapWithFormat(
+        bodyOrderFormat.format,
+        device,
+        bodiesOrderBuffer2
+      )
+    );
+    console.log(
+      "body order ouot",
+      await quickMapWithFormat(
+        bodyOrderFormat.format,
+        device,
+        bodiesOrderBuffer1
+      )
+    );
   })();
 })();
 /*! Bundled license information:

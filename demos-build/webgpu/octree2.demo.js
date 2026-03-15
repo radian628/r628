@@ -1672,7 +1672,7 @@
           }
           throw thenable;
         }
-        function mapIntoArray(children, array, escapedPrefix, nameSoFar, callback) {
+        function mapIntoArray(children, array2, escapedPrefix, nameSoFar, callback) {
           var type = typeof children;
           if ("undefined" === type || "boolean" === type) children = null;
           var invokeCallback = false;
@@ -1693,7 +1693,7 @@
                   case REACT_LAZY_TYPE:
                     return invokeCallback = children._init, mapIntoArray(
                       invokeCallback(children._payload),
-                      array,
+                      array2,
                       escapedPrefix,
                       nameSoFar,
                       callback
@@ -1704,7 +1704,7 @@
             invokeCallback = children;
             callback = callback(invokeCallback);
             var childKey = "" === nameSoFar ? "." + getElementKey(invokeCallback, 0) : nameSoFar;
-            isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array, escapedPrefix, "", function(c) {
+            isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array2, escapedPrefix, "", function(c) {
               return c;
             })) : null != callback && (isValidElement(callback) && (null != callback.key && (invokeCallback && invokeCallback.key === callback.key || checkKeyStringCoercion(callback.key)), escapedPrefix = cloneAndReplaceKey(
               callback,
@@ -1712,7 +1712,7 @@
                 userProvidedKeyEscapeRegex,
                 "$&/"
               ) + "/") + childKey
-            ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array.push(callback));
+            ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array2.push(callback));
             return 1;
           }
           invokeCallback = 0;
@@ -1721,7 +1721,7 @@
             for (var i = 0; i < children.length; i++)
               nameSoFar = children[i], type = childKey + getElementKey(nameSoFar, i), invokeCallback += mapIntoArray(
                 nameSoFar,
-                array,
+                array2,
                 escapedPrefix,
                 type,
                 callback
@@ -1732,7 +1732,7 @@
             ), didWarnAboutMaps = true), children = i.call(children), i = 0; !(nameSoFar = children.next()).done; )
               nameSoFar = nameSoFar.value, type = childKey + getElementKey(nameSoFar, i++), invokeCallback += mapIntoArray(
                 nameSoFar,
-                array,
+                array2,
                 escapedPrefix,
                 type,
                 callback
@@ -1741,14 +1741,14 @@
             if ("function" === typeof children.then)
               return mapIntoArray(
                 resolveThenable(children),
-                array,
+                array2,
                 escapedPrefix,
                 nameSoFar,
                 callback
               );
-            array = String(children);
+            array2 = String(children);
             throw Error(
-              "Objects are not valid as a React child (found: " + ("[object Object]" === array ? "object with keys {" + Object.keys(children).join(", ") + "}" : array) + "). If you meant to render a collection of children, use an array instead."
+              "Objects are not valid as a React child (found: " + ("[object Object]" === array2 ? "object with keys {" + Object.keys(children).join(", ") + "}" : array2) + "). If you meant to render a collection of children, use an array instead."
             );
           }
           return invokeCallback;
@@ -3000,11 +3000,11 @@
         function warnForMissingKey() {
         }
         function setToSortedString(set) {
-          var array = [];
+          var array2 = [];
           set.forEach(function(value) {
-            array.push(value);
+            array2.push(value);
           });
-          return array.sort().join(", ");
+          return array2.sort().join(", ");
         }
         function createFiber(tag, pendingProps, key, mode) {
           return new FiberNode(tag, pendingProps, key, mode);
@@ -5585,9 +5585,9 @@
           topLevelEventsToReactNames.set(domEventName, reactName);
           registerTwoPhaseEvent(reactName, [domEventName]);
         }
-        function getArrayKind(array) {
-          for (var kind = EMPTY_ARRAY, i = 0; i < array.length; i++) {
-            var value = array[i];
+        function getArrayKind(array2) {
+          for (var kind = EMPTY_ARRAY, i = 0; i < array2.length; i++) {
+            var value = array2[i];
             if ("object" === typeof value && null !== value)
               if (isArrayImpl(value) && 2 === value.length && "string" === typeof value[0]) {
                 if (kind !== EMPTY_ARRAY && kind !== ENTRIES_ARRAY)
@@ -8481,8 +8481,8 @@
           if (null == memoCache) {
             var current2 = currentlyRenderingFiber.alternate;
             null !== current2 && (current2 = current2.updateQueue, null !== current2 && (current2 = current2.memoCache, null != current2 && (memoCache = {
-              data: current2.data.map(function(array) {
-                return array.slice();
+              data: current2.data.map(function(array2) {
+                return array2.slice();
               }),
               index: 0
             })));
@@ -24280,6 +24280,14 @@
       f16: "setFloat16"
     }[dt];
   }
+  function wgslDataTypeToDataViewGetter(dt) {
+    return {
+      i32: "getInt32",
+      u32: "getUint32",
+      f32: "getFloat32",
+      f16: "getFloat16"
+    }[dt];
+  }
   function createLayoutGenerator(spec) {
     function createSetters(spec2, baseOffset, arrayNestingLevel, extraOffsets, accessor) {
       if (spec2.type === "struct") {
@@ -24312,6 +24320,31 @@
     }
     const fnbody = createSetters(spec, 0, 0, [], "src");
     return new Function("dst", "src", fnbody);
+  }
+  function readWgslLayout(spec, view, offset = 0) {
+    if (spec.type === "struct") {
+      return Object.fromEntries(
+        spec.members.map(([name, value]) => [
+          name,
+          readWgslLayout(value.type, view, offset + value.offset)
+        ])
+      );
+    } else if (spec.type === "array") {
+      const elemSize = roundUp(spec.member.align, spec.member.size);
+      return range(spec.count).map(
+        (i) => readWgslLayout(spec.member, view, offset + i * elemSize)
+      );
+    } else {
+      const count = WGSL_TYPE_ELEMENT_COUNTS[spec.type];
+      const elemType = WGSL_TYPE_DATATYPES[spec.type];
+      const getter = wgslDataTypeToDataViewGetter(elemType);
+      const elemSize = WGSL_TYPE_SIZES[elemType];
+      let arr = [];
+      for (let i = 0; i < count; i++) {
+        arr.push(view[getter](offset + i * elemSize, true));
+      }
+      return count === 1 ? arr[0] : arr;
+    }
   }
   function createWgslSerializers(...ss) {
     const layouts = generateLayouts(ss);
@@ -24847,24 +24880,6 @@ fn perlinNoise3(P: vec3f) -> f32 {
       ).join("\n\n")
     }
   };
-  function useWgslSnippetsRaw(ss) {
-    return "\n" + ss.map((s) => `// IMPORTED_SNIPPET: ${s}
-${WgslSnippets[s].src}`).join("\n\n");
-  }
-  function snippetWithDependencies(sn, deps = /* @__PURE__ */ new Set()) {
-    deps.add(sn);
-    for (const d of WgslSnippets[sn]?.deps ?? []) {
-      snippetWithDependencies(d, deps);
-    }
-    return deps;
-  }
-  function useWgslSnippets(str2) {
-    const snippetNames = str2.split(/\s+/g);
-    const withdeps = new Set(
-      snippetNames.flatMap((s) => [...snippetWithDependencies(s)])
-    );
-    return useWgslSnippetsRaw([...withdeps]);
-  }
 
   // raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/simple-filter.wgsl?raw
   var simple_filter_default = "/*TEXTURES*/\r\n\r\n/*TEXTURES*/\r\n\r\n\r\n/*GLOBALS*/\r\n\r\n/*GLOBALS*/\r\n\r\nstruct FragInput {\r\n  @builtin(position) position : vec4f,\r\n  @location(0) uv : vec2f,\r\n}\r\n\r\n@vertex\r\nfn VSMain(@builtin(vertex_index) vertexIndex: u32) -> FragInput {\r\n  var output: FragInput;\r\n\r\n  output.position = vec4(array(\r\n    vec2( 1.0,  1.0),\r\n    vec2( 1.0, -1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2( 1.0,  1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2(-1.0,  1.0),\r\n  )[vertexIndex], 0.5, 1.0);\r\n\r\n  output.uv = array(\r\n    vec2(1.0, 0.0),\r\n    vec2(1.0, 1.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(1.0, 0.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(0.0, 0.0),\r\n  )[vertexIndex];\r\n\r\n  return output;\r\n}\r\n\r\nstruct Output {\r\n/*OUTPUT_STRUCT*/\r\n\r\n/*OUTPUT_STRUCT*/\r\n}\r\n\r\n@fragment\r\nfn FSMain(@location(0) uv : vec2f) -> Output  {\r\n  /*FRAGMENT_BODY*/\r\n\r\n  /*FRAGMENT_BODY*/\r\n}";
@@ -25187,32 +25202,29 @@ struct Params {
       size
     };
   }
+  async function quickMap(device, buf, size, offset) {
+    const staging = device.createBuffer({
+      size: size ?? buf.size,
+      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+    });
+    const enc = device.createCommandEncoder();
+    enc.copyBufferToBuffer(buf, offset ?? 0, staging, 0, size ?? buf.size);
+    device.queue.submit([enc.finish()]);
+    await device.queue.onSubmittedWorkDone();
+    await staging.mapAsync(GPUMapMode.READ, offset ?? 0, size ?? buf.size);
+    const range2 = staging.getMappedRange(0, size ?? buf.size).slice();
+    staging.unmap();
+    return range2;
+  }
+  async function quickMapWithFormat(format, device, buf, size, offset) {
+    const [withLayouts] = generateLayouts([format]);
+    const v = new DataView(await quickMap(device, buf, size, offset));
+    return range(Math.floor(v.byteLength / withLayouts.size)).map(
+      (i) => readWgslLayout(withLayouts, v, i * withLayouts.size)
+    );
+  }
 
   // src/webgpu/partial-pipelines.ts
-  function pipelineRenderpass(pipeline, pass) {
-    const bindGroupNameToIndex = new Map(
-      pipeline.bindGroups.map((b, i) => [b.name, i])
-    );
-    const inputNameToIndex = new Map(pipeline.inputs.map((b, i) => [b.name, i]));
-    return (bindings) => {
-      for (const [k, v] of Object.entries(bindings)) {
-        const bindGroupIndex = bindGroupNameToIndex.get(k);
-        if (bindGroupIndex !== void 0) {
-          pass.setBindGroup(bindGroupIndex, v);
-          continue;
-        }
-        const inputIndex = inputNameToIndex.get(k);
-        if (inputIndex !== void 0) {
-          pass.setVertexBuffer(
-            inputIndex,
-            ...Array.isArray(v) ? v : [v]
-          );
-          continue;
-        }
-        throw new Error(`Bound pipeline does not have attribute '${k}'.`);
-      }
-    };
-  }
   function wrapDevice(device) {
     const wdevice = {
       storageBuffer(name, spec, settings) {
@@ -27086,7 +27098,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
   var import_react15 = __toESM(require_react());
   var import_client2 = __toESM(require_client());
 
-  // demos-src/webgpu/mandelbrot-partial-pipelines.demo.ts
+  // demos-src/webgpu/octree2.demo.ts
   (async () => {
     function fail(msg) {
       window.alert(msg);
@@ -27097,7 +27109,11 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       fail("No GPU adapter!");
       return;
     }
-    const device = hookGPUDevice(await adapter.requestDevice());
+    const device = hookGPUDevice(
+      await adapter.requestDevice({
+        requiredFeatures: ["timestamp-query"]
+      })
+    );
     device.addEventListener(
       "uncapturederror",
       (event) => console.error(event.error)
@@ -27105,142 +27121,382 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     if (!device) {
       fail("No GPU device!");
     }
-    const canvas = document.createElement("canvas");
-    document.body.appendChild(canvas);
-    canvas.width = 1024;
-    canvas.height = 1024;
-    const ctx = canvas.getContext("webgpu");
-    ctx.configure({
-      device,
-      format: navigator.gpu.getPreferredCanvasFormat()
-    });
     const wdevice = wrapDevice(device);
-    const uniformStruct = struct("Params", {
-      corner1: "vec2f",
-      corner2: "vec2f",
-      iters: "u32"
+    const octreeNodeStruct = struct("OctreeNode", {
+      child_idx: "u32",
+      data_idx: "u32"
     });
-    const uniformBufferFormat = wdevice.uniformBuffer("params", uniformStruct);
-    const bindGroupFormat = wdevice.bindGroup("bg", uniformBufferFormat);
-    console.log(createWgslSerializers(uniformStruct).code);
-    const colorTexture = wdevice.texture("color", {
-      format: "rgba8unorm"
-    });
-    const quadBufferFormat = wdevice.vertexBuffer("vertex", {
-      types: [
-        {
-          name: "position",
-          format: "float32x2",
-          offset: 0
-        }
-      ],
-      stride: 8,
-      stepMode: "vertex"
-    });
-    const bufRaw = device.createBuffer({
-      size: 4 * 2 * 6,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX
-    });
-    device.queue.writeBuffer(
-      bufRaw,
-      0,
-      new Float32Array([1, 1, 1, -1, -1, -1, 1, 1, -1, -1, -1, 1])
+    const octreeNodesFormat = wdevice.storageBuffer(
+      "octree_nodes",
+      octreeNodeStruct
     );
-    const quadBuffer = quadBufferFormat.reinterpret(bufRaw);
-    const pipeline = await wdevice.pipeline({
-      inputs: [quadBufferFormat],
-      bindGroups: [bindGroupFormat],
-      outputs: { color: colorTexture },
-      globals: `${useWgslSnippets("perlinNoise unitQuadUnsigned unitQuadSigned")}`,
-      vertex: `
-  var output: FragInput;
-  output.position = vec4(vertex.position, 0.5, 1.0);
-  output.uv = output.position.xy * 0.5 + 0.5;
-  return output;
-    `,
-      fragment: {
-        function: `
-  let c = 
-    mix(params.corner1, params.corner2, input.uv);
-
-  var z = vec2f(0.0);
-
-  var escaped = false;
-
-  for (var i = 0u; i < params.iters; i++) {
-    z = vec2f(
-      z.x * z.x - z.y * z.y,
-      2.0 * z.x * z.y
-    ) + c; 
-
-    if (length(z) > 2.0) {
-      escaped = true;
-      break;
-    }
-  }
-
-  if (escaped) {
-    return vec4f(1.0, 0.0, 1.0, 1.0); 
-  } else {
-    return vec4f(vec2f(perlinNoise2(input.uv * 10.0)), 0.0, 1.0); 
-  }
-      `,
-        struct: `
-@builtin(position) position : vec4f,
-@location(0) uv : vec2f,      
-      `
+    const octreeDataStruct = struct("OctreeData", {
+      min_bounds: "vec3f",
+      point_idx: "u32",
+      max_bounds: "vec3f"
+    });
+    const octreeDataFormat = wdevice.storageBuffer(
+      "octree_data",
+      octreeDataStruct
+    );
+    const octreeMutexStruct = struct("OctreeMutex", {
+      mutex: "atomic<u32>"
+    });
+    const octreeMutexFormat = wdevice.storageBuffer(
+      "octree_mutex",
+      octreeMutexStruct
+    );
+    const octreeDeferredThreadStruct = struct("OctreeDeferredThread", {
+      point_idx: "u32",
+      root_node_idx: "u32"
+    });
+    const octreeDeferredThreadFormat = wdevice.storageBuffer(
+      "octree_deferred_threads",
+      octreeDeferredThreadStruct
+    );
+    const octreeNextfreePointersStruct = struct("OctreeNextfreePointers", {
+      node: "atomic<u32>",
+      data: "atomic<u32>",
+      deferred_thread: "atomic<u32>"
+    });
+    const octreeNextfreePointersFormat = wdevice.storageBuffer(
+      "octree_nextfree_pointers",
+      octreeNextfreePointersStruct,
+      { arrayify: false }
+    );
+    const octreeNextfreePointersNonatomicStruct = struct(
+      "OctreeNextfreePointers",
+      {
+        node: "u32",
+        data: "u32",
+        deferred_thread: "u32"
       }
-    });
-    const uniformBuffer = uniformBufferFormat.instantiate();
-    uniformBufferFormat.fill(uniformBuffer, 0, {
-      corner1: [-2, -2],
-      corner2: [2, 2],
-      iters: 32
-    });
-    const bindGroup = bindGroupFormat.instantiate({
-      params: uniformBuffer
-    });
-    const tex = colorTexture.instantiate(
-      [1024, 1024],
-      GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     );
-    const encoder = device.createCommandEncoder();
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [
-        {
-          clearValue: [1, 0, 0, 1],
-          loadOp: "clear",
-          storeOp: "store",
-          view: tex.createView()
-        }
-      ]
+    const octreeNextfreePointersNonatomicFormat = wdevice.storageBuffer(
+      "octree_nextfree_pointers",
+      octreeNextfreePointersNonatomicStruct,
+      { arrayify: false }
+    );
+    const pointFormat = wdevice.storageBuffer(
+      "points",
+      struct("Point", {
+        pos: "vec3f",
+        mass: "f32",
+        vel: "vec3f"
+      })
+    );
+    const computeIndirectBufferFormat = wdevice.storageBuffer(
+      "compute_indirect",
+      struct("ComputeIndirect", {
+        workgroups: "vec3u"
+      }),
+      {
+        arrayify: false,
+        usage: GPUBufferUsage.INDIRECT | GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE
+      }
+    );
+    const deferredThreadCountBufferFormat = wdevice.storageBuffer(
+      "deferred_thread_count",
+      struct("DeferredThreadCount", {
+        count: "u32"
+      }),
+      {
+        arrayify: false
+      }
+    );
+    const constructOctreeBindGroupFormat = wdevice.bindGroup(
+      "construct_octree",
+      octreeNodesFormat,
+      octreeDataFormat,
+      octreeMutexFormat,
+      octreeDeferredThreadFormat,
+      octreeDeferredThreadFormat.withName("octree_deferred_threads_input"),
+      octreeNextfreePointersFormat,
+      pointFormat,
+      deferredThreadCountBufferFormat
+    );
+    const constructOctreePipeline = await wdevice.compute({
+      bindGroups: [constructOctreeBindGroupFormat],
+      workgroupSize: [32, 1, 1],
+      globals: `
+    // const SENTINEL = 4294967295u;
+    `,
+      shader: `
+    if (id.x >= deferred_thread_count.count) { return; }
+
+    let work_item = octree_deferred_threads_input[id.x]; 
+    let point = points[work_item.point_idx];
+    let root_node = octree_nodes[work_item.root_node_idx];
+    let root_node_data = octree_data[root_node.data_idx];
+    var curr_node_idx = work_item.root_node_idx;
+    var halfway = (root_node_data.min_bounds + root_node_data.max_bounds) / 2.0;
+    var deltas = (root_node_data.max_bounds - root_node_data.min_bounds) / 2.0;
+
+    for (var i = 0; i < 20; i += 1) {
+      let ex = atomicCompareExchangeWeak(
+        &octree_mutex[curr_node_idx].mutex,
+        0,
+        1
+      );
+
+      if (ex.exchanged) {
+        let node = octree_nodes[curr_node_idx];
+
+        // node is a leaf node
+        if (node.child_idx == 0) {
+
+          // node has no data meaning we can safely insert data here
+          if (node.data_idx == 0) {
+            let data_idx = atomicAdd(
+              &octree_nextfree_pointers.data, 1
+            );
+            octree_nodes[curr_node_idx].data_idx = data_idx;
+            octree_data[data_idx].min_bounds = halfway - deltas;
+            octree_data[data_idx].max_bounds = halfway + deltas;
+            octree_data[data_idx].point_idx = work_item.point_idx;
+            atomicStore(
+              &octree_mutex[curr_node_idx].mutex,
+              0
+            );
+            return;
+          } else {
+
+            // node already has data 
+            let existing_data = octree_data[node.data_idx];
+
+            // update it to a branch node 
+            let next_node_idx = atomicAdd(
+              &octree_nextfree_pointers.node, 8 
+            );
+            octree_nodes[curr_node_idx].child_idx = next_node_idx;
+
+            // put other item in the deferred thread queue 
+            let deferred_thread_idx = 
+              atomicAdd(&octree_nextfree_pointers.deferred_thread, 1u);
+            octree_deferred_threads[deferred_thread_idx].point_idx = 
+              existing_data.point_idx;
+            octree_deferred_threads[deferred_thread_idx].root_node_idx = 
+              curr_node_idx;
+
+            // done editing node
+            atomicStore(
+              &octree_mutex[curr_node_idx].mutex,
+              2
+            );
+          }
+        } 
+      } 
+        
+      if (atomicLoad(&octree_mutex[curr_node_idx].mutex) == 2u) {
+        // node is a branch node; we can safely traverse it
+        let next_node_idx = octree_nodes[curr_node_idx].child_idx; 
+
+        // determine what child this node should be placed in
+        let pz = select(0u, 1u, point.pos.z > halfway.z);    
+        let py = select(0u, 1u, point.pos.y > halfway.y);    
+        let px = select(0u, 1u, point.pos.x > halfway.x);
+        let child_idx = pz * 4u + py * 2u + px;
+
+        // traverse one layer deeper
+        curr_node_idx = next_node_idx + child_idx;
+        deltas *= 0.5;
+        halfway.x += select(-deltas.x, deltas.x, px == 1);    
+        halfway.y += select(-deltas.y, deltas.y, py == 1);    
+        halfway.z += select(-deltas.z, deltas.z, pz == 1);    
+
+      } else {
+        // defer execution if mutex already locked 
+        let deferred_thread_idx = 
+          atomicAdd(&octree_nextfree_pointers.deferred_thread, 1u);
+
+        octree_deferred_threads[deferred_thread_idx].point_idx = 
+          work_item.point_idx;
+        octree_deferred_threads[deferred_thread_idx].root_node_idx = 
+          curr_node_idx;
+          
+        return;
+      }
+    }
+    `
     });
-    const bind = pipelineRenderpass(pipeline, pass);
-    pass.setPipeline(pipeline);
-    bind({
-      bg: bindGroup,
-      vertex: quadBuffer
+    const constructOctreeDeferredThreadsInputUniformsFormat = wdevice.uniformBuffer(
+      "input",
+      struct("Input", {
+        count: "u32"
+      }),
+      false,
+      {
+        visibility: GPUShaderStage.COMPUTE
+      }
+    );
+    const constructOctreeDeferredThreadsInputBindGroupFormat = wdevice.bindGroup(
+      "construct_octree_deferred_threads",
+      octreeDeferredThreadFormat,
+      constructOctreeDeferredThreadsInputUniformsFormat
+    );
+    const constructOctreeDeferredThreadsInputPipeline = await wdevice.compute({
+      bindGroups: [constructOctreeDeferredThreadsInputBindGroupFormat],
+      workgroupSize: [32, 1, 1],
+      shader: `
+    if (id.x >= input.count) { return; }
+
+    octree_deferred_threads[id.x].point_idx = id.x;
+    octree_deferred_threads[id.x].root_node_idx = 0;
+    `
     });
-    pass.draw(6);
+    const constructOctreeComputeIndirectBindGroupFormat = wdevice.bindGroup(
+      "construct_octree_compute_indirect",
+      computeIndirectBufferFormat,
+      octreeNextfreePointersNonatomicFormat,
+      deferredThreadCountBufferFormat
+    );
+    const constructOctreeComputeIndirectBufferPipeline = await wdevice.compute({
+      bindGroups: [constructOctreeComputeIndirectBindGroupFormat],
+      workgroupSize: [1, 1, 1],
+      shader: `
+      compute_indirect.workgroups = vec3u(
+        octree_nextfree_pointers.deferred_thread / 32 + 1u,
+        1u,
+        1u
+      );
+      deferred_thread_count.count = octree_nextfree_pointers.deferred_thread;
+      octree_nextfree_pointers.deferred_thread = 0;
+    `
+    });
+    const barnesHutDeferredThreadStruct = struct("BarnesHutDeferredThread", {
+      point_idx: "u32",
+      node_idx: "u32"
+    });
+    const barnesHutDeferredThreadFormat = wdevice.storageBuffer(
+      "barnes_hut_deferred_threads",
+      barnesHutDeferredThreadStruct
+    );
+    const barnesHutNextfreePointersStruct = struct("BarnesHutNextfreePointers", {
+      deferred_thread: "u32"
+    });
+    const barnesHutNextfreePointersFormat = wdevice.storageBuffer(
+      "barnes_hut_nextfree_pointers",
+      barnesHutNextfreePointersStruct
+    );
+    const pointData = range(128).map(() => ({
+      pos: [Math.random(), Math.random(), Math.random()],
+      vel: [0, 0, 0],
+      mass: 1
+    }));
+    const POINT_COUNT = pointData.length;
+    const OCTREE_CAP = 32768;
+    const octreeNodeData = range(OCTREE_CAP).map((i) => ({
+      child_idx: i === 0 ? 1 : 0,
+      data_idx: 0
+    }));
+    const octreeDataData = range(OCTREE_CAP).map(() => ({
+      min_bounds: [0, 0, 0],
+      max_bounds: [1, 1, 1],
+      point_idx: 0
+    }));
+    const octreeMutexData = range(OCTREE_CAP).map((i) => ({
+      mutex: i === 0 ? 2 : 0
+    }));
+    const octreeDeferredThreadsPingpong1Data = range(POINT_COUNT).map((i) => ({
+      point_idx: i,
+      root_node_idx: 0
+    }));
+    const octreeDeferredThreadsPingpong2Data = range(POINT_COUNT).map((i) => ({
+      point_idx: 0,
+      root_node_idx: 0
+    }));
+    const octreeNextfreePointersData = { node: 9, data: 1, deferred_thread: 0 };
+    const octreeComputeIndirectData = {
+      workgroups: [0, 0, 0]
+    };
+    const deferredThreadCountData = {
+      count: POINT_COUNT
+    };
+    const pointBuffer = pointFormat.quickCreateMany(pointData);
+    const octreeNodeBuffer = octreeNodesFormat.quickCreateMany(octreeNodeData);
+    const octreeDataBuffer = octreeDataFormat.quickCreateMany(octreeDataData);
+    const octreeMutexBuffer = octreeMutexFormat.quickCreateMany(octreeMutexData);
+    const octreeDeferredThreadsPingpong1Buffer = octreeDeferredThreadFormat.quickCreateMany(
+      octreeDeferredThreadsPingpong1Data
+    );
+    const octreeDeferredThreadsPingpong2Buffer = octreeDeferredThreadFormat.quickCreateMany(
+      octreeDeferredThreadsPingpong2Data
+    );
+    const octreeNextfreePointersBuffer = octreeNextfreePointersFormat.quickCreate(
+      octreeNextfreePointersData
+    );
+    const octreeComputeIndirectBuffer = computeIndirectBufferFormat.quickCreate(
+      octreeComputeIndirectData
+    );
+    const deferredThreadCountBuffer = deferredThreadCountBufferFormat.quickCreate(
+      deferredThreadCountData
+    );
+    const constructOctreeBindGroup1 = constructOctreeBindGroupFormat.instantiate({
+      octree_data: octreeDataBuffer,
+      octree_deferred_threads_input: octreeDeferredThreadsPingpong1Buffer,
+      octree_deferred_threads: octreeDeferredThreadsPingpong2Buffer,
+      octree_mutex: octreeMutexBuffer,
+      octree_nextfree_pointers: octreeNextfreePointersBuffer,
+      octree_nodes: octreeNodeBuffer,
+      points: pointBuffer,
+      deferred_thread_count: deferredThreadCountBuffer
+    });
+    const constructOctreeBindGroup2 = constructOctreeBindGroupFormat.instantiate({
+      octree_data: octreeDataBuffer,
+      octree_deferred_threads_input: octreeDeferredThreadsPingpong2Buffer,
+      octree_deferred_threads: octreeDeferredThreadsPingpong1Buffer,
+      octree_mutex: octreeMutexBuffer,
+      octree_nextfree_pointers: octreeNextfreePointersBuffer,
+      octree_nodes: octreeNodeBuffer,
+      points: pointBuffer,
+      deferred_thread_count: deferredThreadCountBuffer
+    });
+    const constructIndirectBindGroup = constructOctreeComputeIndirectBindGroupFormat.instantiate({
+      compute_indirect: octreeComputeIndirectBuffer,
+      octree_nextfree_pointers: octreeNextfreePointersNonatomicFormat.reinterpret(
+        octreeNextfreePointersBuffer
+      ),
+      deferred_thread_count: deferredThreadCountBuffer
+    });
+    const enc = device.createCommandEncoder();
+    const pass = enc.beginComputePass();
+    pass.setPipeline(constructOctreePipeline);
+    pass.setBindGroup(0, constructOctreeBindGroup1);
+    pass.dispatchWorkgroups(Math.ceil(POINT_COUNT / 32), 1, 1);
+    for (let i = 0; i < 20; i++) {
+      pass.setPipeline(constructOctreeComputeIndirectBufferPipeline);
+      pass.setBindGroup(0, constructIndirectBindGroup);
+      pass.dispatchWorkgroups(1, 1, 1);
+      pass.setPipeline(constructOctreePipeline);
+      pass.setBindGroup(
+        0,
+        i % 2 === 0 ? constructOctreeBindGroup2 : constructOctreeBindGroup1
+      );
+      pass.dispatchWorkgroupsIndirect(octreeComputeIndirectBuffer, 0);
+    }
     pass.end();
-    const displayer = textureDisplayer(device);
-    displayer.displayTexture2d(
-      {
-        tex: tex.createView(),
-        samplerType: "float",
-        cornerA: [0, 0],
-        cornerB: [1, 1],
-        blackEquiv: [0, 0, 0, 0],
-        whiteEquiv: [1, 1, 1, 1]
-      },
-      {
-        tex: ctx.getCurrentTexture().createView(),
-        format: navigator.gpu.getPreferredCanvasFormat()
-      },
-      encoder
+    device.queue.submit([enc.finish()]);
+    console.log(
+      await quickMapWithFormat(octreeNodeStruct, device, octreeNodeBuffer)
     );
-    device.queue.submit([encoder.finish()]);
-    document.body.appendChild(device.getDebugView());
+    console.log(
+      await quickMapWithFormat(
+        octreeNextfreePointersStruct,
+        device,
+        octreeNextfreePointersBuffer
+      )
+    );
+    console.log(
+      await quickMapWithFormat(
+        octreeDeferredThreadStruct,
+        device,
+        octreeDeferredThreadsPingpong2Buffer
+      )
+    );
+    console.log(new Uint32Array(await quickMap(device, octreeMutexBuffer)));
+    console.log(
+      await quickMapWithFormat(octreeDataStruct, device, octreeDataBuffer)
+    );
   })();
 })();
 /*! Bundled license information:
