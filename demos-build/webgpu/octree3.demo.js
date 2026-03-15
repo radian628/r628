@@ -25710,6 +25710,36 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
     ];
   }
 
+  // src/webgl/mesh.ts
+  function normalize(v) {
+    const len = Math.hypot(...v);
+    return scale3(v, 1 / len);
+  }
+  function rodrigues(v, k, theta) {
+    k = normalize(k);
+    return add3(
+      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+    );
+  }
+  function rotate(axis, angle) {
+    return [
+      ...rodrigues([1, 0, 0], axis, angle),
+      0,
+      ...rodrigues([0, 1, 0], axis, angle),
+      0,
+      ...rodrigues([0, 0, 1], axis, angle),
+      0,
+      0,
+      0,
+      0,
+      1
+    ];
+  }
+  function translate(v) {
+    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
+  }
+
   // src/audio/stream-audio.ts
   var import_fft = __toESM(require_fft());
   function createTrack(channels, sampleRate, constituents) {
@@ -26332,36 +26362,6 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
   // node_modules/ml-convolution/src/fftConvolution.js
   var import_fft2 = __toESM(require_fft());
   var import_next_power_of_two = __toESM(require_next_power_of_two());
-
-  // src/webgl/mesh.ts
-  function normalize(v) {
-    const len = Math.hypot(...v);
-    return scale3(v, 1 / len);
-  }
-  function rodrigues(v, k, theta) {
-    k = normalize(k);
-    return add3(
-      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-    );
-  }
-  function rotate(axis, angle) {
-    return [
-      ...rodrigues([1, 0, 0], axis, angle),
-      0,
-      ...rodrigues([0, 1, 0], axis, angle),
-      0,
-      ...rodrigues([0, 0, 1], axis, angle),
-      0,
-      0,
-      0,
-      0,
-      1
-    ];
-  }
-  function translate(v) {
-    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
-  }
 
   // src/webgpu/gpudoc/ui.tsx
   var import_react4 = __toESM(require_react());
@@ -27861,7 +27861,8 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         position: "vec3f",
         mass: "f32",
         velocity: "vec3f",
-        impulse: "vec3f"
+        impulse: "vec3f",
+        visit_count: "u32"
       })
     );
     const aggregatedBodiesFormat = wdevice.storageBuffer(
@@ -28083,8 +28084,11 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       octree_metadata[metadata_idx].max_corner = halfway + offset;
 
       if (parent_node_counters[i] > 1u) {
-        octree_metadata[metadata_idx].counters_idx = 
+        let counter_idx = 
           atomicAdd(&nextfrees.counters, 1u);
+        octree_metadata[metadata_idx].counters_idx = counter_idx;
+        octree_counters[counter_idx].counters = array(0,0,0,0,0,0,0,0);
+
         let child_idx = 
           atomicAdd(&nextfrees.node, 8u);
         for (var i = 0u; i < 8; i += 1) {
@@ -28092,6 +28096,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
           octree_nodes[child_idx + i].data_end_idx = 0u; 
         }
         octree_nodes[child_node_idx].child_idx = child_idx;
+
         let active_idx = atomicAdd(&nextfrees.active_nodes_index, 1u);
         active_nodes_out[active_idx].node_idx = child_node_idx;
       }
@@ -28298,7 +28303,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       generic[i * 5].data = bitcast<u32>(bodies[i].position.x);
       generic[i * 5 + 1].data = bitcast<u32>(bodies[i].position.y);
       generic[i * 5 + 2].data = bitcast<u32>(bodies[i].position.z);
-      generic[i * 5 + 3].data = bitcast<u32>(0.05 * bodies[i].mass);
+      generic[i * 5 + 3].data = bitcast<u32>(0.05 * pow(bodies[i].mass, 0.2));
       generic[i * 5 + 4].data = 0xffffffff;
     `
     });
@@ -28330,6 +28335,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       var total_impulse = vec3f(0.0);
 
       let body = bodies[id.x];
+      bodies[id.x].visit_count = 0u;
 
       stack[0].node_idx = 0u;
       stack[0].next_child_idx = 0u;
@@ -28371,9 +28377,10 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
           stack[stack_size].next_child_idx = 0u;
           stack_size += 1u;
         } else {
-          let force_mag = child_metadata.mass / pow(dist_to_body, 2.0);
+          let force_mag = child_metadata.mass * bodies[id.x].mass / pow(max(1.0, dist_to_body), 2.0);
           let force_dir = normalize(child_metadata.center_of_mass - body.position);
           total_impulse += force_mag * force_dir; 
+          bodies[id.x].visit_count += 1u;
         }
       }
 
@@ -28438,8 +28445,8 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       octreeMetadataFormat,
       octreeCountersNonatomicFormat,
       nextfreesNonatomicFormat,
-      computeIndirectBufferFormat,
-      activeNodesInfoFormat
+      activeNodesInfoFormat,
+      activeNodesInFormat
     );
     const initRootNodePipeline = await wdevice.compute({
       bindGroups: [initRootNodeBindGroupFormat],
@@ -28456,13 +28463,30 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
 
     octree_counters[0].counters = array(0,0,0,0,0,0,0,0);
 
+    for (var i = 1u; i < 9u; i += 1) {
+      octree_nodes[i].data_start_idx = 0u; 
+      octree_nodes[i].data_end_idx = 0u; 
+      octree_nodes[i].child_idx = 0u; 
+      octree_nodes[i].metadata_idx = 0u; 
+    }
+
     nextfrees.node = 9u;
     nextfrees.node_metadata = 1u;
     nextfrees.counters = 1u;
     nextfrees.active_nodes_index = 0u;
 
     active_nodes_info.count = 1u;
-
+    active_nodes_in[0].node_idx = 0u;
+    `
+    });
+    const initRootNodeBindGroup2Format = wdevice.bindGroup(
+      "bg",
+      computeIndirectBufferFormat
+    );
+    const initRootNodePipeline2 = await wdevice.compute({
+      bindGroups: [initRootNodeBindGroup2Format],
+      workgroupSize: [1, 1, 1],
+      shader: `
     compute_indirect.workgroups = vec3u(1, 1, 1);
     `
     });
@@ -28484,77 +28508,59 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     `
     });
     const bodiesData = [
-      {
-        mass: 1,
-        velocity: [0, 0, 0],
-        position: [0.9, 0.1, 0.1],
-        impulse: [0, 0, 0]
-      },
-      {
-        mass: 2,
-        velocity: [0, 0, 0],
-        position: [0.9, 0.9, 0.9],
-        impulse: [0, 0, 0]
-      },
-      {
-        mass: 3,
-        velocity: [0, 0, 0],
-        position: [0.3, 0.3, 0.3],
-        impulse: [0, 0, 0]
-      },
-      {
-        mass: 4,
-        velocity: [0, 0, 0],
-        position: [0.7, 0.7, 0.7],
-        impulse: [0, 0, 0]
-      }
+      // {
+      //   mass: 1,
+      //   velocity: [0, 0, 0],
+      //   position: [0.9, 0.1, 0.1],
+      //   impulse: [0, 0, 0],
+      // },
+      // {
+      //   mass: 2,
+      //   velocity: [0, 0, 0],
+      //   position: [0.9, 0.9, 0.9],
+      //   impulse: [0, 0, 0],
+      // },
+      // {
+      //   mass: 3,
+      //   velocity: [0, 0, 0],
+      //   position: [0.3, 0.3, 0.3],
+      //   impulse: [0, 0, 0],
+      // },
+      // {
+      //   mass: 4,
+      //   velocity: [0, 0, 0],
+      //   position: [0.7, 0.7, 0.7],
+      //   impulse: [0, 0, 0],
+      // },
+      // {
+      //   mass: 10,
+      //   velocity: [0, 0, 0],
+      //   position: [0.1, 0.1, 0.1],
+      //   impulse: [0, 0, 0],
+      //   visit_count: 0,
+      // },
+      ...range(2e4).map(() => {
+        return {
+          mass: Math.pow(Math.random(), 4) * 0.01 + 1e-4 + (Math.random() > 0.999 ? 1 : 0),
+          velocity: scale3(
+            [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
+            0
+          ),
+          position: scale3(
+            [Math.random() * 4 - 2, Math.random() * 4 - 2, Math.random() * 4 - 2],
+            10
+          ),
+          impulse: [0, 0, 0],
+          visit_count: 0
+        };
+      })
+      // {
+      //   mass: 1,
+      //   velocity: [-1, 0, 0],
+      //   position: [0.9, 0.9, 0.9],
+      //   impulse: [0, 0, 0],
+      // },
     ];
-    const OCTREE_CAP = 256;
-    const octreeNodeData = [
-      {
-        data_start_idx: 0,
-        data_end_idx: bodiesData.length,
-        child_idx: 1,
-        metadata_idx: 0
-      },
-      ...range(OCTREE_CAP - 1).map(() => ({
-        data_start_idx: 0,
-        data_end_idx: 0,
-        child_idx: 0,
-        metadata_idx: 0
-      }))
-    ];
-    const octreeMetadata = [
-      {
-        min_corner: [0, 0, 0],
-        max_corner: [1, 1, 1],
-        counters_idx: 0,
-        mass: 0,
-        center_of_mass: [0, 0, 0]
-      },
-      ...range(OCTREE_CAP - 1).map(() => ({
-        min_corner: [0, 0, 0],
-        max_corner: [0, 0, 0],
-        counters_idx: 0,
-        mass: 0,
-        center_of_mass: [0, 0, 0]
-      }))
-    ];
-    const octreeCounters = range(OCTREE_CAP).map(() => ({
-      counters: [0, 0, 0, 0, 0, 0, 0, 0]
-    }));
-    const bodiesOrder = bodiesData.map((b, i) => ({ body_idx: i }));
-    const nextfrees = {
-      node: 9,
-      node_metadata: 1,
-      counters: 1,
-      active_nodes_index: 0
-    };
-    const nodeBodyAssignments = bodiesOrder.map(() => ({ node_idx: 0 }));
-    const bodyNodeChildSubOffsets = nodeBodyAssignments;
-    const activeNodesInfo = {
-      count: 1
-    };
     function setupMinMaxReduction(params) {
       const countExponent = Math.ceil(Math.log2(params.count));
       const nextPowerOfTwo2 = 2 ** countExponent;
@@ -28583,14 +28589,14 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         vecs: minmax
       });
       return {
-        run: (pass2) => {
-          pass2.setPipeline(initMinMaxPipeline);
-          pass2.setBindGroup(0, initMinMaxBindGroup);
-          pass2.dispatchWorkgroups(Math.ceil(nextPowerOfTwo2 / 32));
-          pass2.setPipeline(reduceMinMaxPipeline);
+        run: (pass) => {
+          pass.setPipeline(initMinMaxPipeline);
+          pass.setBindGroup(0, initMinMaxBindGroup);
+          pass.dispatchWorkgroups(Math.ceil(nextPowerOfTwo2 / 32));
+          pass.setPipeline(reduceMinMaxPipeline);
           for (const { workgroups, bg } of steps) {
-            pass2.setBindGroup(0, bg);
-            pass2.dispatchWorkgroups(workgroups);
+            pass.setBindGroup(0, bg);
+            pass.dispatchWorkgroups(workgroups);
           }
         },
         minmax
@@ -28611,7 +28617,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       });
       const uniformBufs = range(iterSteps).map(
         (i) => prefixSumAggBodiesUniformFormat.quickCreate({
-          count: nextPowerOfTwo2,
+          count: nextPowerOfTwo2 / 2 ** i,
           stride: 2 ** i
         })
       );
@@ -28634,26 +28640,26 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       });
       const dispatchCount = Math.ceil(nextPowerOfTwo2 / 32);
       return {
-        run: (pass2) => {
-          pass2.setPipeline(initAggregatedBodiesPipeline);
-          pass2.setBindGroup(0, initBg);
-          pass2.dispatchWorkgroups(dispatchCount);
-          pass2.setPipeline(prefixSumAggBodiesUpstrokePipeline);
+        run: (pass) => {
+          pass.setPipeline(initAggregatedBodiesPipeline);
+          pass.setBindGroup(0, initBg);
+          pass.dispatchWorkgroups(dispatchCount);
+          pass.setPipeline(prefixSumAggBodiesUpstrokePipeline);
           for (let i = 0; i < iterSteps; i++) {
             const dispatchCount2 = Math.ceil(nextPowerOfTwo2 / 2 ** i / 32);
-            pass2.setBindGroup(0, upstrokeBindGroups[i]);
-            pass2.dispatchWorkgroups(dispatchCount2);
+            pass.setBindGroup(0, upstrokeBindGroups[i]);
+            pass.dispatchWorkgroups(dispatchCount2);
           }
-          pass2.setPipeline(setupPrefixSumBodiesDownstrokePipeline);
-          pass2.setBindGroup(0, setupDownstrokeBindGroup);
-          pass2.dispatchWorkgroups(1);
-          pass2.setPipeline(prefixSumAggBodiesDownstrokePipeline);
+          pass.setPipeline(setupPrefixSumBodiesDownstrokePipeline);
+          pass.setBindGroup(0, setupDownstrokeBindGroup);
+          pass.dispatchWorkgroups(1);
+          pass.setPipeline(prefixSumAggBodiesDownstrokePipeline);
           for (let i = 0; i < iterSteps; i++) {
             const dispatchCount2 = Math.ceil(
-              nextPowerOfTwo2 / 2 ** (iterSteps - i - i) / 32
+              nextPowerOfTwo2 / 2 ** (iterSteps - i - 1) / 32
             );
-            pass2.setBindGroup(0, downstrokeBindGroups[i]);
-            pass2.dispatchWorkgroups(dispatchCount2);
+            pass.setBindGroup(0, downstrokeBindGroups[i]);
+            pass.dispatchWorkgroups(dispatchCount2);
           }
         },
         aggBodies
@@ -28737,8 +28743,11 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
         vecs: minMaxReduce.minmax,
         octree_counters: octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer),
-        compute_indirect: computeIndirectBuffer,
-        active_nodes_info: activeNodesInfoBuffer
+        active_nodes_info: activeNodesInfoBuffer,
+        active_nodes_in: activeNodesBuffer1
+      });
+      const initRootNodeBindGroup2 = initRootNodeBindGroup2Format.instantiate({
+        compute_indirect: computeIndirectBuffer
       });
       const initPerBodyStateBindGroup = initPerBodyStateBindGroupFormat.instantiate({
         body_order: bodiesOrderBuffer1,
@@ -28750,6 +28759,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         agg_bodies: aggPrefixSum.aggBodies,
         nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer)
       });
+      const perBodyWorkgroupCount = Math.ceil(bodiesData.length / 32);
       return {
         octreeNodeBuffer,
         octreeMetadataBuffer,
@@ -28762,44 +28772,60 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         activeNodesBuffer1,
         activeNodesBuffer2,
         activeNodesInfoBuffer,
-        run: (pass2) => {
-          minMaxReduce.run(pass2);
-          pass2.setPipeline(initRootNodePipeline);
-          pass2.setBindGroup(0, initRootNodeBindGroup);
-          pass2.dispatchWorkgroups(1, 1, 1);
-          pass2.setPipeline(initPerBodyStatePipeline);
-          pass2.setBindGroup(0, initPerBodyStateBindGroup);
-          pass2.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+        clear: (enc) => {
+          enc.clearBuffer(octreeNodeBuffer);
+          enc.clearBuffer(octreeMetadataBuffer);
+          enc.clearBuffer(octreeCountersBuffer);
+          enc.clearBuffer(bodiesOrderBuffer1);
+          enc.clearBuffer(bodiesOrderBuffer2);
+          enc.clearBuffer(nextfreesBuffer);
+          enc.clearBuffer(nodeBodyAssignmentsBuffer);
+          enc.clearBuffer(bodyNodeChildSubOffsetsBuffer);
+          enc.clearBuffer(activeNodesBuffer1);
+          enc.clearBuffer(activeNodesBuffer2);
+          enc.clearBuffer(activeNodesInfoBuffer);
+        },
+        run: (pass) => {
+          minMaxReduce.run(pass);
+          pass.setPipeline(initRootNodePipeline);
+          pass.setBindGroup(0, initRootNodeBindGroup);
+          pass.dispatchWorkgroups(1, 1, 1);
+          pass.setPipeline(initRootNodePipeline2);
+          pass.setBindGroup(0, initRootNodeBindGroup2);
+          pass.dispatchWorkgroups(1, 1, 1);
+          pass.setPipeline(initPerBodyStatePipeline);
+          pass.setBindGroup(0, initPerBodyStateBindGroup);
+          pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
           for (let i = 0; i < params.octreeDepth; i++) {
-            pass2.setPipeline(assignBodiesPipeline);
-            pass2.setBindGroup(0, assignBodiesBindGroups[i % 2]);
-            pass2.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
-            pass2.setPipeline(createNewNodesPipeline);
-            pass2.setBindGroup(0, createNewNodesBindGroup[i % 2]);
-            pass2.dispatchWorkgroupsIndirect(computeIndirectBuffer, 0);
-            pass2.setPipeline(reorderBodiesPipeline);
-            pass2.setBindGroup(0, reorderBodiesBindGroups[i % 2]);
-            pass2.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
-            pass2.setPipeline(setupNextIterationPipeline);
-            pass2.setBindGroup(0, setupNextIterationBindGroup);
-            pass2.dispatchWorkgroups(1, 1, 1);
+            pass.setPipeline(assignBodiesPipeline);
+            pass.setBindGroup(0, assignBodiesBindGroups[i % 2]);
+            pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+            pass.setPipeline(createNewNodesPipeline);
+            pass.setBindGroup(0, createNewNodesBindGroup[i % 2]);
+            pass.dispatchWorkgroupsIndirect(computeIndirectBuffer, 0);
+            pass.setPipeline(reorderBodiesPipeline);
+            pass.setBindGroup(0, reorderBodiesBindGroups[i % 2]);
+            pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+            pass.setPipeline(setupNextIterationPipeline);
+            pass.setBindGroup(0, setupNextIterationBindGroup);
+            pass.dispatchWorkgroups(1, 1, 1);
           }
-          aggPrefixSum.run(pass2);
-          pass2.setPipeline(aggregateMassInOctreePipeline);
-          pass2.setBindGroup(0, aggregateMassInOctreeBindGroup);
-          pass2.dispatchWorkgroups(1, 1, 1);
+          aggPrefixSum.run(pass);
+          pass.setPipeline(aggregateMassInOctreePipeline);
+          pass.setBindGroup(0, aggregateMassInOctreeBindGroup);
+          pass.dispatchWorkgroups(params.octreeCapacity / 32, 1, 1);
         }
       };
     }
     const bodiesBuffer = bodiesFormat.quickCreateMany(bodiesData);
     const barnesHutUniforms = barnesHutUniformsFormat.quickCreate({
-      min_width_over_distance_ratio: 0.1,
-      timestep: 2e-3
+      min_width_over_distance_ratio: 1.2,
+      timestep: 0.02
     });
     const octree = setupOctree({
       bodies: bodiesBuffer,
       bodyCount: bodiesData.length,
-      octreeCapacity: 256,
+      octreeCapacity: 2 ** 19,
       octreeDepth: 20
     });
     const applyBarnesHutBindGroup = applyBarnesHutBindGroupFormat.instantiate({
@@ -28808,43 +28834,61 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       octree_nodes: octree.octreeNodeBuffer,
       params: barnesHutUniforms
     });
-    const perBodyWorkgroupCount = Math.ceil(bodiesData.length / 32);
-    const enc = device.createCommandEncoder();
-    const pass = enc.beginComputePass();
-    octree.run(pass);
-    pass.setPipeline(applyBarnesHutPipeline);
-    pass.setBindGroup(0, applyBarnesHutBindGroup);
-    pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
-    pass.end();
-    device.queue.submit([enc.finish()]);
-    console.log(
-      "body-to-node assignments",
-      await quickMapWithFormat(
-        bodyNodeAssignmentsFormat.format,
-        device,
-        octree.nodeBodyAssignmentsBuffer
-      )
-    );
-    console.log(
-      "octree nodes",
-      await quickMapWithFormat(
-        octreeNodeFormat.format,
-        device,
-        octree.octreeNodeBuffer
-      )
-    );
-    console.log(
-      "octree metadata",
-      await quickMapWithFormat(
-        octreeMetadataFormat.format,
-        device,
-        octree.octreeMetadataBuffer
-      )
-    );
-    console.log(
-      "bodies",
-      await quickMapWithFormat(bodiesFormat.format, device, bodiesBuffer)
-    );
+    function runPhysicsStep(pass, enc) {
+      const perBodyWorkgroupCount = Math.ceil(bodiesData.length / 32);
+      octree.run(pass);
+      pass.setPipeline(applyBarnesHutPipeline);
+      pass.setBindGroup(0, applyBarnesHutBindGroup);
+      pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+    }
+    function runDebugPhysicsStep() {
+      const enc = device.createCommandEncoder();
+      octree.clear(enc);
+      const pass = enc.beginComputePass();
+      runPhysicsStep(pass, enc);
+      pass.end();
+      device.queue.submit([enc.finish()]);
+    }
+    async function checkBuffers() {
+      console.log(
+        "body-to-node assignments",
+        await quickMapWithFormat(
+          bodyNodeAssignmentsFormat.format,
+          device,
+          octree.nodeBodyAssignmentsBuffer
+        )
+      );
+      console.log(
+        "octree nodes",
+        await quickMapWithFormat(
+          octreeNodeFormat.format,
+          device,
+          octree.octreeNodeBuffer
+        )
+      );
+      console.log(
+        "octree metadata",
+        await quickMapWithFormat(
+          octreeMetadataFormat.format,
+          device,
+          octree.octreeMetadataBuffer
+        )
+      );
+      console.log(
+        "bodies",
+        await quickMapWithFormat(bodiesFormat.format, device, bodiesBuffer)
+      );
+      console.log(
+        "nextfrees",
+        await quickMapWithFormat(
+          nextfreesFormat.format,
+          device,
+          octree.nextfreesBuffer
+        )
+      );
+    }
+    runDebugPhysicsStep();
+    await checkBuffers();
     let lastT = 0;
     let viewerPos = [0, 0, 0];
     let viewerVel = [0, 0, 0];
@@ -28951,23 +28995,25 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       const beforeGpuStuff = performance.now();
       clear.clear(colorTex, [0, 0, 0, 255]);
       const afterClear = performance.now();
-      const enc2 = device.createCommandEncoder();
+      const enc = device.createCommandEncoder();
       const querySet = device.createQuerySet({
         type: "timestamp",
         count: queryCount
       });
       {
-        const pass3 = enc2.beginComputePass();
-        pass3.setPipeline(transferBodyInfoToPointsPipeline);
+        octree.clear(enc);
+        const pass2 = enc.beginComputePass();
+        runPhysicsStep(pass2, enc);
+        pass2.setPipeline(transferBodyInfoToPointsPipeline);
         const transferBodyInfoToPointsBindGroup = transferBodyInfoToPointsBindGroupFormat.instantiate({
           bodies: bodiesBuffer,
           generic: genericBufferFormat.reinterpret(vertices)
         });
-        pass3.setBindGroup(0, transferBodyInfoToPointsBindGroup);
-        pass3.dispatchWorkgroups(Math.ceil(bodiesData.length / 32));
-        pass3.end();
+        pass2.setBindGroup(0, transferBodyInfoToPointsBindGroup);
+        pass2.dispatchWorkgroups(Math.ceil(bodiesData.length / 32));
+        pass2.end();
       }
-      const pass2 = enc2.beginRenderPass({
+      const pass = enc.beginRenderPass({
         colorAttachments: [
           {
             view: colorTex,
@@ -28987,26 +29033,26 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
           endOfPassWriteIndex: 1
         }
       });
-      pass2.setPipeline(lines.pointPipeline);
+      pass.setPipeline(lines.pointPipeline);
       pipelineRenderpass(
         lines.pointPipeline,
-        pass2
+        pass
       )({
         points: vertices,
         geometry: lines.quad,
         perFrame: drawPerFrameBindGroup
       });
-      pass2.draw(6, bodiesData.length);
-      pass2.end();
-      enc2.resolveQuerySet(querySet, 0, querySet.count, queryResolveBuffer, 0);
-      enc2.copyBufferToBuffer(
+      pass.draw(6, bodiesData.length);
+      pass.end();
+      enc.resolveQuerySet(querySet, 0, querySet.count, queryResolveBuffer, 0);
+      enc.copyBufferToBuffer(
         queryResolveBuffer,
         0,
         stagingBuffer,
         0,
         queryResolveBuffer.size
       );
-      device.queue.submit([enc2.finish()]);
+      device.queue.submit([enc.finish()]);
       const afterQueueSubmit = performance.now();
       const end = performance.now();
       if (stagingBuffer.mapState === "unmapped") {
