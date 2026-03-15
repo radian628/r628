@@ -145,7 +145,7 @@ export type WrappedBindGroupVertexBuffer<
   };
   instantiate(
     count: number,
-    descriptor?: GPUBufferDescriptor,
+    descriptor?: Partial<GPUBufferDescriptor>,
   ): GPUBuffer & {
     format: {
       type: "vertex";
