@@ -46,6 +46,7 @@ import {
 } from "../../src";
 import stringHash from "string-hash";
 import { createNBodyOctreeDefs } from "./n-body-octree";
+import { graphRendererUI } from "./graph-renderer-ui";
 
 document.head.innerHTML += `<meta name="viewport" 
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>`;
@@ -354,11 +355,9 @@ function inv4(m: Mat4): Mat4 {
   });
 
   document.addEventListener("mousedown", (e) => {
-    if (
-      e.target instanceof HTMLElement &&
-      e.target.tagName.toUpperCase() === "A"
-    )
+    if (!(e.target instanceof HTMLCanvasElement)) {
       return;
+    }
 
     if (isDesktop) {
       document.body.requestPointerLock();
@@ -499,6 +498,14 @@ user-select: none;
     }),
   );
 
+  const physicsUniformsFormat = wdevice.uniformBufferForComputeShader(
+    "physics_params",
+    struct("PhysicsParams", {
+      repulsion_multiplier: "f32",
+      attraction_multiplier: "f32",
+    }),
+  );
+
   const nBodySim = await createNBodyOctreeDefs(device, {
     extraBodyFields: {},
     bodyBodyInteraction: `
@@ -507,14 +514,14 @@ user-select: none;
       return force_mag * force_dir; 
     `,
     applyForces: `
-      var impulse = total_impulse;
-      impulse += accels[i].accel * 1.0;
+      var impulse = total_impulse * physics_params.repulsion_multiplier;
+      impulse += accels[i].accel * physics_params.attraction_multiplier;
 
       bodies[i].velocity += impulse / bodies[i].mass * params.timestep;
       bodies[i].position += bodies[i].velocity * params.timestep;
       bodies[i].velocity *= 0.9;
     `,
-    extraPhysicsBuffers: [accelsFormat] as const,
+    extraPhysicsBuffers: [accelsFormat, physicsUniformsFormat] as const,
   });
 
   const bodiesFormat = nBodySim.bodiesFormat;
@@ -861,6 +868,8 @@ fn set_point(idx: u32, position: vec3f) {
     timestep: 0.06,
   });
 
+  const physicsUniforms = physicsUniformsFormat.instantiate(1);
+
   const applyBarnesHutBindGroup =
     nBodySim.applyBarnesHutBindGroupFormat.instantiate({
       bodies: bodies,
@@ -868,6 +877,7 @@ fn set_point(idx: u32, position: vec3f) {
       octree_nodes: octree.octreeNodeBuffer,
       params: barnesHutUniforms,
       accels: accelsFinal,
+      physics_params: physicsUniforms,
     });
 
   function moveBodies() {
@@ -928,7 +938,15 @@ fn set_point(idx: u32, position: vec3f) {
     | "none"
     | "physics";
 
+  const ui = graphRendererUI();
+  document.body.appendChild(ui.dom);
+
   async function loop(t) {
+    physicsUniformsFormat.fill(physicsUniforms, 0, {
+      repulsion_multiplier: ui.state.repulsionMultiplier,
+      attraction_multiplier: ui.state.attractionMultiplier,
+    });
+
     const start = performance.now();
     const seconds = t / 1000;
 
@@ -951,7 +969,7 @@ fn set_point(idx: u32, position: vec3f) {
         ],
         rotationMatrix,
       ),
-      3.0,
+      ui.state.viewerSpeed,
     );
 
     viewerVel = add3(viewerVel, xyz(accel));
