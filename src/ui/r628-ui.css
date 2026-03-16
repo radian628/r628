@@ -115,7 +115,7 @@ input {
   border-radius: 5px;
   color: var(--fg);
   cursor: pointer;
-  margin-block: var(--gap-big);
+  margin: var(--gap-big);
 }
 
 .ui-container button:hover {

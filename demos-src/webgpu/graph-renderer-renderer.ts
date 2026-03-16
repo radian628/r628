@@ -33,7 +33,7 @@ import {
   wrapDevice,
   xyz,
 } from "../../src";
-import { graphRendererUI } from "./graph-renderer-ui";
+import { graphRendererUI, PositionedNode } from "./graph-renderer-ui";
 import { createNBodyOctreeDefs } from "./n-body-octree";
 
 type Node = {
@@ -41,6 +41,7 @@ type Node = {
   color: Vec4;
   initialized: boolean;
   label: string;
+  slug: string;
 };
 
 export async function setupGraphRenderer(device: GPUDevice) {
@@ -524,16 +525,41 @@ user-select: none;
 
       let nodeMap = new Map<string, Vertex<Node, Vec4>>();
 
-      for (const n of graphData) {
-        nodeMap.set(
-          n.url,
-          addVertex(graph, {
-            position: scale3([n.x, n.y, n.z], 0.005),
-            color: [255, 255, 255, 255],
-            initialized: false,
-            label: n.url.replace("http://scp-wiki.wikidot.com", ""),
-          }),
-        );
+      const customPositions = params.ui.state.positions;
+      console.log("custom positions", customPositions);
+
+      if (customPositions) {
+        for (const { position, slug } of JSON.parse(
+          await customPositions.text(),
+        )) {
+          const url = `http://scp-wiki.wikidot.com/${slug}`;
+
+          nodeMap.set(
+            url,
+            addVertex(graph, {
+              position,
+              color: [255, 255, 255, 255],
+              initialized: false,
+              label: slug,
+              slug: slug,
+            }),
+          );
+        }
+      } else {
+        for (const n of graphData) {
+          let position = scale3([n.x, n.y, n.z], 0.005);
+
+          nodeMap.set(
+            n.url,
+            addVertex(graph, {
+              position,
+              color: [255, 255, 255, 255],
+              initialized: false,
+              label: n.url.replace("http://scp-wiki.wikidot.com/", ""),
+              slug: n.url.replace("http://scp-wiki.wikidot.com/", ""),
+            }),
+          );
+        }
       }
 
       for (const n of graphData) {
@@ -886,7 +912,7 @@ user-select: none;
                 const newLabelElem = document.createElement("a");
                 newLabelElem.href = `https://scp-wiki.wikidot.com${n.label}`;
                 newLabelElem.target = "_blank";
-                newLabelElem.innerText = n.label.slice(1);
+                newLabelElem.innerText = n.label;
                 newLabelElem.style = `color: white; background-color: #000b; padding: 5px; transform: translateX(-50%); font-family: sans-serif;`;
                 document.body.appendChild(newLabelElem);
                 labels.set(n.label, {
@@ -897,7 +923,7 @@ user-select: none;
             } else {
               if (labelElem) {
                 labels.delete(n.label);
-                labelElem.elem.parentElement.removeChild(labelElem.elem);
+                labelElem.elem.parentElement?.removeChild(labelElem.elem);
               }
             }
           }
@@ -1094,6 +1120,27 @@ user-select: none;
           for (const { elem } of labels.values()) {
             elem.parentElement?.removeChild(elem);
           }
+        },
+        async exportPositions() {
+          const buf = new Float32Array(await quickMap(device, vertices));
+
+          let nodes: PositionedNode[] = [];
+
+          let stride = 5;
+          let i = 0;
+          for (const v of labelVertsArray) {
+            nodes.push({
+              position: [
+                buf[i * stride],
+                buf[i * stride + 1],
+                buf[i * stride + 2],
+              ],
+              slug: v.slug,
+            });
+            i++;
+          }
+
+          return nodes;
         },
       };
     },

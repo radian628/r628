@@ -2,14 +2,18 @@ import React, { useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import R628_UI_CSS from "../../src/ui/r628-ui.css?raw";
 import {
+  download,
+  getSetProp,
   mutatify,
   NumberField,
   objectUI,
   objectUIGeneric as objectUIGeneric,
   StringField,
   using,
+  Vec3,
 } from "../../src";
 import { BooleanField } from "../../src/ui/react-boolean-field";
+import { FileField } from "../../src/ui/react-file-field";
 
 export type UIState = {
   viewerSpeed: number;
@@ -23,6 +27,7 @@ export type UIState = {
   timestep: number;
 
   tags: string;
+  positions: Blob | undefined;
 };
 
 const DEFAULT_UI_STATE = {
@@ -37,6 +42,7 @@ const DEFAULT_UI_STATE = {
   timestep: 0.06,
 
   tags: "",
+  positions: undefined,
 };
 
 export type GraphRendererUI = {
@@ -45,7 +51,15 @@ export type GraphRendererUI = {
   setState: (fn: (o: UIState) => UIState) => void;
 };
 
-export function graphRendererUI(params: { updateRenderer: () => void }) {
+export type PositionedNode = {
+  position: Vec3;
+  slug: string;
+};
+
+export function graphRendererUI(params: {
+  updateRenderer: () => void;
+  exportPositions: () => Promise<PositionedNode[]>;
+}) {
   const root = document.createElement("div");
 
   let subscriptions = new Set<() => void>();
@@ -61,7 +75,7 @@ export function graphRendererUI(params: { updateRenderer: () => void }) {
       getSnapshot={() => {
         return obj;
       }}
-      updateRenderer={params.updateRenderer}
+      {...params}
     ></UI>,
   );
 
@@ -109,46 +123,29 @@ const NonNegativeNumberFieldM = using(mutatify(NumberField), {
   min: 0,
 });
 
-const RootUI = objectUIGeneric<UIState>((Field) => () => {
-  return (
-    <>
-      <h2>Viewer</h2>
-      <div className="ui-object">
-        <label>Movement Speed</label>
-        <Field name="viewerSpeed" ui={NumberFieldM}></Field>
-      </div>
-      <h2>Physics</h2>
-      <div className="ui-object">
-        <label>Physics Enabled</label>
-        <Field name="physics" ui={BooleanField}></Field>
-        <label>Repulsion Multiplier</label>
-        <Field name="repulsionMultiplier" ui={NumberFieldM}></Field>
-        <label>Attraction Multiplier</label>
-        <Field name="attractionMultiplier" ui={NumberFieldM}></Field>
-        <label>Velocity Damping</label>
-        <Field name="velocityDamping" ui={ClampedNumberFieldM}></Field>
-        <label>Repulsion Exponent</label>
-        <Field name="repulsionExponent" ui={NumberFieldM}></Field>
-        <label>Simulation Accuracy</label>
-        <Field name="simulationAccuracy" ui={NumberFieldM}></Field>
-        <label>Timestep</label>
-        <Field name="timestep" ui={NonNegativeNumberFieldM}></Field>
-      </div>
-      <h2>Filters</h2>
-      <div className="ui-object">
-        <label>Tags</label>
-        <Field name="tags" ui={StringFieldM}></Field>
-      </div>
-    </>
-  );
-});
+const TextareaM = using(StringFieldM, { isTextarea: true });
 
-function UI(props: {
-  subscribe: Parameters<typeof useSyncExternalStore<GraphRendererUI>>[0];
-  getSnapshot: Parameters<typeof useSyncExternalStore<GraphRendererUI>>[1];
-  updateRenderer: () => void;
-}) {
+// const RootUI = objectUIGeneric<UIState>((Field) => () => {
+//   return (
+//     <>
+//     </>
+//   );
+// });
+
+function UI(
+  props: {
+    subscribe: Parameters<typeof useSyncExternalStore<GraphRendererUI>>[0];
+    getSnapshot: Parameters<typeof useSyncExternalStore<GraphRendererUI>>[1];
+  } & Parameters<typeof graphRendererUI>[0],
+) {
   const state = useSyncExternalStore(props.subscribe, props.getSnapshot);
+
+  function prop<K extends keyof UIState>(p: K) {
+    return getSetProp<UIState, K>(
+      { value: state.state, setValue: state.setState },
+      p,
+    );
+  }
 
   return (
     <>
@@ -178,8 +175,56 @@ h2 {
 }
 `}</style>
       <div className="ui-root ui-container">
-        <RootUI value={state.state} setValue={state.setState}></RootUI>
-        <button onClick={props.updateRenderer}>Apply Filters</button>
+        {/* <RootUI value={state.state} setValue={state.setState}></RootUI> */}
+        <h2>Viewer</h2>
+        <div className="ui-object">
+          <label>Movement Speed</label>
+          <NumberFieldM {...prop("viewerSpeed")}></NumberFieldM>
+        </div>
+        <h2>Physics</h2>
+        <div className="ui-object">
+          <label>Physics Enabled</label>
+          <BooleanField {...prop("physics")}></BooleanField>
+          <label>Repulsion Multiplier</label>
+          <NumberFieldM {...prop("repulsionMultiplier")}></NumberFieldM>
+          <label>Attraction Multiplier</label>
+          <NumberFieldM {...prop("attractionMultiplier")}></NumberFieldM>
+          <label>Velocity Damping</label>
+          <NumberFieldM
+            {...prop("velocityDamping")}
+            min={0}
+            max={1}
+          ></NumberFieldM>
+          <label>Repulsion Exponent</label>
+          <NumberFieldM {...prop("repulsionExponent")}></NumberFieldM>
+          <label>Simulation Accuracy</label>
+          <NumberFieldM {...prop("simulationAccuracy")} min={0}></NumberFieldM>
+          <label>Timestep</label>
+          <NumberFieldM {...prop("timestep")} min={0}></NumberFieldM>
+        </div>
+        <h2>Initial Conditions</h2>
+        <div className="ui-object">
+          <label>Tags</label>
+          <StringFieldM {...prop("tags")}></StringFieldM>
+          <label>Positions</label>
+          <FileField {...prop("positions")}></FileField>
+        </div>
+        <button onClick={props.updateRenderer}>Apply Initial Conditions</button>
+        <button
+          onClick={() => {
+            (async () => {
+              const positionedNodes = await props.exportPositions();
+              const json = JSON.stringify(positionedNodes, null, 2);
+
+              download(
+                new Blob([json], { type: "application/json" }),
+                "positions.json",
+              );
+            })();
+          }}
+        >
+          Export Current Node Positions
+        </button>
       </div>
     </>
   );

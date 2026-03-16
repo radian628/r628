@@ -2723,7 +2723,7 @@ var require_react_dom_development = __commonJS({
         return dispatcher;
       }
       "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-      var React14 = require_react(), Internals = {
+      var React15 = require_react(), Internals = {
         d: {
           f: noop,
           r: function() {
@@ -2741,7 +2741,7 @@ var require_react_dom_development = __commonJS({
         },
         p: 0,
         findDOMNode: null
-      }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React14.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React15.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       "function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error(
         "React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills"
       );
@@ -4276,7 +4276,7 @@ var require_react_dom_client_development = __commonJS({
         "number" === type && getActiveElement(node.ownerDocument) === node || node.defaultValue === "" + value || (node.defaultValue = "" + value);
       }
       function validateOptionProps(element, props) {
-        null == props.value && ("object" === typeof props.children && null !== props.children ? React14.Children.forEach(props.children, function(child) {
+        null == props.value && ("object" === typeof props.children && null !== props.children ? React15.Children.forEach(props.children, function(child) {
           null == child || "string" === typeof child || "number" === typeof child || "bigint" === typeof child || didWarnInvalidChild || (didWarnInvalidChild = true, console.error(
             "Cannot infer the option value of complex children. Pass a `value` prop or use a plain string as children to <option>."
           ));
@@ -19908,14 +19908,14 @@ var require_react_dom_client_development = __commonJS({
         ));
       }
       "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-      var Scheduler = require_scheduler(), React14 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
+      var Scheduler = require_scheduler(), React15 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
       Symbol.for("react.scope");
       var REACT_ACTIVITY_TYPE = Symbol.for("react.activity");
       Symbol.for("react.legacy_hidden");
       Symbol.for("react.tracing_marker");
       var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel");
       Symbol.for("react.view_transition");
-      var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React14.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
+      var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React15.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
         pending: false,
         data: null,
         method: null,
@@ -22703,7 +22703,7 @@ var require_react_dom_client_development = __commonJS({
         }
       };
       (function() {
-        var isomorphicReactPackageVersion = React14.version;
+        var isomorphicReactPackageVersion = React15.version;
         if ("19.2.4" !== isomorphicReactPackageVersion)
           throw Error(
             'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' + (isomorphicReactPackageVersion + "\n  - react-dom:  19.2.4\nLearn more: https://react.dev/warnings/version-mismatch")
@@ -27083,9 +27083,280 @@ var OneDimensionalSpatialHashTable = class {
   }
 };
 
+// src/curve/quadratic-curve-to-svg.ts
+function quadraticCurveToPath(curve, sigfigs, offset) {
+  let startPoint = curve[0].a;
+  const str2 = (n) => n.toPrecision(sigfigs);
+  let output = `M ${str2(startPoint[0] + offset[0])} ${str2(
+    startPoint[1] + offset[1]
+  )}`;
+  let prevpoint = startPoint;
+  for (const b of curve) {
+    output += `q ${str2(b.b[0] - prevpoint[0])} ${str2(
+      b.b[1] - prevpoint[1]
+    )},${str2(b.c[0] - prevpoint[0])} ${str2(b.c[1] - prevpoint[1])}`;
+    prevpoint = b.c;
+  }
+  return output;
+}
+function quadraticCurveToSvgPath(curve, offset, color, sigfigs) {
+  const pathd = quadraticCurveToPath(curve, sigfigs, offset);
+  return `<path d="${pathd}" stroke="${color}" />`;
+}
+function islandsToSvg(width, height, islands, sigfigs) {
+  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${islands.map(
+    (i) => quadraticCurveToSvgPath(i.curve, i.topLeftInImage, i.color, sigfigs)
+  ).join("")}</svg>`;
+}
+
+// src/curve/points-on-curve.ts
+function equidistantPointsOnCurve(curve, interval) {
+  if (curve.length === 0) return [];
+  const outPoints = [curve[0]];
+  let accumDist = 0;
+  for (let i = 0; i < curve.length - 1; i++) {
+    const prevPoint = curve[i];
+    const currPoint = curve[i + 1];
+    const currLineDist = distance2(prevPoint, currPoint);
+    const initLength = interval - accumDist % interval;
+    accumDist += currLineDist;
+    const newPointCount = Math.floor(accumDist / interval);
+    for (let j = 0; j < newPointCount; j++) {
+      let distAcross = initLength + j * interval;
+      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
+    }
+    accumDist -= newPointCount * interval;
+  }
+  return outPoints;
+}
+function variableDistancePointsOnCurve(curve, nextDistance) {
+  if (curve.length === 0) return [];
+  const outPoints = [curve[0]];
+  let interval = nextDistance(curve[0]);
+  let accumDist = 0;
+  for (let i = 0; i < curve.length - 1; i++) {
+    const prevPoint = curve[i];
+    const currPoint = curve[i + 1];
+    const currLineDist = distance2(prevPoint, currPoint);
+    const initLength = interval - accumDist % interval;
+    accumDist += currLineDist;
+    const newPointCount = Math.floor(accumDist / interval);
+    let distAcross = initLength;
+    while (accumDist > interval) {
+      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
+      accumDist -= interval;
+      interval = nextDistance(outPoints.at(-1));
+      distAcross += interval;
+    }
+  }
+  return outPoints;
+}
+
+// src/curve/bezierify.ts
+function dotself2(x2) {
+  return dot2(x2, x2);
+}
+function clamp3(v, lo, hi) {
+  return [clamp(v[0], lo, hi), clamp(v[1], lo, hi), clamp(v[2], lo, hi)];
+}
+function sign2(a) {
+  return [Math.sign(a[0]), Math.sign(a[1])];
+}
+function abs2(a) {
+  return [Math.abs(a[0]), Math.abs(a[1])];
+}
+function pow2(a, b) {
+  return [Math.pow(a[0], b[0]), Math.pow(a[1], b[1])];
+}
+function sdBezier(pos, A, B, C) {
+  const a = sub2(B, A);
+  const b = add2(sub2(A, scale2(B, 2)), C);
+  const c = scale2(a, 2);
+  const d = sub2(A, pos);
+  const kk = 1 / dot2(b, b);
+  const kx = kk * dot2(a, b);
+  const ky = kk * (2 * dot2(a, a) + dot2(d, b)) / 3;
+  const kz = kk * dot2(d, a);
+  let res = 0;
+  const p = ky - kx * kx;
+  const p3 = p * p * p;
+  const q = kx * (2 * kx * kx - 3 * ky) + kz;
+  let h = q * q + 4 * p3;
+  if (h >= 0) {
+    h = Math.sqrt(h);
+    const x2 = scale2(sub2([h, -h], [q, q]), 1 / 2);
+    const uv = mul2(sign2(x2), pow2(abs2(x2), [1 / 3, 1 / 3]));
+    const t = clamp(uv[0] + uv[1] - kx, 0, 1);
+    res = dotself2(add2(d, scale2(add2(c, scale2(b, t)), t)));
+  } else {
+    const z2 = Math.sqrt(-p);
+    const v = Math.acos(q / (p * z2 * 2)) / 3;
+    const m = Math.cos(v);
+    const n = Math.sin(v) * 1.732050808;
+    const t = clamp3(
+      sub3(scale3([m + m, -n - m, n - m], z2), [kx, kx, kx]),
+      0,
+      1
+    );
+    res = Math.min(
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[0])), t[0]))),
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[1])), t[1])))
+    );
+    res = Math.min(
+      res,
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[2])), t[2])))
+    );
+  }
+  return Math.sqrt(res);
+}
+function gradient2(fn, pos, diff) {
+  const a = fn(pos);
+  const b = fn(add2(pos, [diff, 0]));
+  const c = fn(add2(pos, [0, diff]));
+  return [(a - b) / diff, (a - c) / diff];
+}
+function bezierifyFixedCount(path, count, learningRate, gradientDescentIters) {
+  const beziers = [];
+  for (let i = 0; i < count; i++) {
+    const startIndex = Math.floor(i / count * (path.length - 1));
+    const endIndex = Math.floor((i + 1) / count * (path.length - 1));
+    beziers.push(
+      generateBezierApproximation(
+        path,
+        startIndex,
+        endIndex,
+        learningRate,
+        gradientDescentIters
+      ).bezier
+    );
+  }
+  return beziers;
+}
+function bezierAdaptive(path, maxError, learningRate, gradientDescentIters) {
+  return bezierAdaptiveInner(
+    path,
+    maxError,
+    0,
+    path.length - 1,
+    learningRate,
+    gradientDescentIters
+  );
+}
+function bezierAdaptiveInner(path, maxError, startIndex, endIndex, learningRate, gradientDescentIters) {
+  const approx = generateBezierApproximation(
+    path,
+    startIndex,
+    endIndex,
+    learningRate,
+    gradientDescentIters
+  );
+  if (approx.error <= maxError || endIndex - startIndex < 3)
+    return [approx.bezier];
+  const mid = Math.floor((startIndex + endIndex) / 2);
+  return [
+    ...bezierAdaptiveInner(
+      path,
+      maxError,
+      startIndex,
+      mid,
+      learningRate,
+      gradientDescentIters
+    ),
+    ...bezierAdaptiveInner(
+      path,
+      maxError,
+      mid,
+      endIndex,
+      learningRate,
+      gradientDescentIters
+    )
+  ];
+}
+function generateBezierApproximation(path, startIndex, endIndex, learningRate, gradientDescentIters) {
+  const start = path[startIndex];
+  const end = path[endIndex];
+  let controlPoint = add2(
+    scale2(add2(path[startIndex], path[endIndex]), 0.5),
+    [1e-4, 1e-4]
+  );
+  const getError = (v) => {
+    let error = 0;
+    let count = 0;
+    for (let i = startIndex + 1; i < endIndex; i++) {
+      error += sdBezier(path[i], start, v, end) ** 2;
+      count++;
+    }
+    return error / count;
+  };
+  for (let i = 0; i < gradientDescentIters; i++) {
+    const gradient = gradient2(getError, controlPoint, 1e-3);
+    if (isNaN(gradient[0]) || isNaN(gradient[1])) {
+      continue;
+    }
+    controlPoint = add2(controlPoint, scale2(gradient, learningRate));
+  }
+  return {
+    bezier: { a: start, b: controlPoint, c: end },
+    error: getError(controlPoint)
+  };
+}
+function bezierPreview(beziers, size) {
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d");
+  const points = beziers.flatMap((e) => [e.a, e.b, e.c]);
+  c.width = Math.max(...points.map((b) => b[0])) * size + size;
+  c.height = Math.max(...points.map((b) => b[1])) * size + size;
+  ctx?.beginPath();
+  for (const p of beziers) {
+    ctx.moveTo(p.a[0] * size, p.a[1] * size);
+    ctx.quadraticCurveTo(
+      p.b[0] * size,
+      p.b[1] * size,
+      p.c[0] * size,
+      p.c[1] * size
+    );
+  }
+  ctx.stroke();
+  return c;
+}
+
 // src/math/round.ts
 function roundUp(factor, x2) {
   return Math.ceil(x2 / factor) * factor;
+}
+
+// src/math/noise.ts
+function fract(x2) {
+  return x2 - Math.floor(x2);
+}
+function simpleRandVec2ToFloat(co) {
+  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
+}
+function simpleRandVec2ToVec2(co) {
+  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
+}
+function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
+  const fp = [Math.floor(p[0]), Math.floor(p[1])];
+  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
+  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
+  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
+  const v42 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
+  const o1 = sub2(p, fp);
+  const o2 = sub2(o1, [1, 0]);
+  const o3 = sub2(o1, [0, 1]);
+  const o4 = sub2(o1, [1, 1]);
+  const d1 = dot2(v1, o1);
+  const d2 = dot2(v2, o2);
+  const d3 = dot2(v3, o3);
+  const d4 = dot2(v42, o4);
+  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
+  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
+  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
+}
+function boxMullerTransform(u) {
+  const a = Math.sqrt(-2 * Math.log(u[0]));
+  const b = 2 * Math.PI * u[1];
+  return [a * Math.cos(b), a * Math.sin(b)];
 }
 
 // src/webgpu/converters.ts
@@ -29391,6 +29662,413 @@ function makeUniformBuffer(spec, group, binding, data, buffer, byteOffset) {
     buffer,
     byteOffset
   );
+}
+
+// src/webgl/shader.ts
+function source2shader(gl, type, source) {
+  const shader = gl.createShader(
+    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
+  );
+  if (!shader) return err(void 0);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
+    return err(void 0);
+  }
+  return ok(shader);
+}
+function shaders2program(gl, v, f) {
+  const program = gl.createProgram();
+  gl.attachShader(program, v);
+  gl.attachShader(program, f);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+    return err(void 0);
+  }
+  return ok(program);
+}
+function sources2program(gl, vs, fs) {
+  const v = source2shader(gl, "v", vs);
+  const f = source2shader(gl, "f", fs);
+  if (!v.ok || !f.ok) return err(void 0);
+  return shaders2program(gl, v.data, f.data);
+}
+function fullscreenQuadBuffer(gl) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      -1,
+      -1,
+      1,
+      -1,
+      -1,
+      1,
+      1,
+      1,
+      -1,
+      1,
+      1,
+      -1
+    ]),
+    gl.STATIC_DRAW
+  );
+  return ok(buffer);
+}
+function glRenderToQuad(options) {
+  const canvas = document.createElement("canvas");
+  canvas.width = options.width;
+  canvas.height = options.height;
+  const gl = canvas.getContext(options.version ?? "webgl2");
+  gl.viewport(0, 0, options.width, options.height);
+  if (!gl) return err(void 0);
+  const buf = fullscreenQuadBuffer(gl);
+  const prog = sources2program(
+    gl,
+    `#version 300 es
+precision highp float;
+
+in vec2 in_vpos;
+out vec2 pos;
+
+void main() {
+  pos = in_vpos * 0.5 + 0.5;
+  gl_Position = vec4(in_vpos, 0.5, 1.0);
+}`,
+    (options.noheader ? "" : `#version 300 es
+precision highp float;
+in vec2 pos;
+out vec4 col;
+`) + (options.noAutoUniforms ? "" : [
+      [options.uniforms, "", "float"],
+      [options.intUniforms, "i", "int"],
+      [options.uintUniforms, "u", "uint"]
+    ].map(
+      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
+        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
+      }).join("\n")
+    ).join("\n")) + options.fragsource
+  );
+  if (!prog.data) return err(void 0);
+  gl.useProgram(prog.data);
+  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
+  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(attrloc);
+  for (const [uniforms, type] of [
+    [options.uniforms, "i"],
+    [options.intUniforms, "i"],
+    [options.uintUniforms, "ui"]
+  ]) {
+    for (const [k, v] of Object.entries(uniforms ?? {})) {
+      const v2 = Array.isArray(v) ? v : [v];
+      gl[`uniform${v2.length}${type}v`](
+        gl.getUniformLocation(prog.data, k),
+        v2
+      );
+    }
+  }
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  return ok(canvas);
+}
+
+// src/webgl/scene.ts
+function applyUniform(gl, prog, name, spec) {
+  const [t, d] = spec;
+  const l = gl.getUniformLocation(prog, name);
+  if (l === null) {
+    throw new Error(
+      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
+    );
+  }
+  if (t === "float") gl.uniform1f(l, d);
+  if (t === "vec2") gl.uniform2f(l, ...d);
+  if (t === "vec3") gl.uniform3f(l, ...d);
+  if (t === "vec4") gl.uniform4f(l, ...d);
+  if (t === "int") gl.uniform1i(l, d);
+  if (t === "ivec2") gl.uniform2i(l, ...d);
+  if (t === "ivec3") gl.uniform3i(l, ...d);
+  if (t === "ivec4") gl.uniform4i(l, ...d);
+  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
+  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
+  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
+  if (t === "float[]") gl.uniform1fv(l, d);
+  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
+  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
+  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
+  if (t === "int[]") gl.uniform1iv(l, d);
+  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
+  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
+  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
+  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
+  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
+  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
+}
+function applyUniforms(gl, prog, uniforms) {
+  for (const [k, v] of Object.entries(uniforms)) {
+    applyUniform(gl, prog, k, v);
+  }
+}
+function createScene(sceneSpec) {
+  const gl = sceneSpec.gl;
+  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
+  let sceneUniforms = sceneSpec.uniforms ?? {};
+  return {
+    uniforms() {
+      return sceneUniforms;
+    },
+    resetUniforms(u) {
+      sceneUniforms = u;
+    },
+    updateUniforms(u) {
+      sceneUniforms = { ...sceneUniforms, ...u };
+    },
+    addObject3D(spec) {
+      let objectUniforms = spec.uniforms ?? {};
+      return {
+        gl() {
+          return gl;
+        },
+        draw() {
+          gl.useProgram(spec.program);
+          spec.buffer.setLayout(spec.program);
+          applyUniforms(
+            gl,
+            spec.program,
+            combineUniforms(sceneUniforms, objectUniforms)
+          );
+          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
+        },
+        uniforms() {
+          return objectUniforms;
+        },
+        resetUniforms(u) {
+          objectUniforms = u;
+        },
+        updateUniforms(u) {
+          objectUniforms = { ...objectUniforms, ...u };
+        }
+      };
+    }
+  };
+}
+
+// src/webgl/mesh.ts
+function parametric2D(x2, y2, attr, getPoint) {
+  const data = [];
+  for (let j = 0; j < y2; j++) {
+    for (let i = 0; i < x2; i++) {
+      const a = getPoint(i, j);
+      const b = getPoint(i + 1, j);
+      const c = getPoint(i, j + 1);
+      const d = getPoint(i + 1, j + 1);
+      data.push({ [attr]: a });
+      data.push({ [attr]: c });
+      data.push({ [attr]: b });
+      data.push({ [attr]: c });
+      data.push({ [attr]: d });
+      data.push({ [attr]: b });
+    }
+  }
+  return data;
+}
+function uvSphere(x2, y2, rad, attr) {
+  return parametric2D(x2, y2, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
+    let px = Math.cos(a) * Math.cos(b) * rad;
+    let pz = Math.sin(a) * Math.cos(b) * rad;
+    let py = Math.sin(b) * rad;
+    return [px, py, pz];
+  });
+}
+function ring(x2, rad, height, attr) {
+  return parametric2D(x2, 1, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const px = Math.cos(a) * rad;
+    const pz = Math.sin(a) * rad;
+    const py = j === 1 ? height / 2 : -height / 2;
+    return [px, py, pz];
+  });
+}
+function torus(x2, y2, R, r, attr) {
+  return parametric2D(x2, y2, attr, (i, j) => {
+    const a = (i + x2) % x2 / x2 * Math.PI * 2;
+    const b = (j + y2) % y2 / y2 * Math.PI * 2;
+    let px = Math.cos(a);
+    let pz = Math.sin(a);
+    let py = Math.sin(b) * r;
+    px *= R + Math.cos(b) * r;
+    pz *= R + Math.cos(b) * r;
+    return [px, py, pz];
+  });
+}
+function move(mesh, attr, offset) {
+  return mesh.map((m) => ({
+    ...m,
+    [attr]: m[attr].map((e, i) => e + offset[i])
+  }));
+}
+function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
+  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
+  const rangeInv = 1 / (near - far);
+  return [
+    f / aspectRatio,
+    0,
+    0,
+    0,
+    0,
+    f,
+    0,
+    0,
+    0,
+    0,
+    (near + far) * rangeInv,
+    -1,
+    0,
+    0,
+    near * far * rangeInv * 2,
+    0
+  ];
+}
+function ortho(left, right, top, bottom, near, far) {
+  return [
+    2 / (right - left),
+    0,
+    0,
+    -(right + left) / (right - left),
+    0,
+    2 / (top - bottom),
+    0,
+    -(top + bottom) / (top - bottom),
+    0,
+    0,
+    -2 / (far - near),
+    -(far + near) / (far - near),
+    0,
+    0,
+    0,
+    1
+  ];
+}
+function normalize(v) {
+  const len = Math.hypot(...v);
+  return scale3(v, 1 / len);
+}
+function rodrigues(v, k, theta) {
+  k = normalize(k);
+  return add3(
+    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+  );
+}
+function rotate(axis, angle) {
+  return [
+    ...rodrigues([1, 0, 0], axis, angle),
+    0,
+    ...rodrigues([0, 1, 0], axis, angle),
+    0,
+    ...rodrigues([0, 0, 1], axis, angle),
+    0,
+    0,
+    0,
+    0,
+    1
+  ];
+}
+function scale(axes) {
+  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
+}
+function translate(v) {
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
+}
+
+// src/webgl/buffer.ts
+function getDatatypeSize(gl, datatype) {
+  return {
+    [gl.BYTE]: 1,
+    [gl.SHORT]: 2,
+    [gl.UNSIGNED_BYTE]: 1,
+    [gl.UNSIGNED_SHORT]: 2,
+    [gl.FLOAT]: 4,
+    [gl.HALF_FLOAT]: 2,
+    [gl.INT]: 4,
+    [gl.UNSIGNED_INT]: 4,
+    [gl.INT_2_10_10_10_REV]: 4,
+    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
+  }[datatype];
+}
+function createBufferWithLayout(gl, layout, data) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  const layoutEntries = Object.entries(layout);
+  let stride = 0;
+  const offsets = /* @__PURE__ */ new Map();
+  for (const [name, attrs] of layoutEntries) {
+    offsets.set(name, stride);
+    stride += attrs.size * getDatatypeSize(gl, attrs.type);
+  }
+  const arraybuf = new ArrayBuffer(stride * data.length);
+  const rawdata = new DataView(arraybuf);
+  let i = 0;
+  for (const d of data) {
+    for (const [name, attrs] of layoutEntries) {
+      for (let j = 0; j < attrs.size; j++) {
+        const val = d[name][j];
+        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
+        if (attrs.type === gl.BYTE) {
+          rawdata.setInt8(pos, val);
+        } else if (attrs.type === gl.UNSIGNED_BYTE) {
+          rawdata.setUint8(pos, val);
+        } else if (attrs.type === gl.FLOAT) {
+          rawdata.setFloat32(pos, val, true);
+        } else if (attrs.type === gl.SHORT) {
+          rawdata.setInt16(pos, val, true);
+        } else if (attrs.type === gl.UNSIGNED_SHORT) {
+          rawdata.setUint16(pos, val, true);
+        }
+      }
+    }
+    i++;
+  }
+  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
+  return {
+    vertexCount: data.length,
+    buffer,
+    setLayout(prog) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      for (const [name, attrs] of layoutEntries) {
+        const loc = gl.getAttribLocation(prog, name);
+        if (attrs.isInt) {
+          gl.vertexAttribIPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            stride,
+            offsets.get(name)
+          );
+        } else {
+          gl.vertexAttribPointer(
+            loc,
+            attrs.size,
+            attrs.type,
+            attrs.normalized ?? false,
+            stride,
+            offsets.get(name)
+          );
+        }
+        gl.enableVertexAttribArray(loc);
+      }
+    },
+    bindArray(gl2) {
+      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
+    },
+    bindIndex(gl2) {
+      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
+    }
+  };
 }
 
 // src/audio/stream-audio.ts
@@ -33829,684 +34507,6 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
-// src/curve/quadratic-curve-to-svg.ts
-function quadraticCurveToPath(curve, sigfigs, offset) {
-  let startPoint = curve[0].a;
-  const str2 = (n) => n.toPrecision(sigfigs);
-  let output = `M ${str2(startPoint[0] + offset[0])} ${str2(
-    startPoint[1] + offset[1]
-  )}`;
-  let prevpoint = startPoint;
-  for (const b of curve) {
-    output += `q ${str2(b.b[0] - prevpoint[0])} ${str2(
-      b.b[1] - prevpoint[1]
-    )},${str2(b.c[0] - prevpoint[0])} ${str2(b.c[1] - prevpoint[1])}`;
-    prevpoint = b.c;
-  }
-  return output;
-}
-function quadraticCurveToSvgPath(curve, offset, color, sigfigs) {
-  const pathd = quadraticCurveToPath(curve, sigfigs, offset);
-  return `<path d="${pathd}" stroke="${color}" />`;
-}
-function islandsToSvg(width, height, islands, sigfigs) {
-  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${islands.map(
-    (i) => quadraticCurveToSvgPath(i.curve, i.topLeftInImage, i.color, sigfigs)
-  ).join("")}</svg>`;
-}
-
-// src/curve/points-on-curve.ts
-function equidistantPointsOnCurve(curve, interval) {
-  if (curve.length === 0) return [];
-  const outPoints = [curve[0]];
-  let accumDist = 0;
-  for (let i = 0; i < curve.length - 1; i++) {
-    const prevPoint = curve[i];
-    const currPoint = curve[i + 1];
-    const currLineDist = distance2(prevPoint, currPoint);
-    const initLength = interval - accumDist % interval;
-    accumDist += currLineDist;
-    const newPointCount = Math.floor(accumDist / interval);
-    for (let j = 0; j < newPointCount; j++) {
-      let distAcross = initLength + j * interval;
-      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
-    }
-    accumDist -= newPointCount * interval;
-  }
-  return outPoints;
-}
-function variableDistancePointsOnCurve(curve, nextDistance) {
-  if (curve.length === 0) return [];
-  const outPoints = [curve[0]];
-  let interval = nextDistance(curve[0]);
-  let accumDist = 0;
-  for (let i = 0; i < curve.length - 1; i++) {
-    const prevPoint = curve[i];
-    const currPoint = curve[i + 1];
-    const currLineDist = distance2(prevPoint, currPoint);
-    const initLength = interval - accumDist % interval;
-    accumDist += currLineDist;
-    const newPointCount = Math.floor(accumDist / interval);
-    let distAcross = initLength;
-    while (accumDist > interval) {
-      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
-      accumDist -= interval;
-      interval = nextDistance(outPoints.at(-1));
-      distAcross += interval;
-    }
-  }
-  return outPoints;
-}
-
-// src/curve/bezierify.ts
-function dotself2(x2) {
-  return dot2(x2, x2);
-}
-function clamp3(v, lo, hi) {
-  return [clamp(v[0], lo, hi), clamp(v[1], lo, hi), clamp(v[2], lo, hi)];
-}
-function sign2(a) {
-  return [Math.sign(a[0]), Math.sign(a[1])];
-}
-function abs2(a) {
-  return [Math.abs(a[0]), Math.abs(a[1])];
-}
-function pow2(a, b) {
-  return [Math.pow(a[0], b[0]), Math.pow(a[1], b[1])];
-}
-function sdBezier(pos, A, B, C) {
-  const a = sub2(B, A);
-  const b = add2(sub2(A, scale2(B, 2)), C);
-  const c = scale2(a, 2);
-  const d = sub2(A, pos);
-  const kk = 1 / dot2(b, b);
-  const kx = kk * dot2(a, b);
-  const ky = kk * (2 * dot2(a, a) + dot2(d, b)) / 3;
-  const kz = kk * dot2(d, a);
-  let res = 0;
-  const p = ky - kx * kx;
-  const p3 = p * p * p;
-  const q = kx * (2 * kx * kx - 3 * ky) + kz;
-  let h = q * q + 4 * p3;
-  if (h >= 0) {
-    h = Math.sqrt(h);
-    const x2 = scale2(sub2([h, -h], [q, q]), 1 / 2);
-    const uv = mul2(sign2(x2), pow2(abs2(x2), [1 / 3, 1 / 3]));
-    const t = clamp(uv[0] + uv[1] - kx, 0, 1);
-    res = dotself2(add2(d, scale2(add2(c, scale2(b, t)), t)));
-  } else {
-    const z2 = Math.sqrt(-p);
-    const v = Math.acos(q / (p * z2 * 2)) / 3;
-    const m = Math.cos(v);
-    const n = Math.sin(v) * 1.732050808;
-    const t = clamp3(
-      sub3(scale3([m + m, -n - m, n - m], z2), [kx, kx, kx]),
-      0,
-      1
-    );
-    res = Math.min(
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[0])), t[0]))),
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[1])), t[1])))
-    );
-    res = Math.min(
-      res,
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[2])), t[2])))
-    );
-  }
-  return Math.sqrt(res);
-}
-function gradient2(fn, pos, diff) {
-  const a = fn(pos);
-  const b = fn(add2(pos, [diff, 0]));
-  const c = fn(add2(pos, [0, diff]));
-  return [(a - b) / diff, (a - c) / diff];
-}
-function bezierifyFixedCount(path, count, learningRate, gradientDescentIters) {
-  const beziers = [];
-  for (let i = 0; i < count; i++) {
-    const startIndex = Math.floor(i / count * (path.length - 1));
-    const endIndex = Math.floor((i + 1) / count * (path.length - 1));
-    beziers.push(
-      generateBezierApproximation(
-        path,
-        startIndex,
-        endIndex,
-        learningRate,
-        gradientDescentIters
-      ).bezier
-    );
-  }
-  return beziers;
-}
-function bezierAdaptive(path, maxError, learningRate, gradientDescentIters) {
-  return bezierAdaptiveInner(
-    path,
-    maxError,
-    0,
-    path.length - 1,
-    learningRate,
-    gradientDescentIters
-  );
-}
-function bezierAdaptiveInner(path, maxError, startIndex, endIndex, learningRate, gradientDescentIters) {
-  const approx = generateBezierApproximation(
-    path,
-    startIndex,
-    endIndex,
-    learningRate,
-    gradientDescentIters
-  );
-  if (approx.error <= maxError || endIndex - startIndex < 3)
-    return [approx.bezier];
-  const mid = Math.floor((startIndex + endIndex) / 2);
-  return [
-    ...bezierAdaptiveInner(
-      path,
-      maxError,
-      startIndex,
-      mid,
-      learningRate,
-      gradientDescentIters
-    ),
-    ...bezierAdaptiveInner(
-      path,
-      maxError,
-      mid,
-      endIndex,
-      learningRate,
-      gradientDescentIters
-    )
-  ];
-}
-function generateBezierApproximation(path, startIndex, endIndex, learningRate, gradientDescentIters) {
-  const start = path[startIndex];
-  const end = path[endIndex];
-  let controlPoint = add2(
-    scale2(add2(path[startIndex], path[endIndex]), 0.5),
-    [1e-4, 1e-4]
-  );
-  const getError = (v) => {
-    let error = 0;
-    let count = 0;
-    for (let i = startIndex + 1; i < endIndex; i++) {
-      error += sdBezier(path[i], start, v, end) ** 2;
-      count++;
-    }
-    return error / count;
-  };
-  for (let i = 0; i < gradientDescentIters; i++) {
-    const gradient = gradient2(getError, controlPoint, 1e-3);
-    if (isNaN(gradient[0]) || isNaN(gradient[1])) {
-      continue;
-    }
-    controlPoint = add2(controlPoint, scale2(gradient, learningRate));
-  }
-  return {
-    bezier: { a: start, b: controlPoint, c: end },
-    error: getError(controlPoint)
-  };
-}
-function bezierPreview(beziers, size) {
-  const c = document.createElement("canvas");
-  const ctx = c.getContext("2d");
-  const points = beziers.flatMap((e) => [e.a, e.b, e.c]);
-  c.width = Math.max(...points.map((b) => b[0])) * size + size;
-  c.height = Math.max(...points.map((b) => b[1])) * size + size;
-  ctx?.beginPath();
-  for (const p of beziers) {
-    ctx.moveTo(p.a[0] * size, p.a[1] * size);
-    ctx.quadraticCurveTo(
-      p.b[0] * size,
-      p.b[1] * size,
-      p.c[0] * size,
-      p.c[1] * size
-    );
-  }
-  ctx.stroke();
-  return c;
-}
-
-// src/webgl/shader.ts
-function source2shader(gl, type, source) {
-  const shader = gl.createShader(
-    type === "v" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER
-  );
-  if (!shader) return err(void 0);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader));
-    return err(void 0);
-  }
-  return ok(shader);
-}
-function shaders2program(gl, v, f) {
-  const program = gl.createProgram();
-  gl.attachShader(program, v);
-  gl.attachShader(program, f);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(program));
-    return err(void 0);
-  }
-  return ok(program);
-}
-function sources2program(gl, vs, fs) {
-  const v = source2shader(gl, "v", vs);
-  const f = source2shader(gl, "f", fs);
-  if (!v.ok || !f.ok) return err(void 0);
-  return shaders2program(gl, v.data, f.data);
-}
-function fullscreenQuadBuffer(gl) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      -1,
-      -1,
-      1,
-      -1,
-      -1,
-      1,
-      1,
-      1,
-      -1,
-      1,
-      1,
-      -1
-    ]),
-    gl.STATIC_DRAW
-  );
-  return ok(buffer);
-}
-function glRenderToQuad(options) {
-  const canvas = document.createElement("canvas");
-  canvas.width = options.width;
-  canvas.height = options.height;
-  const gl = canvas.getContext(options.version ?? "webgl2");
-  gl.viewport(0, 0, options.width, options.height);
-  if (!gl) return err(void 0);
-  const buf = fullscreenQuadBuffer(gl);
-  const prog = sources2program(
-    gl,
-    `#version 300 es
-precision highp float;
-
-in vec2 in_vpos;
-out vec2 pos;
-
-void main() {
-  pos = in_vpos * 0.5 + 0.5;
-  gl_Position = vec4(in_vpos, 0.5, 1.0);
-}`,
-    (options.noheader ? "" : `#version 300 es
-precision highp float;
-in vec2 pos;
-out vec4 col;
-`) + (options.noAutoUniforms ? "" : [
-      [options.uniforms, "", "float"],
-      [options.intUniforms, "i", "int"],
-      [options.uintUniforms, "u", "uint"]
-    ].map(
-      ([uniforms, vecprefix, scalar]) => Object.entries(uniforms ?? {})?.map(([n, u]) => {
-        return `uniform ${Array.isArray(u) ? vecprefix + "vec" + u.length : scalar} ${n};`;
-      }).join("\n")
-    ).join("\n")) + options.fragsource
-  );
-  if (!prog.data) return err(void 0);
-  gl.useProgram(prog.data);
-  const attrloc = gl.getAttribLocation(prog.data, "in_vpos");
-  gl.vertexAttribPointer(attrloc, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(attrloc);
-  for (const [uniforms, type] of [
-    [options.uniforms, "i"],
-    [options.intUniforms, "i"],
-    [options.uintUniforms, "ui"]
-  ]) {
-    for (const [k, v] of Object.entries(uniforms ?? {})) {
-      const v2 = Array.isArray(v) ? v : [v];
-      gl[`uniform${v2.length}${type}v`](
-        gl.getUniformLocation(prog.data, k),
-        v2
-      );
-    }
-  }
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-  return ok(canvas);
-}
-
-// src/webgl/scene.ts
-function applyUniform(gl, prog, name, spec) {
-  const [t, d] = spec;
-  const l = gl.getUniformLocation(prog, name);
-  if (l === null) {
-    throw new Error(
-      `Uniform '${name}' does not exist, or some other error occurred (program didn't compile).`
-    );
-  }
-  if (t === "float") gl.uniform1f(l, d);
-  if (t === "vec2") gl.uniform2f(l, ...d);
-  if (t === "vec3") gl.uniform3f(l, ...d);
-  if (t === "vec4") gl.uniform4f(l, ...d);
-  if (t === "int") gl.uniform1i(l, d);
-  if (t === "ivec2") gl.uniform2i(l, ...d);
-  if (t === "ivec3") gl.uniform3i(l, ...d);
-  if (t === "ivec4") gl.uniform4i(l, ...d);
-  if (t === "mat2") gl.uniformMatrix2fv(l, false, d);
-  if (t === "mat3") gl.uniformMatrix3fv(l, false, d);
-  if (t === "mat4") gl.uniformMatrix4fv(l, false, d);
-  if (t === "float[]") gl.uniform1fv(l, d);
-  if (t === "vec2[]") gl.uniform2fv(l, d.flat());
-  if (t === "vec3[]") gl.uniform3fv(l, d.flat());
-  if (t === "vec4[]") gl.uniform4fv(l, d.flat());
-  if (t === "int[]") gl.uniform1iv(l, d);
-  if (t === "ivec2[]") gl.uniform2iv(l, d.flat());
-  if (t === "ivec3[]") gl.uniform3iv(l, d.flat());
-  if (t === "ivec4[]") gl.uniform4iv(l, d.flat());
-  if (t === "mat2[]") gl.uniformMatrix2fv(l, false, d.flat());
-  if (t === "mat3[]") gl.uniformMatrix3fv(l, false, d.flat());
-  if (t === "mat4[]") gl.uniformMatrix4fv(l, false, d.flat());
-}
-function applyUniforms(gl, prog, uniforms) {
-  for (const [k, v] of Object.entries(uniforms)) {
-    applyUniform(gl, prog, k, v);
-  }
-}
-function createScene(sceneSpec) {
-  const gl = sceneSpec.gl;
-  const combineUniforms = sceneSpec.combineUniforms ?? ((s, o) => ({ ...s, ...o }));
-  let sceneUniforms = sceneSpec.uniforms ?? {};
-  return {
-    uniforms() {
-      return sceneUniforms;
-    },
-    resetUniforms(u) {
-      sceneUniforms = u;
-    },
-    updateUniforms(u) {
-      sceneUniforms = { ...sceneUniforms, ...u };
-    },
-    addObject3D(spec) {
-      let objectUniforms = spec.uniforms ?? {};
-      return {
-        gl() {
-          return gl;
-        },
-        draw() {
-          gl.useProgram(spec.program);
-          spec.buffer.setLayout(spec.program);
-          applyUniforms(
-            gl,
-            spec.program,
-            combineUniforms(sceneUniforms, objectUniforms)
-          );
-          gl.drawArrays(gl.TRIANGLES, 0, spec.buffer.vertexCount);
-        },
-        uniforms() {
-          return objectUniforms;
-        },
-        resetUniforms(u) {
-          objectUniforms = u;
-        },
-        updateUniforms(u) {
-          objectUniforms = { ...objectUniforms, ...u };
-        }
-      };
-    }
-  };
-}
-
-// src/webgl/mesh.ts
-function parametric2D(x2, y2, attr, getPoint) {
-  const data = [];
-  for (let j = 0; j < y2; j++) {
-    for (let i = 0; i < x2; i++) {
-      const a = getPoint(i, j);
-      const b = getPoint(i + 1, j);
-      const c = getPoint(i, j + 1);
-      const d = getPoint(i + 1, j + 1);
-      data.push({ [attr]: a });
-      data.push({ [attr]: c });
-      data.push({ [attr]: b });
-      data.push({ [attr]: c });
-      data.push({ [attr]: d });
-      data.push({ [attr]: b });
-    }
-  }
-  return data;
-}
-function uvSphere(x2, y2, rad, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI - Math.PI / 2;
-    let px = Math.cos(a) * Math.cos(b) * rad;
-    let pz = Math.sin(a) * Math.cos(b) * rad;
-    let py = Math.sin(b) * rad;
-    return [px, py, pz];
-  });
-}
-function ring(x2, rad, height, attr) {
-  return parametric2D(x2, 1, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const px = Math.cos(a) * rad;
-    const pz = Math.sin(a) * rad;
-    const py = j === 1 ? height / 2 : -height / 2;
-    return [px, py, pz];
-  });
-}
-function torus(x2, y2, R, r, attr) {
-  return parametric2D(x2, y2, attr, (i, j) => {
-    const a = (i + x2) % x2 / x2 * Math.PI * 2;
-    const b = (j + y2) % y2 / y2 * Math.PI * 2;
-    let px = Math.cos(a);
-    let pz = Math.sin(a);
-    let py = Math.sin(b) * r;
-    px *= R + Math.cos(b) * r;
-    pz *= R + Math.cos(b) * r;
-    return [px, py, pz];
-  });
-}
-function move(mesh, attr, offset) {
-  return mesh.map((m) => ({
-    ...m,
-    [attr]: m[attr].map((e, i) => e + offset[i])
-  }));
-}
-function perspective(fieldOfViewInRadians, aspectRatio, near, far) {
-  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
-  const rangeInv = 1 / (near - far);
-  return [
-    f / aspectRatio,
-    0,
-    0,
-    0,
-    0,
-    f,
-    0,
-    0,
-    0,
-    0,
-    (near + far) * rangeInv,
-    -1,
-    0,
-    0,
-    near * far * rangeInv * 2,
-    0
-  ];
-}
-function ortho(left, right, top, bottom, near, far) {
-  return [
-    2 / (right - left),
-    0,
-    0,
-    -(right + left) / (right - left),
-    0,
-    2 / (top - bottom),
-    0,
-    -(top + bottom) / (top - bottom),
-    0,
-    0,
-    -2 / (far - near),
-    -(far + near) / (far - near),
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function normalize(v) {
-  const len = Math.hypot(...v);
-  return scale3(v, 1 / len);
-}
-function rodrigues(v, k, theta) {
-  k = normalize(k);
-  return add3(
-    add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-    scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-  );
-}
-function rotate(axis, angle) {
-  return [
-    ...rodrigues([1, 0, 0], axis, angle),
-    0,
-    ...rodrigues([0, 1, 0], axis, angle),
-    0,
-    ...rodrigues([0, 0, 1], axis, angle),
-    0,
-    0,
-    0,
-    0,
-    1
-  ];
-}
-function scale(axes) {
-  return [axes[0], 0, 0, 0, 0, axes[1], 0, 0, 0, 0, axes[2], 0, 0, 0, 0, 1];
-}
-function translate(v) {
-  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
-}
-
-// src/webgl/buffer.ts
-function getDatatypeSize(gl, datatype) {
-  return {
-    [gl.BYTE]: 1,
-    [gl.SHORT]: 2,
-    [gl.UNSIGNED_BYTE]: 1,
-    [gl.UNSIGNED_SHORT]: 2,
-    [gl.FLOAT]: 4,
-    [gl.HALF_FLOAT]: 2,
-    [gl.INT]: 4,
-    [gl.UNSIGNED_INT]: 4,
-    [gl.INT_2_10_10_10_REV]: 4,
-    [gl.UNSIGNED_INT_2_10_10_10_REV]: 4
-  }[datatype];
-}
-function createBufferWithLayout(gl, layout, data) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  const layoutEntries = Object.entries(layout);
-  let stride = 0;
-  const offsets = /* @__PURE__ */ new Map();
-  for (const [name, attrs] of layoutEntries) {
-    offsets.set(name, stride);
-    stride += attrs.size * getDatatypeSize(gl, attrs.type);
-  }
-  const arraybuf = new ArrayBuffer(stride * data.length);
-  const rawdata = new DataView(arraybuf);
-  let i = 0;
-  for (const d of data) {
-    for (const [name, attrs] of layoutEntries) {
-      for (let j = 0; j < attrs.size; j++) {
-        const val = d[name][j];
-        let pos = i * stride + offsets.get(name) + j * getDatatypeSize(gl, attrs.type);
-        if (attrs.type === gl.BYTE) {
-          rawdata.setInt8(pos, val);
-        } else if (attrs.type === gl.UNSIGNED_BYTE) {
-          rawdata.setUint8(pos, val);
-        } else if (attrs.type === gl.FLOAT) {
-          rawdata.setFloat32(pos, val, true);
-        } else if (attrs.type === gl.SHORT) {
-          rawdata.setInt16(pos, val, true);
-        } else if (attrs.type === gl.UNSIGNED_SHORT) {
-          rawdata.setUint16(pos, val, true);
-        }
-      }
-    }
-    i++;
-  }
-  gl.bufferData(gl.ARRAY_BUFFER, rawdata, gl.STATIC_DRAW);
-  return {
-    vertexCount: data.length,
-    buffer,
-    setLayout(prog) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      for (const [name, attrs] of layoutEntries) {
-        const loc = gl.getAttribLocation(prog, name);
-        if (attrs.isInt) {
-          gl.vertexAttribIPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            stride,
-            offsets.get(name)
-          );
-        } else {
-          gl.vertexAttribPointer(
-            loc,
-            attrs.size,
-            attrs.type,
-            attrs.normalized ?? false,
-            stride,
-            offsets.get(name)
-          );
-        }
-        gl.enableVertexAttribArray(loc);
-      }
-    },
-    bindArray(gl2) {
-      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer);
-    },
-    bindIndex(gl2) {
-      gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, buffer);
-    }
-  };
-}
-
-// src/math/noise.ts
-function fract(x2) {
-  return x2 - Math.floor(x2);
-}
-function simpleRandVec2ToFloat(co) {
-  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
-}
-function simpleRandVec2ToVec2(co) {
-  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
-}
-function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
-  const fp = [Math.floor(p[0]), Math.floor(p[1])];
-  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
-  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
-  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
-  const v42 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
-  const o1 = sub2(p, fp);
-  const o2 = sub2(o1, [1, 0]);
-  const o3 = sub2(o1, [0, 1]);
-  const o4 = sub2(o1, [1, 1]);
-  const d1 = dot2(v1, o1);
-  const d2 = dot2(v2, o2);
-  const d3 = dot2(v3, o3);
-  const d4 = dot2(v42, o4);
-  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
-  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
-  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
-}
-function boxMullerTransform(u) {
-  const a = Math.sqrt(-2 * Math.log(u[0]));
-  const b = 2 * Math.PI * u[1];
-  return [a * Math.cos(b), a * Math.sin(b)];
-}
-
 // src/webgpu/pipelines/parallel-sum.ts
 async function parallelSum(device, settings) {
   const WORKGROUP_SIZE_X = 32;
@@ -36144,12 +36144,15 @@ function using(F2, props) {
   };
 }
 function mutatify(c) {
-  return (props) => c({
-    ...props,
-    setValue(v) {
-      props.setValue(() => v);
-    }
-  });
+  return (props) => (
+    // @ts-expect-error
+    c({
+      ...props,
+      setValue(v) {
+        props.setValue(() => v);
+      }
+    })
+  );
 }
 function surround(Ui, C) {
   return (props) => /* @__PURE__ */ import_react10.default.createElement(C, null, /* @__PURE__ */ import_react10.default.createElement(Ui, { value: props.value, setValue: props.setValue }));
@@ -36448,18 +36451,35 @@ function useInfiniteScroll(props) {
   };
 }
 
-// src/ui/react-drag-and-drop.tsx
+// src/ui/react-file-field.tsx
 var import_react12 = __toESM(require_react());
+function FileField(props) {
+  return /* @__PURE__ */ import_react12.default.createElement(
+    "input",
+    {
+      type: "file",
+      onChange: (e) => {
+        const file = e.currentTarget.files[0];
+        if (file) {
+          props.setValue(() => file);
+        }
+      }
+    }
+  );
+}
+
+// src/ui/react-drag-and-drop.tsx
 var import_react13 = __toESM(require_react());
+var import_react14 = __toESM(require_react());
 function createDragContext() {
-  const DragContext = (0, import_react13.createContext)(void 0);
+  const DragContext = (0, import_react14.createContext)(void 0);
   return {
     DragContext,
     DragContextContainer(props) {
       const { dragCtx, setDragCtx } = props;
-      const destinationCallbacks = (0, import_react12.useRef)(/* @__PURE__ */ new Set());
-      const endDragCallbacks = (0, import_react12.useRef)(/* @__PURE__ */ new Set());
-      (0, import_react12.useEffect)(() => {
+      const destinationCallbacks = (0, import_react13.useRef)(/* @__PURE__ */ new Set());
+      const endDragCallbacks = (0, import_react13.useRef)(/* @__PURE__ */ new Set());
+      (0, import_react13.useEffect)(() => {
         if (dragCtx === void 0) return;
         const mouseup = () => {
           setDragCtx(void 0);
@@ -36477,7 +36497,7 @@ function createDragContext() {
           document.removeEventListener("mouseup", mouseup);
         };
       }, [dragCtx]);
-      return /* @__PURE__ */ import_react12.default.createElement(
+      return /* @__PURE__ */ import_react13.default.createElement(
         DragContext.Provider,
         {
           value: {
@@ -36491,8 +36511,8 @@ function createDragContext() {
       );
     },
     DragSource(props) {
-      const { dragCtx, setDragCtx, destinationCallbacks, endDragCallbacks } = (0, import_react12.useContext)(DragContext);
-      return /* @__PURE__ */ import_react12.default.createElement(
+      const { dragCtx, setDragCtx, destinationCallbacks, endDragCallbacks } = (0, import_react13.useContext)(DragContext);
+      return /* @__PURE__ */ import_react13.default.createElement(
         "div",
         {
           className: "drag-source",
@@ -36513,8 +36533,8 @@ function createDragContext() {
       );
     },
     DragDestination(props) {
-      const { dragCtx, setDragCtx, destinationCallbacks, endDragCallbacks } = (0, import_react12.useContext)(DragContext);
-      return /* @__PURE__ */ import_react12.default.createElement(
+      const { dragCtx, setDragCtx, destinationCallbacks, endDragCallbacks } = (0, import_react13.useContext)(DragContext);
+      return /* @__PURE__ */ import_react13.default.createElement(
         "div",
         {
           className: dragCtx === void 0 ? "drag-destination" : "drag-destination drag-active",
@@ -36536,9 +36556,9 @@ function createDragContext() {
       );
     },
     DragFloat(props) {
-      const { dragCtx, setDragCtx } = (0, import_react12.useContext)(DragContext);
-      const [pos, setPos] = (0, import_react12.useState)([0, 0]);
-      (0, import_react12.useEffect)(() => {
+      const { dragCtx, setDragCtx } = (0, import_react13.useContext)(DragContext);
+      const [pos, setPos] = (0, import_react13.useState)([0, 0]);
+      (0, import_react13.useEffect)(() => {
         const listener = (e) => {
           setPos([e.clientX, e.clientY]);
         };
@@ -36547,8 +36567,8 @@ function createDragContext() {
           document.removeEventListener("mousemove", listener);
         };
       }, []);
-      if (dragCtx === void 0) return /* @__PURE__ */ import_react12.default.createElement(import_react12.default.Fragment, null);
-      return /* @__PURE__ */ import_react12.default.createElement(
+      if (dragCtx === void 0) return /* @__PURE__ */ import_react13.default.createElement(import_react13.default.Fragment, null);
+      return /* @__PURE__ */ import_react13.default.createElement(
         "div",
         {
           className: "drag-float",
@@ -36565,16 +36585,16 @@ function createDragContext() {
 }
 
 // src/ui/react-datetime-field.tsx
-var import_react14 = __toESM(require_react());
+var import_react15 = __toESM(require_react());
 function DateTimeField(props) {
   const localDate = new Date(props.value);
   localDate.setMinutes(
     props.value.getMinutes() - props.value.getTimezoneOffset()
   );
-  const [valueTemp, setValueTemp] = (0, import_react14.useState)(
+  const [valueTemp, setValueTemp] = (0, import_react15.useState)(
     localDate.toISOString().slice(0, 16)
   );
-  return /* @__PURE__ */ import_react14.default.createElement(
+  return /* @__PURE__ */ import_react15.default.createElement(
     "input",
     {
       type: "datetime-local",
@@ -36591,9 +36611,9 @@ function DateTimeField(props) {
 }
 
 // src/ui/react-boolean-field.tsx
-var import_react15 = __toESM(require_react());
+var import_react16 = __toESM(require_react());
 function BooleanField(props) {
-  return /* @__PURE__ */ import_react15.default.createElement(
+  return /* @__PURE__ */ import_react16.default.createElement(
     "input",
     {
       type: "checkbox",
@@ -36606,13 +36626,13 @@ function BooleanField(props) {
 }
 
 // src/ui/progress-bar.tsx
-var import_react16 = __toESM(require_react());
+var import_react17 = __toESM(require_react());
 var import_client2 = __toESM(require_client());
 function ProgressBar(props) {
   const { tasks } = props;
-  const [currTaskIndex, setCurrTaskIndex] = (0, import_react16.useState)(0);
-  const [caption, setCaption] = (0, import_react16.useState)("Progress");
-  (0, import_react16.useEffect)(() => {
+  const [currTaskIndex, setCurrTaskIndex] = (0, import_react17.useState)(0);
+  const [caption, setCaption] = (0, import_react17.useState)("Progress");
+  (0, import_react17.useEffect)(() => {
     const currTask = tasks.at(currTaskIndex);
     if (currTask !== void 0) {
       if (typeof currTask == "string") {
@@ -36625,7 +36645,7 @@ function ProgressBar(props) {
       }
     }
   }, [currTaskIndex]);
-  return /* @__PURE__ */ import_react16.default.createElement("div", null, /* @__PURE__ */ import_react16.default.createElement("div", { style: { fontSize: "48px" } }, caption), /* @__PURE__ */ import_react16.default.createElement(
+  return /* @__PURE__ */ import_react17.default.createElement("div", null, /* @__PURE__ */ import_react17.default.createElement("div", { style: { fontSize: "48px" } }, caption), /* @__PURE__ */ import_react17.default.createElement(
     "div",
     {
       style: {
@@ -36634,7 +36654,7 @@ function ProgressBar(props) {
         border: "1px solid black"
       }
     },
-    /* @__PURE__ */ import_react16.default.createElement(
+    /* @__PURE__ */ import_react17.default.createElement(
       "div",
       {
         style: {
@@ -36651,7 +36671,7 @@ function simpleProgressBar(tasks) {
     const progressBarContainer = document.createElement("div");
     document.body.appendChild(progressBarContainer);
     (0, import_client2.createRoot)(progressBarContainer).render(
-      /* @__PURE__ */ import_react16.default.createElement(
+      /* @__PURE__ */ import_react17.default.createElement(
         ProgressBar,
         {
           tasks: [...tasks, "Finished!", async () => resolve()]
@@ -36681,6 +36701,7 @@ export {
   DateTimeField,
   DraggableWindow,
   Dragger,
+  FileField,
   LineSeg,
   NumberField,
   ObjectField,

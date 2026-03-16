@@ -36,8 +36,9 @@ export function mutatify<T, E>(
       setValue: (t: T) => void;
     } & E
   >,
-): UIFieldWithExtra<T, E> {
+): UIFieldWithExtra<T, Omit<E, "value" | "setValue">> {
   return (props) =>
+    // @ts-expect-error
     c({
       ...props,
       setValue(v) {

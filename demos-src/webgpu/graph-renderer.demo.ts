@@ -46,7 +46,7 @@ import {
 } from "../../src";
 import stringHash from "string-hash";
 import { createNBodyOctreeDefs } from "./n-body-octree";
-import { graphRendererUI } from "./graph-renderer-ui";
+import { graphRendererUI, PositionedNode } from "./graph-renderer-ui";
 import { setupGraphRenderer } from "./graph-renderer-renderer";
 
 document.head.innerHTML += `<meta name="viewport" 
@@ -87,6 +87,9 @@ document.head.innerHTML += `<meta name="viewport"
     async updateRenderer() {
       graphRendererInstance.destroy();
       graphRendererInstance = await graphRenderer.createGraph({ ui });
+    },
+    exportPositions() {
+      return graphRendererInstance.exportPositions();
     },
   });
   const graphRenderer = await setupGraphRenderer(device);
