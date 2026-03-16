@@ -7,12 +7,14 @@ export type UIState = {
   viewerSpeed: number;
   repulsionMultiplier: number;
   attractionMultiplier: number;
+  tags: string;
 };
 
 const DEFAULT_UI_STATE = {
   viewerSpeed: 1,
   repulsionMultiplier: 1,
   attractionMultiplier: 1,
+  tags: "",
 };
 
 export type GraphRendererUI = {
@@ -21,7 +23,7 @@ export type GraphRendererUI = {
   setState: (fn: (o: UIState) => UIState) => void;
 };
 
-export function graphRendererUI() {
+export function graphRendererUI(params: { updateRenderer: () => void }) {
   const root = document.createElement("div");
 
   let subscriptions = new Set<() => void>();
@@ -37,6 +39,7 @@ export function graphRendererUI() {
       getSnapshot={() => {
         return obj;
       }}
+      updateRenderer={params.updateRenderer}
     ></UI>,
   );
 
@@ -69,11 +72,13 @@ const RootUI = objectUI({
   viewerSpeed: mutatify(NumberField),
   repulsionMultiplier: mutatify(NumberField),
   attractionMultiplier: mutatify(NumberField),
+  tags: mutatify(StringField),
 });
 
 function UI(props: {
   subscribe: Parameters<typeof useSyncExternalStore<GraphRendererUI>>[0];
   getSnapshot: Parameters<typeof useSyncExternalStore<GraphRendererUI>>[1];
+  updateRenderer: () => void;
 }) {
   const state = useSyncExternalStore(props.subscribe, props.getSnapshot);
 
@@ -91,6 +96,7 @@ function UI(props: {
 `}</style>
       <div className="ui-root ui-container">
         <RootUI value={state.state} setValue={state.setState}></RootUI>
+        <button onClick={props.updateRenderer}>Apply Tag Filter</button>
       </div>
     </>
   );
