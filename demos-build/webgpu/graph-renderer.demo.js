@@ -2724,7 +2724,7 @@
           return dispatcher;
         }
         "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-        var React14 = require_react(), Internals = {
+        var React15 = require_react(), Internals = {
           d: {
             f: noop,
             r: function() {
@@ -2742,7 +2742,7 @@
           },
           p: 0,
           findDOMNode: null
-        }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React14.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+        }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React15.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
         "function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error(
           "React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills"
         );
@@ -4277,7 +4277,7 @@
           "number" === type && getActiveElement(node.ownerDocument) === node || node.defaultValue === "" + value || (node.defaultValue = "" + value);
         }
         function validateOptionProps(element, props) {
-          null == props.value && ("object" === typeof props.children && null !== props.children ? React14.Children.forEach(props.children, function(child) {
+          null == props.value && ("object" === typeof props.children && null !== props.children ? React15.Children.forEach(props.children, function(child) {
             null == child || "string" === typeof child || "number" === typeof child || "bigint" === typeof child || didWarnInvalidChild || (didWarnInvalidChild = true, console.error(
               "Cannot infer the option value of complex children. Pass a `value` prop or use a plain string as children to <option>."
             ));
@@ -19909,14 +19909,14 @@
           ));
         }
         "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-        var Scheduler = require_scheduler(), React14 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
+        var Scheduler = require_scheduler(), React15 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
         Symbol.for("react.scope");
         var REACT_ACTIVITY_TYPE = Symbol.for("react.activity");
         Symbol.for("react.legacy_hidden");
         Symbol.for("react.tracing_marker");
         var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel");
         Symbol.for("react.view_transition");
-        var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React14.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
+        var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React15.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
           pending: false,
           data: null,
           method: null,
@@ -22704,7 +22704,7 @@
           }
         };
         (function() {
-          var isomorphicReactPackageVersion = React14.version;
+          var isomorphicReactPackageVersion = React15.version;
           if ("19.2.4" !== isomorphicReactPackageVersion)
             throw Error(
               'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' + (isomorphicReactPackageVersion + "\n  - react-dom:  19.2.4\nLearn more: https://react.dev/warnings/version-mismatch")
@@ -27819,27 +27819,37 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
 
   // src/ui/react-nested-layout.tsx
   var import_react10 = __toESM(require_react());
+  function using(F2, props) {
+    return (params) => {
+      return /* @__PURE__ */ import_react10.default.createElement(F2, { ...{ ...props, ...params } });
+    };
+  }
   function mutatify(c) {
     return (props) => c({
-      value: props.value,
+      ...props,
       setValue(v) {
         props.setValue(() => v);
       }
     });
   }
-  function objectUI(fields) {
-    const fieldsArray = Object.entries(fields);
-    return (props) => {
-      return /* @__PURE__ */ import_react10.default.createElement("div", { className: "ui-object" }, fieldsArray.map(([name, Ui]) => /* @__PURE__ */ import_react10.default.createElement("div", { className: "ui-field", key: name }, /* @__PURE__ */ import_react10.default.createElement("label", null, name), /* @__PURE__ */ import_react10.default.createElement(
-        Ui,
+  function objectUIGeneric(c) {
+    const ctx = (0, import_react10.createContext)(void 0);
+    const Field = ({ name, ui: UI2 }) => {
+      const { value, setValue } = (0, import_react10.useContext)(ctx);
+      return /* @__PURE__ */ import_react10.default.createElement(
+        UI2,
         {
-          value: props.value[name],
-          setValue: (v) => props.setValue((oldValue) => ({
+          value: value[name],
+          setValue: (v) => setValue((oldValue) => ({
             ...oldValue,
             [name]: v(oldValue[name])
           }))
         }
-      ))));
+      );
+    };
+    const Component = c(Field);
+    return (props) => {
+      return /* @__PURE__ */ import_react10.default.createElement(ctx.Provider, { value: props }, /* @__PURE__ */ import_react10.default.createElement(Component, null));
     };
   }
 
@@ -27853,29 +27863,49 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
   // src/ui/react-datetime-field.tsx
   var import_react14 = __toESM(require_react());
 
-  // src/ui/progress-bar.tsx
+  // src/ui/react-boolean-field.tsx
   var import_react15 = __toESM(require_react());
+  function BooleanField(props) {
+    return /* @__PURE__ */ import_react15.default.createElement(
+      "input",
+      {
+        type: "checkbox",
+        checked: props.value,
+        onChange: (e) => {
+          props.setValue(() => e.currentTarget.checked);
+        }
+      }
+    );
+  }
+
+  // src/ui/progress-bar.tsx
+  var import_react16 = __toESM(require_react());
   var import_client2 = __toESM(require_client());
 
   // demos-src/webgpu/graph-renderer-ui.tsx
-  var import_react16 = __toESM(require_react());
+  var import_react17 = __toESM(require_react());
   var import_client3 = __toESM(require_client());
 
   // raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/ui/r628-ui.css?raw
-  var r628_ui_default = '@import url("https://rsms.me/inter/inter.css");\r\n\r\n:root {\r\n  --bg: #121212;\r\n  --bg-lighter: #333;\r\n  --fg: #eee;\r\n  --border-color: #444;\r\n  --border: 1px solid var(--border-color);\r\n  --shadow: #0007;\r\n  --gap: 2px;\r\n  --font: "InterVariable", sans-serif;\r\n}\r\n\r\ninput {\r\n  color: var(--fg);\r\n  border-radius: 5px;\r\n  border-width: 1px;\r\n  background-color: var(--bg-lighter);\r\n  border: none;\r\n}\r\n\r\n.ui-container {\r\n  background-color: var(--bg);\r\n  color: var(--fg);\r\n  font-family: var(--font);\r\n}\r\n\r\n.ui-array {\r\n  list-style: none;\r\n  padding-inline-start: 0;\r\n  margin-block: 0;\r\n}\r\n\r\n.ui-is-being-dragged > :not(.drag-destination) {\r\n  opacity: 0.5;\r\n}\r\n\r\n.ui-array-draggable > li {\r\n  position: relative;\r\n  padding-bottom: var(--gap);\r\n}\r\n\r\n.ui-array-draggable > li > .drag-source {\r\n  display: flex;\r\n  cursor: grab;\r\n}\r\n\r\n.ui-array-draggable .drag-destination {\r\n  width: 100%;\r\n  height: 0px;\r\n}\r\n\r\n.ui-array-draggable .ui-drag-dst {\r\n  width: 100%;\r\n  height: 0px;\r\n  position: absolute;\r\n  top: 0;\r\n  left: 0;\r\n}\r\n\r\n.ui-array-draggable .drag-float {\r\n  pointer-events: none;\r\n}\r\n\r\n.ui-drag-src {\r\n  width: 20px;\r\n  margin-right: var(--gap);\r\n\r\n  background-image: radial-gradient(\r\n    #555 0%,\r\n    #555 10%,\r\n    transparent 40%,\r\n    transparent 100%\r\n  );\r\n  background-size: 20% 20%;\r\n  background-position: center;\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst {\r\n  height: 100%;\r\n  transform: translateY(-50%);\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst:hover {\r\n  background-image: linear-gradient(\r\n    to bottom,\r\n    transparent 0%,\r\n    transparent 40%,\r\n    orange 40%,\r\n    orange 60%,\r\n    transparent 60%,\r\n    transparent 100%\r\n  );\r\n}\r\n';
+  var r628_ui_default = '@import url("https://rsms.me/inter/inter.css");\r\n\r\n:root {\r\n  --bg-darker: #000;\r\n  --bg: #181818;\r\n  --bg-lighter: #333;\r\n  --fg: #eee;\r\n  --border-color: #444;\r\n  --border: 1px solid var(--border-color);\r\n  --shadow: #0007;\r\n  --gap: 2px;\r\n  --gap-big: 5px;\r\n  --font: "InterVariable", sans-serif;\r\n  --highlight: orange;\r\n\r\n  --bg-button: #444;\r\n  --bg-button-hover: #555;\r\n}\r\n\r\ninput {\r\n  color: var(--fg);\r\n  border-radius: 5px;\r\n  border-width: 1px;\r\n  background-color: var(--bg-lighter);\r\n  border: none;\r\n}\r\n\r\n.ui-container {\r\n  background-color: var(--bg);\r\n  color: var(--fg);\r\n  font-family: var(--font);\r\n}\r\n\r\n.ui-array {\r\n  list-style: none;\r\n  padding-inline-start: 0;\r\n  margin-block: 0;\r\n}\r\n\r\n.ui-is-being-dragged > :not(.drag-destination) {\r\n  opacity: 0.5;\r\n}\r\n\r\n.ui-array-draggable > li {\r\n  position: relative;\r\n  padding-bottom: var(--gap);\r\n}\r\n\r\n.ui-array-draggable > li > .drag-source {\r\n  display: flex;\r\n  cursor: grab;\r\n}\r\n\r\n.ui-array-draggable .drag-destination {\r\n  width: 100%;\r\n  height: 0px;\r\n}\r\n\r\n.ui-array-draggable .ui-drag-dst {\r\n  width: 100%;\r\n  height: 0px;\r\n  position: absolute;\r\n  top: 0;\r\n  left: 0;\r\n}\r\n\r\n.ui-array-draggable .drag-float {\r\n  pointer-events: none;\r\n}\r\n\r\n.ui-drag-src {\r\n  width: 20px;\r\n  margin-right: var(--gap);\r\n\r\n  background-image: radial-gradient(\r\n    #555 0%,\r\n    #555 10%,\r\n    transparent 40%,\r\n    transparent 100%\r\n  );\r\n  background-size: 20% 20%;\r\n  background-position: center;\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst {\r\n  height: 100%;\r\n  transform: translateY(-50%);\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst:hover {\r\n  background-image: linear-gradient(\r\n    to bottom,\r\n    transparent 0%,\r\n    transparent 40%,\r\n    var(--highlight) 40%,\r\n    var(--highlight) 60%,\r\n    transparent 60%,\r\n    transparent 100%\r\n  );\r\n}\r\n\r\n.ui-object {\r\n  display: grid;\r\n  grid-template-columns: repeat(2, auto);\r\n  gap: var(--gap-big);\r\n}\r\n\r\n.ui-object > input {\r\n  justify-self: right;\r\n}\r\n\r\n.ui-container button {\r\n  background-color: var(--bg-button);\r\n  border: none;\r\n  border-radius: 5px;\r\n  color: var(--fg);\r\n  cursor: pointer;\r\n  margin-block: var(--gap-big);\r\n}\r\n\r\n.ui-container button:hover {\r\n  background-color: var(--bg-button-hover);\r\n}\r\n';
 
   // demos-src/webgpu/graph-renderer-ui.tsx
   var DEFAULT_UI_STATE = {
     viewerSpeed: 1,
+    physics: true,
     repulsionMultiplier: 1,
     attractionMultiplier: 1,
+    velocityDamping: 0.9,
+    repulsionExponent: 2,
+    simulationAccuracy: 1 / 1.2,
+    timestep: 0.06,
     tags: ""
   };
   function graphRendererUI(params) {
     const root = document.createElement("div");
     let subscriptions = /* @__PURE__ */ new Set();
     (0, import_client3.createRoot)(root).render(
-      /* @__PURE__ */ import_react16.default.createElement(
+      /* @__PURE__ */ import_react17.default.createElement(
         UI,
         {
           subscribe: (cb2) => {
@@ -27912,23 +27942,44 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     };
     return ret;
   }
-  var RootUI = objectUI({
-    viewerSpeed: mutatify(NumberField),
-    repulsionMultiplier: mutatify(NumberField),
-    attractionMultiplier: mutatify(NumberField),
-    tags: mutatify(StringField)
+  var NumberFieldM = mutatify(NumberField);
+  var StringFieldM = mutatify(StringField);
+  var ClampedNumberFieldM = using(mutatify(NumberField), {
+    min: 0,
+    max: 1
+  });
+  var NonNegativeNumberFieldM = using(mutatify(NumberField), {
+    min: 0
+  });
+  var RootUI = objectUIGeneric((Field) => () => {
+    return /* @__PURE__ */ import_react17.default.createElement(import_react17.default.Fragment, null, /* @__PURE__ */ import_react17.default.createElement("h2", null, "Viewer"), /* @__PURE__ */ import_react17.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react17.default.createElement("label", null, "Movement Speed"), /* @__PURE__ */ import_react17.default.createElement(Field, { name: "viewerSpeed", ui: NumberFieldM })), /* @__PURE__ */ import_react17.default.createElement("h2", null, "Physics"), /* @__PURE__ */ import_react17.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react17.default.createElement("label", null, "Physics Enabled"), /* @__PURE__ */ import_react17.default.createElement(Field, { name: "physics", ui: BooleanField }), /* @__PURE__ */ import_react17.default.createElement("label", null, "Repulsion Multiplier"), /* @__PURE__ */ import_react17.default.createElement(Field, { name: "repulsionMultiplier", ui: NumberFieldM }), /* @__PURE__ */ import_react17.default.createElement("label", null, "Attraction Multiplier"), /* @__PURE__ */ import_react17.default.createElement(Field, { name: "attractionMultiplier", ui: NumberFieldM }), /* @__PURE__ */ import_react17.default.createElement("label", null, "Velocity Damping"), /* @__PURE__ */ import_react17.default.createElement(Field, { name: "velocityDamping", ui: ClampedNumberFieldM }), /* @__PURE__ */ import_react17.default.createElement("label", null, "Repulsion Exponent"), /* @__PURE__ */ import_react17.default.createElement(Field, { name: "repulsionExponent", ui: NumberFieldM }), /* @__PURE__ */ import_react17.default.createElement("label", null, "Simulation Accuracy"), /* @__PURE__ */ import_react17.default.createElement(Field, { name: "simulationAccuracy", ui: NumberFieldM }), /* @__PURE__ */ import_react17.default.createElement("label", null, "Timestep"), /* @__PURE__ */ import_react17.default.createElement(Field, { name: "timestep", ui: NonNegativeNumberFieldM })), /* @__PURE__ */ import_react17.default.createElement("h2", null, "Filters"), /* @__PURE__ */ import_react17.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react17.default.createElement("label", null, "Tags"), /* @__PURE__ */ import_react17.default.createElement(Field, { name: "tags", ui: StringFieldM })));
   });
   function UI(props) {
-    const state = (0, import_react16.useSyncExternalStore)(props.subscribe, props.getSnapshot);
-    return /* @__PURE__ */ import_react16.default.createElement(import_react16.default.Fragment, null, /* @__PURE__ */ import_react16.default.createElement("style", null, r628_ui_default), /* @__PURE__ */ import_react16.default.createElement("style", null, `
+    const state = (0, import_react17.useSyncExternalStore)(props.subscribe, props.getSnapshot);
+    return /* @__PURE__ */ import_react17.default.createElement(import_react17.default.Fragment, null, /* @__PURE__ */ import_react17.default.createElement("style", null, r628_ui_default), /* @__PURE__ */ import_react17.default.createElement("style", null, `
 .ui-root {
   top: 0;
   right: 0;
   position: absolute;
   z-index: 2;
-  padding: 10px;
+  padding-inline: 10px;
+  padding-block: 7px;
+  font-size: 80%;
 }
-`), /* @__PURE__ */ import_react16.default.createElement("div", { className: "ui-root ui-container" }, /* @__PURE__ */ import_react16.default.createElement(RootUI, { value: state.state, setValue: state.setState }), /* @__PURE__ */ import_react16.default.createElement("button", { onClick: props.updateRenderer }, "Apply Tag Filter")));
+
+h1 {
+  font-size: 1.2em;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.1em;
+  margin-top: var(--gap-big);
+  border-bottom: 1px solid #444;
+  margin-bottom: var(--gap-big);
+  padding-bottom: var(--gap-big);
+}
+`), /* @__PURE__ */ import_react17.default.createElement("div", { className: "ui-root ui-container" }, /* @__PURE__ */ import_react17.default.createElement(RootUI, { value: state.state, setValue: state.setState }), /* @__PURE__ */ import_react17.default.createElement("button", { onClick: props.updateRenderer }, "Apply Filters")));
   }
 
   // demos-src/webgpu/n-body-octree.ts
@@ -28964,13 +29015,15 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       "physics_params",
       struct("PhysicsParams", {
         repulsion_multiplier: "f32",
-        attraction_multiplier: "f32"
+        attraction_multiplier: "f32",
+        repulsion_exponent: "f32",
+        velocity_damping: "f32"
       })
     );
     const nBodySim = await createNBodyOctreeDefs(device, {
       extraBodyFields: {},
       bodyBodyInteraction: `
-      let force_mag = 40.0 * mass * bodies[i].mass / pow(max(10.0, dist_to_body), 2.0);
+      let force_mag = 40.0 * mass * bodies[i].mass / pow(max(10.0, dist_to_body), physics_params.repulsion_exponent);
       let force_dir = -normalize(center_of_mass - bodies[i].position);
       return force_mag * force_dir; 
     `,
@@ -28980,7 +29033,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
 
       bodies[i].velocity += impulse / bodies[i].mass * params.timestep;
       bodies[i].position += bodies[i].velocity * params.timestep;
-      bodies[i].velocity *= 0.9;
+      bodies[i].velocity *= physics_params.velocity_damping;
     `,
       extraPhysicsBuffers: [accelsFormat, physicsUniformsFormat]
     });
@@ -29489,7 +29542,13 @@ grid-template-areas:
         function moveBodies() {
           physicsUniformsFormat.fill(physicsUniforms, 0, {
             repulsion_multiplier: params.ui.state.repulsionMultiplier,
-            attraction_multiplier: params.ui.state.attractionMultiplier
+            attraction_multiplier: params.ui.state.attractionMultiplier,
+            velocity_damping: params.ui.state.velocityDamping,
+            repulsion_exponent: params.ui.state.repulsionExponent
+          });
+          nBodySim.barnesHutUniformsFormat.fill(barnesHutUniforms, 0, {
+            min_width_over_distance_ratio: 1 / params.ui.state.simulationAccuracy,
+            timestep: params.ui.state.timestep
           });
           const perBodyWorkgroups = Math.ceil(graph.vertices.size / 32);
           const enc = device.createCommandEncoder();
@@ -29774,6 +29833,7 @@ grid-template-areas:
       let dt = (t - lastT) / 1e3;
       lastT = t;
       graphRendererInstance.updateViewer(dt);
+      physicsMode = ui.state.physics ? "physics" : "none";
       if (physicsMode === "physics") {
         graphRendererInstance.moveBodies();
       }

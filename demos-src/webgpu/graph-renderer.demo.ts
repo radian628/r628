@@ -111,6 +111,8 @@ document.head.innerHTML += `<meta name="viewport"
 
     graphRendererInstance.updateViewer(dt);
 
+    physicsMode = ui.state.physics ? "physics" : "none";
+
     if (physicsMode === "physics") {
       graphRendererInstance.moveBodies();
     }

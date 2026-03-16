@@ -1,5 +1,13 @@
-import React, { useState } from "react";
+import React, {
+  createContext,
+  Fragment,
+  JSX,
+  ReactNode,
+  useContext,
+  useState,
+} from "react";
 import { createDragContext, DragAndDrop } from "./react-drag-and-drop";
+import { NumberField } from "./react-number-field";
 
 export type GetSet<T> = {
   value: T;
@@ -7,6 +15,7 @@ export type GetSet<T> = {
 };
 
 export type UIField<T> = React.FC<GetSet<T>>;
+export type UIFieldWithExtra<T, E> = React.FC<GetSet<T> & E>;
 
 export type UIData<F extends UIField<any>> = Parameters<F>[0]["value"];
 
@@ -20,15 +29,17 @@ export function using<T, F extends UIField<T>>(
   };
 }
 
-export function mutatify<T>(
-  c: React.FC<{
-    value: T;
-    setValue: (t: T) => void;
-  }>,
-): UIField<T> {
+export function mutatify<T, E>(
+  c: React.FC<
+    {
+      value: T;
+      setValue: (t: T) => void;
+    } & E
+  >,
+): UIFieldWithExtra<T, E> {
   return (props) =>
     c({
-      value: props.value,
+      ...props,
       setValue(v) {
         props.setValue(() => v);
       },
@@ -60,6 +71,21 @@ export function useprop<Obj, Prop extends keyof Obj>(
     });
 }
 
+export function getSetProp<Obj, Prop extends keyof Obj>(
+  gs: GetSet<Obj>,
+  prop: Prop,
+): GetSet<Obj[Prop]> {
+  return {
+    value: gs.value[prop],
+    setValue(cb) {
+      gs.setValue((oldValue) => ({
+        ...oldValue,
+        [prop]: cb(oldValue[prop]),
+      }));
+    },
+  };
+}
+
 export function objectUI<F extends Record<string, UIField<any>>>(
   fields: F,
 ): UIField<{
@@ -71,7 +97,7 @@ export function objectUI<F extends Record<string, UIField<any>>>(
     return (
       <div className="ui-object">
         {fieldsArray.map(([name, Ui]) => (
-          <div className="ui-field" key={name}>
+          <Fragment key={name}>
             <label>{name}</label>
             <Ui
               value={props.value[name]}
@@ -82,9 +108,47 @@ export function objectUI<F extends Record<string, UIField<any>>>(
                 }))
               }
             ></Ui>
-          </div>
+          </Fragment>
         ))}
       </div>
+    );
+  };
+}
+
+export function objectUIGeneric<F extends Record<string, any>>(
+  c: (
+    Field: <K extends keyof F>(props: {
+      name: K;
+      ui: UIField<F[K]>;
+    }) => JSX.Element,
+  ) => () => ReactNode,
+): UIField<{
+  [K in keyof F]: F[K];
+}> {
+  const ctx = createContext<GetSet<F> | undefined>(undefined);
+
+  const Field = ({ name, ui: UI }) => {
+    const { value, setValue } = useContext(ctx);
+    return (
+      <UI
+        value={value[name]}
+        setValue={(v) =>
+          setValue((oldValue) => ({
+            ...oldValue,
+            [name]: v(oldValue[name]),
+          }))
+        }
+      ></UI>
+    );
+  };
+
+  const Component = c(Field);
+
+  return (props) => {
+    return (
+      <ctx.Provider value={props}>
+        <Component></Component>
+      </ctx.Provider>
     );
   };
 }

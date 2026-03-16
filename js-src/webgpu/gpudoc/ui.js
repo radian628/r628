@@ -1328,7 +1328,7 @@ var require_react_dom_development = __commonJS({
         return dispatcher;
       }
       "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-      var React13 = require_react(), Internals = {
+      var React14 = require_react(), Internals = {
         d: {
           f: noop,
           r: function() {
@@ -1346,7 +1346,7 @@ var require_react_dom_development = __commonJS({
         },
         p: 0,
         findDOMNode: null
-      }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React13.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React14.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       "function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error(
         "React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills"
       );
@@ -2881,7 +2881,7 @@ var require_react_dom_client_development = __commonJS({
         "number" === type && getActiveElement(node.ownerDocument) === node || node.defaultValue === "" + value || (node.defaultValue = "" + value);
       }
       function validateOptionProps(element, props) {
-        null == props.value && ("object" === typeof props.children && null !== props.children ? React13.Children.forEach(props.children, function(child) {
+        null == props.value && ("object" === typeof props.children && null !== props.children ? React14.Children.forEach(props.children, function(child) {
           null == child || "string" === typeof child || "number" === typeof child || "bigint" === typeof child || didWarnInvalidChild || (didWarnInvalidChild = true, console.error(
             "Cannot infer the option value of complex children. Pass a `value` prop or use a plain string as children to <option>."
           ));
@@ -18513,14 +18513,14 @@ var require_react_dom_client_development = __commonJS({
         ));
       }
       "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-      var Scheduler = require_scheduler(), React13 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
+      var Scheduler = require_scheduler(), React14 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
       Symbol.for("react.scope");
       var REACT_ACTIVITY_TYPE = Symbol.for("react.activity");
       Symbol.for("react.legacy_hidden");
       Symbol.for("react.tracing_marker");
       var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel");
       Symbol.for("react.view_transition");
-      var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React13.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
+      var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React14.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
         pending: false,
         data: null,
         method: null,
@@ -21308,7 +21308,7 @@ var require_react_dom_client_development = __commonJS({
         }
       };
       (function() {
-        var isomorphicReactPackageVersion = React13.version;
+        var isomorphicReactPackageVersion = React14.version;
         if ("19.2.4" !== isomorphicReactPackageVersion)
           throw Error(
             'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' + (isomorphicReactPackageVersion + "\n  - react-dom:  19.2.4\nLearn more: https://react.dev/warnings/version-mismatch")
@@ -22844,7 +22844,7 @@ var require_next_power_of_two = __commonJS({
 });
 
 // src/webgpu/gpudoc/ui.tsx
-var import_react15 = __toESM(require_react());
+var import_react16 = __toESM(require_react());
 var import_client2 = __toESM(require_client());
 
 // src/array-map.ts
@@ -24514,6 +24514,11 @@ var track = (0, import_typescript_parsec.rep_sc)(note);
 var import_fft2 = __toESM(require_fft());
 var import_next_power_of_two = __toESM(require_next_power_of_two());
 
+// src/math/round.ts
+function roundUp(factor, x) {
+  return Math.ceil(x / factor) * factor;
+}
+
 // src/webgpu/wgsl-snippets.ts
 var WgslSnippets = {
   unitQuadSigned: {
@@ -25031,11 +25036,6 @@ fn perlinNoise3(P: vec3f) -> f32 {
   }
 };
 
-// src/math/round.ts
-function roundUp(factor, x) {
-  return Math.ceil(x / factor) * factor;
-}
-
 // src/webgpu/readpixels.ts
 function readPixelsSizeReq(params) {
   let { format, subregion } = params;
@@ -25392,20 +25392,23 @@ var import_react11 = __toESM(require_react());
 // src/ui/react-datetime-field.tsx
 var import_react12 = __toESM(require_react());
 
-// src/ui/progress-bar.tsx
+// src/ui/react-boolean-field.tsx
 var import_react13 = __toESM(require_react());
+
+// src/ui/progress-bar.tsx
+var import_react14 = __toESM(require_react());
 var import_client = __toESM(require_client());
 
 // src/ui/pan-and-zoom.tsx
-var import_react14 = __toESM(require_react());
+var import_react15 = __toESM(require_react());
 function PanAndZoom(props) {
   const scrollSensitivity = props.scrollSensitivity ?? 1;
   const scrollDecay = props.scrollDecay ?? 0.01;
   const scrollSnapToZero = props.scrollSnapToZero ?? 1e-3;
-  const scrollVel = (0, import_react14.useRef)(0);
-  const mouseDown = (0, import_react14.useRef)(false);
-  const normalizedMousePos = (0, import_react14.useRef)({ x: 0, y: 0 });
-  (0, import_react14.useEffect)(() => {
+  const scrollVel = (0, import_react15.useRef)(0);
+  const mouseDown = (0, import_react15.useRef)(false);
+  const normalizedMousePos = (0, import_react15.useRef)({ x: 0, y: 0 });
+  (0, import_react15.useEffect)(() => {
     let stopped = false;
     let lastTime = performance.now();
     const cb2 = (time) => {
@@ -25446,8 +25449,8 @@ function PanAndZoom(props) {
       stopped = true;
     };
   }, []);
-  const divref = (0, import_react14.useRef)(null);
-  return /* @__PURE__ */ import_react14.default.createElement(
+  const divref = (0, import_react15.useRef)(null);
+  return /* @__PURE__ */ import_react15.default.createElement(
     "div",
     {
       style: {
@@ -25930,11 +25933,11 @@ function v4(options, buf, offset) {
 var v4_default = v4;
 
 // src/webgpu/gpudoc/ui.tsx
-var GPUDocContext = (0, import_react15.createContext)(void 0);
+var GPUDocContext = (0, import_react16.createContext)(void 0);
 function gpuDebugWindow(params) {
   const d = document.createElement("div");
   const root = (0, import_client2.createRoot)(d).render(
-    /* @__PURE__ */ import_react15.default.createElement(
+    /* @__PURE__ */ import_react16.default.createElement(
       GpudocDebugWindow,
       {
         device: params.device,
@@ -25946,20 +25949,20 @@ function gpuDebugWindow(params) {
   return d;
 }
 function GpudocDebugWindow(props) {
-  const displayer = (0, import_react15.useMemo)(
+  const displayer = (0, import_react16.useMemo)(
     () => textureDisplayer(props.device),
     [props.device]
   );
-  const [tabs, setTabs] = (0, import_react15.useState)([
+  const [tabs, setTabs] = (0, import_react16.useState)([
     {
       type: "search-texture",
       search: "",
       id: v4_default()
     }
   ]);
-  const [currentTabIndex, setCurrentTabIndex] = (0, import_react15.useState)(0);
+  const [currentTabIndex, setCurrentTabIndex] = (0, import_react16.useState)(0);
   const currentTab = tabs[currentTabIndex];
-  return /* @__PURE__ */ import_react15.default.createElement(
+  return /* @__PURE__ */ import_react16.default.createElement(
     GPUDocContext.Provider,
     {
       value: {
@@ -25973,8 +25976,8 @@ function GpudocDebugWindow(props) {
         buffers: props.buffers
       }
     },
-    /* @__PURE__ */ import_react15.default.createElement("style", null, gpudoc_default),
-    /* @__PURE__ */ import_react15.default.createElement("div", { className: "gpudoc" }, /* @__PURE__ */ import_react15.default.createElement(GpudocTabBar, null), /* @__PURE__ */ import_react15.default.createElement("div", { className: "tab" }, /* @__PURE__ */ import_react15.default.createElement(
+    /* @__PURE__ */ import_react16.default.createElement("style", null, gpudoc_default),
+    /* @__PURE__ */ import_react16.default.createElement("div", { className: "gpudoc" }, /* @__PURE__ */ import_react16.default.createElement(GpudocTabBar, null), /* @__PURE__ */ import_react16.default.createElement("div", { className: "tab" }, /* @__PURE__ */ import_react16.default.createElement(
       GpudocTab,
       {
         tab: currentTab,
@@ -25989,9 +25992,9 @@ function GpudocTab(props) {
   const tab = props.tab;
   const { textures, tabs } = useGpudoc();
   if (tab.type === "search-texture") {
-    return /* @__PURE__ */ import_react15.default.createElement("ul", { className: "tex-thumbs" }, [...textures].map((t) => /* @__PURE__ */ import_react15.default.createElement(TextureThumbnail, { tex: t.tex, key: t.id })));
+    return /* @__PURE__ */ import_react16.default.createElement("ul", { className: "tex-thumbs" }, [...textures].map((t) => /* @__PURE__ */ import_react16.default.createElement(TextureThumbnail, { tex: t.tex, key: t.id })));
   } else {
-    return /* @__PURE__ */ import_react15.default.createElement(
+    return /* @__PURE__ */ import_react16.default.createElement(
       "div",
       {
         className: "tex-inspector",
@@ -26005,7 +26008,7 @@ function GpudocTab(props) {
           };
         }
       },
-      /* @__PURE__ */ import_react15.default.createElement("div", { className: "ui" }, /* @__PURE__ */ import_react15.default.createElement("div", { className: "color-sliders" }, /* @__PURE__ */ import_react15.default.createElement("div", { className: "dark-label" }, "Dark"), /* @__PURE__ */ import_react15.default.createElement("div", { className: "light-label" }, "Light"), /* @__PURE__ */ import_react15.default.createElement("div", { className: "dark" }, range(4).map((i) => /* @__PURE__ */ import_react15.default.createElement(
+      /* @__PURE__ */ import_react16.default.createElement("div", { className: "ui" }, /* @__PURE__ */ import_react16.default.createElement("div", { className: "color-sliders" }, /* @__PURE__ */ import_react16.default.createElement("div", { className: "dark-label" }, "Dark"), /* @__PURE__ */ import_react16.default.createElement("div", { className: "light-label" }, "Light"), /* @__PURE__ */ import_react16.default.createElement("div", { className: "dark" }, range(4).map((i) => /* @__PURE__ */ import_react16.default.createElement(
         NumberField,
         {
           key: i,
@@ -26015,7 +26018,7 @@ function GpudocTab(props) {
           ),
           jumpstartDragFromZero: 0.01
         }
-      ))), /* @__PURE__ */ import_react15.default.createElement("div", { className: "light" }, range(4).map((i) => /* @__PURE__ */ import_react15.default.createElement(
+      ))), /* @__PURE__ */ import_react16.default.createElement("div", { className: "light" }, range(4).map((i) => /* @__PURE__ */ import_react16.default.createElement(
         NumberField,
         {
           key: i,
@@ -26026,7 +26029,7 @@ function GpudocTab(props) {
           jumpstartDragFromZero: 0.01
         }
       ))))),
-      /* @__PURE__ */ import_react15.default.createElement(
+      /* @__PURE__ */ import_react16.default.createElement(
         PanAndZoom,
         {
           coords: tab.coords,
@@ -26038,7 +26041,7 @@ function GpudocTab(props) {
             }));
           }
         },
-        tab.texelInspectorWindows.map((t, i) => /* @__PURE__ */ import_react15.default.createElement(
+        tab.texelInspectorWindows.map((t, i) => /* @__PURE__ */ import_react16.default.createElement(
           TexelInspectorWindow,
           {
             tab,
@@ -26049,7 +26052,7 @@ function GpudocTab(props) {
             )
           }
         )),
-        /* @__PURE__ */ import_react15.default.createElement(
+        /* @__PURE__ */ import_react16.default.createElement(
           TextureCanvas,
           {
             tex: tab.tex,
@@ -26108,8 +26111,8 @@ function TexelInspectorWindow(props) {
       ]
     })
   );
-  const [pixel, setPixel] = (0, import_react15.useState)([0, 0, 0, 0]);
-  (0, import_react15.useEffect)(() => {
+  const [pixel, setPixel] = (0, import_react16.useState)([0, 0, 0, 0]);
+  (0, import_react16.useEffect)(() => {
     (async () => {
       const tempBuf = device.createBuffer({
         usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
@@ -26126,7 +26129,7 @@ function TexelInspectorWindow(props) {
       setPixel([ui8a[0], ui8a[1], ui8a[2], ui8a[3]]);
     })();
   }, [win.samplePos]);
-  return /* @__PURE__ */ import_react15.default.createElement(import_react15.default.Fragment, null, /* @__PURE__ */ import_react15.default.createElement(
+  return /* @__PURE__ */ import_react16.default.createElement(import_react16.default.Fragment, null, /* @__PURE__ */ import_react16.default.createElement(
     "div",
     {
       className: "texel-marker",
@@ -26138,7 +26141,7 @@ function TexelInspectorWindow(props) {
         height: `${100 / area[1] / tab.tex.height}%`
       }
     }
-  ), /* @__PURE__ */ import_react15.default.createElement(
+  ), /* @__PURE__ */ import_react16.default.createElement(
     LineSeg,
     {
       transform: props.tab.coords,
@@ -26147,27 +26150,27 @@ function TexelInspectorWindow(props) {
         b: win.pos
       }
     }
-  ), /* @__PURE__ */ import_react15.default.createElement(
+  ), /* @__PURE__ */ import_react16.default.createElement(
     DraggableWindow,
     {
       transform: props.tab.coords,
       pos: win.samplePos,
       setPos: (p) => props.setWin(xray(win).samplePos.$(p).$v)
     },
-    /* @__PURE__ */ import_react15.default.createElement(Dragger, null, /* @__PURE__ */ import_react15.default.createElement("div", { className: "texel-dragger" }))
-  ), /* @__PURE__ */ import_react15.default.createElement(
+    /* @__PURE__ */ import_react16.default.createElement(Dragger, null, /* @__PURE__ */ import_react16.default.createElement("div", { className: "texel-dragger" }))
+  ), /* @__PURE__ */ import_react16.default.createElement(
     DraggableWindow,
     {
       transform: props.tab.coords,
       pos: win.pos,
       setPos: (p) => props.setWin(xray(win).pos.$(p).$v)
     },
-    /* @__PURE__ */ import_react15.default.createElement("div", { className: "texel-inspector-window" }, /* @__PURE__ */ import_react15.default.createElement(Dragger, null, "Texel (", texelCoords[0], ", ", texelCoords[1], ")"), /* @__PURE__ */ import_react15.default.createElement("div", { className: "texel-components" }, /* @__PURE__ */ import_react15.default.createElement("div", { className: "red" }, pixel[0]), /* @__PURE__ */ import_react15.default.createElement("div", { className: "green" }, pixel[1]), /* @__PURE__ */ import_react15.default.createElement("div", { className: "blue" }, pixel[2]), /* @__PURE__ */ import_react15.default.createElement("div", { className: "alpha" }, pixel[3])))
+    /* @__PURE__ */ import_react16.default.createElement("div", { className: "texel-inspector-window" }, /* @__PURE__ */ import_react16.default.createElement(Dragger, null, "Texel (", texelCoords[0], ", ", texelCoords[1], ")"), /* @__PURE__ */ import_react16.default.createElement("div", { className: "texel-components" }, /* @__PURE__ */ import_react16.default.createElement("div", { className: "red" }, pixel[0]), /* @__PURE__ */ import_react16.default.createElement("div", { className: "green" }, pixel[1]), /* @__PURE__ */ import_react16.default.createElement("div", { className: "blue" }, pixel[2]), /* @__PURE__ */ import_react16.default.createElement("div", { className: "alpha" }, pixel[3])))
   ));
 }
 function GpudocTabBar() {
   const { tabs, currentTabIndex, setCurrentTabIndex, setTabs } = useGpudoc();
-  return /* @__PURE__ */ import_react15.default.createElement("ul", { className: "tab-bar" }, tabs.map((t, i) => /* @__PURE__ */ import_react15.default.createElement(
+  return /* @__PURE__ */ import_react16.default.createElement("ul", { className: "tab-bar" }, tabs.map((t, i) => /* @__PURE__ */ import_react16.default.createElement(
     "li",
     {
       onClick: () => {
@@ -26176,20 +26179,20 @@ function GpudocTabBar() {
       key: t.id,
       className: currentTabIndex === i ? "selected" : ""
     },
-    /* @__PURE__ */ import_react15.default.createElement(GpudocTabThumbDisplay, { tab: t })
+    /* @__PURE__ */ import_react16.default.createElement(GpudocTabThumbDisplay, { tab: t })
   )));
 }
 function GpudocTabThumbDisplay(props) {
   const tab = props.tab;
   if (tab.type === "search-texture") {
-    return /* @__PURE__ */ import_react15.default.createElement("div", null, "Search Texture");
+    return /* @__PURE__ */ import_react16.default.createElement("div", null, "Search Texture");
   } else {
-    return /* @__PURE__ */ import_react15.default.createElement("div", null, "Texture: ", tab.tex.label);
+    return /* @__PURE__ */ import_react16.default.createElement("div", null, "Texture: ", tab.tex.label);
   }
 }
 function TextureThumbnail(props) {
   const { tabs, setTabs, setCurrentTabIndex } = useGpudoc();
-  return /* @__PURE__ */ import_react15.default.createElement(
+  return /* @__PURE__ */ import_react16.default.createElement(
     "li",
     {
       onClick: () => {
@@ -26215,12 +26218,12 @@ function TextureThumbnail(props) {
         setCurrentTabIndex(tabs.length);
       }
     },
-    /* @__PURE__ */ import_react15.default.createElement("div", { className: "name" }, props.tex.label),
-    /* @__PURE__ */ import_react15.default.createElement("div", { className: "canvas" }, /* @__PURE__ */ import_react15.default.createElement(TextureCanvas, { tex: props.tex }))
+    /* @__PURE__ */ import_react16.default.createElement("div", { className: "name" }, props.tex.label),
+    /* @__PURE__ */ import_react16.default.createElement("div", { className: "canvas" }, /* @__PURE__ */ import_react16.default.createElement(TextureCanvas, { tex: props.tex }))
   );
 }
 function useGpudoc() {
-  return (0, import_react15.useContext)(GPUDocContext);
+  return (0, import_react16.useContext)(GPUDocContext);
 }
 function setCanvasDims(canvas, dims) {
   const [width, height] = [Math.round(dims[0]), Math.round(dims[1])];
@@ -26228,9 +26231,9 @@ function setCanvasDims(canvas, dims) {
   if (height !== canvas.height) canvas.height = height;
 }
 function TextureCanvas(props) {
-  const canvasRef = (0, import_react15.useRef)(null);
+  const canvasRef = (0, import_react16.useRef)(null);
   const { displayer, device } = useGpudoc();
-  (0, import_react15.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -26266,7 +26269,7 @@ function TextureCanvas(props) {
     );
     device.queue.submit([encoder.finish()]);
   }
-  (0, import_react15.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const tex = props.tex;
@@ -26288,7 +26291,7 @@ function TextureCanvas(props) {
     props.dark,
     props.light
   ]);
-  (0, import_react15.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     const canvas = canvasRef.current;
     if (!canvas || !props.useCalculatedSize) return;
     const observer = new ResizeObserver(() => {
@@ -26302,7 +26305,7 @@ function TextureCanvas(props) {
     observer.observe(canvas);
     return () => observer.disconnect();
   }, [props.useCalculatedSize]);
-  return /* @__PURE__ */ import_react15.default.createElement("canvas", { ref: canvasRef });
+  return /* @__PURE__ */ import_react16.default.createElement("canvas", { ref: canvasRef });
 }
 export {
   gpuDebugWindow

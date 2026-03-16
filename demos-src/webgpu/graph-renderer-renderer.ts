@@ -111,13 +111,15 @@ export async function setupGraphRenderer(device: GPUDevice) {
     struct("PhysicsParams", {
       repulsion_multiplier: "f32",
       attraction_multiplier: "f32",
+      repulsion_exponent: "f32",
+      velocity_damping: "f32",
     }),
   );
 
   const nBodySim = await createNBodyOctreeDefs(device, {
     extraBodyFields: {},
     bodyBodyInteraction: `
-      let force_mag = 40.0 * mass * bodies[i].mass / pow(max(10.0, dist_to_body), 2.0);
+      let force_mag = 40.0 * mass * bodies[i].mass / pow(max(10.0, dist_to_body), physics_params.repulsion_exponent);
       let force_dir = -normalize(center_of_mass - bodies[i].position);
       return force_mag * force_dir; 
     `,
@@ -127,7 +129,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
 
       bodies[i].velocity += impulse / bodies[i].mass * params.timestep;
       bodies[i].position += bodies[i].velocity * params.timestep;
-      bodies[i].velocity *= 0.9;
+      bodies[i].velocity *= physics_params.velocity_damping;
     `,
     extraPhysicsBuffers: [accelsFormat, physicsUniformsFormat] as const,
   });
@@ -765,6 +767,12 @@ user-select: none;
         physicsUniformsFormat.fill(physicsUniforms, 0, {
           repulsion_multiplier: params.ui.state.repulsionMultiplier,
           attraction_multiplier: params.ui.state.attractionMultiplier,
+          velocity_damping: params.ui.state.velocityDamping,
+          repulsion_exponent: params.ui.state.repulsionExponent,
+        });
+        nBodySim.barnesHutUniformsFormat.fill(barnesHutUniforms, 0, {
+          min_width_over_distance_ratio: 1 / params.ui.state.simulationAccuracy,
+          timestep: params.ui.state.timestep,
         });
 
         const perBodyWorkgroups = Math.ceil(graph.vertices.size / 32);
