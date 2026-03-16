@@ -379,7 +379,7 @@ fn set_point(idx: u32, position: vec3f) {
     }
 
     if (isDesktop) {
-      document.body.requestPointerLock();
+      canvas.requestPointerLock();
     }
   });
 
@@ -424,7 +424,7 @@ fn set_point(idx: u32, position: vec3f) {
   });
 
   document.addEventListener("mousemove", (e) => {
-    if (document.pointerLockElement !== document.body) return;
+    if (document.pointerLockElement !== canvas) return;
     rotateBy(-e.movementX * 0.003, e.movementY * 0.003);
   });
 

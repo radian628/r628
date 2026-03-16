@@ -28297,13 +28297,15 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       fn body_reset(i: u32) {
         ${params.bodyReset ?? ""} 
       }
+
+      const STACK_CAP = 21u;
     `,
       shader: `
       if (id.x >= arrayLength(&bodies)) {
         return; 
       }
     
-      var stack: array<StackFrame, 21>;
+      var stack: array<StackFrame, STACK_CAP>;
       var stack_size = 1u;
 
       var total_impulse = vec3f(0.0);
@@ -28346,7 +28348,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
           distance(child_metadata.min_corner, child_metadata.max_corner) 
           / dist_to_body;
         
-        if (child.child_idx != 0xffffffff && ratio > params.min_width_over_distance_ratio) {
+        if (child.child_idx != 0xffffffff && ratio > params.min_width_over_distance_ratio && stack_size < STACK_CAP) {
           stack[stack_size].node_idx = child_idx;
           stack[stack_size].next_child_idx = 0u;
           stack_size += 1u;

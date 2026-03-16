@@ -1,4 +1,4 @@
-import React, { useSyncExternalStore } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import R628_UI_CSS from "../../src/ui/r628-ui.css?raw";
 import {
@@ -147,6 +147,18 @@ function UI(
     );
   }
 
+  const [hideUI, setHideUI] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHideUI(document.pointerLockElement instanceof HTMLCanvasElement);
+    }, 200);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <>
       <style>{R628_UI_CSS}</style>
@@ -159,6 +171,9 @@ function UI(
   padding-inline: 10px;
   padding-block: 7px;
   font-size: 80%;
+  transition: opacity 0.5s;
+  max-height: 50vh;
+  overflow: auto;
 }
 
 h1 {
@@ -174,7 +189,12 @@ h2 {
   padding-bottom: var(--gap-big);
 }
 `}</style>
-      <div className="ui-root ui-container">
+      <div
+        className="ui-root ui-container"
+        style={{
+          opacity: hideUI ? 0 : 1,
+        }}
+      >
         {/* <RootUI value={state.state} setValue={state.setState}></RootUI> */}
         <h2>Viewer</h2>
         <div className="ui-object">

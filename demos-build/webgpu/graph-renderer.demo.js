@@ -27996,6 +27996,15 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         p
       );
     }
+    const [hideUI, setHideUI] = (0, import_react18.useState)(false);
+    (0, import_react18.useEffect)(() => {
+      const interval = setInterval(() => {
+        setHideUI(document.pointerLockElement instanceof HTMLCanvasElement);
+      }, 200);
+      return () => {
+        clearInterval(interval);
+      };
+    }, []);
     return /* @__PURE__ */ import_react18.default.createElement(import_react18.default.Fragment, null, /* @__PURE__ */ import_react18.default.createElement("style", null, r628_ui_default), /* @__PURE__ */ import_react18.default.createElement("style", null, `
 .ui-root {
   top: 0;
@@ -28005,6 +28014,9 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
   padding-inline: 10px;
   padding-block: 7px;
   font-size: 80%;
+  transition: opacity 0.5s;
+  max-height: 50vh;
+  overflow: auto;
 }
 
 h1 {
@@ -28019,29 +28031,45 @@ h2 {
   margin-bottom: var(--gap-big);
   padding-bottom: var(--gap-big);
 }
-`), /* @__PURE__ */ import_react18.default.createElement("div", { className: "ui-root ui-container" }, /* @__PURE__ */ import_react18.default.createElement("h2", null, "Viewer"), /* @__PURE__ */ import_react18.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react18.default.createElement("label", null, "Movement Speed"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("viewerSpeed") })), /* @__PURE__ */ import_react18.default.createElement("h2", null, "Physics"), /* @__PURE__ */ import_react18.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react18.default.createElement("label", null, "Physics Enabled"), /* @__PURE__ */ import_react18.default.createElement(BooleanField, { ...prop("physics") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Repulsion Multiplier"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("repulsionMultiplier") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Attraction Multiplier"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("attractionMultiplier") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Velocity Damping"), /* @__PURE__ */ import_react18.default.createElement(
-      NumberFieldM,
+`), /* @__PURE__ */ import_react18.default.createElement(
+      "div",
       {
-        ...prop("velocityDamping"),
-        min: 0,
-        max: 1
-      }
-    ), /* @__PURE__ */ import_react18.default.createElement("label", null, "Repulsion Exponent"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("repulsionExponent") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Simulation Accuracy"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("simulationAccuracy"), min: 0 }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Timestep"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("timestep"), min: 0 })), /* @__PURE__ */ import_react18.default.createElement("h2", null, "Initial Conditions"), /* @__PURE__ */ import_react18.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react18.default.createElement("label", null, "Tags"), /* @__PURE__ */ import_react18.default.createElement(StringFieldM, { ...prop("tags") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Positions"), /* @__PURE__ */ import_react18.default.createElement(FileField, { ...prop("positions") })), /* @__PURE__ */ import_react18.default.createElement("button", { onClick: props.updateRenderer }, "Apply Initial Conditions"), /* @__PURE__ */ import_react18.default.createElement(
-      "button",
-      {
-        onClick: () => {
-          (async () => {
-            const positionedNodes = await props.exportPositions();
-            const json = JSON.stringify(positionedNodes, null, 2);
-            download(
-              new Blob([json], { type: "application/json" }),
-              "positions.json"
-            );
-          })();
+        className: "ui-root ui-container",
+        style: {
+          opacity: hideUI ? 0 : 1
         }
       },
-      "Export Current Node Positions"
-    )));
+      /* @__PURE__ */ import_react18.default.createElement("h2", null, "Viewer"),
+      /* @__PURE__ */ import_react18.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react18.default.createElement("label", null, "Movement Speed"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("viewerSpeed") })),
+      /* @__PURE__ */ import_react18.default.createElement("h2", null, "Physics"),
+      /* @__PURE__ */ import_react18.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react18.default.createElement("label", null, "Physics Enabled"), /* @__PURE__ */ import_react18.default.createElement(BooleanField, { ...prop("physics") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Repulsion Multiplier"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("repulsionMultiplier") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Attraction Multiplier"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("attractionMultiplier") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Velocity Damping"), /* @__PURE__ */ import_react18.default.createElement(
+        NumberFieldM,
+        {
+          ...prop("velocityDamping"),
+          min: 0,
+          max: 1
+        }
+      ), /* @__PURE__ */ import_react18.default.createElement("label", null, "Repulsion Exponent"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("repulsionExponent") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Simulation Accuracy"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("simulationAccuracy"), min: 0 }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Timestep"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("timestep"), min: 0 })),
+      /* @__PURE__ */ import_react18.default.createElement("h2", null, "Initial Conditions"),
+      /* @__PURE__ */ import_react18.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react18.default.createElement("label", null, "Tags"), /* @__PURE__ */ import_react18.default.createElement(StringFieldM, { ...prop("tags") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Positions"), /* @__PURE__ */ import_react18.default.createElement(FileField, { ...prop("positions") })),
+      /* @__PURE__ */ import_react18.default.createElement("button", { onClick: props.updateRenderer }, "Apply Initial Conditions"),
+      /* @__PURE__ */ import_react18.default.createElement(
+        "button",
+        {
+          onClick: () => {
+            (async () => {
+              const positionedNodes = await props.exportPositions();
+              const json = JSON.stringify(positionedNodes, null, 2);
+              download(
+                new Blob([json], { type: "application/json" }),
+                "positions.json"
+              );
+            })();
+          }
+        },
+        "Export Current Node Positions"
+      )
+    ));
   }
 
   // demos-src/webgpu/n-body-octree.ts
@@ -28521,13 +28549,15 @@ h2 {
       fn body_reset(i: u32) {
         ${params.bodyReset ?? ""} 
       }
+
+      const STACK_CAP = 21u;
     `,
       shader: `
       if (id.x >= arrayLength(&bodies)) {
         return; 
       }
     
-      var stack: array<StackFrame, 21>;
+      var stack: array<StackFrame, STACK_CAP>;
       var stack_size = 1u;
 
       var total_impulse = vec3f(0.0);
@@ -28570,7 +28600,7 @@ h2 {
           distance(child_metadata.min_corner, child_metadata.max_corner) 
           / dist_to_body;
         
-        if (child.child_idx != 0xffffffff && ratio > params.min_width_over_distance_ratio) {
+        if (child.child_idx != 0xffffffff && ratio > params.min_width_over_distance_ratio && stack_size < STACK_CAP) {
           stack[stack_size].node_idx = child_idx;
           stack[stack_size].next_child_idx = 0u;
           stack_size += 1u;
@@ -29321,7 +29351,7 @@ fn set_point(idx: u32, position: vec3f) {
         return;
       }
       if (isDesktop) {
-        document.body.requestPointerLock();
+        canvas.requestPointerLock();
       }
     });
     const touches = /* @__PURE__ */ new Map();
@@ -29358,7 +29388,7 @@ fn set_point(idx: u32, position: vec3f) {
       }
     });
     document.addEventListener("mousemove", (e) => {
-      if (document.pointerLockElement !== document.body) return;
+      if (document.pointerLockElement !== canvas) return;
       rotateBy(-e.movementX * 3e-3, e.movementY * 3e-3);
     });
     if (!isDesktop) {
