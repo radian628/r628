@@ -27083,241 +27083,2314 @@ var OneDimensionalSpatialHashTable = class {
   }
 };
 
-// src/curve/quadratic-curve-to-svg.ts
-function quadraticCurveToPath(curve, sigfigs, offset) {
-  let startPoint = curve[0].a;
-  const str2 = (n) => n.toPrecision(sigfigs);
-  let output = `M ${str2(startPoint[0] + offset[0])} ${str2(
-    startPoint[1] + offset[1]
-  )}`;
-  let prevpoint = startPoint;
-  for (const b of curve) {
-    output += `q ${str2(b.b[0] - prevpoint[0])} ${str2(
-      b.b[1] - prevpoint[1]
-    )},${str2(b.c[0] - prevpoint[0])} ${str2(b.c[1] - prevpoint[1])}`;
-    prevpoint = b.c;
-  }
-  return output;
-}
-function quadraticCurveToSvgPath(curve, offset, color, sigfigs) {
-  const pathd = quadraticCurveToPath(curve, sigfigs, offset);
-  return `<path d="${pathd}" stroke="${color}" />`;
-}
-function islandsToSvg(width, height, islands, sigfigs) {
-  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${islands.map(
-    (i) => quadraticCurveToSvgPath(i.curve, i.topLeftInImage, i.color, sigfigs)
-  ).join("")}</svg>`;
+// src/math/round.ts
+function roundUp(factor, x2) {
+  return Math.ceil(x2 / factor) * factor;
 }
 
-// src/curve/points-on-curve.ts
-function equidistantPointsOnCurve(curve, interval) {
-  if (curve.length === 0) return [];
-  const outPoints = [curve[0]];
-  let accumDist = 0;
-  for (let i = 0; i < curve.length - 1; i++) {
-    const prevPoint = curve[i];
-    const currPoint = curve[i + 1];
-    const currLineDist = distance2(prevPoint, currPoint);
-    const initLength = interval - accumDist % interval;
-    accumDist += currLineDist;
-    const newPointCount = Math.floor(accumDist / interval);
-    for (let j = 0; j < newPointCount; j++) {
-      let distAcross = initLength + j * interval;
-      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
+// src/webgpu/converters.ts
+var TEXTURE_FORMAT_TO_DEPTH_SAMPLER_TYPE = {
+  depth16unorm: "depth",
+  depth24plus: "depth",
+  "depth24plus-stencil8": "depth",
+  depth32float: "depth",
+  "depth32float-stencil8": "depth"
+};
+var TEXTURE_FORMAT_TO_NONDEPTH_SAMPLER_TYPE = {
+  depth16unorm: "unfilterable-float",
+  depth24plus: "unfilterable-float",
+  "depth24plus-stencil8": "unfilterable-float",
+  depth32float: "unfilterable-float",
+  "depth32float-stencil8": "unfilterable-float"
+};
+var TEXTURE_FORMAT_TO_STENCIL_SAMPLER_TYPE = {
+  stencil8: "uint",
+  "depth24plus-stencil8": "uint",
+  "depth32plus-stencil8": "uint"
+};
+var TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT = {
+  r8unorm: "float",
+  r8snorm: "float",
+  r8uint: "uint",
+  r8sint: "sint",
+  r16unorm: "float",
+  r16snorm: "float",
+  r16uint: "uint",
+  r16sint: "sint",
+  r16float: "float",
+  rg8unorm: "float",
+  rg8snorm: "float",
+  rg8uint: "uint",
+  rg8sint: "sint",
+  r32uint: "uint",
+  r32sint: "sint",
+  r32float: "float",
+  rg16unorm: "float",
+  rg16snorm: "float",
+  rg16uint: "uint",
+  rg16sint: "sint",
+  rg16float: "float",
+  rgba8unorm: "float",
+  "rgba8unorm-srgb": "float",
+  rgba8snorm: "float",
+  rgba8uint: "uint",
+  rgba8sint: "sint",
+  bgra8unorm: "float",
+  "bgra8unorm-srgb": "float",
+  rgb9e5ufloat: "float",
+  rgb10a2uint: "uint",
+  rgb10a2unorm: "float",
+  rg11b10ufloat: "float",
+  rg32uint: "uint",
+  rg32sint: "sint",
+  rg32float: "float",
+  rgba16unorm: "float",
+  rgba16snorm: "float",
+  rgba16uint: "uint",
+  rgba16sint: "sint",
+  rgba16float: "float",
+  rgba32uint: "uint",
+  rgba32sint: "sint",
+  rgba32float: "float",
+  stencil8: "uint",
+  depth16unorm: "depth",
+  depth24plus: "depth",
+  "depth24plus-stencil8": "depth",
+  depth32float: "depth",
+  "depth32float-stencil8": "depth",
+  "bc1-rgba-unorm": "float",
+  "bc1-rgba-unorm-srgb": "float",
+  "bc2-rgba-unorm": "float",
+  "bc2-rgba-unorm-srgb": "float",
+  "bc3-rgba-unorm": "float",
+  "bc3-rgba-unorm-srgb": "float",
+  "bc4-r-unorm": "float",
+  "bc4-r-snorm": "float",
+  "bc5-rg-unorm": "float",
+  "bc5-rg-snorm": "float",
+  "bc6h-rgb-ufloat": "float",
+  "bc6h-rgb-float": "float",
+  "bc7-rgba-unorm": "float",
+  "bc7-rgba-unorm-srgb": "float",
+  "etc2-rgb8unorm": "float",
+  "etc2-rgb8unorm-srgb": "float",
+  "etc2-rgb8a1unorm": "float",
+  "etc2-rgb8a1unorm-srgb": "float",
+  "etc2-rgba8unorm": "float",
+  "etc2-rgba8unorm-srgb": "float",
+  "eac-r11unorm": "f32",
+  "eac-r11snorm": "f32",
+  "eac-rg11unorm": "vec2f",
+  "eac-rg11snorm": "vec2f",
+  "astc-4x4-unorm": "float",
+  "astc-4x4-unorm-srgb": "float",
+  "astc-5x4-unorm": "float",
+  "astc-5x4-unorm-srgb": "float",
+  "astc-5x5-unorm": "float",
+  "astc-5x5-unorm-srgb": "float",
+  "astc-6x5-unorm": "float",
+  "astc-6x5-unorm-srgb": "float",
+  "astc-6x6-unorm": "float",
+  "astc-6x6-unorm-srgb": "float",
+  "astc-8x5-unorm": "float",
+  "astc-8x5-unorm-srgb": "float",
+  "astc-8x6-unorm": "float",
+  "astc-8x6-unorm-srgb": "float",
+  "astc-8x8-unorm": "float",
+  "astc-8x8-unorm-srgb": "float",
+  "astc-10x5-unorm": "float",
+  "astc-10x5-unorm-srgb": "float",
+  "astc-10x6-unorm": "float",
+  "astc-10x6-unorm-srgb": "float",
+  "astc-10x8-unorm": "float",
+  "astc-10x8-unorm-srgb": "float",
+  "astc-10x10-unorm": "float",
+  "astc-10x10-unorm-srgb": "float",
+  "astc-12x10-unorm": "float",
+  "astc-12x10-unorm-srgb": "float",
+  "astc-12x12-unorm": "float",
+  "astc-12x12-unorm-srgb": "float"
+};
+var TEXTURE_FORMAT_TO_WGSL_TYPE_LUT = {
+  r8unorm: "f32",
+  r8snorm: "f32",
+  r8uint: "u32",
+  r8sint: "i32",
+  r16unorm: "u32",
+  r16snorm: "i32",
+  r16uint: "u32",
+  r16sint: "i32",
+  r16float: "f32",
+  rg8unorm: "vec2f",
+  rg8snorm: "vec2f",
+  rg8uint: "vec2u",
+  rg8sint: "vec2i",
+  r32uint: "u32",
+  r32sint: "i32",
+  r32float: "f32",
+  rg16unorm: "vec2f",
+  rg16snorm: "vec2f",
+  rg16uint: "vec2u",
+  rg16sint: "vec2i",
+  rg16float: "vec2f",
+  rgba8unorm: "vec4f",
+  "rgba8unorm-srgb": "vec4f",
+  rgba8snorm: "vec4f",
+  rgba8uint: "vec4u",
+  rgba8sint: "vec4i",
+  bgra8unorm: "vec4f",
+  "bgra8unorm-srgb": "vec4f",
+  rgb9e5ufloat: "vec4f",
+  rgb10a2uint: "vec4u",
+  rgb10a2unorm: "vec4f",
+  rg11b10ufloat: "vec4f",
+  rg32uint: "vec2u",
+  rg32sint: "vec2i",
+  rg32float: "vec2f",
+  rgba16unorm: "vec4u",
+  rgba16snorm: "vec4i",
+  rgba16uint: "vec4u",
+  rgba16sint: "vec4i",
+  rgba16float: "vec4f",
+  rgba32uint: "vec4u",
+  rgba32sint: "vec4i",
+  rgba32float: "vec4f",
+  stencil8: "u32",
+  depth16unorm: "f32",
+  depth24plus: "f32",
+  "depth24plus-stencil8": "f32",
+  depth32float: "f32",
+  "depth32float-stencil8": "f32",
+  "bc1-rgba-unorm": "vec4f",
+  "bc1-rgba-unorm-srgb": "vec4f",
+  "bc2-rgba-unorm": "vec4f",
+  "bc2-rgba-unorm-srgb": "vec4f",
+  "bc3-rgba-unorm": "vec4f",
+  "bc3-rgba-unorm-srgb": "vec4f",
+  "bc4-r-unorm": "f32",
+  "bc4-r-snorm": "f32",
+  "bc5-rg-unorm": "vec2f",
+  "bc5-rg-snorm": "vec2f",
+  "bc6h-rgb-ufloat": "vec3f",
+  "bc6h-rgb-float": "vec3f",
+  "bc7-rgba-unorm": "vec4f",
+  "bc7-rgba-unorm-srgb": "vec4f",
+  "etc2-rgb8unorm": "vec3f",
+  "etc2-rgb8unorm-srgb": "vec3f",
+  "etc2-rgb8a1unorm": "vec4f",
+  "etc2-rgb8a1unorm-srgb": "vec4f",
+  "etc2-rgba8unorm": "vec4f",
+  "etc2-rgba8unorm-srgb": "vec4f",
+  "eac-r11unorm": "f32",
+  "eac-r11snorm": "f32",
+  "eac-rg11unorm": "vec2f",
+  "eac-rg11snorm": "vec2f",
+  "astc-4x4-unorm": "vec4f",
+  "astc-4x4-unorm-srgb": "vec4f",
+  "astc-5x4-unorm": "vec4f",
+  "astc-5x4-unorm-srgb": "vec4f",
+  "astc-5x5-unorm": "vec4f",
+  "astc-5x5-unorm-srgb": "vec4f",
+  "astc-6x5-unorm": "vec4f",
+  "astc-6x5-unorm-srgb": "vec4f",
+  "astc-6x6-unorm": "vec4f",
+  "astc-6x6-unorm-srgb": "vec4f",
+  "astc-8x5-unorm": "vec4f",
+  "astc-8x5-unorm-srgb": "vec4f",
+  "astc-8x6-unorm": "vec4f",
+  "astc-8x6-unorm-srgb": "vec4f",
+  "astc-8x8-unorm": "vec4f",
+  "astc-8x8-unorm-srgb": "vec4f",
+  "astc-10x5-unorm": "vec4f",
+  "astc-10x5-unorm-srgb": "vec4f",
+  "astc-10x6-unorm": "vec4f",
+  "astc-10x6-unorm-srgb": "vec4f",
+  "astc-10x8-unorm": "vec4f",
+  "astc-10x8-unorm-srgb": "vec4f",
+  "astc-10x10-unorm": "vec4f",
+  "astc-10x10-unorm-srgb": "vec4f",
+  "astc-12x10-unorm": "vec4f",
+  "astc-12x10-unorm-srgb": "vec4f",
+  "astc-12x12-unorm": "vec4f",
+  "astc-12x12-unorm-srgb": "vec4f"
+};
+function getCopyFootprintPerTexel(fmt, aspect = "all") {
+  if (aspect === "stencil-only") {
+    if (fmt === "depth24plus-stencil8" || fmt === "depth32float-stencil8") {
+      return 1;
     }
-    accumDist -= newPointCount * interval;
+  } else if (aspect === "depth-only") {
+    if (fmt === "depth32float-stencil8") {
+      return 4;
+    }
   }
-  return outPoints;
+  return TEXEL_BLOCK_COPY_FOOTPRINTS[fmt];
 }
-function variableDistancePointsOnCurve(curve, nextDistance) {
-  if (curve.length === 0) return [];
-  const outPoints = [curve[0]];
-  let interval = nextDistance(curve[0]);
-  let accumDist = 0;
-  for (let i = 0; i < curve.length - 1; i++) {
-    const prevPoint = curve[i];
-    const currPoint = curve[i + 1];
-    const currLineDist = distance2(prevPoint, currPoint);
-    const initLength = interval - accumDist % interval;
-    accumDist += currLineDist;
-    const newPointCount = Math.floor(accumDist / interval);
-    let distAcross = initLength;
-    while (accumDist > interval) {
-      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
-      accumDist -= interval;
-      interval = nextDistance(outPoints.at(-1));
-      distAcross += interval;
-    }
+var TEXEL_BLOCK_COPY_FOOTPRINTS = {
+  r8unorm: 1,
+  r8snorm: 1,
+  r8uint: 1,
+  r8sint: 1,
+  r16unorm: 2,
+  r16snorm: 2,
+  r16uint: 2,
+  r16sint: 2,
+  r16float: 2,
+  rg8unorm: 2,
+  rg8snorm: 2,
+  rg8uint: 2,
+  rg8sint: 2,
+  r32uint: 4,
+  r32sint: 4,
+  r32float: 4,
+  rg16unorm: 4,
+  rg16snorm: 4,
+  rg16uint: 4,
+  rg16sint: 4,
+  rg16float: 4,
+  rgba8unorm: 4,
+  "rgba8unorm-srgb": 4,
+  rgba8snorm: 4,
+  rgba8uint: 4,
+  rgba8sint: 4,
+  bgra8unorm: 4,
+  "bgra8unorm-srgb": 4,
+  rgb9e5ufloat: 4,
+  rgb10a2uint: 4,
+  rgb10a2unorm: 4,
+  rg11b10ufloat: 4,
+  rg32uint: 8,
+  rg32sint: 8,
+  rg32float: 8,
+  rgba16unorm: 8,
+  rgba16snorm: 8,
+  rgba16uint: 8,
+  rgba16sint: 8,
+  rgba16float: 8,
+  rgba32uint: 16,
+  rgba32sint: 16,
+  rgba32float: 16,
+  stencil8: 1,
+  depth16unorm: 2,
+  depth24plus: void 0,
+  "depth24plus-stencil8": void 0,
+  depth32float: void 0,
+  "depth32float-stencil8": void 0,
+  "bc1-rgba-unorm": 8,
+  "bc1-rgba-unorm-srgb": 8,
+  "bc2-rgba-unorm": 16,
+  "bc2-rgba-unorm-srgb": 16,
+  "bc3-rgba-unorm": 16,
+  "bc3-rgba-unorm-srgb": 16,
+  "bc4-r-unorm": 8,
+  "bc4-r-snorm": 8,
+  "bc5-rg-unorm": 16,
+  "bc5-rg-snorm": 16,
+  "bc6h-rgb-ufloat": 16,
+  "bc6h-rgb-float": 16,
+  "bc7-rgba-unorm": 16,
+  "bc7-rgba-unorm-srgb": 16,
+  "etc2-rgb8unorm": 8,
+  "etc2-rgb8unorm-srgb": 8,
+  "etc2-rgb8a1unorm": 8,
+  "etc2-rgb8a1unorm-srgb": 8,
+  "etc2-rgba8unorm": 16,
+  "etc2-rgba8unorm-srgb": 16,
+  "eac-r11unorm": 8,
+  "eac-r11snorm": 8,
+  "eac-rg11unorm": 16,
+  "eac-rg11snorm": 16,
+  "astc-4x4-unorm": 16,
+  "astc-4x4-unorm-srgb": 16,
+  "astc-5x4-unorm": 16,
+  "astc-5x4-unorm-srgb": 16,
+  "astc-5x5-unorm": 16,
+  "astc-5x5-unorm-srgb": 16,
+  "astc-6x5-unorm": 16,
+  "astc-6x5-unorm-srgb": 16,
+  "astc-6x6-unorm": 16,
+  "astc-6x6-unorm-srgb": 16,
+  "astc-8x5-unorm": 16,
+  "astc-8x5-unorm-srgb": 16,
+  "astc-8x6-unorm": 16,
+  "astc-8x6-unorm-srgb": 16,
+  "astc-8x8-unorm": 16,
+  "astc-8x8-unorm-srgb": 16,
+  "astc-10x5-unorm": 16,
+  "astc-10x5-unorm-srgb": 16,
+  "astc-10x6-unorm": 16,
+  "astc-10x6-unorm-srgb": 16,
+  "astc-10x8-unorm": 16,
+  "astc-10x8-unorm-srgb": 16,
+  "astc-10x10-unorm": 16,
+  "astc-10x10-unorm-srgb": 16,
+  "astc-12x10-unorm": 16,
+  "astc-12x10-unorm-srgb": 16,
+  "astc-12x12-unorm": 16,
+  "astc-12x12-unorm-srgb": 16
+};
+var SAMPLER_TYPE_TO_WGSL_TYPE = {
+  float: "f32",
+  uint: "u32",
+  sint: "i32",
+  depth: "f32"
+};
+var TEXTURE_DIMENSIONALITIES = {
+  texture_1d: "1d",
+  texture_storage_1d: "1d",
+  texture_2d: "2d",
+  texture_storage_2d: "2d",
+  texture_multisampled_2d: "2d",
+  texture_depth_2d: "2d",
+  texture_depth_multisampled_2d: "2d",
+  texture_2d_array: "2d-array",
+  texture_storage_2d_array: "2d-array",
+  texture_depth_2d_array: "2d-array",
+  texture_3d: "3d",
+  texture_storage_3d: "3d",
+  texture_cube: "cube",
+  texture_depth_cube: "cube",
+  texture_cube_array: "cube-array",
+  texture_depth_cube_array: "cube-array"
+};
+var WGSL_TYPE_SIZES = {
+  i32: 4,
+  u32: 4,
+  f32: 4,
+  f16: 2,
+  "atomic<u32>": 4,
+  "atomic<i32>": 4,
+  vec2i: 8,
+  vec2u: 8,
+  vec2f: 8,
+  vec2f16: 4,
+  vec3i: 12,
+  vec3u: 12,
+  vec3f: 12,
+  vec3f16: 6,
+  vec4i: 16,
+  vec4u: 16,
+  vec4f: 16,
+  vec4f16: 8,
+  mat2x2f: 16,
+  mat2x2f16: 8,
+  mat3x2f: 24,
+  mat3x2f16: 12,
+  mat4x2f: 32,
+  mat4x2f16: 16,
+  mat2x3f: 24,
+  mat2x3f16: 12,
+  mat3x3f: 48,
+  mat3x3f16: 24,
+  mat4x3f: 64,
+  mat4x3f16: 32,
+  mat2x4f: 32,
+  mat2x4f16: 16,
+  mat3x4f: 48,
+  mat3x4f16: 24,
+  mat4x4f: 64,
+  mat4x4f16: 32
+};
+var WGSL_TYPE_ALIGNMENTS = {
+  i32: 4,
+  u32: 4,
+  f32: 4,
+  f16: 2,
+  "atomic<u32>": 4,
+  "atomic<i32>": 4,
+  vec2i: 8,
+  vec2u: 8,
+  vec2f: 8,
+  vec2f16: 4,
+  vec3i: 16,
+  vec3u: 16,
+  vec3f: 16,
+  vec3f16: 8,
+  vec4i: 16,
+  vec4u: 16,
+  vec4f: 16,
+  vec4f16: 8,
+  mat2x2f: 8,
+  mat2x2f16: 4,
+  mat3x2f: 8,
+  mat3x2f16: 4,
+  mat4x2f: 8,
+  mat4x2f16: 4,
+  mat2x3f: 16,
+  mat2x3f16: 8,
+  mat3x3f: 16,
+  mat3x3f16: 8,
+  mat4x3f: 16,
+  mat4x3f16: 8,
+  mat2x4f: 16,
+  mat2x4f16: 8,
+  mat3x4f: 16,
+  mat3x4f16: 8,
+  mat4x4f: 16,
+  mat4x4f16: 8
+};
+var WGSL_TYPE_ELEMENT_COUNTS = {
+  i32: 1,
+  u32: 1,
+  f32: 1,
+  f16: 1,
+  "atomic<u32>": 1,
+  "atomic<i32>": 1,
+  vec2i: 2,
+  vec2u: 2,
+  vec2f: 2,
+  vec2f16: 2,
+  vec3i: 3,
+  vec3u: 3,
+  vec3f: 3,
+  vec3f16: 3,
+  vec4i: 4,
+  vec4u: 4,
+  vec4f: 4,
+  vec4f16: 4,
+  mat2x2f: 4,
+  mat2x2f16: 4,
+  mat3x2f: 6,
+  mat3x2f16: 6,
+  mat4x2f: 8,
+  mat4x2f16: 8,
+  mat2x3f: 6,
+  mat2x3f16: 6,
+  mat3x3f: 9,
+  mat3x3f16: 9,
+  mat4x3f: 12,
+  mat4x3f16: 12,
+  mat2x4f: 8,
+  mat2x4f16: 8,
+  mat3x4f: 12,
+  mat3x4f16: 12,
+  mat4x4f: 16,
+  mat4x4f16: 16
+};
+var WGSL_TYPE_DATATYPES = {
+  i32: "i32",
+  u32: "u32",
+  f32: "f32",
+  f16: "f16",
+  "atomic<u32>": "u32",
+  "atomic<i32>": "i32",
+  vec2i: "i32",
+  vec2u: "u32",
+  vec2f: "f32",
+  vec2f16: "f16",
+  vec3i: "i32",
+  vec3u: "u32",
+  vec3f: "f32",
+  vec3f16: "f16",
+  vec4i: "i32",
+  vec4u: "u32",
+  vec4f: "f32",
+  vec4f16: "f16",
+  mat2x2f: "f32",
+  mat2x2f16: "f16",
+  mat3x2f: "f32",
+  mat3x2f16: "f16",
+  mat4x2f: "f32",
+  mat4x2f16: "f16",
+  mat2x3f: "f32",
+  mat2x3f16: "f16",
+  mat3x3f: "f32",
+  mat3x3f16: "f16",
+  mat4x3f: "f32",
+  mat4x3f16: "f16",
+  mat2x4f: "f32",
+  mat2x4f16: "f16",
+  mat3x4f: "f32",
+  mat3x4f16: "f16",
+  mat4x4f: "f32",
+  mat4x4f16: "f16"
+};
+var WGSL_BASE_TYPE_TO_SAMPLER_TYPE = {
+  i32: "sint",
+  u32: "uint",
+  f32: "float",
+  f16: "float"
+};
+var VERTEX_FORMAT_TO_ELEMENT_SIZE = {
+  uint8: 1,
+  uint8x2: 1,
+  uint8x4: 1,
+  sint8: 1,
+  sint8x2: 1,
+  sint8x4: 1,
+  unorm8: 1,
+  unorm8x2: 1,
+  unorm8x4: 1,
+  snorm8: 1,
+  snorm8x2: 1,
+  snorm8x4: 1,
+  uint16: 2,
+  uint16x2: 2,
+  uint16x4: 2,
+  sint16: 2,
+  sint16x2: 2,
+  sint16x4: 2,
+  unorm16: 2,
+  unorm16x2: 2,
+  unorm16x4: 2,
+  snorm16: 2,
+  snorm16x2: 2,
+  snorm16x4: 2,
+  float16: 2,
+  float16x2: 2,
+  float16x4: 2,
+  float32: 4,
+  float32x2: 4,
+  float32x3: 4,
+  float32x4: 4,
+  uint32: 4,
+  uint32x2: 4,
+  uint32x3: 4,
+  uint32x4: 4,
+  sint32: 4,
+  sint32x2: 4,
+  sint32x3: 4,
+  sint32x4: 4,
+  "unorm10-10-10-2": 1,
+  "unorm8x4-bgra": 1
+};
+var VERTEX_FORMAT_TO_ELEMENT_COUNT = {
+  uint8: 1,
+  uint8x2: 2,
+  uint8x4: 4,
+  sint8: 1,
+  sint8x2: 2,
+  sint8x4: 4,
+  unorm8: 1,
+  unorm8x2: 2,
+  unorm8x4: 4,
+  snorm8: 1,
+  snorm8x2: 2,
+  snorm8x4: 4,
+  uint16: 1,
+  uint16x2: 2,
+  uint16x4: 4,
+  sint16: 1,
+  sint16x2: 2,
+  sint16x4: 4,
+  unorm16: 1,
+  unorm16x2: 2,
+  unorm16x4: 4,
+  snorm16: 1,
+  snorm16x2: 2,
+  snorm16x4: 4,
+  float16: 1,
+  float16x2: 2,
+  float16x4: 4,
+  float32: 1,
+  float32x2: 2,
+  float32x3: 3,
+  float32x4: 4,
+  uint32: 1,
+  uint32x2: 2,
+  uint32x3: 3,
+  uint32x4: 4,
+  sint32: 1,
+  sint32x2: 2,
+  sint32x3: 3,
+  sint32x4: 4,
+  "unorm10-10-10-2": 4,
+  "unorm8x4-bgra": 4
+};
+var VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR = {
+  uint8: Uint8Array,
+  uint8x2: Uint8Array,
+  uint8x4: Uint8Array,
+  sint8: Int8Array,
+  sint8x2: Int8Array,
+  sint8x4: Int8Array,
+  unorm8: Uint8Array,
+  unorm8x2: Uint8Array,
+  unorm8x4: Uint8Array,
+  snorm8: Int8Array,
+  snorm8x2: Int8Array,
+  snorm8x4: Int8Array,
+  uint16: Uint16Array,
+  uint16x2: Uint16Array,
+  uint16x4: Uint16Array,
+  sint16: Int16Array,
+  sint16x2: Int16Array,
+  sint16x4: Int16Array,
+  unorm16: Uint16Array,
+  unorm16x2: Uint16Array,
+  unorm16x4: Uint16Array,
+  snorm16: Int16Array,
+  snorm16x2: Int16Array,
+  snorm16x4: Int16Array,
+  float16: Float16Array,
+  float16x2: Float16Array,
+  float16x4: Float16Array,
+  float32: Float32Array,
+  float32x2: Float32Array,
+  float32x3: Float32Array,
+  float32x4: Float32Array,
+  uint32: Uint32Array,
+  uint32x2: Uint32Array,
+  uint32x3: Uint32Array,
+  uint32x4: Uint32Array,
+  sint32: Int32Array,
+  sint32x2: Int32Array,
+  sint32x3: Int32Array,
+  sint32x4: Int32Array,
+  "unorm10-10-10-2": Uint8Array,
+  "unorm8x4-bgra": Uint8Array
+};
+var VERTEX_FORMAT_TO_WGSL_BASE_TYPE = {
+  uint8: "u32",
+  uint8x2: "u32",
+  uint8x4: "u32",
+  sint8: "i32",
+  sint8x2: "i32",
+  sint8x4: "i32",
+  unorm8: "f32",
+  unorm8x2: "f32",
+  unorm8x4: "f32",
+  snorm8: "f32",
+  snorm8x2: "f32",
+  snorm8x4: "f32",
+  uint16: "u32",
+  uint16x2: "u32",
+  uint16x4: "u32",
+  sint16: "i32",
+  sint16x2: "i32",
+  sint16x4: "i32",
+  unorm16: "f32",
+  unorm16x2: "f32",
+  unorm16x4: "f32",
+  snorm16: "f32",
+  snorm16x2: "f32",
+  snorm16x4: "f32",
+  float16: "f32",
+  float16x2: "f32",
+  float16x4: "f32",
+  float32: "f32",
+  float32x2: "f32",
+  float32x3: "f32",
+  float32x4: "f32",
+  uint32: "u32",
+  uint32x2: "u32",
+  uint32x3: "u32",
+  uint32x4: "u32",
+  sint32: "i32",
+  sint32x2: "i32",
+  sint32x3: "i32",
+  sint32x4: "i32",
+  "unorm10-10-10-2": "f32",
+  "unorm8x4-bgra": "f32"
+};
+var WGSL_DATA_TYPES = {
+  f32: {
+    1: "f32",
+    2: "vec2f",
+    3: "vec3f",
+    4: "vec4f"
+  },
+  f16: {
+    1: "f16",
+    2: "vec2f16",
+    3: "vec3f16",
+    4: "vec4f16"
+  },
+  u32: {
+    1: "u32",
+    2: "vec2u",
+    3: "vec3u",
+    4: "vec4u"
+  },
+  i32: {
+    1: "i32",
+    2: "vec2i",
+    3: "vec3i",
+    4: "vec4i"
   }
-  return outPoints;
+};
+function vertexFormatToWgslType(vertexFormat) {
+  return WGSL_DATA_TYPES[VERTEX_FORMAT_TO_WGSL_BASE_TYPE[vertexFormat]][VERTEX_FORMAT_TO_ELEMENT_COUNT[vertexFormat]];
+}
+function vertexFormatStride(vformat) {
+  const elems = VERTEX_FORMAT_TO_ELEMENT_COUNT[vformat];
+  const sizePerElem = VERTEX_FORMAT_TO_ELEMENT_SIZE[vformat];
+  return elems * sizePerElem;
 }
 
-// src/curve/bezierify.ts
-function dotself2(x2) {
-  return dot2(x2, x2);
+// src/webgpu/wgsl-struct-layout-generator.ts
+function struct(name, members) {
+  return {
+    type: "struct",
+    name,
+    // @ts-expect-error
+    members: Object.entries(members).map(([k, v]) => [
+      k,
+      typeof v === "string" ? { type: { type: v } } : { type: v }
+    ])
+  };
 }
-function clamp3(v, lo, hi) {
-  return [clamp(v[0], lo, hi), clamp(v[1], lo, hi), clamp(v[2], lo, hi)];
+function array(count, member) {
+  return {
+    type: "array",
+    count,
+    // @ts-expect-error
+    member: typeof member === "string" ? { type: member } : member
+  };
 }
-function sign2(a) {
-  return [Math.sign(a[0]), Math.sign(a[1])];
+function primitive(type) {
+  return { type };
 }
-function abs2(a) {
-  return [Math.abs(a[0]), Math.abs(a[1])];
+function getAllStructs(specs) {
+  const ret = [];
+  function r(spec) {
+    if (spec.type === "struct") {
+      ret.push(spec);
+      for (const [n, m] of Array.isArray(spec.members) ? spec.members : Object.entries(spec.members)) {
+        r(m.type);
+      }
+    } else if (spec.type === "array") {
+      r(spec.member);
+    }
+  }
+  for (const s of specs) r(s);
+  return ret;
 }
-function pow2(a, b) {
-  return [Math.pow(a[0], b[0]), Math.pow(a[1], b[1])];
+function makeCodeForType(type) {
+  if (type.type === "struct") return type.name;
+  if (type.type === "array")
+    return `array<${makeCodeForType(type.member)}${type.count ? ", " + type.count : ""}>`;
+  return type.type;
 }
-function sdBezier(pos, A, B, C) {
-  const a = sub2(B, A);
-  const b = add2(sub2(A, scale2(B, 2)), C);
-  const c = scale2(a, 2);
-  const d = sub2(A, pos);
-  const kk = 1 / dot2(b, b);
-  const kx = kk * dot2(a, b);
-  const ky = kk * (2 * dot2(a, a) + dot2(d, b)) / 3;
-  const kz = kk * dot2(d, a);
-  let res = 0;
-  const p = ky - kx * kx;
-  const p3 = p * p * p;
-  const q = kx * (2 * kx * kx - 3 * ky) + kz;
-  let h = q * q + 4 * p3;
-  if (h >= 0) {
-    h = Math.sqrt(h);
-    const x2 = scale2(sub2([h, -h], [q, q]), 1 / 2);
-    const uv = mul2(sign2(x2), pow2(abs2(x2), [1 / 3, 1 / 3]));
-    const t = clamp(uv[0] + uv[1] - kx, 0, 1);
-    res = dotself2(add2(d, scale2(add2(c, scale2(b, t)), t)));
+function structsCode(spec) {
+  let out = "";
+  const allTypesToDefine = new Map(
+    getAllStructs(spec).map((s) => [s.name, s])
+  ).values();
+  for (const t of allTypesToDefine) {
+    out += `struct ${t.name} {
+  ${(Array.isArray(t.members) ? t.members : Object.entries(t.members)).map((m) => `${m[0]}: ${makeCodeForType(m[1].type)},`).join("\n  ")}
+}`;
+  }
+  return out;
+}
+function generateLayouts(specs) {
+  const clone = structuredClone(specs);
+  const determineIndividualLayoutSizeAndAlignment = memo(
+    (spec) => {
+      if (spec.type === "struct") {
+        let currOffset = 0;
+        for (const [memberName, member] of spec.members) {
+          determineIndividualLayoutSizeAndAlignment(member.type);
+          member.offset = roundUp(member.type.align, currOffset);
+          currOffset = member.offset + member.type.size;
+        }
+        const lastMember = spec.members.at(-1)[1];
+        const justPastLastMember = lastMember.offset + lastMember.type.size;
+        spec.align = Math.max(...spec.members.map((m) => m[1].type.align));
+        spec.size = roundUp(spec.align, justPastLastMember);
+      } else if (spec.type === "array") {
+        determineIndividualLayoutSizeAndAlignment(spec.member);
+        spec.size = spec.count * roundUp(spec.member.align, spec.member.size);
+        spec.align = spec.member.align;
+      } else {
+        spec.size = WGSL_TYPE_SIZES[spec.type];
+        spec.align = WGSL_TYPE_ALIGNMENTS[spec.type];
+      }
+    }
+  );
+  for (const e of clone) {
+    determineIndividualLayoutSizeAndAlignment(e);
+  }
+  return clone;
+}
+function wgslDataTypeToDataViewSetter(dt) {
+  return {
+    i32: "setInt32",
+    u32: "setUint32",
+    f32: "setFloat32",
+    f16: "setFloat16"
+  }[dt];
+}
+function wgslDataTypeToDataViewGetter(dt) {
+  return {
+    i32: "getInt32",
+    u32: "getUint32",
+    f32: "getFloat32",
+    f16: "getFloat16"
+  }[dt];
+}
+function createLayoutGenerator(spec) {
+  function createSetters(spec2, baseOffset, arrayNestingLevel, extraOffsets, accessor) {
+    if (spec2.type === "struct") {
+      return spec2.members.map(
+        ([name, member]) => createSetters(
+          member.type,
+          baseOffset + member.offset,
+          arrayNestingLevel,
+          extraOffsets,
+          accessor + `.${name}`
+        )
+      ).join("\n");
+    } else if (spec2.type === "array") {
+      const iname = `i${arrayNestingLevel}`;
+      const elemSize = roundUp(spec2.member.align, spec2.member.size);
+      return `for (let ${iname} = 0; ${iname} < ${spec2.count}; ${iname}++) {
+  ${createSetters(spec2.member, baseOffset, arrayNestingLevel + 1, [...extraOffsets, `${iname} * ${elemSize}`], accessor + `[${iname}]`)} 
+}`;
+    } else {
+      const iname = `i${arrayNestingLevel}`;
+      const primitiveCount = WGSL_TYPE_ELEMENT_COUNTS[spec2.type];
+      return `for (let ${iname} = 0; ${iname} < ${WGSL_TYPE_ELEMENT_COUNTS[spec2.type]}; ${iname}++) {
+  dst.${wgslDataTypeToDataViewSetter(WGSL_TYPE_DATATYPES[spec2.type])}(
+    ${baseOffset} + ${extraOffsets.join(" + ")} + ${iname} * ${WGSL_TYPE_SIZES[WGSL_TYPE_DATATYPES[spec2.type]]},
+    ${primitiveCount > 1 ? accessor + `[${iname}]` : accessor},
+    true
+  );
+}`;
+    }
+  }
+  const fnbody = createSetters(spec, 0, 0, [], "src");
+  return new Function("dst", "src", fnbody);
+}
+function readWgslLayout(spec, view, offset = 0) {
+  if (spec.type === "struct") {
+    return Object.fromEntries(
+      spec.members.map(([name, value]) => [
+        name,
+        readWgslLayout(value.type, view, offset + value.offset)
+      ])
+    );
+  } else if (spec.type === "array") {
+    const elemSize = roundUp(spec.member.align, spec.member.size);
+    return range(spec.count).map(
+      (i) => readWgslLayout(spec.member, view, offset + i * elemSize)
+    );
   } else {
-    const z2 = Math.sqrt(-p);
-    const v = Math.acos(q / (p * z2 * 2)) / 3;
-    const m = Math.cos(v);
-    const n = Math.sin(v) * 1.732050808;
-    const t = clamp3(
-      sub3(scale3([m + m, -n - m, n - m], z2), [kx, kx, kx]),
-      0,
-      1
-    );
-    res = Math.min(
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[0])), t[0]))),
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[1])), t[1])))
-    );
-    res = Math.min(
-      res,
-      dotself2(add2(d, scale2(add2(c, scale2(b, t[2])), t[2])))
-    );
+    const count = WGSL_TYPE_ELEMENT_COUNTS[spec.type];
+    const elemType = WGSL_TYPE_DATATYPES[spec.type];
+    const getter = wgslDataTypeToDataViewGetter(elemType);
+    const elemSize = WGSL_TYPE_SIZES[elemType];
+    let arr = [];
+    for (let i = 0; i < count; i++) {
+      arr.push(view[getter](offset + i * elemSize, true));
+    }
+    return count === 1 ? arr[0] : arr;
   }
-  return Math.sqrt(res);
 }
-function gradient2(fn, pos, diff) {
-  const a = fn(pos);
-  const b = fn(add2(pos, [diff, 0]));
-  const c = fn(add2(pos, [0, diff]));
-  return [(a - b) / diff, (a - c) / diff];
+function createWgslSerializers(...ss) {
+  const layouts = generateLayouts(ss);
+  const gens = layouts.map((l) => ({
+    dataLayout: l,
+    gen: createLayoutGenerator(l)
+  }));
+  return {
+    code: structsCode(layouts),
+    generators: gens
+  };
 }
-function bezierifyFixedCount(path, count, learningRate, gradientDescentIters) {
-  const beziers = [];
-  for (let i = 0; i < count; i++) {
-    const startIndex = Math.floor(i / count * (path.length - 1));
-    const endIndex = Math.floor((i + 1) / count * (path.length - 1));
-    beziers.push(
-      generateBezierApproximation(
-        path,
-        startIndex,
-        endIndex,
-        learningRate,
-        gradientDescentIters
-      ).bezier
-    );
+function typeName(spec) {
+  if (spec.type === "struct") return spec.name;
+  if (spec.type === "array")
+    return `array<${typeName(spec.member)}, ${spec.count}>`;
+  return spec.type;
+}
+
+// src/webgpu/wgsl-snippets.ts
+var WgslSnippets = {
+  unitQuadSigned: {
+    src: `const UNIT_QUAD_SIGNED = array(
+    vec2( 1.0,  1.0),
+    vec2( 1.0, -1.0),
+    vec2(-1.0, -1.0),
+    vec2( 1.0,  1.0),
+    vec2(-1.0, -1.0),
+    vec2(-1.0,  1.0),
+);`
+  },
+  unitQuadUnsigned: {
+    src: `const UNIT_QUAD_UNSIGNED = array(
+    vec2(1.0, 0.0),
+    vec2(1.0, 1.0),
+    vec2(0.0, 1.0),
+    vec2(1.0, 0.0),
+    vec2(0.0, 1.0),
+    vec2(0.0, 0.0),
+);`
+  },
+  logistic: {
+    src: `fn logistic(x: f32) -> f32 {
+  return 1.0 / (1.0 + exp(-x)); 
+}`
+  },
+  DITHER256_THRESHOLDS: {
+    src: `array<f32, 256>(
+  0,
+  128,
+  32,
+  160,
+  8,
+  136,
+  40,
+  168,
+  2,
+  130,
+  34,
+  162,
+  10,
+  138,
+  42,
+  170,
+  192,
+  64,
+  224,
+  96,
+  200,
+  72,
+  232,
+  104,
+  194,
+  66,
+  226,
+  98,
+  202,
+  74,
+  234,
+  106,
+  48,
+  176,
+  16,
+  144,
+  56,
+  184,
+  24,
+  152,
+  50,
+  178,
+  18,
+  146,
+  58,
+  186,
+  26,
+  154,
+  240,
+  112,
+  208,
+  80,
+  248,
+  120,
+  216,
+  88,
+  242,
+  114,
+  210,
+  82,
+  250,
+  122,
+  218,
+  90,
+  12,
+  140,
+  44,
+  172,
+  4,
+  132,
+  36,
+  164,
+  14,
+  142,
+  46,
+  174,
+  6,
+  134,
+  38,
+  166,
+  204,
+  76,
+  236,
+  108,
+  196,
+  68,
+  228,
+  100,
+  206,
+  78,
+  238,
+  110,
+  198,
+  70,
+  230,
+  102,
+  60,
+  188,
+  28,
+  156,
+  52,
+  180,
+  20,
+  148,
+  62,
+  190,
+  30,
+  158,
+  54,
+  182,
+  22,
+  150,
+  252,
+  124,
+  220,
+  92,
+  244,
+  116,
+  212,
+  84,
+  254,
+  126,
+  222,
+  94,
+  246,
+  118,
+  214,
+  86,
+  3,
+  131,
+  35,
+  163,
+  11,
+  139,
+  43,
+  171,
+  1,
+  129,
+  33,
+  161,
+  9,
+  137,
+  41,
+  169,
+  195,
+  67,
+  227,
+  99,
+  203,
+  75,
+  235,
+  107,
+  193,
+  65,
+  225,
+  97,
+  201,
+  73,
+  233,
+  105,
+  51,
+  179,
+  19,
+  147,
+  59,
+  187,
+  27,
+  155,
+  49,
+  177,
+  17,
+  145,
+  57,
+  185,
+  25,
+  153,
+  243,
+  115,
+  211,
+  83,
+  251,
+  123,
+  219,
+  91,
+  241,
+  113,
+  209,
+  81,
+  249,
+  121,
+  217,
+  89,
+  15,
+  143,
+  47,
+  175,
+  7,
+  135,
+  39,
+  167,
+  13,
+  141,
+  45,
+  173,
+  5,
+  133,
+  37,
+  165,
+  207,
+  79,
+  239,
+  111,
+  199,
+  71,
+  231,
+  103,
+  205,
+  77,
+  237,
+  109,
+  197,
+  69,
+  229,
+  101,
+  63,
+  191,
+  31,
+  159,
+  55,
+  183,
+  23,
+  151,
+  61,
+  189,
+  29,
+  157,
+  53,
+  181,
+  21,
+  149,
+  255,
+  127,
+  223,
+  95,
+  247,
+  119,
+  215,
+  87,
+  253,
+  125,
+  221,
+  93,
+  245,
+  117,
+  213,
+  85
+)}`
+  },
+  dither256: {
+    src: `fn dither256(factor: f32, coord: vec2i) -> bool {
+  let x = coord.x % 16;
+  let y = coord.y % 16;
+  let threshold = DITHER256_THRESHOLDS[y * 16 + x] / 256.0;
+  return factor > threshold ;
+}`,
+    deps: ["DITHER256_THRESHOLDS"]
+  },
+  // thank you https://gist.github.com/munrocket/236ed5ba7e409b8bdf1ff6eca5dcdc39
+  hash: {
+    src: `// https://www.pcg-random.org/
+fn hash11(n: u32) -> u32 {
+    var h = n * 747796405u + 2891336453u;
+    h = ((h >> ((h >> 28u) + 4u)) ^ h) * 277803737u;
+    return (h >> 22u) ^ h;
+}
+
+fn hash22(p: vec2u) -> vec2u {
+    var v = p * 1664525u + 1013904223u;
+    v.x += v.y * 1664525u; v.y += v.x * 1664525u;
+    v ^= v >> vec2u(16u);
+    v.x += v.y * 1664525u; v.y += v.x * 1664525u;
+    v ^= v >> vec2u(16u);
+    return v;
+}
+
+// http://www.jcgt.org/published/0009/03/02/
+fn hash33(p: vec3u) -> vec3u {
+    var v = p * 1664525u + 1013904223u;
+    v.x += v.y*v.z; v.y += v.z*v.x; v.z += v.x*v.y;
+    v ^= v >> vec3u(16u);
+    v.x += v.y*v.z; v.y += v.z*v.x; v.z += v.x*v.y;
+    return v;
+}
+
+// http://www.jcgt.org/published/0009/03/02/
+fn hash44(p: vec4u) -> vec4u {
+    var v = p * 1664525u + 1013904223u;
+    v.x += v.y*v.w; v.y += v.z*v.x; v.z += v.x*v.y; v.w += v.y*v.z;
+    v ^= v >> vec4u(16u);
+    v.x += v.y*v.w; v.y += v.z*v.x; v.z += v.x*v.y; v.w += v.y*v.z;
+    return v;
+}`
+  },
+  rand: {
+    src: `fn rand11(f: f32) -> f32 { return f32(hash11(bitcast<u32>(f))) / f32(0xffffffff); }
+fn rand22(f: vec2f) -> vec2f { return vec2f(hash22(bitcast<vec2u>(f))) / f32(0xffffffff); }
+fn rand33(f: vec3f) -> vec3f { return vec3f(hash33(bitcast<vec3u>(f))) / f32(0xffffffff); }
+fn rand44(f: vec4f) -> vec4f { return vec4f(hash44(bitcast<vec4u>(f))) / f32(0xffffffff); }`,
+    deps: ["hash"]
+  },
+  valueNoise: {
+    src: `
+   // WTFPL License
+fn noise(p: f32) -> f32 {
+    let fl = floor(p);
+    return mix(rand11(fl), rand11(fl + 1.), fract(p));
+}
+    
+// WTFPL License
+fn noise2(n: vec2f) -> f32 {
+    let d = vec2f(0., 1.);
+    let b = floor(n);
+    let f = smoothStep(vec2f(0.), vec2f(1.), fract(n));
+    return mix(mix(rand22(b), rand22(b + d.yx), f.x), mix(rand22(b + d.xy), rand22(b + d.yy), f.x), f.y);
+}
+
+// MIT License. \xA9 Stefan Gustavson, Munrocket
+//
+fn mod289(x: vec4f) -> vec4f { return x - floor(x * (1. / 289.)) * 289.; }
+fn perm4(x: vec4f) -> vec4f { return mod289(((x * 34.) + 1.) * x); }
+
+fn noise3(p: vec3f) -> f32 {
+    let a = floor(p);
+    var d: vec3f = p - a;
+    d = d * d * (3. - 2. * d);
+
+    let b = a.xxyy + vec4f(0., 1., 0., 1.);
+    let k1 = perm4(b.xyxy);
+    let k2 = perm4(k1.xyxy + b.zzww);
+
+    let c = k2 + a.zzzz;
+    let k3 = perm4(c);
+    let k4 = perm4(c + 1.);
+
+    let o1 = fract(k3 * (1. / 41.));
+    let o2 = fract(k4 * (1. / 41.));
+
+    let o3 = o2 * d.z + o1 * (1. - d.z);
+    let o4 = o3.yw * d.x + o3.xz * (1. - d.x);
+
+    return o4.y * d.y + o4.x * (1. - d.y);
+}
+    `,
+    deps: ["rand"]
+  },
+  permute4: {
+    src: `
+fn permute4(x: vec4f) -> vec4f { return ((x * 34. + 1.) * x) % vec4f(289.); }
+    `
+  },
+  // note: Operator % has changed, probably current code with it need a fix
+  perlinNoise: {
+    src: `
+   // MIT License. \xA9 Stefan Gustavson, Munrocket
+fn fade2(t: vec2f) -> vec2f { return t * t * t * (t * (t * 6. - 15.) + 10.); }
+
+fn perlinNoise2(P: vec2f) -> f32 {
+    var Pi: vec4f = floor(P.xyxy) + vec4f(0., 0., 1., 1.);
+    let Pf = fract(P.xyxy) - vec4f(0., 0., 1., 1.);
+    Pi = Pi % vec4f(289.); // To avoid truncation effects in permutation
+    let ix = Pi.xzxz;
+    let iy = Pi.yyww;
+    let fx = Pf.xzxz;
+    let fy = Pf.yyww;
+    let i = permute4(permute4(ix) + iy);
+    var gx: vec4f = 2. * fract(i * 0.0243902439) - 1.; // 1/41 = 0.024...
+    let gy = abs(gx) - 0.5;
+    let tx = floor(gx + 0.5);
+    gx = gx - tx;
+    var g00: vec2f = vec2f(gx.x, gy.x);
+    var g10: vec2f = vec2f(gx.y, gy.y);
+    var g01: vec2f = vec2f(gx.z, gy.z);
+    var g11: vec2f = vec2f(gx.w, gy.w);
+    let norm = 1.79284291400159 - 0.85373472095314 *
+        vec4f(dot(g00, g00), dot(g01, g01), dot(g10, g10), dot(g11, g11));
+    g00 = g00 * norm.x;
+    g01 = g01 * norm.y;
+    g10 = g10 * norm.z;
+    g11 = g11 * norm.w;
+    let n00 = dot(g00, vec2f(fx.x, fy.x));
+    let n10 = dot(g10, vec2f(fx.y, fy.y));
+    let n01 = dot(g01, vec2f(fx.z, fy.z));
+    let n11 = dot(g11, vec2f(fx.w, fy.w));
+    let fade_xy = fade2(Pf.xy);
+    let n_x = mix(vec2f(n00, n01), vec2f(n10, n11), vec2f(fade_xy.x));
+    let n_xy = mix(n_x.x, n_x.y, fade_xy.y);
+    return 2.3 * n_xy;
+}
+    
+// MIT License. \xA9 Stefan Gustavson, Munrocket
+fn taylorInvSqrt4(r: vec4f) -> vec4f { return 1.79284291400159 - 0.85373472095314 * r; }
+fn fade3(t: vec3f) -> vec3f { return t * t * t * (t * (t * 6. - 15.) + 10.); }
+
+fn perlinNoise3(P: vec3f) -> f32 {
+    var Pi0 : vec3f = floor(P); // Integer part for indexing
+    var Pi1 : vec3f = Pi0 + vec3f(1.); // Integer part + 1
+    Pi0 = Pi0 % vec3f(289.);
+    Pi1 = Pi1 % vec3f(289.);
+    let Pf0 = fract(P); // Fractional part for interpolation
+    let Pf1 = Pf0 - vec3f(1.); // Fractional part - 1.
+    let ix = vec4f(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+    let iy = vec4f(Pi0.yy, Pi1.yy);
+    let iz0 = Pi0.zzzz;
+    let iz1 = Pi1.zzzz;
+
+    let ixy = permute4(permute4(ix) + iy);
+    let ixy0 = permute4(ixy + iz0);
+    let ixy1 = permute4(ixy + iz1);
+
+    var gx0: vec4f = ixy0 / 7.;
+    var gy0: vec4f = fract(floor(gx0) / 7.) - 0.5;
+    gx0 = fract(gx0);
+    var gz0: vec4f = vec4f(0.5) - abs(gx0) - abs(gy0);
+    var sz0: vec4f = step(gz0, vec4f(0.));
+    gx0 = gx0 + sz0 * (step(vec4f(0.), gx0) - 0.5);
+    gy0 = gy0 + sz0 * (step(vec4f(0.), gy0) - 0.5);
+
+    var gx1: vec4f = ixy1 / 7.;
+    var gy1: vec4f = fract(floor(gx1) / 7.) - 0.5;
+    gx1 = fract(gx1);
+    var gz1: vec4f = vec4f(0.5) - abs(gx1) - abs(gy1);
+    var sz1: vec4f = step(gz1, vec4f(0.));
+    gx1 = gx1 - sz1 * (step(vec4f(0.), gx1) - 0.5);
+    gy1 = gy1 - sz1 * (step(vec4f(0.), gy1) - 0.5);
+
+    var g000: vec3f = vec3f(gx0.x, gy0.x, gz0.x);
+    var g100: vec3f = vec3f(gx0.y, gy0.y, gz0.y);
+    var g010: vec3f = vec3f(gx0.z, gy0.z, gz0.z);
+    var g110: vec3f = vec3f(gx0.w, gy0.w, gz0.w);
+    var g001: vec3f = vec3f(gx1.x, gy1.x, gz1.x);
+    var g101: vec3f = vec3f(gx1.y, gy1.y, gz1.y);
+    var g011: vec3f = vec3f(gx1.z, gy1.z, gz1.z);
+    var g111: vec3f = vec3f(gx1.w, gy1.w, gz1.w);
+
+    let norm0 = taylorInvSqrt4(
+        vec4f(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
+    g000 = g000 * norm0.x;
+    g010 = g010 * norm0.y;
+    g100 = g100 * norm0.z;
+    g110 = g110 * norm0.w;
+    let norm1 = taylorInvSqrt4(
+        vec4f(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
+    g001 = g001 * norm1.x;
+    g011 = g011 * norm1.y;
+    g101 = g101 * norm1.z;
+    g111 = g111 * norm1.w;
+
+    let n000 = dot(g000, Pf0);
+    let n100 = dot(g100, vec3f(Pf1.x, Pf0.yz));
+    let n010 = dot(g010, vec3f(Pf0.x, Pf1.y, Pf0.z));
+    let n110 = dot(g110, vec3f(Pf1.xy, Pf0.z));
+    let n001 = dot(g001, vec3f(Pf0.xy, Pf1.z));
+    let n101 = dot(g101, vec3f(Pf1.x, Pf0.y, Pf1.z));
+    let n011 = dot(g011, vec3f(Pf0.x, Pf1.yz));
+    let n111 = dot(g111, Pf1);
+
+    var fade_xyz: vec3f = fade3(Pf0);
+    let temp = vec4f(f32(fade_xyz.z)); // simplify after chrome bug fix
+    let n_z = mix(vec4f(n000, n100, n010, n110), vec4f(n001, n101, n011, n111), temp);
+    let n_yz = mix(n_z.xy, n_z.zw, vec2f(f32(fade_xyz.y))); // simplify after chrome bug fix
+    let n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
+    return 2.2 * n_xyz;
+}
+    `,
+    deps: ["rand", "permute4"]
+  },
+  rescale: {
+    src: ["f32", "vec2f", "vec3f", "vec4f"].map(
+      (v, i) => `
+      fn rescale${i}(x: ${v}, a1: ${v}, b1: ${v}, a2: ${v}, b2: ${v}) -> ${v} {
+        let temp = (x - a1) / (b1 - a1);
+        return mix(a2, b2, temp);
+      } 
+    `
+    ).join("\n\n")
   }
-  return beziers;
+};
+function useWgslSnippetsRaw(ss) {
+  return "\n" + ss.map((s) => `// IMPORTED_SNIPPET: ${s}
+${WgslSnippets[s].src}`).join("\n\n");
 }
-function bezierAdaptive(path, maxError, learningRate, gradientDescentIters) {
-  return bezierAdaptiveInner(
-    path,
-    maxError,
-    0,
-    path.length - 1,
-    learningRate,
-    gradientDescentIters
+function snippetWithDependencies(sn, deps = /* @__PURE__ */ new Set()) {
+  deps.add(sn);
+  for (const d of WgslSnippets[sn]?.deps ?? []) {
+    snippetWithDependencies(d, deps);
+  }
+  return deps;
+}
+function useWgslSnippets(str2) {
+  const snippetNames = str2.split(/\s+/g);
+  const withdeps = new Set(
+    snippetNames.flatMap((s) => [...snippetWithDependencies(s)])
+  );
+  return useWgslSnippetsRaw([...withdeps]);
+}
+
+// src/webgpu/vertex-format-accessors.ts
+function vertexFormatGetter(storageBufferName, attribute) {
+  const wgslType = vertexFormatToWgslType(attribute.format);
+  const signature = `fn ${storageBufferName}_${attribute}_get(index: u32) -> ${wgslType}`;
+  return `${signature} {
+    return ${storageBufferName}
+  }`;
+}
+
+// raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/simple-filter.wgsl?raw
+var simple_filter_default = "/*TEXTURES*/\r\n\r\n/*TEXTURES*/\r\n\r\n\r\n/*GLOBALS*/\r\n\r\n/*GLOBALS*/\r\n\r\nstruct FragInput {\r\n  @builtin(position) position : vec4f,\r\n  @location(0) uv : vec2f,\r\n}\r\n\r\n@vertex\r\nfn VSMain(@builtin(vertex_index) vertexIndex: u32) -> FragInput {\r\n  var output: FragInput;\r\n\r\n  output.position = vec4(array(\r\n    vec2( 1.0,  1.0),\r\n    vec2( 1.0, -1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2( 1.0,  1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2(-1.0,  1.0),\r\n  )[vertexIndex], 0.5, 1.0);\r\n\r\n  output.uv = array(\r\n    vec2(1.0, 0.0),\r\n    vec2(1.0, 1.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(1.0, 0.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(0.0, 0.0),\r\n  )[vertexIndex];\r\n\r\n  return output;\r\n}\r\n\r\nstruct Output {\r\n/*OUTPUT_STRUCT*/\r\n\r\n/*OUTPUT_STRUCT*/\r\n}\r\n\r\n@fragment\r\nfn FSMain(@location(0) uv : vec2f) -> Output  {\r\n  /*FRAGMENT_BODY*/\r\n\r\n  /*FRAGMENT_BODY*/\r\n}";
+
+// src/webgpu/simple-filter.ts
+function createSimpleFilterShader(params) {
+  return makeDelimitedReplacements(simple_filter_default, [
+    {
+      delimiter: "/*TEXTURES*/",
+      replaceWith: params.textures
+    },
+    {
+      delimiter: "/*GLOBALS*/",
+      replaceWith: params.globals
+    },
+    {
+      delimiter: "/*OUTPUT_STRUCT*/",
+      replaceWith: params.outputStruct
+    },
+    {
+      delimiter: "/*FRAGMENT_BODY*/",
+      replaceWith: params.fragmentBody
+    }
+  ]);
+}
+function createSimpleFilterPipeline(device, spec) {
+  let fragmentBody = "";
+  let bindings = "";
+  let bindingIndex = 0;
+  const inputEntries = Object.entries(spec.inputs);
+  const samplers = [];
+  let hasInputs = inputEntries.length > 0;
+  if (hasInputs) {
+    for (const s of spec.samplers ?? [{}]) {
+      bindings += `@group(0) @binding(${bindingIndex})
+var sampler${bindingIndex}: sampler;
+`;
+      samplers.push(device.createSampler(s));
+      bindingIndex++;
+    }
+  }
+  bindingIndex = 0;
+  const nameToInputMap = /* @__PURE__ */ new Map();
+  const nameToOutputMap = /* @__PURE__ */ new Map();
+  let uniformBindGroupIndex = hasInputs ? 2 : 0;
+  for (const [name, value] of inputEntries) {
+    bindings += `@group(1) @binding(${bindingIndex}) 
+var tex_${name}: ${value.dimensionality ?? "texture_2d"}<${value.type ?? "f32"}>;`;
+    nameToInputMap.set(name, bindingIndex);
+    fragmentBody += !value.dimensionality ? `  var ${name} = textureSample(tex_${name}, sampler${value.sampleWith ?? 0}, uv);
+` : "";
+    bindingIndex++;
+  }
+  let outputStruct = "";
+  let outputBindingIndex = 0;
+  for (const [name, value] of Object.entries(spec.outputs)) {
+    outputStruct += `  @location(${outputBindingIndex}) ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]},
+`;
+    nameToOutputMap.set(name, outputBindingIndex);
+    fragmentBody += `  var ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]};
+`;
+    outputBindingIndex++;
+  }
+  fragmentBody += spec.source;
+  fragmentBody += `
+  var OUTPUT: Output;
+`;
+  const outputsEntries = Object.entries(spec.outputs);
+  for (const [name, value] of outputsEntries) {
+    fragmentBody += `  OUTPUT.${name} = ${name};
+`;
+  }
+  fragmentBody += "return OUTPUT;";
+  let globals = "";
+  globals += spec.globals ?? "";
+  if (spec.uniforms) {
+    globals += `@group(${uniformBindGroupIndex}) @binding(0) var<uniform> params : Params;
+struct Params {
+`;
+    for (const [uniformName, uniformType] of Object.entries(
+      spec.uniforms ?? {}
+    )) {
+      globals += `  ${uniformName}: ${uniformType},
+`;
+    }
+    globals += "}";
+  }
+  const shaderSource = createSimpleFilterShader({
+    textures: bindings,
+    globals,
+    outputStruct,
+    fragmentBody
+  });
+  const [uniformLayouts] = spec.uniforms ? (
+    // @ts-expect-error
+    generateLayouts([struct("Params", spec.uniforms)])
+  ) : void 0;
+  const uniformGenerator = createLayoutGenerator(uniformLayouts);
+  const module = device.createShaderModule({
+    code: shaderSource
+  });
+  const pipeline = device.createRenderPipeline({
+    layout: "auto",
+    vertex: { module },
+    fragment: {
+      module,
+      targets: outputsEntries.map(([name, value]) => ({
+        format: value
+      }))
+    }
+  });
+  const samplerBindGroup = hasInputs ? device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(0),
+    entries: samplers.map((s, i) => ({
+      resource: s,
+      binding: i
+    }))
+  }) : void 0;
+  return {
+    pipeline,
+    makeUniformBuffer() {
+      const buffer = device.createBuffer({
+        size: 1024,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
+      });
+      const bindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
+        entries: [
+          {
+            resource: buffer,
+            binding: 0
+          }
+        ]
+      });
+      const ret = {
+        buffer,
+        bindGroup,
+        setBuffer(values) {
+          const buf = new ArrayBuffer(uniformLayouts.size);
+          uniformGenerator(new DataView(buf), values);
+          device.queue.writeBuffer(buffer, 0, buf);
+          return ret;
+        }
+      };
+      return ret;
+    },
+    withInputs(inputs) {
+      const inputTextureBindGroup = hasInputs ? device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(1),
+        entries: inputEntries.map(([name, value], i) => ({
+          resource: inputs[name],
+          binding: i
+        }))
+      }) : void 0;
+      return {
+        withDedicatedUniformBuffer(existingBufferInfo) {
+          const uniformBuffer = existingBufferInfo?.buffer ?? device.createBuffer({
+            size: uniformLayouts.size,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
+          });
+          const uniformBufferOffset = existingBufferInfo?.offset ?? 0;
+          const uniformBindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
+            entries: [
+              {
+                binding: 0,
+                resource: uniformBuffer
+              }
+            ]
+          });
+          function record(bundleEncoder) {
+            bundleEncoder.setPipeline(pipeline);
+            if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
+            if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
+            bundleEncoder.setBindGroup(uniformBindGroupIndex, uniformBindGroup);
+            bundleEncoder.draw(6);
+          }
+          const defaultBundleEncoder = device.createRenderBundleEncoder({
+            colorFormats: outputsEntries.map((o) => o[1])
+          });
+          record(defaultBundleEncoder);
+          const bundle = defaultBundleEncoder.finish();
+          return {
+            run: (encoder, outputs) => {
+              const pass = encoder.beginRenderPass({
+                colorAttachments: outputsEntries.map(
+                  ([name, value]) => outputs[name] instanceof GPUTextureView ? {
+                    view: outputs[name],
+                    clearValue: [0, 0, 0, 1],
+                    loadOp: "clear",
+                    storeOp: "store"
+                  } : outputs[name]
+                )
+              });
+              pass.executeBundles([bundle]);
+              pass.end();
+            },
+            bundle,
+            runWithRenderPass: (pass) => {
+              pass.executeBundles([bundle]);
+            },
+            record,
+            setUniforms(values) {
+              const buf = new ArrayBuffer(uniformLayouts.size);
+              uniformGenerator(new DataView(buf), values);
+              device.queue.writeBuffer(uniformBuffer, uniformBufferOffset, buf);
+            }
+          };
+        },
+        withUniforms: (uniforms) => {
+          function record(bundleEncoder) {
+            bundleEncoder.setPipeline(pipeline);
+            if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
+            if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
+            if (uniforms)
+              bundleEncoder.setBindGroup(
+                uniformBindGroupIndex,
+                uniforms.bindGroup
+              );
+            bundleEncoder.draw(6);
+          }
+          const defaultBundleEncoder = device.createRenderBundleEncoder({
+            colorFormats: outputsEntries.map((o) => o[1])
+          });
+          record(defaultBundleEncoder);
+          const bundle = defaultBundleEncoder.finish();
+          return {
+            run: (encoder, outputs) => {
+              const pass = encoder.beginRenderPass({
+                colorAttachments: outputsEntries.map(
+                  ([name, value]) => outputs[name] instanceof GPUTextureView ? {
+                    view: outputs[name],
+                    clearValue: [0, 0, 0, 1],
+                    loadOp: "clear",
+                    storeOp: "store"
+                  } : outputs[name]
+                )
+              });
+              pass.executeBundles([bundle]);
+              pass.end();
+            },
+            bundle,
+            runWithRenderPass: (pass) => {
+              pass.executeBundles([bundle]);
+            },
+            record
+          };
+        }
+      };
+    }
+  };
+}
+
+// src/webgpu/readpixels.ts
+function readPixelsSizeReq(params) {
+  let { format, subregion } = params;
+  const copyFootprintPerTexel = getCopyFootprintPerTexel(format);
+  const area = sub3(subregion[1], subregion[0]);
+  return roundUp(256, copyFootprintPerTexel * area[0]) * area[1] * area[2];
+}
+async function readPixels(params) {
+  let { device, tex, buf, subregion, mipLevel, aspect, offsetInBuffer } = params;
+  const copyFootprintPerTexel = getCopyFootprintPerTexel(params.tex.format);
+  if (!subregion) {
+    subregion = [
+      [0, 0, 0],
+      [tex.width, tex.height, tex.depthOrArrayLayers]
+    ];
+  }
+  const enc = device.createCommandEncoder();
+  const area = sub3(subregion[1], subregion[0]);
+  const bytesPerRow = roundUp(256, copyFootprintPerTexel * area[0]);
+  const rowsPerImage = area[1];
+  enc.copyTextureToBuffer(
+    {
+      texture: tex,
+      mipLevel,
+      aspect,
+      origin: subregion[0]
+    },
+    {
+      buffer: buf,
+      offset: offsetInBuffer,
+      bytesPerRow,
+      rowsPerImage
+    },
+    area
+  );
+  device.queue.submit([enc.finish()]);
+  await device.queue.onSubmittedWorkDone();
+  await buf.mapAsync(GPUMapMode.READ);
+  const range2 = buf.getMappedRange();
+  return {
+    range: range2,
+    bytesPerRow,
+    rowsPerImage
+  };
+}
+async function readPixelsToCpuBuffer(params) {
+  const { tex } = params;
+  const size = readPixelsSizeReq({
+    format: tex.format,
+    subregion: params.subregion ?? [
+      [0, 0, 0],
+      [tex.width, tex.height, tex.depthOrArrayLayers]
+    ]
+  });
+  const cpuBuffer = params.cpuBuffer ?? new ArrayBuffer(size);
+  const mappedBuffer = await readPixels(params);
+  const mappedBufferContents = new Uint8Array(mappedBuffer.range);
+  const cpuBufferContents = new Uint8Array(cpuBuffer);
+  for (let i = 0; i < mappedBufferContents.length; i++) {
+    cpuBufferContents[i] = mappedBufferContents[i];
+  }
+  params.buf.unmap();
+  return {
+    cpuBuffer,
+    bytesPerRow: mappedBuffer.bytesPerRow,
+    rowsPerImage: mappedBuffer.rowsPerImage,
+    size
+  };
+}
+async function quickMap(device, buf, size, offset) {
+  const staging = device.createBuffer({
+    size: size ?? buf.size,
+    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+  });
+  const enc = device.createCommandEncoder();
+  enc.copyBufferToBuffer(buf, offset ?? 0, staging, 0, size ?? buf.size);
+  device.queue.submit([enc.finish()]);
+  await device.queue.onSubmittedWorkDone();
+  await staging.mapAsync(GPUMapMode.READ, offset ?? 0, size ?? buf.size);
+  const range2 = staging.getMappedRange(0, size ?? buf.size).slice();
+  staging.unmap();
+  return range2;
+}
+async function quickMapWithFormat(format, device, buf, size, offset) {
+  const [withLayouts] = generateLayouts([format]);
+  const v = new DataView(await quickMap(device, buf, size, offset));
+  return range(Math.floor(v.byteLength / withLayouts.size)).map(
+    (i) => readWgslLayout(withLayouts, v, i * withLayouts.size)
   );
 }
-function bezierAdaptiveInner(path, maxError, startIndex, endIndex, learningRate, gradientDescentIters) {
-  const approx = generateBezierApproximation(
-    path,
-    startIndex,
-    endIndex,
-    learningRate,
-    gradientDescentIters
+
+// src/webgpu/partial-pipelines.ts
+function pipelineRenderpass(pipeline, pass) {
+  const bindGroupNameToIndex = new Map(
+    pipeline.bindGroups.map((b, i) => [b.name, i])
   );
-  if (approx.error <= maxError || endIndex - startIndex < 3)
-    return [approx.bezier];
-  const mid = Math.floor((startIndex + endIndex) / 2);
+  const inputNameToIndex = new Map(pipeline.inputs.map((b, i) => [b.name, i]));
+  return (bindings) => {
+    for (const [k, v] of Object.entries(bindings)) {
+      const bindGroupIndex = bindGroupNameToIndex.get(k);
+      if (bindGroupIndex !== void 0) {
+        pass.setBindGroup(bindGroupIndex, v);
+        continue;
+      }
+      const inputIndex = inputNameToIndex.get(k);
+      if (inputIndex !== void 0) {
+        pass.setVertexBuffer(
+          inputIndex,
+          ...Array.isArray(v) ? v : [v]
+        );
+        continue;
+      }
+      throw new Error(`Bound pipeline does not have attribute '${k}'.`);
+    }
+  };
+}
+function wrapDevice(device) {
+  const wdevice = {
+    storageBuffer(name, spec, settings) {
+      return wdevice.uniformBuffer(name, spec, true, {
+        visibility: GPUShaderStage.COMPUTE,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+        ...settings
+      });
+    },
+    uniformBufferForComputeShader(name, spec) {
+      return wdevice.uniformBuffer(name, spec, false, {
+        visibility: GPUShaderStage.COMPUTE
+      });
+    },
+    uniformBuffer(name, spec, isStorage, settings) {
+      const [withLayouts] = generateLayouts([spec]);
+      const gen = createLayoutGenerator(withLayouts);
+      return {
+        withName(name2) {
+          return wdevice.uniformBuffer(name2, spec, isStorage, settings);
+        },
+        type: isStorage ? "storage-buffer" : "uniform-buffer",
+        name,
+        format: spec,
+        visibility: settings?.visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
+        quickCreate(data) {
+          const gpubuf = this.instantiate(1);
+          const arrayBuf = new ArrayBuffer(withLayouts.size);
+          gen(new DataView(arrayBuf), data);
+          device.queue.writeBuffer(gpubuf, 0, arrayBuf);
+          return gpubuf;
+        },
+        quickCreateMany(data) {
+          const gpubuf = this.instantiate(data.length);
+          const arrayBuf = new ArrayBuffer(withLayouts.size * data.length);
+          for (let i = 0; i < data.length; i++)
+            gen(new DataView(arrayBuf, i * withLayouts.size), data[i]);
+          device.queue.writeBuffer(gpubuf, 0, arrayBuf);
+          return gpubuf;
+        },
+        instantiate(count) {
+          const buf = device.createBuffer({
+            usage: settings?.usage ?? GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            size: withLayouts.size * count
+          });
+          buf.format = {
+            type: "uniform",
+            data: spec
+          };
+          return buf;
+        },
+        fill(buf, offset, data) {
+          const cpubuf = new ArrayBuffer(withLayouts.size);
+          gen(new DataView(cpubuf), data);
+          device.queue.writeBuffer(buf, offset, cpubuf);
+        },
+        wgsl(groupIndex, bindingIndex) {
+          return `@group(${groupIndex}) @binding(${bindingIndex}) var<uniform> ${name} : ${typeName(spec)};`;
+        },
+        wgslStorage(groupIndex, bindingIndex, access) {
+          return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage, ${access}> ${name} : ${settings.arrayify ?? true ? `array<${typeName(spec)}>;` : typeName(spec) + ";"}`;
+        },
+        // @ts-expect-error
+        reinterpret(buf) {
+          return buf;
+        }
+      };
+    },
+    vertexBuffer(name, params) {
+      let size = params.stride;
+      return {
+        visibility: params.visibility,
+        name,
+        stepMode: params.stepMode,
+        type: "vertex-buffer",
+        arrayStride: size,
+        attributes: params.types,
+        // @ts-expect-error
+        reinterpret(buf) {
+          return buf;
+        },
+        // @ts-expect-error
+        instantiate(count, descriptor) {
+          const buf = device.createBuffer({
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            size: count * size,
+            ...descriptor
+          });
+          return buf;
+        },
+        quickCreate(data, descriptor) {
+          const buf = this.instantiate(data.length, descriptor);
+          const cpubuf = new ArrayBuffer(size * data.length);
+          const attrViews = arrayToObjEntries(params.types, (attr) => [
+            attr.name,
+            new VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR[attr.format](cpubuf)
+          ]);
+          let index2 = 0;
+          for (const d of data) {
+            for (const a of params.types) {
+              const view = attrViews[a.name];
+              const elementSize = VERTEX_FORMAT_TO_ELEMENT_SIZE[a.format];
+              const elementCount = VERTEX_FORMAT_TO_ELEMENT_COUNT[a.format];
+              for (let i = 0; i < elementCount; i++) {
+                const byteOffset = index2 * size + a.offset;
+                const elementOffset = byteOffset / elementSize + i;
+                view[elementOffset] = elementCount === 1 ? d[a.name] : d[a.name][i];
+              }
+            }
+            index2++;
+          }
+          device.queue.writeBuffer(buf, 0, cpubuf);
+          return buf;
+        }
+      };
+    },
+    bindGroup(name, ...entries) {
+      const layout = device.createBindGroupLayout({
+        entries: entries.map((e, i) => {
+          if (e.type === "texture") {
+            return {
+              binding: i,
+              visibility: e.visibility,
+              layout: {
+                texture: {
+                  sampleType: TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT[e.format],
+                  multisampled: e.multisampled,
+                  viewDimension: e.viewDimension
+                }
+              }
+            };
+          } else if (e.type === "uniform-buffer" || e.type === "storage-buffer") {
+            return {
+              binding: i,
+              visibility: e.visibility,
+              buffer: {
+                type: e.type === "storage-buffer" ? "storage" : "uniform"
+              }
+            };
+          } else if (e.type === "vertex-buffer") {
+            return {
+              binding: i,
+              visibility: e.visibility,
+              buffer: {
+                type: e.readonly ? "read-only-storage" : "storage"
+              }
+            };
+          }
+        })
+      });
+      layout.entries = entries;
+      layout.name = name;
+      layout.instantiate = (params) => {
+        const bg = device.createBindGroup({
+          layout,
+          entries: entries.map((e, i) => ({
+            binding: i,
+            resource: params[e.name]
+          }))
+        });
+        return bg;
+      };
+      return layout;
+    },
+    texture(name, params) {
+      return {
+        name,
+        type: "texture",
+        format: params.format,
+        visibility: params.visibility,
+        // @ts-expect-error
+        viewDimension: params.viewDimension ?? "2d",
+        // @ts-expect-error
+        multisampled: params.multisampled ?? false,
+        instantiate(resolution, usage, extra) {
+          return device.createTexture({
+            size: resolution,
+            usage,
+            format: params.format,
+            ...extra
+          });
+        }
+      };
+    },
+    shader(code, stages = ["vertex", "fragment", "compute"]) {
+      const module = device.createShaderModule({
+        code
+      });
+      return { module, stages };
+    },
+    async pipeline(params) {
+      const requiredStructDefs = params.bindGroups.flatMap(
+        (bg) => bg.entries.flatMap((e) => {
+          if (e.type === "uniform-buffer") {
+            return [e.format];
+          } else {
+            return [];
+          }
+        })
+      );
+      const requiredBindings = params.bindGroups.flatMap(
+        (bg, groupIndex) => bg.entries.flatMap((e, bindingIndex) => {
+          if (e.type === "uniform-buffer") {
+            return e.wgsl(groupIndex, bindingIndex);
+          } else {
+            return "";
+          }
+        })
+      ).join("\n");
+      let shaderLoc = 0;
+      const vertexStruct = params.inputs.length > 0 ? `struct Vertex {
+        ${params.inputs.flatMap((i) => i.attributes.map((attr) => `@location(${shaderLoc++}) ${attr.name}: ${vertexFormatToWgslType(attr.format)}`)).join(",\n")}
+      }` : "";
+      return this.pipelineRaw({
+        multisample: params.multisample,
+        primitive: params.primitive,
+        bindGroups: params.bindGroups,
+        inputs: params.inputs,
+        outputs: params.outputs,
+        depthStencil: params.depthStencil,
+        shader: this.shader(
+          `
+        ${createWgslSerializers(...requiredStructDefs).code}
+        ${requiredBindings}
+        ${params.globals ?? ""}
+        ${vertexStruct}
+
+        struct FragInput {
+          ${params.fragment?.struct ?? ""}
+        }
+
+        struct FragOutput {
+          ${params.fragment.extraOutputs ?? ""}
+          ${Object.entries(params.outputs).map(
+            ([name, value], i) => `@location(${i}) ${name} : ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[typeof value === "string" ? value : value.format]}`
+          ).join(",\n  ")}
+        }
+
+        @vertex
+        fn VSMain(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32, ${vertexStruct ? "vertex: Vertex" : ""}) -> FragInput {
+          ${params.vertex} 
+        }
+
+      ${params.fragment ? `@fragment
+        fn FSMain(input : FragInput) -> FragOutput {
+          ${params.fragment.function}
+        }` : ""}
+        `,
+          params.fragment ? ["vertex", "fragment"] : ["vertex"]
+        )
+      });
+    },
+    async pipelineRaw(params) {
+      let vertex = void 0;
+      if (params.shader.stages.includes("vertex")) {
+        const buffers = [];
+        let shaderLoc = 0;
+        for (const b of params.inputs) {
+          let currBuffer = {
+            arrayStride: b.arrayStride,
+            stepMode: b.stepMode,
+            attributes: []
+          };
+          buffers.push(currBuffer);
+          for (const a of b.attributes) {
+            currBuffer.attributes.push({
+              format: a.format,
+              offset: a.offset,
+              shaderLocation: shaderLoc
+            });
+            shaderLoc++;
+          }
+        }
+        vertex = {
+          module: params.shader.module,
+          buffers
+        };
+      }
+      let fragment = void 0;
+      if (params.shader.stages.includes("fragment")) {
+        fragment = {
+          module: params.shader.module,
+          targets: Object.values(params.outputs).map(
+            (e) => typeof e === "string" ? { format: e } : e?.type === "texture" ? {
+              format: e.format
+            } : e
+          )
+        };
+      }
+      const ppln = await device.createRenderPipelineAsync({
+        vertex,
+        fragment,
+        depthStencil: params.depthStencil,
+        layout: device.createPipelineLayout({
+          bindGroupLayouts: params.bindGroups.map((bg, i) => bg)
+        }),
+        primitive: params.primitive,
+        multisample: params.multisample
+      });
+      ppln.bindGroups = params.bindGroups;
+      ppln.shader = params.shader;
+      ppln.inputs = params.inputs;
+      return ppln;
+    },
+    async compute(params) {
+      const requiredStructDefs = params.bindGroups.flatMap(
+        (bg) => bg.entries.flatMap((e) => {
+          if (e.type === "uniform-buffer" || e.type === "storage-buffer") {
+            return [e.format];
+          } else {
+            return [];
+          }
+        })
+      );
+      const requiredBindings = params.bindGroups.flatMap(
+        (bg, groupIndex) => bg.entries.flatMap((e, bindingIndex) => {
+          if (e.type === "uniform-buffer") {
+            return e.wgsl(groupIndex, bindingIndex);
+          } else if (e.type === "vertex-buffer" || e.type === "storage-buffer") {
+            return e.wgslStorage(
+              groupIndex,
+              bindingIndex,
+              params.storageBufferAccess?.[e.name] ?? "read_write"
+            );
+          } else {
+            return "";
+          }
+        })
+      ).join("\n");
+      const shaderSource = `
+${createWgslSerializers(...requiredStructDefs).code}          
+${requiredBindings}
+${params.globals ?? ""}
+
+@compute
+@workgroup_size(${params.workgroupSize.join(", ")})
+fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocation_id) local_id: vec3u) {
+  ${params.shader}
+}
+          `;
+      console.log(shaderSource);
+      return this.computeRaw({
+        bindGroups: params.bindGroups,
+        shader: this.shader(shaderSource, ["compute"])
+      });
+    },
+    async computeRaw(params) {
+      const ppln = await device.createComputePipelineAsync({
+        compute: params.shader,
+        layout: device.createPipelineLayout({
+          bindGroupLayouts: params.bindGroups.map((bg, i) => bg)
+        })
+      });
+      ppln.bindGroups = params.bindGroups;
+      ppln.shader = params.shader;
+      ppln.inputs = params.inputs;
+      return ppln;
+    }
+  };
+  return wdevice;
+}
+
+// src/webgpu/math.ts
+function perspectiveWebgpu(fieldOfViewInRadians, aspectRatio, near, far) {
+  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
+  const rangeInv = 1 / (near - far);
   return [
-    ...bezierAdaptiveInner(
-      path,
-      maxError,
-      startIndex,
-      mid,
-      learningRate,
-      gradientDescentIters
-    ),
-    ...bezierAdaptiveInner(
-      path,
-      maxError,
-      mid,
-      endIndex,
-      learningRate,
-      gradientDescentIters
-    )
+    f / aspectRatio,
+    0,
+    0,
+    0,
+    0,
+    f,
+    0,
+    0,
+    0,
+    0,
+    far * rangeInv,
+    -1,
+    0,
+    0,
+    near * far * rangeInv,
+    0
   ];
 }
-function generateBezierApproximation(path, startIndex, endIndex, learningRate, gradientDescentIters) {
-  const start = path[startIndex];
-  const end = path[endIndex];
-  let controlPoint = add2(
-    scale2(add2(path[startIndex], path[endIndex]), 0.5),
-    [1e-4, 1e-4]
-  );
-  const getError = (v) => {
-    let error = 0;
-    let count = 0;
-    for (let i = startIndex + 1; i < endIndex; i++) {
-      error += sdBezier(path[i], start, v, end) ** 2;
-      count++;
+
+// src/webgpu/bind-group-generator.ts
+function getWgslPrimitiveDatatype(typename, formatname) {
+  if (formatname) return formatname;
+  if (typename === "f32" || typename === "i32" || typename === "u32" || typename === "f16")
+    return typename;
+  if (typename.startsWith("vec") || typename.startsWith("mat")) {
+    if (typename.endsWith("i")) {
+      return "i32";
+    } else if (typename.endsWith("u")) {
+      return "u32";
+    } else if (typename.endsWith("h")) {
+      return "f16";
     }
-    return error / count;
-  };
-  for (let i = 0; i < gradientDescentIters; i++) {
-    const gradient = gradient2(getError, controlPoint, 1e-3);
-    if (isNaN(gradient[0]) || isNaN(gradient[1])) {
-      continue;
-    }
-    controlPoint = add2(controlPoint, scale2(gradient, learningRate));
   }
-  return {
-    bezier: { a: start, b: controlPoint, c: end },
-    error: getError(controlPoint)
-  };
+  return "f32";
 }
-function bezierPreview(beziers, size) {
-  const c = document.createElement("canvas");
-  const ctx = c.getContext("2d");
-  const points = beziers.flatMap((e) => [e.a, e.b, e.c]);
-  c.width = Math.max(...points.map((b) => b[0])) * size + size;
-  c.height = Math.max(...points.map((b) => b[1])) * size + size;
-  ctx?.beginPath();
-  for (const p of beziers) {
-    ctx.moveTo(p.a[0] * size, p.a[1] * size);
-    ctx.quadraticCurveTo(
-      p.b[0] * size,
-      p.b[1] * size,
-      p.c[0] * size,
-      p.c[1] * size
+function getWgslPrimitiveSize(typename) {
+  if (typename.startsWith("vec2")) return 2;
+  if (typename.startsWith("vec3")) return 3;
+  if (typename.startsWith("vec4")) return 4;
+  if (typename.startsWith("mat2x3")) return 6;
+  if (typename.startsWith("mat3x2")) return 6;
+  if (typename.startsWith("mat2x4")) return 8;
+  if (typename.startsWith("mat4x2")) return 8;
+  if (typename.startsWith("mat3x4")) return 12;
+  if (typename.startsWith("mat4x3")) return 12;
+  if (typename.startsWith("mat2")) return 4;
+  if (typename.startsWith("mat3")) return 9;
+  if (typename.startsWith("mat4")) return 16;
+  return 1;
+}
+function setWgslPrimitive(typename, formatname, view, offset, data) {
+  const datatype = getWgslPrimitiveDatatype(typename, formatname);
+  const size = getWgslPrimitiveSize(typename);
+  let stride = {
+    i32: 4,
+    f32: 4,
+    u32: 4,
+    f16: 2
+  }[datatype];
+  let method = {
+    i32: "setInt32",
+    f32: "setFloat32",
+    u32: "setUint32",
+    f16: "setFloat16"
+  }[datatype];
+  for (let i = 0; i < size; i++) {
+    view[method](offset + stride * i, data[i], true);
+  }
+}
+function generateUniformBufferInner(spec, values, view, offset) {
+  if (spec.members) {
+    for (const m of spec.members)
+      generateUniformBufferInner(
+        m.type,
+        values[m.name],
+        view,
+        offset + m.offset
+      );
+    return;
+  }
+  const typename = spec.name;
+  if (typename === "array") {
+    for (let i = 0; i < spec.count; i++) {
+      generateUniformBufferInner(
+        spec.format,
+        values[i],
+        view,
+        offset + spec.stride * i
+      );
+    }
+  } else {
+    setWgslPrimitive(
+      spec.name,
+      spec.format?.name,
+      view,
+      offset,
+      Array.isArray(values) ? values : [values]
     );
   }
-  ctx.stroke();
-  return c;
+}
+function generateUniformBuffer(spec, values, buffer, byteOffset) {
+  const buf = buffer ?? new ArrayBuffer(spec.size);
+  const view = new DataView(buf, byteOffset);
+  generateUniformBufferInner(spec, values, view, 0);
+  return buf;
+}
+function getUniformBufferSize(spec, group, binding) {
+  return spec.bindGroups[group][binding].type.size;
+}
+function makeUniformBuffer(spec, group, binding, data, buffer, byteOffset) {
+  return generateUniformBuffer(
+    spec.bindGroups[group][binding].type,
+    data,
+    buffer,
+    byteOffset
+  );
 }
 
 // src/audio/stream-audio.ts
@@ -31756,2345 +33829,241 @@ async function getOgg(a) {
   return new Blob([output.target.buffer], { type: "audio/ogg" });
 }
 
-// src/math/round.ts
-function roundUp(factor, x2) {
-  return Math.ceil(x2 / factor) * factor;
+// src/curve/quadratic-curve-to-svg.ts
+function quadraticCurveToPath(curve, sigfigs, offset) {
+  let startPoint = curve[0].a;
+  const str2 = (n) => n.toPrecision(sigfigs);
+  let output = `M ${str2(startPoint[0] + offset[0])} ${str2(
+    startPoint[1] + offset[1]
+  )}`;
+  let prevpoint = startPoint;
+  for (const b of curve) {
+    output += `q ${str2(b.b[0] - prevpoint[0])} ${str2(
+      b.b[1] - prevpoint[1]
+    )},${str2(b.c[0] - prevpoint[0])} ${str2(b.c[1] - prevpoint[1])}`;
+    prevpoint = b.c;
+  }
+  return output;
+}
+function quadraticCurveToSvgPath(curve, offset, color, sigfigs) {
+  const pathd = quadraticCurveToPath(curve, sigfigs, offset);
+  return `<path d="${pathd}" stroke="${color}" />`;
+}
+function islandsToSvg(width, height, islands, sigfigs) {
+  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${islands.map(
+    (i) => quadraticCurveToSvgPath(i.curve, i.topLeftInImage, i.color, sigfigs)
+  ).join("")}</svg>`;
 }
 
-// src/math/noise.ts
-function fract(x2) {
-  return x2 - Math.floor(x2);
+// src/curve/points-on-curve.ts
+function equidistantPointsOnCurve(curve, interval) {
+  if (curve.length === 0) return [];
+  const outPoints = [curve[0]];
+  let accumDist = 0;
+  for (let i = 0; i < curve.length - 1; i++) {
+    const prevPoint = curve[i];
+    const currPoint = curve[i + 1];
+    const currLineDist = distance2(prevPoint, currPoint);
+    const initLength = interval - accumDist % interval;
+    accumDist += currLineDist;
+    const newPointCount = Math.floor(accumDist / interval);
+    for (let j = 0; j < newPointCount; j++) {
+      let distAcross = initLength + j * interval;
+      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
+    }
+    accumDist -= newPointCount * interval;
+  }
+  return outPoints;
 }
-function simpleRandVec2ToFloat(co) {
-  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
-}
-function simpleRandVec2ToVec2(co) {
-  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
-}
-function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
-  const fp = [Math.floor(p[0]), Math.floor(p[1])];
-  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
-  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
-  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
-  const v42 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
-  const o1 = sub2(p, fp);
-  const o2 = sub2(o1, [1, 0]);
-  const o3 = sub2(o1, [0, 1]);
-  const o4 = sub2(o1, [1, 1]);
-  const d1 = dot2(v1, o1);
-  const d2 = dot2(v2, o2);
-  const d3 = dot2(v3, o3);
-  const d4 = dot2(v42, o4);
-  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
-  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
-  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
-}
-function boxMullerTransform(u) {
-  const a = Math.sqrt(-2 * Math.log(u[0]));
-  const b = 2 * Math.PI * u[1];
-  return [a * Math.cos(b), a * Math.sin(b)];
+function variableDistancePointsOnCurve(curve, nextDistance) {
+  if (curve.length === 0) return [];
+  const outPoints = [curve[0]];
+  let interval = nextDistance(curve[0]);
+  let accumDist = 0;
+  for (let i = 0; i < curve.length - 1; i++) {
+    const prevPoint = curve[i];
+    const currPoint = curve[i + 1];
+    const currLineDist = distance2(prevPoint, currPoint);
+    const initLength = interval - accumDist % interval;
+    accumDist += currLineDist;
+    const newPointCount = Math.floor(accumDist / interval);
+    let distAcross = initLength;
+    while (accumDist > interval) {
+      outPoints.push(mix2(distAcross / currLineDist, prevPoint, currPoint));
+      accumDist -= interval;
+      interval = nextDistance(outPoints.at(-1));
+      distAcross += interval;
+    }
+  }
+  return outPoints;
 }
 
-// src/webgpu/converters.ts
-var TEXTURE_FORMAT_TO_DEPTH_SAMPLER_TYPE = {
-  depth16unorm: "depth",
-  depth24plus: "depth",
-  "depth24plus-stencil8": "depth",
-  depth32float: "depth",
-  "depth32float-stencil8": "depth"
-};
-var TEXTURE_FORMAT_TO_NONDEPTH_SAMPLER_TYPE = {
-  depth16unorm: "unfilterable-float",
-  depth24plus: "unfilterable-float",
-  "depth24plus-stencil8": "unfilterable-float",
-  depth32float: "unfilterable-float",
-  "depth32float-stencil8": "unfilterable-float"
-};
-var TEXTURE_FORMAT_TO_STENCIL_SAMPLER_TYPE = {
-  stencil8: "uint",
-  "depth24plus-stencil8": "uint",
-  "depth32plus-stencil8": "uint"
-};
-var TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT = {
-  r8unorm: "float",
-  r8snorm: "float",
-  r8uint: "uint",
-  r8sint: "sint",
-  r16unorm: "float",
-  r16snorm: "float",
-  r16uint: "uint",
-  r16sint: "sint",
-  r16float: "float",
-  rg8unorm: "float",
-  rg8snorm: "float",
-  rg8uint: "uint",
-  rg8sint: "sint",
-  r32uint: "uint",
-  r32sint: "sint",
-  r32float: "float",
-  rg16unorm: "float",
-  rg16snorm: "float",
-  rg16uint: "uint",
-  rg16sint: "sint",
-  rg16float: "float",
-  rgba8unorm: "float",
-  "rgba8unorm-srgb": "float",
-  rgba8snorm: "float",
-  rgba8uint: "uint",
-  rgba8sint: "sint",
-  bgra8unorm: "float",
-  "bgra8unorm-srgb": "float",
-  rgb9e5ufloat: "float",
-  rgb10a2uint: "uint",
-  rgb10a2unorm: "float",
-  rg11b10ufloat: "float",
-  rg32uint: "uint",
-  rg32sint: "sint",
-  rg32float: "float",
-  rgba16unorm: "float",
-  rgba16snorm: "float",
-  rgba16uint: "uint",
-  rgba16sint: "sint",
-  rgba16float: "float",
-  rgba32uint: "uint",
-  rgba32sint: "sint",
-  rgba32float: "float",
-  stencil8: "uint",
-  depth16unorm: "depth",
-  depth24plus: "depth",
-  "depth24plus-stencil8": "depth",
-  depth32float: "depth",
-  "depth32float-stencil8": "depth",
-  "bc1-rgba-unorm": "float",
-  "bc1-rgba-unorm-srgb": "float",
-  "bc2-rgba-unorm": "float",
-  "bc2-rgba-unorm-srgb": "float",
-  "bc3-rgba-unorm": "float",
-  "bc3-rgba-unorm-srgb": "float",
-  "bc4-r-unorm": "float",
-  "bc4-r-snorm": "float",
-  "bc5-rg-unorm": "float",
-  "bc5-rg-snorm": "float",
-  "bc6h-rgb-ufloat": "float",
-  "bc6h-rgb-float": "float",
-  "bc7-rgba-unorm": "float",
-  "bc7-rgba-unorm-srgb": "float",
-  "etc2-rgb8unorm": "float",
-  "etc2-rgb8unorm-srgb": "float",
-  "etc2-rgb8a1unorm": "float",
-  "etc2-rgb8a1unorm-srgb": "float",
-  "etc2-rgba8unorm": "float",
-  "etc2-rgba8unorm-srgb": "float",
-  "eac-r11unorm": "f32",
-  "eac-r11snorm": "f32",
-  "eac-rg11unorm": "vec2f",
-  "eac-rg11snorm": "vec2f",
-  "astc-4x4-unorm": "float",
-  "astc-4x4-unorm-srgb": "float",
-  "astc-5x4-unorm": "float",
-  "astc-5x4-unorm-srgb": "float",
-  "astc-5x5-unorm": "float",
-  "astc-5x5-unorm-srgb": "float",
-  "astc-6x5-unorm": "float",
-  "astc-6x5-unorm-srgb": "float",
-  "astc-6x6-unorm": "float",
-  "astc-6x6-unorm-srgb": "float",
-  "astc-8x5-unorm": "float",
-  "astc-8x5-unorm-srgb": "float",
-  "astc-8x6-unorm": "float",
-  "astc-8x6-unorm-srgb": "float",
-  "astc-8x8-unorm": "float",
-  "astc-8x8-unorm-srgb": "float",
-  "astc-10x5-unorm": "float",
-  "astc-10x5-unorm-srgb": "float",
-  "astc-10x6-unorm": "float",
-  "astc-10x6-unorm-srgb": "float",
-  "astc-10x8-unorm": "float",
-  "astc-10x8-unorm-srgb": "float",
-  "astc-10x10-unorm": "float",
-  "astc-10x10-unorm-srgb": "float",
-  "astc-12x10-unorm": "float",
-  "astc-12x10-unorm-srgb": "float",
-  "astc-12x12-unorm": "float",
-  "astc-12x12-unorm-srgb": "float"
-};
-var TEXTURE_FORMAT_TO_WGSL_TYPE_LUT = {
-  r8unorm: "f32",
-  r8snorm: "f32",
-  r8uint: "u32",
-  r8sint: "i32",
-  r16unorm: "u32",
-  r16snorm: "i32",
-  r16uint: "u32",
-  r16sint: "i32",
-  r16float: "f32",
-  rg8unorm: "vec2f",
-  rg8snorm: "vec2f",
-  rg8uint: "vec2u",
-  rg8sint: "vec2i",
-  r32uint: "u32",
-  r32sint: "i32",
-  r32float: "f32",
-  rg16unorm: "vec2f",
-  rg16snorm: "vec2f",
-  rg16uint: "vec2u",
-  rg16sint: "vec2i",
-  rg16float: "vec2f",
-  rgba8unorm: "vec4f",
-  "rgba8unorm-srgb": "vec4f",
-  rgba8snorm: "vec4f",
-  rgba8uint: "vec4u",
-  rgba8sint: "vec4i",
-  bgra8unorm: "vec4f",
-  "bgra8unorm-srgb": "vec4f",
-  rgb9e5ufloat: "vec4f",
-  rgb10a2uint: "vec4u",
-  rgb10a2unorm: "vec4f",
-  rg11b10ufloat: "vec4f",
-  rg32uint: "vec2u",
-  rg32sint: "vec2i",
-  rg32float: "vec2f",
-  rgba16unorm: "vec4u",
-  rgba16snorm: "vec4i",
-  rgba16uint: "vec4u",
-  rgba16sint: "vec4i",
-  rgba16float: "vec4f",
-  rgba32uint: "vec4u",
-  rgba32sint: "vec4i",
-  rgba32float: "vec4f",
-  stencil8: "u32",
-  depth16unorm: "f32",
-  depth24plus: "f32",
-  "depth24plus-stencil8": "f32",
-  depth32float: "f32",
-  "depth32float-stencil8": "f32",
-  "bc1-rgba-unorm": "vec4f",
-  "bc1-rgba-unorm-srgb": "vec4f",
-  "bc2-rgba-unorm": "vec4f",
-  "bc2-rgba-unorm-srgb": "vec4f",
-  "bc3-rgba-unorm": "vec4f",
-  "bc3-rgba-unorm-srgb": "vec4f",
-  "bc4-r-unorm": "f32",
-  "bc4-r-snorm": "f32",
-  "bc5-rg-unorm": "vec2f",
-  "bc5-rg-snorm": "vec2f",
-  "bc6h-rgb-ufloat": "vec3f",
-  "bc6h-rgb-float": "vec3f",
-  "bc7-rgba-unorm": "vec4f",
-  "bc7-rgba-unorm-srgb": "vec4f",
-  "etc2-rgb8unorm": "vec3f",
-  "etc2-rgb8unorm-srgb": "vec3f",
-  "etc2-rgb8a1unorm": "vec4f",
-  "etc2-rgb8a1unorm-srgb": "vec4f",
-  "etc2-rgba8unorm": "vec4f",
-  "etc2-rgba8unorm-srgb": "vec4f",
-  "eac-r11unorm": "f32",
-  "eac-r11snorm": "f32",
-  "eac-rg11unorm": "vec2f",
-  "eac-rg11snorm": "vec2f",
-  "astc-4x4-unorm": "vec4f",
-  "astc-4x4-unorm-srgb": "vec4f",
-  "astc-5x4-unorm": "vec4f",
-  "astc-5x4-unorm-srgb": "vec4f",
-  "astc-5x5-unorm": "vec4f",
-  "astc-5x5-unorm-srgb": "vec4f",
-  "astc-6x5-unorm": "vec4f",
-  "astc-6x5-unorm-srgb": "vec4f",
-  "astc-6x6-unorm": "vec4f",
-  "astc-6x6-unorm-srgb": "vec4f",
-  "astc-8x5-unorm": "vec4f",
-  "astc-8x5-unorm-srgb": "vec4f",
-  "astc-8x6-unorm": "vec4f",
-  "astc-8x6-unorm-srgb": "vec4f",
-  "astc-8x8-unorm": "vec4f",
-  "astc-8x8-unorm-srgb": "vec4f",
-  "astc-10x5-unorm": "vec4f",
-  "astc-10x5-unorm-srgb": "vec4f",
-  "astc-10x6-unorm": "vec4f",
-  "astc-10x6-unorm-srgb": "vec4f",
-  "astc-10x8-unorm": "vec4f",
-  "astc-10x8-unorm-srgb": "vec4f",
-  "astc-10x10-unorm": "vec4f",
-  "astc-10x10-unorm-srgb": "vec4f",
-  "astc-12x10-unorm": "vec4f",
-  "astc-12x10-unorm-srgb": "vec4f",
-  "astc-12x12-unorm": "vec4f",
-  "astc-12x12-unorm-srgb": "vec4f"
-};
-function getCopyFootprintPerTexel(fmt, aspect = "all") {
-  if (aspect === "stencil-only") {
-    if (fmt === "depth24plus-stencil8" || fmt === "depth32float-stencil8") {
-      return 1;
-    }
-  } else if (aspect === "depth-only") {
-    if (fmt === "depth32float-stencil8") {
-      return 4;
-    }
-  }
-  return TEXEL_BLOCK_COPY_FOOTPRINTS[fmt];
+// src/curve/bezierify.ts
+function dotself2(x2) {
+  return dot2(x2, x2);
 }
-var TEXEL_BLOCK_COPY_FOOTPRINTS = {
-  r8unorm: 1,
-  r8snorm: 1,
-  r8uint: 1,
-  r8sint: 1,
-  r16unorm: 2,
-  r16snorm: 2,
-  r16uint: 2,
-  r16sint: 2,
-  r16float: 2,
-  rg8unorm: 2,
-  rg8snorm: 2,
-  rg8uint: 2,
-  rg8sint: 2,
-  r32uint: 4,
-  r32sint: 4,
-  r32float: 4,
-  rg16unorm: 4,
-  rg16snorm: 4,
-  rg16uint: 4,
-  rg16sint: 4,
-  rg16float: 4,
-  rgba8unorm: 4,
-  "rgba8unorm-srgb": 4,
-  rgba8snorm: 4,
-  rgba8uint: 4,
-  rgba8sint: 4,
-  bgra8unorm: 4,
-  "bgra8unorm-srgb": 4,
-  rgb9e5ufloat: 4,
-  rgb10a2uint: 4,
-  rgb10a2unorm: 4,
-  rg11b10ufloat: 4,
-  rg32uint: 8,
-  rg32sint: 8,
-  rg32float: 8,
-  rgba16unorm: 8,
-  rgba16snorm: 8,
-  rgba16uint: 8,
-  rgba16sint: 8,
-  rgba16float: 8,
-  rgba32uint: 16,
-  rgba32sint: 16,
-  rgba32float: 16,
-  stencil8: 1,
-  depth16unorm: 2,
-  depth24plus: void 0,
-  "depth24plus-stencil8": void 0,
-  depth32float: void 0,
-  "depth32float-stencil8": void 0,
-  "bc1-rgba-unorm": 8,
-  "bc1-rgba-unorm-srgb": 8,
-  "bc2-rgba-unorm": 16,
-  "bc2-rgba-unorm-srgb": 16,
-  "bc3-rgba-unorm": 16,
-  "bc3-rgba-unorm-srgb": 16,
-  "bc4-r-unorm": 8,
-  "bc4-r-snorm": 8,
-  "bc5-rg-unorm": 16,
-  "bc5-rg-snorm": 16,
-  "bc6h-rgb-ufloat": 16,
-  "bc6h-rgb-float": 16,
-  "bc7-rgba-unorm": 16,
-  "bc7-rgba-unorm-srgb": 16,
-  "etc2-rgb8unorm": 8,
-  "etc2-rgb8unorm-srgb": 8,
-  "etc2-rgb8a1unorm": 8,
-  "etc2-rgb8a1unorm-srgb": 8,
-  "etc2-rgba8unorm": 16,
-  "etc2-rgba8unorm-srgb": 16,
-  "eac-r11unorm": 8,
-  "eac-r11snorm": 8,
-  "eac-rg11unorm": 16,
-  "eac-rg11snorm": 16,
-  "astc-4x4-unorm": 16,
-  "astc-4x4-unorm-srgb": 16,
-  "astc-5x4-unorm": 16,
-  "astc-5x4-unorm-srgb": 16,
-  "astc-5x5-unorm": 16,
-  "astc-5x5-unorm-srgb": 16,
-  "astc-6x5-unorm": 16,
-  "astc-6x5-unorm-srgb": 16,
-  "astc-6x6-unorm": 16,
-  "astc-6x6-unorm-srgb": 16,
-  "astc-8x5-unorm": 16,
-  "astc-8x5-unorm-srgb": 16,
-  "astc-8x6-unorm": 16,
-  "astc-8x6-unorm-srgb": 16,
-  "astc-8x8-unorm": 16,
-  "astc-8x8-unorm-srgb": 16,
-  "astc-10x5-unorm": 16,
-  "astc-10x5-unorm-srgb": 16,
-  "astc-10x6-unorm": 16,
-  "astc-10x6-unorm-srgb": 16,
-  "astc-10x8-unorm": 16,
-  "astc-10x8-unorm-srgb": 16,
-  "astc-10x10-unorm": 16,
-  "astc-10x10-unorm-srgb": 16,
-  "astc-12x10-unorm": 16,
-  "astc-12x10-unorm-srgb": 16,
-  "astc-12x12-unorm": 16,
-  "astc-12x12-unorm-srgb": 16
-};
-var SAMPLER_TYPE_TO_WGSL_TYPE = {
-  float: "f32",
-  uint: "u32",
-  sint: "i32",
-  depth: "f32"
-};
-var TEXTURE_DIMENSIONALITIES = {
-  texture_1d: "1d",
-  texture_storage_1d: "1d",
-  texture_2d: "2d",
-  texture_storage_2d: "2d",
-  texture_multisampled_2d: "2d",
-  texture_depth_2d: "2d",
-  texture_depth_multisampled_2d: "2d",
-  texture_2d_array: "2d-array",
-  texture_storage_2d_array: "2d-array",
-  texture_depth_2d_array: "2d-array",
-  texture_3d: "3d",
-  texture_storage_3d: "3d",
-  texture_cube: "cube",
-  texture_depth_cube: "cube",
-  texture_cube_array: "cube-array",
-  texture_depth_cube_array: "cube-array"
-};
-var WGSL_TYPE_SIZES = {
-  i32: 4,
-  u32: 4,
-  f32: 4,
-  f16: 2,
-  "atomic<u32>": 4,
-  "atomic<i32>": 4,
-  vec2i: 8,
-  vec2u: 8,
-  vec2f: 8,
-  vec2f16: 4,
-  vec3i: 12,
-  vec3u: 12,
-  vec3f: 12,
-  vec3f16: 6,
-  vec4i: 16,
-  vec4u: 16,
-  vec4f: 16,
-  vec4f16: 8,
-  mat2x2f: 16,
-  mat2x2f16: 8,
-  mat3x2f: 24,
-  mat3x2f16: 12,
-  mat4x2f: 32,
-  mat4x2f16: 16,
-  mat2x3f: 24,
-  mat2x3f16: 12,
-  mat3x3f: 48,
-  mat3x3f16: 24,
-  mat4x3f: 64,
-  mat4x3f16: 32,
-  mat2x4f: 32,
-  mat2x4f16: 16,
-  mat3x4f: 48,
-  mat3x4f16: 24,
-  mat4x4f: 64,
-  mat4x4f16: 32
-};
-var WGSL_TYPE_ALIGNMENTS = {
-  i32: 4,
-  u32: 4,
-  f32: 4,
-  f16: 2,
-  "atomic<u32>": 4,
-  "atomic<i32>": 4,
-  vec2i: 8,
-  vec2u: 8,
-  vec2f: 8,
-  vec2f16: 4,
-  vec3i: 16,
-  vec3u: 16,
-  vec3f: 16,
-  vec3f16: 8,
-  vec4i: 16,
-  vec4u: 16,
-  vec4f: 16,
-  vec4f16: 8,
-  mat2x2f: 8,
-  mat2x2f16: 4,
-  mat3x2f: 8,
-  mat3x2f16: 4,
-  mat4x2f: 8,
-  mat4x2f16: 4,
-  mat2x3f: 16,
-  mat2x3f16: 8,
-  mat3x3f: 16,
-  mat3x3f16: 8,
-  mat4x3f: 16,
-  mat4x3f16: 8,
-  mat2x4f: 16,
-  mat2x4f16: 8,
-  mat3x4f: 16,
-  mat3x4f16: 8,
-  mat4x4f: 16,
-  mat4x4f16: 8
-};
-var WGSL_TYPE_ELEMENT_COUNTS = {
-  i32: 1,
-  u32: 1,
-  f32: 1,
-  f16: 1,
-  "atomic<u32>": 1,
-  "atomic<i32>": 1,
-  vec2i: 2,
-  vec2u: 2,
-  vec2f: 2,
-  vec2f16: 2,
-  vec3i: 3,
-  vec3u: 3,
-  vec3f: 3,
-  vec3f16: 3,
-  vec4i: 4,
-  vec4u: 4,
-  vec4f: 4,
-  vec4f16: 4,
-  mat2x2f: 4,
-  mat2x2f16: 4,
-  mat3x2f: 6,
-  mat3x2f16: 6,
-  mat4x2f: 8,
-  mat4x2f16: 8,
-  mat2x3f: 6,
-  mat2x3f16: 6,
-  mat3x3f: 9,
-  mat3x3f16: 9,
-  mat4x3f: 12,
-  mat4x3f16: 12,
-  mat2x4f: 8,
-  mat2x4f16: 8,
-  mat3x4f: 12,
-  mat3x4f16: 12,
-  mat4x4f: 16,
-  mat4x4f16: 16
-};
-var WGSL_TYPE_DATATYPES = {
-  i32: "i32",
-  u32: "u32",
-  f32: "f32",
-  f16: "f16",
-  "atomic<u32>": "u32",
-  "atomic<i32>": "i32",
-  vec2i: "i32",
-  vec2u: "u32",
-  vec2f: "f32",
-  vec2f16: "f16",
-  vec3i: "i32",
-  vec3u: "u32",
-  vec3f: "f32",
-  vec3f16: "f16",
-  vec4i: "i32",
-  vec4u: "u32",
-  vec4f: "f32",
-  vec4f16: "f16",
-  mat2x2f: "f32",
-  mat2x2f16: "f16",
-  mat3x2f: "f32",
-  mat3x2f16: "f16",
-  mat4x2f: "f32",
-  mat4x2f16: "f16",
-  mat2x3f: "f32",
-  mat2x3f16: "f16",
-  mat3x3f: "f32",
-  mat3x3f16: "f16",
-  mat4x3f: "f32",
-  mat4x3f16: "f16",
-  mat2x4f: "f32",
-  mat2x4f16: "f16",
-  mat3x4f: "f32",
-  mat3x4f16: "f16",
-  mat4x4f: "f32",
-  mat4x4f16: "f16"
-};
-var WGSL_BASE_TYPE_TO_SAMPLER_TYPE = {
-  i32: "sint",
-  u32: "uint",
-  f32: "float",
-  f16: "float"
-};
-var VERTEX_FORMAT_TO_ELEMENT_SIZE = {
-  uint8: 1,
-  uint8x2: 1,
-  uint8x4: 1,
-  sint8: 1,
-  sint8x2: 1,
-  sint8x4: 1,
-  unorm8: 1,
-  unorm8x2: 1,
-  unorm8x4: 1,
-  snorm8: 1,
-  snorm8x2: 1,
-  snorm8x4: 1,
-  uint16: 2,
-  uint16x2: 2,
-  uint16x4: 2,
-  sint16: 2,
-  sint16x2: 2,
-  sint16x4: 2,
-  unorm16: 2,
-  unorm16x2: 2,
-  unorm16x4: 2,
-  snorm16: 2,
-  snorm16x2: 2,
-  snorm16x4: 2,
-  float16: 2,
-  float16x2: 2,
-  float16x4: 2,
-  float32: 4,
-  float32x2: 4,
-  float32x3: 4,
-  float32x4: 4,
-  uint32: 4,
-  uint32x2: 4,
-  uint32x3: 4,
-  uint32x4: 4,
-  sint32: 4,
-  sint32x2: 4,
-  sint32x3: 4,
-  sint32x4: 4,
-  "unorm10-10-10-2": 1,
-  "unorm8x4-bgra": 1
-};
-var VERTEX_FORMAT_TO_ELEMENT_COUNT = {
-  uint8: 1,
-  uint8x2: 2,
-  uint8x4: 4,
-  sint8: 1,
-  sint8x2: 2,
-  sint8x4: 4,
-  unorm8: 1,
-  unorm8x2: 2,
-  unorm8x4: 4,
-  snorm8: 1,
-  snorm8x2: 2,
-  snorm8x4: 4,
-  uint16: 1,
-  uint16x2: 2,
-  uint16x4: 4,
-  sint16: 1,
-  sint16x2: 2,
-  sint16x4: 4,
-  unorm16: 1,
-  unorm16x2: 2,
-  unorm16x4: 4,
-  snorm16: 1,
-  snorm16x2: 2,
-  snorm16x4: 4,
-  float16: 1,
-  float16x2: 2,
-  float16x4: 4,
-  float32: 1,
-  float32x2: 2,
-  float32x3: 3,
-  float32x4: 4,
-  uint32: 1,
-  uint32x2: 2,
-  uint32x3: 3,
-  uint32x4: 4,
-  sint32: 1,
-  sint32x2: 2,
-  sint32x3: 3,
-  sint32x4: 4,
-  "unorm10-10-10-2": 4,
-  "unorm8x4-bgra": 4
-};
-var VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR = {
-  uint8: Uint8Array,
-  uint8x2: Uint8Array,
-  uint8x4: Uint8Array,
-  sint8: Int8Array,
-  sint8x2: Int8Array,
-  sint8x4: Int8Array,
-  unorm8: Uint8Array,
-  unorm8x2: Uint8Array,
-  unorm8x4: Uint8Array,
-  snorm8: Int8Array,
-  snorm8x2: Int8Array,
-  snorm8x4: Int8Array,
-  uint16: Uint16Array,
-  uint16x2: Uint16Array,
-  uint16x4: Uint16Array,
-  sint16: Int16Array,
-  sint16x2: Int16Array,
-  sint16x4: Int16Array,
-  unorm16: Uint16Array,
-  unorm16x2: Uint16Array,
-  unorm16x4: Uint16Array,
-  snorm16: Int16Array,
-  snorm16x2: Int16Array,
-  snorm16x4: Int16Array,
-  float16: Float16Array,
-  float16x2: Float16Array,
-  float16x4: Float16Array,
-  float32: Float32Array,
-  float32x2: Float32Array,
-  float32x3: Float32Array,
-  float32x4: Float32Array,
-  uint32: Uint32Array,
-  uint32x2: Uint32Array,
-  uint32x3: Uint32Array,
-  uint32x4: Uint32Array,
-  sint32: Int32Array,
-  sint32x2: Int32Array,
-  sint32x3: Int32Array,
-  sint32x4: Int32Array,
-  "unorm10-10-10-2": Uint8Array,
-  "unorm8x4-bgra": Uint8Array
-};
-var VERTEX_FORMAT_TO_WGSL_BASE_TYPE = {
-  uint8: "u32",
-  uint8x2: "u32",
-  uint8x4: "u32",
-  sint8: "i32",
-  sint8x2: "i32",
-  sint8x4: "i32",
-  unorm8: "f32",
-  unorm8x2: "f32",
-  unorm8x4: "f32",
-  snorm8: "f32",
-  snorm8x2: "f32",
-  snorm8x4: "f32",
-  uint16: "u32",
-  uint16x2: "u32",
-  uint16x4: "u32",
-  sint16: "i32",
-  sint16x2: "i32",
-  sint16x4: "i32",
-  unorm16: "f32",
-  unorm16x2: "f32",
-  unorm16x4: "f32",
-  snorm16: "f32",
-  snorm16x2: "f32",
-  snorm16x4: "f32",
-  float16: "f32",
-  float16x2: "f32",
-  float16x4: "f32",
-  float32: "f32",
-  float32x2: "f32",
-  float32x3: "f32",
-  float32x4: "f32",
-  uint32: "u32",
-  uint32x2: "u32",
-  uint32x3: "u32",
-  uint32x4: "u32",
-  sint32: "i32",
-  sint32x2: "i32",
-  sint32x3: "i32",
-  sint32x4: "i32",
-  "unorm10-10-10-2": "f32",
-  "unorm8x4-bgra": "f32"
-};
-var WGSL_DATA_TYPES = {
-  f32: {
-    1: "f32",
-    2: "vec2f",
-    3: "vec3f",
-    4: "vec4f"
-  },
-  f16: {
-    1: "f16",
-    2: "vec2f16",
-    3: "vec3f16",
-    4: "vec4f16"
-  },
-  u32: {
-    1: "u32",
-    2: "vec2u",
-    3: "vec3u",
-    4: "vec4u"
-  },
-  i32: {
-    1: "i32",
-    2: "vec2i",
-    3: "vec3i",
-    4: "vec4i"
-  }
-};
-function vertexFormatToWgslType(vertexFormat) {
-  return WGSL_DATA_TYPES[VERTEX_FORMAT_TO_WGSL_BASE_TYPE[vertexFormat]][VERTEX_FORMAT_TO_ELEMENT_COUNT[vertexFormat]];
+function clamp3(v, lo, hi) {
+  return [clamp(v[0], lo, hi), clamp(v[1], lo, hi), clamp(v[2], lo, hi)];
 }
-function vertexFormatStride(vformat) {
-  const elems = VERTEX_FORMAT_TO_ELEMENT_COUNT[vformat];
-  const sizePerElem = VERTEX_FORMAT_TO_ELEMENT_SIZE[vformat];
-  return elems * sizePerElem;
+function sign2(a) {
+  return [Math.sign(a[0]), Math.sign(a[1])];
 }
-
-// src/webgpu/wgsl-struct-layout-generator.ts
-function struct(name, members) {
-  return {
-    type: "struct",
-    name,
-    // @ts-expect-error
-    members: Object.entries(members).map(([k, v]) => [
-      k,
-      typeof v === "string" ? { type: { type: v } } : { type: v }
-    ])
-  };
+function abs2(a) {
+  return [Math.abs(a[0]), Math.abs(a[1])];
 }
-function array(count, member) {
-  return {
-    type: "array",
-    count,
-    // @ts-expect-error
-    member: typeof member === "string" ? { type: member } : member
-  };
+function pow2(a, b) {
+  return [Math.pow(a[0], b[0]), Math.pow(a[1], b[1])];
 }
-function primitive(type) {
-  return { type };
-}
-function getAllStructs(specs) {
-  const ret = [];
-  function r(spec) {
-    if (spec.type === "struct") {
-      ret.push(spec);
-      for (const [n, m] of Array.isArray(spec.members) ? spec.members : Object.entries(spec.members)) {
-        r(m.type);
-      }
-    } else if (spec.type === "array") {
-      r(spec.member);
-    }
-  }
-  for (const s of specs) r(s);
-  return ret;
-}
-function makeCodeForType(type) {
-  if (type.type === "struct") return type.name;
-  if (type.type === "array")
-    return `array<${makeCodeForType(type.member)}${type.count ? ", " + type.count : ""}>`;
-  return type.type;
-}
-function structsCode(spec) {
-  let out = "";
-  const allTypesToDefine = new Map(
-    getAllStructs(spec).map((s) => [s.name, s])
-  ).values();
-  for (const t of allTypesToDefine) {
-    out += `struct ${t.name} {
-  ${(Array.isArray(t.members) ? t.members : Object.entries(t.members)).map((m) => `${m[0]}: ${makeCodeForType(m[1].type)},`).join("\n  ")}
-}`;
-  }
-  return out;
-}
-function generateLayouts(specs) {
-  const clone = structuredClone(specs);
-  const determineIndividualLayoutSizeAndAlignment = memo(
-    (spec) => {
-      if (spec.type === "struct") {
-        let currOffset = 0;
-        for (const [memberName, member] of spec.members) {
-          determineIndividualLayoutSizeAndAlignment(member.type);
-          member.offset = roundUp(member.type.align, currOffset);
-          currOffset = member.offset + member.type.size;
-        }
-        const lastMember = spec.members.at(-1)[1];
-        const justPastLastMember = lastMember.offset + lastMember.type.size;
-        spec.align = Math.max(...spec.members.map((m) => m[1].type.align));
-        spec.size = roundUp(spec.align, justPastLastMember);
-      } else if (spec.type === "array") {
-        determineIndividualLayoutSizeAndAlignment(spec.member);
-        spec.size = spec.count * roundUp(spec.member.align, spec.member.size);
-        spec.align = spec.member.align;
-      } else {
-        spec.size = WGSL_TYPE_SIZES[spec.type];
-        spec.align = WGSL_TYPE_ALIGNMENTS[spec.type];
-      }
-    }
-  );
-  for (const e of clone) {
-    determineIndividualLayoutSizeAndAlignment(e);
-  }
-  return clone;
-}
-function wgslDataTypeToDataViewSetter(dt) {
-  return {
-    i32: "setInt32",
-    u32: "setUint32",
-    f32: "setFloat32",
-    f16: "setFloat16"
-  }[dt];
-}
-function wgslDataTypeToDataViewGetter(dt) {
-  return {
-    i32: "getInt32",
-    u32: "getUint32",
-    f32: "getFloat32",
-    f16: "getFloat16"
-  }[dt];
-}
-function createLayoutGenerator(spec) {
-  function createSetters(spec2, baseOffset, arrayNestingLevel, extraOffsets, accessor) {
-    if (spec2.type === "struct") {
-      return spec2.members.map(
-        ([name, member]) => createSetters(
-          member.type,
-          baseOffset + member.offset,
-          arrayNestingLevel,
-          extraOffsets,
-          accessor + `.${name}`
-        )
-      ).join("\n");
-    } else if (spec2.type === "array") {
-      const iname = `i${arrayNestingLevel}`;
-      const elemSize = roundUp(spec2.member.align, spec2.member.size);
-      return `for (let ${iname} = 0; ${iname} < ${spec2.count}; ${iname}++) {
-  ${createSetters(spec2.member, baseOffset, arrayNestingLevel + 1, [...extraOffsets, `${iname} * ${elemSize}`], accessor + `[${iname}]`)} 
-}`;
-    } else {
-      const iname = `i${arrayNestingLevel}`;
-      const primitiveCount = WGSL_TYPE_ELEMENT_COUNTS[spec2.type];
-      return `for (let ${iname} = 0; ${iname} < ${WGSL_TYPE_ELEMENT_COUNTS[spec2.type]}; ${iname}++) {
-  dst.${wgslDataTypeToDataViewSetter(WGSL_TYPE_DATATYPES[spec2.type])}(
-    ${baseOffset} + ${extraOffsets.join(" + ")} + ${iname} * ${WGSL_TYPE_SIZES[WGSL_TYPE_DATATYPES[spec2.type]]},
-    ${primitiveCount > 1 ? accessor + `[${iname}]` : accessor},
-    true
-  );
-}`;
-    }
-  }
-  const fnbody = createSetters(spec, 0, 0, [], "src");
-  return new Function("dst", "src", fnbody);
-}
-function readWgslLayout(spec, view, offset = 0) {
-  if (spec.type === "struct") {
-    return Object.fromEntries(
-      spec.members.map(([name, value]) => [
-        name,
-        readWgslLayout(value.type, view, offset + value.offset)
-      ])
-    );
-  } else if (spec.type === "array") {
-    const elemSize = roundUp(spec.member.align, spec.member.size);
-    return range(spec.count).map(
-      (i) => readWgslLayout(spec.member, view, offset + i * elemSize)
-    );
+function sdBezier(pos, A, B, C) {
+  const a = sub2(B, A);
+  const b = add2(sub2(A, scale2(B, 2)), C);
+  const c = scale2(a, 2);
+  const d = sub2(A, pos);
+  const kk = 1 / dot2(b, b);
+  const kx = kk * dot2(a, b);
+  const ky = kk * (2 * dot2(a, a) + dot2(d, b)) / 3;
+  const kz = kk * dot2(d, a);
+  let res = 0;
+  const p = ky - kx * kx;
+  const p3 = p * p * p;
+  const q = kx * (2 * kx * kx - 3 * ky) + kz;
+  let h = q * q + 4 * p3;
+  if (h >= 0) {
+    h = Math.sqrt(h);
+    const x2 = scale2(sub2([h, -h], [q, q]), 1 / 2);
+    const uv = mul2(sign2(x2), pow2(abs2(x2), [1 / 3, 1 / 3]));
+    const t = clamp(uv[0] + uv[1] - kx, 0, 1);
+    res = dotself2(add2(d, scale2(add2(c, scale2(b, t)), t)));
   } else {
-    const count = WGSL_TYPE_ELEMENT_COUNTS[spec.type];
-    const elemType = WGSL_TYPE_DATATYPES[spec.type];
-    const getter = wgslDataTypeToDataViewGetter(elemType);
-    const elemSize = WGSL_TYPE_SIZES[elemType];
-    let arr = [];
-    for (let i = 0; i < count; i++) {
-      arr.push(view[getter](offset + i * elemSize, true));
-    }
-    return count === 1 ? arr[0] : arr;
+    const z2 = Math.sqrt(-p);
+    const v = Math.acos(q / (p * z2 * 2)) / 3;
+    const m = Math.cos(v);
+    const n = Math.sin(v) * 1.732050808;
+    const t = clamp3(
+      sub3(scale3([m + m, -n - m, n - m], z2), [kx, kx, kx]),
+      0,
+      1
+    );
+    res = Math.min(
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[0])), t[0]))),
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[1])), t[1])))
+    );
+    res = Math.min(
+      res,
+      dotself2(add2(d, scale2(add2(c, scale2(b, t[2])), t[2])))
+    );
   }
+  return Math.sqrt(res);
 }
-function createWgslSerializers(...ss) {
-  const layouts = generateLayouts(ss);
-  const gens = layouts.map((l) => ({
-    dataLayout: l,
-    gen: createLayoutGenerator(l)
-  }));
-  return {
-    code: structsCode(layouts),
-    generators: gens
-  };
+function gradient2(fn, pos, diff) {
+  const a = fn(pos);
+  const b = fn(add2(pos, [diff, 0]));
+  const c = fn(add2(pos, [0, diff]));
+  return [(a - b) / diff, (a - c) / diff];
 }
-function typeName(spec) {
-  if (spec.type === "struct") return spec.name;
-  if (spec.type === "array")
-    return `array<${typeName(spec.member)}, ${spec.count}>`;
-  return spec.type;
-}
-
-// src/webgpu/wgsl-snippets.ts
-var WgslSnippets = {
-  unitQuadSigned: {
-    src: `const UNIT_QUAD_SIGNED = array(
-    vec2( 1.0,  1.0),
-    vec2( 1.0, -1.0),
-    vec2(-1.0, -1.0),
-    vec2( 1.0,  1.0),
-    vec2(-1.0, -1.0),
-    vec2(-1.0,  1.0),
-);`
-  },
-  unitQuadUnsigned: {
-    src: `const UNIT_QUAD_UNSIGNED = array(
-    vec2(1.0, 0.0),
-    vec2(1.0, 1.0),
-    vec2(0.0, 1.0),
-    vec2(1.0, 0.0),
-    vec2(0.0, 1.0),
-    vec2(0.0, 0.0),
-);`
-  },
-  logistic: {
-    src: `fn logistic(x: f32) -> f32 {
-  return 1.0 / (1.0 + exp(-x)); 
-}`
-  },
-  DITHER256_THRESHOLDS: {
-    src: `array<f32, 256>(
-  0,
-  128,
-  32,
-  160,
-  8,
-  136,
-  40,
-  168,
-  2,
-  130,
-  34,
-  162,
-  10,
-  138,
-  42,
-  170,
-  192,
-  64,
-  224,
-  96,
-  200,
-  72,
-  232,
-  104,
-  194,
-  66,
-  226,
-  98,
-  202,
-  74,
-  234,
-  106,
-  48,
-  176,
-  16,
-  144,
-  56,
-  184,
-  24,
-  152,
-  50,
-  178,
-  18,
-  146,
-  58,
-  186,
-  26,
-  154,
-  240,
-  112,
-  208,
-  80,
-  248,
-  120,
-  216,
-  88,
-  242,
-  114,
-  210,
-  82,
-  250,
-  122,
-  218,
-  90,
-  12,
-  140,
-  44,
-  172,
-  4,
-  132,
-  36,
-  164,
-  14,
-  142,
-  46,
-  174,
-  6,
-  134,
-  38,
-  166,
-  204,
-  76,
-  236,
-  108,
-  196,
-  68,
-  228,
-  100,
-  206,
-  78,
-  238,
-  110,
-  198,
-  70,
-  230,
-  102,
-  60,
-  188,
-  28,
-  156,
-  52,
-  180,
-  20,
-  148,
-  62,
-  190,
-  30,
-  158,
-  54,
-  182,
-  22,
-  150,
-  252,
-  124,
-  220,
-  92,
-  244,
-  116,
-  212,
-  84,
-  254,
-  126,
-  222,
-  94,
-  246,
-  118,
-  214,
-  86,
-  3,
-  131,
-  35,
-  163,
-  11,
-  139,
-  43,
-  171,
-  1,
-  129,
-  33,
-  161,
-  9,
-  137,
-  41,
-  169,
-  195,
-  67,
-  227,
-  99,
-  203,
-  75,
-  235,
-  107,
-  193,
-  65,
-  225,
-  97,
-  201,
-  73,
-  233,
-  105,
-  51,
-  179,
-  19,
-  147,
-  59,
-  187,
-  27,
-  155,
-  49,
-  177,
-  17,
-  145,
-  57,
-  185,
-  25,
-  153,
-  243,
-  115,
-  211,
-  83,
-  251,
-  123,
-  219,
-  91,
-  241,
-  113,
-  209,
-  81,
-  249,
-  121,
-  217,
-  89,
-  15,
-  143,
-  47,
-  175,
-  7,
-  135,
-  39,
-  167,
-  13,
-  141,
-  45,
-  173,
-  5,
-  133,
-  37,
-  165,
-  207,
-  79,
-  239,
-  111,
-  199,
-  71,
-  231,
-  103,
-  205,
-  77,
-  237,
-  109,
-  197,
-  69,
-  229,
-  101,
-  63,
-  191,
-  31,
-  159,
-  55,
-  183,
-  23,
-  151,
-  61,
-  189,
-  29,
-  157,
-  53,
-  181,
-  21,
-  149,
-  255,
-  127,
-  223,
-  95,
-  247,
-  119,
-  215,
-  87,
-  253,
-  125,
-  221,
-  93,
-  245,
-  117,
-  213,
-  85
-)}`
-  },
-  dither256: {
-    src: `fn dither256(factor: f32, coord: vec2i) -> bool {
-  let x = coord.x % 16;
-  let y = coord.y % 16;
-  let threshold = DITHER256_THRESHOLDS[y * 16 + x] / 256.0;
-  return factor > threshold ;
-}`,
-    deps: ["DITHER256_THRESHOLDS"]
-  },
-  // thank you https://gist.github.com/munrocket/236ed5ba7e409b8bdf1ff6eca5dcdc39
-  hash: {
-    src: `// https://www.pcg-random.org/
-fn hash11(n: u32) -> u32 {
-    var h = n * 747796405u + 2891336453u;
-    h = ((h >> ((h >> 28u) + 4u)) ^ h) * 277803737u;
-    return (h >> 22u) ^ h;
-}
-
-fn hash22(p: vec2u) -> vec2u {
-    var v = p * 1664525u + 1013904223u;
-    v.x += v.y * 1664525u; v.y += v.x * 1664525u;
-    v ^= v >> vec2u(16u);
-    v.x += v.y * 1664525u; v.y += v.x * 1664525u;
-    v ^= v >> vec2u(16u);
-    return v;
-}
-
-// http://www.jcgt.org/published/0009/03/02/
-fn hash33(p: vec3u) -> vec3u {
-    var v = p * 1664525u + 1013904223u;
-    v.x += v.y*v.z; v.y += v.z*v.x; v.z += v.x*v.y;
-    v ^= v >> vec3u(16u);
-    v.x += v.y*v.z; v.y += v.z*v.x; v.z += v.x*v.y;
-    return v;
-}
-
-// http://www.jcgt.org/published/0009/03/02/
-fn hash44(p: vec4u) -> vec4u {
-    var v = p * 1664525u + 1013904223u;
-    v.x += v.y*v.w; v.y += v.z*v.x; v.z += v.x*v.y; v.w += v.y*v.z;
-    v ^= v >> vec4u(16u);
-    v.x += v.y*v.w; v.y += v.z*v.x; v.z += v.x*v.y; v.w += v.y*v.z;
-    return v;
-}`
-  },
-  rand: {
-    src: `fn rand11(f: f32) -> f32 { return f32(hash11(bitcast<u32>(f))) / f32(0xffffffff); }
-fn rand22(f: vec2f) -> vec2f { return vec2f(hash22(bitcast<vec2u>(f))) / f32(0xffffffff); }
-fn rand33(f: vec3f) -> vec3f { return vec3f(hash33(bitcast<vec3u>(f))) / f32(0xffffffff); }
-fn rand44(f: vec4f) -> vec4f { return vec4f(hash44(bitcast<vec4u>(f))) / f32(0xffffffff); }`,
-    deps: ["hash"]
-  },
-  valueNoise: {
-    src: `
-   // WTFPL License
-fn noise(p: f32) -> f32 {
-    let fl = floor(p);
-    return mix(rand11(fl), rand11(fl + 1.), fract(p));
-}
-    
-// WTFPL License
-fn noise2(n: vec2f) -> f32 {
-    let d = vec2f(0., 1.);
-    let b = floor(n);
-    let f = smoothStep(vec2f(0.), vec2f(1.), fract(n));
-    return mix(mix(rand22(b), rand22(b + d.yx), f.x), mix(rand22(b + d.xy), rand22(b + d.yy), f.x), f.y);
-}
-
-// MIT License. \xA9 Stefan Gustavson, Munrocket
-//
-fn mod289(x: vec4f) -> vec4f { return x - floor(x * (1. / 289.)) * 289.; }
-fn perm4(x: vec4f) -> vec4f { return mod289(((x * 34.) + 1.) * x); }
-
-fn noise3(p: vec3f) -> f32 {
-    let a = floor(p);
-    var d: vec3f = p - a;
-    d = d * d * (3. - 2. * d);
-
-    let b = a.xxyy + vec4f(0., 1., 0., 1.);
-    let k1 = perm4(b.xyxy);
-    let k2 = perm4(k1.xyxy + b.zzww);
-
-    let c = k2 + a.zzzz;
-    let k3 = perm4(c);
-    let k4 = perm4(c + 1.);
-
-    let o1 = fract(k3 * (1. / 41.));
-    let o2 = fract(k4 * (1. / 41.));
-
-    let o3 = o2 * d.z + o1 * (1. - d.z);
-    let o4 = o3.yw * d.x + o3.xz * (1. - d.x);
-
-    return o4.y * d.y + o4.x * (1. - d.y);
-}
-    `,
-    deps: ["rand"]
-  },
-  permute4: {
-    src: `
-fn permute4(x: vec4f) -> vec4f { return ((x * 34. + 1.) * x) % vec4f(289.); }
-    `
-  },
-  // note: Operator % has changed, probably current code with it need a fix
-  perlinNoise: {
-    src: `
-   // MIT License. \xA9 Stefan Gustavson, Munrocket
-fn fade2(t: vec2f) -> vec2f { return t * t * t * (t * (t * 6. - 15.) + 10.); }
-
-fn perlinNoise2(P: vec2f) -> f32 {
-    var Pi: vec4f = floor(P.xyxy) + vec4f(0., 0., 1., 1.);
-    let Pf = fract(P.xyxy) - vec4f(0., 0., 1., 1.);
-    Pi = Pi % vec4f(289.); // To avoid truncation effects in permutation
-    let ix = Pi.xzxz;
-    let iy = Pi.yyww;
-    let fx = Pf.xzxz;
-    let fy = Pf.yyww;
-    let i = permute4(permute4(ix) + iy);
-    var gx: vec4f = 2. * fract(i * 0.0243902439) - 1.; // 1/41 = 0.024...
-    let gy = abs(gx) - 0.5;
-    let tx = floor(gx + 0.5);
-    gx = gx - tx;
-    var g00: vec2f = vec2f(gx.x, gy.x);
-    var g10: vec2f = vec2f(gx.y, gy.y);
-    var g01: vec2f = vec2f(gx.z, gy.z);
-    var g11: vec2f = vec2f(gx.w, gy.w);
-    let norm = 1.79284291400159 - 0.85373472095314 *
-        vec4f(dot(g00, g00), dot(g01, g01), dot(g10, g10), dot(g11, g11));
-    g00 = g00 * norm.x;
-    g01 = g01 * norm.y;
-    g10 = g10 * norm.z;
-    g11 = g11 * norm.w;
-    let n00 = dot(g00, vec2f(fx.x, fy.x));
-    let n10 = dot(g10, vec2f(fx.y, fy.y));
-    let n01 = dot(g01, vec2f(fx.z, fy.z));
-    let n11 = dot(g11, vec2f(fx.w, fy.w));
-    let fade_xy = fade2(Pf.xy);
-    let n_x = mix(vec2f(n00, n01), vec2f(n10, n11), vec2f(fade_xy.x));
-    let n_xy = mix(n_x.x, n_x.y, fade_xy.y);
-    return 2.3 * n_xy;
-}
-    
-// MIT License. \xA9 Stefan Gustavson, Munrocket
-fn taylorInvSqrt4(r: vec4f) -> vec4f { return 1.79284291400159 - 0.85373472095314 * r; }
-fn fade3(t: vec3f) -> vec3f { return t * t * t * (t * (t * 6. - 15.) + 10.); }
-
-fn perlinNoise3(P: vec3f) -> f32 {
-    var Pi0 : vec3f = floor(P); // Integer part for indexing
-    var Pi1 : vec3f = Pi0 + vec3f(1.); // Integer part + 1
-    Pi0 = Pi0 % vec3f(289.);
-    Pi1 = Pi1 % vec3f(289.);
-    let Pf0 = fract(P); // Fractional part for interpolation
-    let Pf1 = Pf0 - vec3f(1.); // Fractional part - 1.
-    let ix = vec4f(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
-    let iy = vec4f(Pi0.yy, Pi1.yy);
-    let iz0 = Pi0.zzzz;
-    let iz1 = Pi1.zzzz;
-
-    let ixy = permute4(permute4(ix) + iy);
-    let ixy0 = permute4(ixy + iz0);
-    let ixy1 = permute4(ixy + iz1);
-
-    var gx0: vec4f = ixy0 / 7.;
-    var gy0: vec4f = fract(floor(gx0) / 7.) - 0.5;
-    gx0 = fract(gx0);
-    var gz0: vec4f = vec4f(0.5) - abs(gx0) - abs(gy0);
-    var sz0: vec4f = step(gz0, vec4f(0.));
-    gx0 = gx0 + sz0 * (step(vec4f(0.), gx0) - 0.5);
-    gy0 = gy0 + sz0 * (step(vec4f(0.), gy0) - 0.5);
-
-    var gx1: vec4f = ixy1 / 7.;
-    var gy1: vec4f = fract(floor(gx1) / 7.) - 0.5;
-    gx1 = fract(gx1);
-    var gz1: vec4f = vec4f(0.5) - abs(gx1) - abs(gy1);
-    var sz1: vec4f = step(gz1, vec4f(0.));
-    gx1 = gx1 - sz1 * (step(vec4f(0.), gx1) - 0.5);
-    gy1 = gy1 - sz1 * (step(vec4f(0.), gy1) - 0.5);
-
-    var g000: vec3f = vec3f(gx0.x, gy0.x, gz0.x);
-    var g100: vec3f = vec3f(gx0.y, gy0.y, gz0.y);
-    var g010: vec3f = vec3f(gx0.z, gy0.z, gz0.z);
-    var g110: vec3f = vec3f(gx0.w, gy0.w, gz0.w);
-    var g001: vec3f = vec3f(gx1.x, gy1.x, gz1.x);
-    var g101: vec3f = vec3f(gx1.y, gy1.y, gz1.y);
-    var g011: vec3f = vec3f(gx1.z, gy1.z, gz1.z);
-    var g111: vec3f = vec3f(gx1.w, gy1.w, gz1.w);
-
-    let norm0 = taylorInvSqrt4(
-        vec4f(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
-    g000 = g000 * norm0.x;
-    g010 = g010 * norm0.y;
-    g100 = g100 * norm0.z;
-    g110 = g110 * norm0.w;
-    let norm1 = taylorInvSqrt4(
-        vec4f(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
-    g001 = g001 * norm1.x;
-    g011 = g011 * norm1.y;
-    g101 = g101 * norm1.z;
-    g111 = g111 * norm1.w;
-
-    let n000 = dot(g000, Pf0);
-    let n100 = dot(g100, vec3f(Pf1.x, Pf0.yz));
-    let n010 = dot(g010, vec3f(Pf0.x, Pf1.y, Pf0.z));
-    let n110 = dot(g110, vec3f(Pf1.xy, Pf0.z));
-    let n001 = dot(g001, vec3f(Pf0.xy, Pf1.z));
-    let n101 = dot(g101, vec3f(Pf1.x, Pf0.y, Pf1.z));
-    let n011 = dot(g011, vec3f(Pf0.x, Pf1.yz));
-    let n111 = dot(g111, Pf1);
-
-    var fade_xyz: vec3f = fade3(Pf0);
-    let temp = vec4f(f32(fade_xyz.z)); // simplify after chrome bug fix
-    let n_z = mix(vec4f(n000, n100, n010, n110), vec4f(n001, n101, n011, n111), temp);
-    let n_yz = mix(n_z.xy, n_z.zw, vec2f(f32(fade_xyz.y))); // simplify after chrome bug fix
-    let n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
-    return 2.2 * n_xyz;
-}
-    `,
-    deps: ["rand", "permute4"]
-  },
-  rescale: {
-    src: ["f32", "vec2f", "vec3f", "vec4f"].map(
-      (v, i) => `
-      fn rescale${i}(x: ${v}, a1: ${v}, b1: ${v}, a2: ${v}, b2: ${v}) -> ${v} {
-        let temp = (x - a1) / (b1 - a1);
-        return mix(a2, b2, temp);
-      } 
-    `
-    ).join("\n\n")
+function bezierifyFixedCount(path, count, learningRate, gradientDescentIters) {
+  const beziers = [];
+  for (let i = 0; i < count; i++) {
+    const startIndex = Math.floor(i / count * (path.length - 1));
+    const endIndex = Math.floor((i + 1) / count * (path.length - 1));
+    beziers.push(
+      generateBezierApproximation(
+        path,
+        startIndex,
+        endIndex,
+        learningRate,
+        gradientDescentIters
+      ).bezier
+    );
   }
-};
-function useWgslSnippetsRaw(ss) {
-  return "\n" + ss.map((s) => `// IMPORTED_SNIPPET: ${s}
-${WgslSnippets[s].src}`).join("\n\n");
+  return beziers;
 }
-function snippetWithDependencies(sn, deps = /* @__PURE__ */ new Set()) {
-  deps.add(sn);
-  for (const d of WgslSnippets[sn]?.deps ?? []) {
-    snippetWithDependencies(d, deps);
-  }
-  return deps;
-}
-function useWgslSnippets(str2) {
-  const snippetNames = str2.split(/\s+/g);
-  const withdeps = new Set(
-    snippetNames.flatMap((s) => [...snippetWithDependencies(s)])
-  );
-  return useWgslSnippetsRaw([...withdeps]);
-}
-
-// src/webgpu/vertex-format-accessors.ts
-function vertexFormatGetter(storageBufferName, attribute) {
-  const wgslType = vertexFormatToWgslType(attribute.format);
-  const signature = `fn ${storageBufferName}_${attribute}_get(index: u32) -> ${wgslType}`;
-  return `${signature} {
-    return ${storageBufferName}
-  }`;
-}
-
-// raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/webgpu/simple-filter.wgsl?raw
-var simple_filter_default = "/*TEXTURES*/\r\n\r\n/*TEXTURES*/\r\n\r\n\r\n/*GLOBALS*/\r\n\r\n/*GLOBALS*/\r\n\r\nstruct FragInput {\r\n  @builtin(position) position : vec4f,\r\n  @location(0) uv : vec2f,\r\n}\r\n\r\n@vertex\r\nfn VSMain(@builtin(vertex_index) vertexIndex: u32) -> FragInput {\r\n  var output: FragInput;\r\n\r\n  output.position = vec4(array(\r\n    vec2( 1.0,  1.0),\r\n    vec2( 1.0, -1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2( 1.0,  1.0),\r\n    vec2(-1.0, -1.0),\r\n    vec2(-1.0,  1.0),\r\n  )[vertexIndex], 0.5, 1.0);\r\n\r\n  output.uv = array(\r\n    vec2(1.0, 0.0),\r\n    vec2(1.0, 1.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(1.0, 0.0),\r\n    vec2(0.0, 1.0),\r\n    vec2(0.0, 0.0),\r\n  )[vertexIndex];\r\n\r\n  return output;\r\n}\r\n\r\nstruct Output {\r\n/*OUTPUT_STRUCT*/\r\n\r\n/*OUTPUT_STRUCT*/\r\n}\r\n\r\n@fragment\r\nfn FSMain(@location(0) uv : vec2f) -> Output  {\r\n  /*FRAGMENT_BODY*/\r\n\r\n  /*FRAGMENT_BODY*/\r\n}";
-
-// src/webgpu/simple-filter.ts
-function createSimpleFilterShader(params) {
-  return makeDelimitedReplacements(simple_filter_default, [
-    {
-      delimiter: "/*TEXTURES*/",
-      replaceWith: params.textures
-    },
-    {
-      delimiter: "/*GLOBALS*/",
-      replaceWith: params.globals
-    },
-    {
-      delimiter: "/*OUTPUT_STRUCT*/",
-      replaceWith: params.outputStruct
-    },
-    {
-      delimiter: "/*FRAGMENT_BODY*/",
-      replaceWith: params.fragmentBody
-    }
-  ]);
-}
-function createSimpleFilterPipeline(device, spec) {
-  let fragmentBody = "";
-  let bindings = "";
-  let bindingIndex = 0;
-  const inputEntries = Object.entries(spec.inputs);
-  const samplers = [];
-  let hasInputs = inputEntries.length > 0;
-  if (hasInputs) {
-    for (const s of spec.samplers ?? [{}]) {
-      bindings += `@group(0) @binding(${bindingIndex})
-var sampler${bindingIndex}: sampler;
-`;
-      samplers.push(device.createSampler(s));
-      bindingIndex++;
-    }
-  }
-  bindingIndex = 0;
-  const nameToInputMap = /* @__PURE__ */ new Map();
-  const nameToOutputMap = /* @__PURE__ */ new Map();
-  let uniformBindGroupIndex = hasInputs ? 2 : 0;
-  for (const [name, value] of inputEntries) {
-    bindings += `@group(1) @binding(${bindingIndex}) 
-var tex_${name}: ${value.dimensionality ?? "texture_2d"}<${value.type ?? "f32"}>;`;
-    nameToInputMap.set(name, bindingIndex);
-    fragmentBody += !value.dimensionality ? `  var ${name} = textureSample(tex_${name}, sampler${value.sampleWith ?? 0}, uv);
-` : "";
-    bindingIndex++;
-  }
-  let outputStruct = "";
-  let outputBindingIndex = 0;
-  for (const [name, value] of Object.entries(spec.outputs)) {
-    outputStruct += `  @location(${outputBindingIndex}) ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]},
-`;
-    nameToOutputMap.set(name, outputBindingIndex);
-    fragmentBody += `  var ${name}: ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[value]};
-`;
-    outputBindingIndex++;
-  }
-  fragmentBody += spec.source;
-  fragmentBody += `
-  var OUTPUT: Output;
-`;
-  const outputsEntries = Object.entries(spec.outputs);
-  for (const [name, value] of outputsEntries) {
-    fragmentBody += `  OUTPUT.${name} = ${name};
-`;
-  }
-  fragmentBody += "return OUTPUT;";
-  let globals = "";
-  globals += spec.globals ?? "";
-  if (spec.uniforms) {
-    globals += `@group(${uniformBindGroupIndex}) @binding(0) var<uniform> params : Params;
-struct Params {
-`;
-    for (const [uniformName, uniformType] of Object.entries(
-      spec.uniforms ?? {}
-    )) {
-      globals += `  ${uniformName}: ${uniformType},
-`;
-    }
-    globals += "}";
-  }
-  const shaderSource = createSimpleFilterShader({
-    textures: bindings,
-    globals,
-    outputStruct,
-    fragmentBody
-  });
-  const [uniformLayouts] = spec.uniforms ? (
-    // @ts-expect-error
-    generateLayouts([struct("Params", spec.uniforms)])
-  ) : void 0;
-  const uniformGenerator = createLayoutGenerator(uniformLayouts);
-  const module = device.createShaderModule({
-    code: shaderSource
-  });
-  const pipeline = device.createRenderPipeline({
-    layout: "auto",
-    vertex: { module },
-    fragment: {
-      module,
-      targets: outputsEntries.map(([name, value]) => ({
-        format: value
-      }))
-    }
-  });
-  const samplerBindGroup = hasInputs ? device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: samplers.map((s, i) => ({
-      resource: s,
-      binding: i
-    }))
-  }) : void 0;
-  return {
-    pipeline,
-    makeUniformBuffer() {
-      const buffer = device.createBuffer({
-        size: 1024,
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
-      });
-      const bindGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
-        entries: [
-          {
-            resource: buffer,
-            binding: 0
-          }
-        ]
-      });
-      const ret = {
-        buffer,
-        bindGroup,
-        setBuffer(values) {
-          const buf = new ArrayBuffer(uniformLayouts.size);
-          uniformGenerator(new DataView(buf), values);
-          device.queue.writeBuffer(buffer, 0, buf);
-          return ret;
-        }
-      };
-      return ret;
-    },
-    withInputs(inputs) {
-      const inputTextureBindGroup = hasInputs ? device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(1),
-        entries: inputEntries.map(([name, value], i) => ({
-          resource: inputs[name],
-          binding: i
-        }))
-      }) : void 0;
-      return {
-        withDedicatedUniformBuffer(existingBufferInfo) {
-          const uniformBuffer = existingBufferInfo?.buffer ?? device.createBuffer({
-            size: uniformLayouts.size,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
-          });
-          const uniformBufferOffset = existingBufferInfo?.offset ?? 0;
-          const uniformBindGroup = device.createBindGroup({
-            layout: pipeline.getBindGroupLayout(uniformBindGroupIndex),
-            entries: [
-              {
-                binding: 0,
-                resource: uniformBuffer
-              }
-            ]
-          });
-          function record(bundleEncoder) {
-            bundleEncoder.setPipeline(pipeline);
-            if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
-            if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
-            bundleEncoder.setBindGroup(uniformBindGroupIndex, uniformBindGroup);
-            bundleEncoder.draw(6);
-          }
-          const defaultBundleEncoder = device.createRenderBundleEncoder({
-            colorFormats: outputsEntries.map((o) => o[1])
-          });
-          record(defaultBundleEncoder);
-          const bundle = defaultBundleEncoder.finish();
-          return {
-            run: (encoder, outputs) => {
-              const pass = encoder.beginRenderPass({
-                colorAttachments: outputsEntries.map(
-                  ([name, value]) => outputs[name] instanceof GPUTextureView ? {
-                    view: outputs[name],
-                    clearValue: [0, 0, 0, 1],
-                    loadOp: "clear",
-                    storeOp: "store"
-                  } : outputs[name]
-                )
-              });
-              pass.executeBundles([bundle]);
-              pass.end();
-            },
-            bundle,
-            runWithRenderPass: (pass) => {
-              pass.executeBundles([bundle]);
-            },
-            record,
-            setUniforms(values) {
-              const buf = new ArrayBuffer(uniformLayouts.size);
-              uniformGenerator(new DataView(buf), values);
-              device.queue.writeBuffer(uniformBuffer, uniformBufferOffset, buf);
-            }
-          };
-        },
-        withUniforms: (uniforms) => {
-          function record(bundleEncoder) {
-            bundleEncoder.setPipeline(pipeline);
-            if (hasInputs) bundleEncoder.setBindGroup(0, samplerBindGroup);
-            if (hasInputs) bundleEncoder.setBindGroup(1, inputTextureBindGroup);
-            if (uniforms)
-              bundleEncoder.setBindGroup(
-                uniformBindGroupIndex,
-                uniforms.bindGroup
-              );
-            bundleEncoder.draw(6);
-          }
-          const defaultBundleEncoder = device.createRenderBundleEncoder({
-            colorFormats: outputsEntries.map((o) => o[1])
-          });
-          record(defaultBundleEncoder);
-          const bundle = defaultBundleEncoder.finish();
-          return {
-            run: (encoder, outputs) => {
-              const pass = encoder.beginRenderPass({
-                colorAttachments: outputsEntries.map(
-                  ([name, value]) => outputs[name] instanceof GPUTextureView ? {
-                    view: outputs[name],
-                    clearValue: [0, 0, 0, 1],
-                    loadOp: "clear",
-                    storeOp: "store"
-                  } : outputs[name]
-                )
-              });
-              pass.executeBundles([bundle]);
-              pass.end();
-            },
-            bundle,
-            runWithRenderPass: (pass) => {
-              pass.executeBundles([bundle]);
-            },
-            record
-          };
-        }
-      };
-    }
-  };
-}
-
-// src/webgpu/readpixels.ts
-function readPixelsSizeReq(params) {
-  let { format, subregion } = params;
-  const copyFootprintPerTexel = getCopyFootprintPerTexel(format);
-  const area = sub3(subregion[1], subregion[0]);
-  return roundUp(256, copyFootprintPerTexel * area[0]) * area[1] * area[2];
-}
-async function readPixels(params) {
-  let { device, tex, buf, subregion, mipLevel, aspect, offsetInBuffer } = params;
-  const copyFootprintPerTexel = getCopyFootprintPerTexel(params.tex.format);
-  if (!subregion) {
-    subregion = [
-      [0, 0, 0],
-      [tex.width, tex.height, tex.depthOrArrayLayers]
-    ];
-  }
-  const enc = device.createCommandEncoder();
-  const area = sub3(subregion[1], subregion[0]);
-  const bytesPerRow = roundUp(256, copyFootprintPerTexel * area[0]);
-  const rowsPerImage = area[1];
-  enc.copyTextureToBuffer(
-    {
-      texture: tex,
-      mipLevel,
-      aspect,
-      origin: subregion[0]
-    },
-    {
-      buffer: buf,
-      offset: offsetInBuffer,
-      bytesPerRow,
-      rowsPerImage
-    },
-    area
-  );
-  device.queue.submit([enc.finish()]);
-  await device.queue.onSubmittedWorkDone();
-  await buf.mapAsync(GPUMapMode.READ);
-  const range2 = buf.getMappedRange();
-  return {
-    range: range2,
-    bytesPerRow,
-    rowsPerImage
-  };
-}
-async function readPixelsToCpuBuffer(params) {
-  const { tex } = params;
-  const size = readPixelsSizeReq({
-    format: tex.format,
-    subregion: params.subregion ?? [
-      [0, 0, 0],
-      [tex.width, tex.height, tex.depthOrArrayLayers]
-    ]
-  });
-  const cpuBuffer = params.cpuBuffer ?? new ArrayBuffer(size);
-  const mappedBuffer = await readPixels(params);
-  const mappedBufferContents = new Uint8Array(mappedBuffer.range);
-  const cpuBufferContents = new Uint8Array(cpuBuffer);
-  for (let i = 0; i < mappedBufferContents.length; i++) {
-    cpuBufferContents[i] = mappedBufferContents[i];
-  }
-  params.buf.unmap();
-  return {
-    cpuBuffer,
-    bytesPerRow: mappedBuffer.bytesPerRow,
-    rowsPerImage: mappedBuffer.rowsPerImage,
-    size
-  };
-}
-async function quickMap(device, buf, size, offset) {
-  const staging = device.createBuffer({
-    size: size ?? buf.size,
-    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-  });
-  const enc = device.createCommandEncoder();
-  enc.copyBufferToBuffer(buf, offset ?? 0, staging, 0, size ?? buf.size);
-  device.queue.submit([enc.finish()]);
-  await device.queue.onSubmittedWorkDone();
-  await staging.mapAsync(GPUMapMode.READ, offset ?? 0, size ?? buf.size);
-  const range2 = staging.getMappedRange(0, size ?? buf.size).slice();
-  staging.unmap();
-  return range2;
-}
-async function quickMapWithFormat(format, device, buf, size, offset) {
-  const [withLayouts] = generateLayouts([format]);
-  const v = new DataView(await quickMap(device, buf, size, offset));
-  return range(Math.floor(v.byteLength / withLayouts.size)).map(
-    (i) => readWgslLayout(withLayouts, v, i * withLayouts.size)
+function bezierAdaptive(path, maxError, learningRate, gradientDescentIters) {
+  return bezierAdaptiveInner(
+    path,
+    maxError,
+    0,
+    path.length - 1,
+    learningRate,
+    gradientDescentIters
   );
 }
-
-// src/webgpu/partial-pipelines.ts
-function pipelineRenderpass(pipeline, pass) {
-  const bindGroupNameToIndex = new Map(
-    pipeline.bindGroups.map((b, i) => [b.name, i])
+function bezierAdaptiveInner(path, maxError, startIndex, endIndex, learningRate, gradientDescentIters) {
+  const approx = generateBezierApproximation(
+    path,
+    startIndex,
+    endIndex,
+    learningRate,
+    gradientDescentIters
   );
-  const inputNameToIndex = new Map(pipeline.inputs.map((b, i) => [b.name, i]));
-  return (bindings) => {
-    for (const [k, v] of Object.entries(bindings)) {
-      const bindGroupIndex = bindGroupNameToIndex.get(k);
-      if (bindGroupIndex !== void 0) {
-        pass.setBindGroup(bindGroupIndex, v);
-        continue;
-      }
-      const inputIndex = inputNameToIndex.get(k);
-      if (inputIndex !== void 0) {
-        pass.setVertexBuffer(
-          inputIndex,
-          ...Array.isArray(v) ? v : [v]
-        );
-        continue;
-      }
-      throw new Error(`Bound pipeline does not have attribute '${k}'.`);
-    }
-  };
-}
-function wrapDevice(device) {
-  const wdevice = {
-    storageBuffer(name, spec, settings) {
-      return wdevice.uniformBuffer(name, spec, true, {
-        visibility: GPUShaderStage.COMPUTE,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
-        ...settings
-      });
-    },
-    uniformBufferForComputeShader(name, spec) {
-      return wdevice.uniformBuffer(name, spec, false, {
-        visibility: GPUShaderStage.COMPUTE
-      });
-    },
-    uniformBuffer(name, spec, isStorage, settings) {
-      const [withLayouts] = generateLayouts([spec]);
-      const gen = createLayoutGenerator(withLayouts);
-      return {
-        withName(name2) {
-          return wdevice.uniformBuffer(name2, spec, isStorage, settings);
-        },
-        type: isStorage ? "storage-buffer" : "uniform-buffer",
-        name,
-        format: spec,
-        visibility: settings?.visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
-        quickCreate(data) {
-          const gpubuf = this.instantiate(1);
-          const arrayBuf = new ArrayBuffer(withLayouts.size);
-          gen(new DataView(arrayBuf), data);
-          device.queue.writeBuffer(gpubuf, 0, arrayBuf);
-          return gpubuf;
-        },
-        quickCreateMany(data) {
-          const gpubuf = this.instantiate(data.length);
-          const arrayBuf = new ArrayBuffer(withLayouts.size * data.length);
-          for (let i = 0; i < data.length; i++)
-            gen(new DataView(arrayBuf, i * withLayouts.size), data[i]);
-          device.queue.writeBuffer(gpubuf, 0, arrayBuf);
-          return gpubuf;
-        },
-        instantiate(count) {
-          const buf = device.createBuffer({
-            usage: settings?.usage ?? GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-            size: withLayouts.size * count
-          });
-          buf.format = {
-            type: "uniform",
-            data: spec
-          };
-          return buf;
-        },
-        fill(buf, offset, data) {
-          const cpubuf = new ArrayBuffer(withLayouts.size);
-          gen(new DataView(cpubuf), data);
-          device.queue.writeBuffer(buf, offset, cpubuf);
-        },
-        wgsl(groupIndex, bindingIndex) {
-          return `@group(${groupIndex}) @binding(${bindingIndex}) var<uniform> ${name} : ${typeName(spec)};`;
-        },
-        wgslStorage(groupIndex, bindingIndex, access) {
-          return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage, ${access}> ${name} : ${settings.arrayify ?? true ? `array<${typeName(spec)}>;` : typeName(spec) + ";"}`;
-        },
-        // @ts-expect-error
-        reinterpret(buf) {
-          return buf;
-        }
-      };
-    },
-    vertexBuffer(name, params) {
-      let size = params.stride;
-      return {
-        visibility: params.visibility,
-        name,
-        stepMode: params.stepMode,
-        type: "vertex-buffer",
-        arrayStride: size,
-        attributes: params.types,
-        // @ts-expect-error
-        reinterpret(buf) {
-          return buf;
-        },
-        // @ts-expect-error
-        instantiate(count, descriptor) {
-          const buf = device.createBuffer({
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-            size: count * size,
-            ...descriptor
-          });
-          return buf;
-        },
-        quickCreate(data, descriptor) {
-          const buf = this.instantiate(data.length, descriptor);
-          const cpubuf = new ArrayBuffer(size * data.length);
-          const attrViews = arrayToObjEntries(params.types, (attr) => [
-            attr.name,
-            new VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR[attr.format](cpubuf)
-          ]);
-          let index2 = 0;
-          for (const d of data) {
-            for (const a of params.types) {
-              const view = attrViews[a.name];
-              const elementSize = VERTEX_FORMAT_TO_ELEMENT_SIZE[a.format];
-              const elementCount = VERTEX_FORMAT_TO_ELEMENT_COUNT[a.format];
-              for (let i = 0; i < elementCount; i++) {
-                const byteOffset = index2 * size + a.offset;
-                const elementOffset = byteOffset / elementSize + i;
-                view[elementOffset] = elementCount === 1 ? d[a.name] : d[a.name][i];
-              }
-            }
-            index2++;
-          }
-          device.queue.writeBuffer(buf, 0, cpubuf);
-          return buf;
-        }
-      };
-    },
-    bindGroup(name, ...entries) {
-      const layout = device.createBindGroupLayout({
-        entries: entries.map((e, i) => {
-          if (e.type === "texture") {
-            return {
-              binding: i,
-              visibility: e.visibility,
-              layout: {
-                texture: {
-                  sampleType: TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT[e.format],
-                  multisampled: e.multisampled,
-                  viewDimension: e.viewDimension
-                }
-              }
-            };
-          } else if (e.type === "uniform-buffer" || e.type === "storage-buffer") {
-            return {
-              binding: i,
-              visibility: e.visibility,
-              buffer: {
-                type: e.type === "storage-buffer" ? "storage" : "uniform"
-              }
-            };
-          } else if (e.type === "vertex-buffer") {
-            return {
-              binding: i,
-              visibility: e.visibility,
-              buffer: {
-                type: e.readonly ? "read-only-storage" : "storage"
-              }
-            };
-          }
-        })
-      });
-      layout.entries = entries;
-      layout.name = name;
-      layout.instantiate = (params) => {
-        const bg = device.createBindGroup({
-          layout,
-          entries: entries.map((e, i) => ({
-            binding: i,
-            resource: params[e.name]
-          }))
-        });
-        return bg;
-      };
-      return layout;
-    },
-    texture(name, params) {
-      return {
-        name,
-        type: "texture",
-        format: params.format,
-        visibility: params.visibility,
-        // @ts-expect-error
-        viewDimension: params.viewDimension ?? "2d",
-        // @ts-expect-error
-        multisampled: params.multisampled ?? false,
-        instantiate(resolution, usage) {
-          return device.createTexture({
-            size: resolution,
-            usage,
-            format: params.format
-          });
-        }
-      };
-    },
-    shader(code, stages = ["vertex", "fragment", "compute"]) {
-      const module = device.createShaderModule({
-        code
-      });
-      return { module, stages };
-    },
-    async pipeline(params) {
-      const requiredStructDefs = params.bindGroups.flatMap(
-        (bg) => bg.entries.flatMap((e) => {
-          if (e.type === "uniform-buffer") {
-            return [e.format];
-          } else {
-            return [];
-          }
-        })
-      );
-      const requiredBindings = params.bindGroups.flatMap(
-        (bg, groupIndex) => bg.entries.flatMap((e, bindingIndex) => {
-          if (e.type === "uniform-buffer") {
-            return e.wgsl(groupIndex, bindingIndex);
-          } else {
-            return "";
-          }
-        })
-      ).join("\n");
-      let shaderLoc = 0;
-      const vertexStruct = params.inputs.length > 0 ? `struct Vertex {
-        ${params.inputs.flatMap((i) => i.attributes.map((attr) => `@location(${shaderLoc++}) ${attr.name}: ${vertexFormatToWgslType(attr.format)}`)).join(",\n")}
-      }` : "";
-      return this.pipelineRaw({
-        primitive: params.primitive,
-        bindGroups: params.bindGroups,
-        inputs: params.inputs,
-        outputs: params.outputs,
-        depthStencil: params.depthStencil,
-        shader: this.shader(
-          `
-        ${createWgslSerializers(...requiredStructDefs).code}
-        ${requiredBindings}
-        ${params.globals ?? ""}
-        ${vertexStruct}
-
-        struct FragInput {
-          ${params.fragment?.struct ?? ""}
-        }
-
-        struct FragOutput {
-          ${params.fragment.extraOutputs ?? ""}
-          ${Object.entries(params.outputs).map(
-            ([name, value], i) => `@location(${i}) ${name} : ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[typeof value === "string" ? value : value.format]}`
-          ).join(",\n  ")}
-        }
-
-        @vertex
-        fn VSMain(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32, ${vertexStruct ? "vertex: Vertex" : ""}) -> FragInput {
-          ${params.vertex} 
-        }
-
-      ${params.fragment ? `@fragment
-        fn FSMain(input : FragInput) -> FragOutput {
-          ${params.fragment.function}
-        }` : ""}
-        `,
-          params.fragment ? ["vertex", "fragment"] : ["vertex"]
-        )
-      });
-    },
-    async pipelineRaw(params) {
-      let vertex = void 0;
-      if (params.shader.stages.includes("vertex")) {
-        const buffers = [];
-        let shaderLoc = 0;
-        for (const b of params.inputs) {
-          let currBuffer = {
-            arrayStride: b.arrayStride,
-            stepMode: b.stepMode,
-            attributes: []
-          };
-          buffers.push(currBuffer);
-          for (const a of b.attributes) {
-            currBuffer.attributes.push({
-              format: a.format,
-              offset: a.offset,
-              shaderLocation: shaderLoc
-            });
-            shaderLoc++;
-          }
-        }
-        vertex = {
-          module: params.shader.module,
-          buffers
-        };
-      }
-      let fragment = void 0;
-      if (params.shader.stages.includes("fragment")) {
-        fragment = {
-          module: params.shader.module,
-          targets: Object.values(params.outputs).map(
-            (e) => typeof e === "string" ? { format: e } : e?.type === "texture" ? {
-              format: e.format
-            } : e
-          )
-        };
-      }
-      const ppln = await device.createRenderPipelineAsync({
-        vertex,
-        fragment,
-        depthStencil: params.depthStencil,
-        layout: device.createPipelineLayout({
-          bindGroupLayouts: params.bindGroups.map((bg, i) => bg)
-        }),
-        primitive: params.primitive
-      });
-      ppln.bindGroups = params.bindGroups;
-      ppln.shader = params.shader;
-      ppln.inputs = params.inputs;
-      return ppln;
-    },
-    async compute(params) {
-      const requiredStructDefs = params.bindGroups.flatMap(
-        (bg) => bg.entries.flatMap((e) => {
-          if (e.type === "uniform-buffer" || e.type === "storage-buffer") {
-            return [e.format];
-          } else {
-            return [];
-          }
-        })
-      );
-      const requiredBindings = params.bindGroups.flatMap(
-        (bg, groupIndex) => bg.entries.flatMap((e, bindingIndex) => {
-          if (e.type === "uniform-buffer") {
-            return e.wgsl(groupIndex, bindingIndex);
-          } else if (e.type === "vertex-buffer" || e.type === "storage-buffer") {
-            return e.wgslStorage(
-              groupIndex,
-              bindingIndex,
-              params.storageBufferAccess?.[e.name] ?? "read_write"
-            );
-          } else {
-            return "";
-          }
-        })
-      ).join("\n");
-      const shaderSource = `
-${createWgslSerializers(...requiredStructDefs).code}          
-${requiredBindings}
-${params.globals ?? ""}
-
-@compute
-@workgroup_size(${params.workgroupSize.join(", ")})
-fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocation_id) local_id: vec3u) {
-  ${params.shader}
-}
-          `;
-      console.log(shaderSource);
-      return this.computeRaw({
-        bindGroups: params.bindGroups,
-        shader: this.shader(shaderSource, ["compute"])
-      });
-    },
-    async computeRaw(params) {
-      const ppln = await device.createComputePipelineAsync({
-        compute: params.shader,
-        layout: device.createPipelineLayout({
-          bindGroupLayouts: params.bindGroups.map((bg, i) => bg)
-        })
-      });
-      ppln.bindGroups = params.bindGroups;
-      ppln.shader = params.shader;
-      ppln.inputs = params.inputs;
-      return ppln;
-    }
-  };
-  return wdevice;
-}
-
-// src/webgpu/math.ts
-function perspectiveWebgpu(fieldOfViewInRadians, aspectRatio, near, far) {
-  const f = 1 / Math.tan(fieldOfViewInRadians / 2);
-  const rangeInv = 1 / (near - far);
+  if (approx.error <= maxError || endIndex - startIndex < 3)
+    return [approx.bezier];
+  const mid = Math.floor((startIndex + endIndex) / 2);
   return [
-    f / aspectRatio,
-    0,
-    0,
-    0,
-    0,
-    f,
-    0,
-    0,
-    0,
-    0,
-    far * rangeInv,
-    -1,
-    0,
-    0,
-    near * far * rangeInv,
-    0
+    ...bezierAdaptiveInner(
+      path,
+      maxError,
+      startIndex,
+      mid,
+      learningRate,
+      gradientDescentIters
+    ),
+    ...bezierAdaptiveInner(
+      path,
+      maxError,
+      mid,
+      endIndex,
+      learningRate,
+      gradientDescentIters
+    )
   ];
 }
-
-// src/webgpu/bind-group-generator.ts
-function getWgslPrimitiveDatatype(typename, formatname) {
-  if (formatname) return formatname;
-  if (typename === "f32" || typename === "i32" || typename === "u32" || typename === "f16")
-    return typename;
-  if (typename.startsWith("vec") || typename.startsWith("mat")) {
-    if (typename.endsWith("i")) {
-      return "i32";
-    } else if (typename.endsWith("u")) {
-      return "u32";
-    } else if (typename.endsWith("h")) {
-      return "f16";
+function generateBezierApproximation(path, startIndex, endIndex, learningRate, gradientDescentIters) {
+  const start = path[startIndex];
+  const end = path[endIndex];
+  let controlPoint = add2(
+    scale2(add2(path[startIndex], path[endIndex]), 0.5),
+    [1e-4, 1e-4]
+  );
+  const getError = (v) => {
+    let error = 0;
+    let count = 0;
+    for (let i = startIndex + 1; i < endIndex; i++) {
+      error += sdBezier(path[i], start, v, end) ** 2;
+      count++;
     }
-  }
-  return "f32";
-}
-function getWgslPrimitiveSize(typename) {
-  if (typename.startsWith("vec2")) return 2;
-  if (typename.startsWith("vec3")) return 3;
-  if (typename.startsWith("vec4")) return 4;
-  if (typename.startsWith("mat2x3")) return 6;
-  if (typename.startsWith("mat3x2")) return 6;
-  if (typename.startsWith("mat2x4")) return 8;
-  if (typename.startsWith("mat4x2")) return 8;
-  if (typename.startsWith("mat3x4")) return 12;
-  if (typename.startsWith("mat4x3")) return 12;
-  if (typename.startsWith("mat2")) return 4;
-  if (typename.startsWith("mat3")) return 9;
-  if (typename.startsWith("mat4")) return 16;
-  return 1;
-}
-function setWgslPrimitive(typename, formatname, view, offset, data) {
-  const datatype = getWgslPrimitiveDatatype(typename, formatname);
-  const size = getWgslPrimitiveSize(typename);
-  let stride = {
-    i32: 4,
-    f32: 4,
-    u32: 4,
-    f16: 2
-  }[datatype];
-  let method = {
-    i32: "setInt32",
-    f32: "setFloat32",
-    u32: "setUint32",
-    f16: "setFloat16"
-  }[datatype];
-  for (let i = 0; i < size; i++) {
-    view[method](offset + stride * i, data[i], true);
-  }
-}
-function generateUniformBufferInner(spec, values, view, offset) {
-  if (spec.members) {
-    for (const m of spec.members)
-      generateUniformBufferInner(
-        m.type,
-        values[m.name],
-        view,
-        offset + m.offset
-      );
-    return;
-  }
-  const typename = spec.name;
-  if (typename === "array") {
-    for (let i = 0; i < spec.count; i++) {
-      generateUniformBufferInner(
-        spec.format,
-        values[i],
-        view,
-        offset + spec.stride * i
-      );
+    return error / count;
+  };
+  for (let i = 0; i < gradientDescentIters; i++) {
+    const gradient = gradient2(getError, controlPoint, 1e-3);
+    if (isNaN(gradient[0]) || isNaN(gradient[1])) {
+      continue;
     }
-  } else {
-    setWgslPrimitive(
-      spec.name,
-      spec.format?.name,
-      view,
-      offset,
-      Array.isArray(values) ? values : [values]
+    controlPoint = add2(controlPoint, scale2(gradient, learningRate));
+  }
+  return {
+    bezier: { a: start, b: controlPoint, c: end },
+    error: getError(controlPoint)
+  };
+}
+function bezierPreview(beziers, size) {
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d");
+  const points = beziers.flatMap((e) => [e.a, e.b, e.c]);
+  c.width = Math.max(...points.map((b) => b[0])) * size + size;
+  c.height = Math.max(...points.map((b) => b[1])) * size + size;
+  ctx?.beginPath();
+  for (const p of beziers) {
+    ctx.moveTo(p.a[0] * size, p.a[1] * size);
+    ctx.quadraticCurveTo(
+      p.b[0] * size,
+      p.b[1] * size,
+      p.c[0] * size,
+      p.c[1] * size
     );
   }
-}
-function generateUniformBuffer(spec, values, buffer, byteOffset) {
-  const buf = buffer ?? new ArrayBuffer(spec.size);
-  const view = new DataView(buf, byteOffset);
-  generateUniformBufferInner(spec, values, view, 0);
-  return buf;
-}
-function getUniformBufferSize(spec, group, binding) {
-  return spec.bindGroups[group][binding].type.size;
-}
-function makeUniformBuffer(spec, group, binding, data, buffer, byteOffset) {
-  return generateUniformBuffer(
-    spec.bindGroups[group][binding].type,
-    data,
-    buffer,
-    byteOffset
-  );
+  ctx.stroke();
+  return c;
 }
 
 // src/webgl/shader.ts
@@ -34504,6 +34473,40 @@ function createBufferWithLayout(gl, layout, data) {
   };
 }
 
+// src/math/noise.ts
+function fract(x2) {
+  return x2 - Math.floor(x2);
+}
+function simpleRandVec2ToFloat(co) {
+  return fract(Math.sin(dot2(co, [12.9898, 78.233])) * 43758.5453);
+}
+function simpleRandVec2ToVec2(co) {
+  return [simpleRandVec2ToFloat(co), simpleRandVec2ToFloat([-co[0], -co[1]])];
+}
+function perlin2d(p, randVec2 = simpleRandVec2ToVec2) {
+  const fp = [Math.floor(p[0]), Math.floor(p[1])];
+  const v1 = normalize2(sub2(randVec2(fp), [0.5, 0.5]));
+  const v2 = normalize2(sub2(randVec2(add2(fp, [1, 0])), [0.5, 0.5]));
+  const v3 = normalize2(sub2(randVec2(add2(fp, [0, 1])), [0.5, 0.5]));
+  const v42 = normalize2(sub2(randVec2(add2(fp, [1, 1])), [0.5, 0.5]));
+  const o1 = sub2(p, fp);
+  const o2 = sub2(o1, [1, 0]);
+  const o3 = sub2(o1, [0, 1]);
+  const o4 = sub2(o1, [1, 1]);
+  const d1 = dot2(v1, o1);
+  const d2 = dot2(v2, o2);
+  const d3 = dot2(v3, o3);
+  const d4 = dot2(v42, o4);
+  const h1 = lerp(smoothstep(p[0] - fp[0]), d1, d2);
+  const h2 = lerp(smoothstep(p[0] - fp[0]), d3, d4);
+  return lerp(smoothstep(p[1] - fp[1]), h1, h2);
+}
+function boxMullerTransform(u) {
+  const a = Math.sqrt(-2 * Math.log(u[0]));
+  const b = 2 * Math.PI * u[1];
+  return [a * Math.cos(b), a * Math.sin(b)];
+}
+
 // src/webgpu/pipelines/parallel-sum.ts
 async function parallelSum(device, settings) {
   const WORKGROUP_SIZE_X = 32;
@@ -34631,10 +34634,15 @@ async function parallelSum(device, settings) {
 }
 
 // src/webgpu/pipelines/line-renderer.ts
-async function lineRenderer(device, outputFormat) {
+async function lineRenderer(device, outputFormat, settings) {
   const wdevice = wrapDevice(device);
   const depthTexFormat = wdevice.texture("depth", {
-    format: "depth32float"
+    format: "depth32float",
+    multisampled: settings?.multisample?.count > 1
+  });
+  const colorTexFormat = wdevice.texture("color", {
+    format: outputFormat,
+    multisampled: settings?.multisample?.count > 1
   });
   const EVERYWHERE = GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
   const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
@@ -34745,6 +34753,7 @@ async function lineRenderer(device, outputFormat) {
   const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
   const blend = void 0;
   const pointPipeline = await wdevice.pipeline({
+    multisample: settings.multisample,
     depthStencil: {
       format: "depth32float",
       depthCompare: "less",
@@ -34787,6 +34796,7 @@ async function lineRenderer(device, outputFormat) {
     }
   });
   const linePipeline = await wdevice.pipeline({
+    multisample: settings.multisample,
     depthStencil: {
       format: "depth32float",
       depthCompare: "less",
@@ -34860,6 +34870,7 @@ async function lineRenderer(device, outputFormat) {
   });
   return {
     depthTexFormat,
+    colorTexFormat,
     pointInstanceBufferFormat,
     lineSegInstanceBufferFormat1,
     lineSegInstanceBufferFormat2,
@@ -35061,7 +35072,7 @@ async function lineRenderer(device, outputFormat) {
 }
 
 // src/webgpu/pipelines/clear.ts
-async function clearRenderer(device, outputFormat) {
+async function clearRenderer(device, outputFormat, settings) {
   const wdevice = wrapDevice(device);
   const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
     types: [
@@ -35123,14 +35134,16 @@ async function clearRenderer(device, outputFormat) {
       `,
       struct: `@builtin(position) position : vec4f
       `
-    }
+    },
+    multisample: settings?.multisample
   });
   const perFrameUniforms = uniforms.instantiate(1);
   const perFrame = perFrameBindGroup.instantiate({
     params: perFrameUniforms
   });
   const pass = device.createRenderBundleEncoder({
-    colorFormats: [outputFormat]
+    colorFormats: [outputFormat],
+    sampleCount: settings?.multisample.count
   });
   pass.setPipeline(pipeline);
   pipelineRenderpass(
@@ -35143,7 +35156,7 @@ async function clearRenderer(device, outputFormat) {
   pass.draw(6);
   const bundle = pass.finish();
   return {
-    clear(tex, color) {
+    clear(tex, color, resolveTarget) {
       uniforms.fill(perFrameUniforms, 0, {
         clearColor: color
       });
@@ -35153,7 +35166,8 @@ async function clearRenderer(device, outputFormat) {
           {
             view: tex,
             loadOp: "clear",
-            storeOp: "store"
+            storeOp: "store",
+            resolveTarget
           }
         ]
       });

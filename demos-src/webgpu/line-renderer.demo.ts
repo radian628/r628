@@ -93,7 +93,7 @@ import { lineRenderer } from "../../src/webgpu/pipelines/line-renderer";
 
   const wdevice = wrapDevice(device);
 
-  const lines = renderer.createEmptyLines(64, "clear", 0);
+  const lines = renderer.createEmptyLines(64, "clear");
 
   const staging = device.createBuffer({
     size: 64 * 20,

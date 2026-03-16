@@ -5,6 +5,7 @@ import { struct } from "../wgsl-struct-layout-generator";
 export async function clearRenderer(
   device: GPUDevice,
   outputFormat: GPUTextureFormat,
+  settings?: { multisample: GPUMultisampleState },
 ) {
   const wdevice = wrapDevice(device);
 
@@ -73,6 +74,7 @@ export async function clearRenderer(
       struct: `@builtin(position) position : vec4f
       `,
     },
+    multisample: settings?.multisample,
   });
 
   const perFrameUniforms = uniforms.instantiate(1);
@@ -83,6 +85,7 @@ export async function clearRenderer(
 
   const pass = device.createRenderBundleEncoder({
     colorFormats: [outputFormat],
+    sampleCount: settings?.multisample.count,
   });
 
   pass.setPipeline(pipeline);
@@ -100,7 +103,7 @@ export async function clearRenderer(
   const bundle = pass.finish();
 
   return {
-    clear(tex: GPUTexture, color: Vec4) {
+    clear(tex: GPUTexture, color: Vec4, resolveTarget?: GPUTexture) {
       uniforms.fill(perFrameUniforms, 0, {
         clearColor: color,
       });
@@ -113,6 +116,7 @@ export async function clearRenderer(
             view: tex,
             loadOp: "clear",
             storeOp: "store",
+            resolveTarget,
           },
         ],
       });

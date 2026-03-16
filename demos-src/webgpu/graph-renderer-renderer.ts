@@ -61,13 +61,30 @@ export async function setupGraphRenderer(device: GPUDevice) {
     depthTex = lines.depthTexFormat.instantiate(
       [canvas.width, canvas.height],
       GPUTextureUsage.RENDER_ATTACHMENT,
+      aaMode === "msaa" ? { sampleCount: 4 } : undefined,
     );
+    if (aaMode === "msaa") {
+      multisampleTex = lines.colorTexFormat.instantiate(
+        [canvas.width, canvas.height],
+        GPUTextureUsage.RENDER_ATTACHMENT,
+        {
+          sampleCount: 4,
+        },
+      );
+    }
   }
+
+  const aaMode = "msaa" as "none" | "msaa";
 
   const lines = await lineRenderer(
     device,
     navigator.gpu.getPreferredCanvasFormat(),
+    {
+      multisample: aaMode ? { count: 4 } : undefined,
+    },
   );
+
+  let multisampleTex: ReturnType<typeof lines.colorTexFormat.instantiate>;
 
   let depthTex: ReturnType<typeof lines.depthTexFormat.instantiate>;
 
@@ -77,6 +94,9 @@ export async function setupGraphRenderer(device: GPUDevice) {
   const clear = await clearRenderer(
     device,
     navigator.gpu.getPreferredCanvasFormat(),
+    {
+      multisample: aaMode ? { count: 4 } : undefined,
+    },
   );
 
   const wdevice = wrapDevice(device);
@@ -946,7 +966,11 @@ user-select: none;
 
           const colorTex = ctx.getCurrentTexture();
 
-          clear.clear(colorTex, [0, 0, 0, 255]);
+          if (aaMode === "msaa") {
+            clear.clear(multisampleTex, [0, 0, 0, 255], colorTex);
+          } else {
+            clear.clear(colorTex, [0, 0, 0, 255]);
+          }
 
           const enc = device.createCommandEncoder();
 
@@ -955,26 +979,49 @@ user-select: none;
             count: queryCount,
           });
 
-          const pass = enc.beginRenderPass({
-            colorAttachments: [
-              {
-                view: colorTex,
-                loadOp: "load",
-                storeOp: "store",
-              },
-            ],
-            depthStencilAttachment: {
-              view: depthTex,
-              depthClearValue: 1.0,
-              depthLoadOp: "clear",
-              depthStoreOp: "store",
-            },
-            timestampWrites: {
-              querySet,
-              beginningOfPassWriteIndex: 0,
-              endOfPassWriteIndex: 1,
-            },
-          });
+          const pass =
+            aaMode === "msaa"
+              ? enc.beginRenderPass({
+                  colorAttachments: [
+                    {
+                      view: multisampleTex,
+                      loadOp: "load",
+                      storeOp: "store",
+                      resolveTarget: colorTex,
+                    },
+                  ],
+                  depthStencilAttachment: {
+                    view: depthTex,
+                    depthClearValue: 1.0,
+                    depthLoadOp: "clear",
+                    depthStoreOp: "store",
+                  },
+                  timestampWrites: {
+                    querySet,
+                    beginningOfPassWriteIndex: 0,
+                    endOfPassWriteIndex: 1,
+                  },
+                })
+              : enc.beginRenderPass({
+                  colorAttachments: [
+                    {
+                      view: colorTex,
+                      loadOp: "load",
+                      storeOp: "store",
+                    },
+                  ],
+                  depthStencilAttachment: {
+                    view: depthTex,
+                    depthClearValue: 1.0,
+                    depthLoadOp: "clear",
+                    depthStoreOp: "store",
+                  },
+                  timestampWrites: {
+                    querySet,
+                    beginningOfPassWriteIndex: 0,
+                    endOfPassWriteIndex: 1,
+                  },
+                });
 
           pass.setPipeline(lines.pointPipeline);
           pipelineRenderpass(

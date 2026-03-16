@@ -766,6 +766,7 @@ export function wrapDevice(device: GPUDevice) {
       instantiate: (
         resolution: Vec2 | Vec3,
         usage: GPUTextureUsageFlags,
+        extra?: Partial<GPUTextureDescriptor>,
       ) => GPUTexture;
     } {
       return {
@@ -777,11 +778,12 @@ export function wrapDevice(device: GPUDevice) {
         viewDimension: params.viewDimension ?? "2d",
         // @ts-expect-error
         multisampled: params.multisampled ?? false,
-        instantiate(resolution, usage) {
+        instantiate(resolution, usage, extra) {
           return device.createTexture({
             size: resolution,
             usage,
             format: params.format,
+            ...extra,
           });
         },
       };
@@ -812,6 +814,7 @@ export function wrapDevice(device: GPUDevice) {
         extraOutputs?: string;
       };
       depthStencil?: GPUDepthStencilState;
+      multisample?: GPUMultisampleState;
     }): Promise<WrappedPipeline<BindGroups, any, Inputs, Outputs>> {
       const requiredStructDefs = params.bindGroups.flatMap((bg) =>
         bg.entries.flatMap((e) => {
@@ -845,6 +848,7 @@ export function wrapDevice(device: GPUDevice) {
           : "";
 
       return this.pipelineRaw({
+        multisample: params.multisample,
         primitive: params.primitive,
         bindGroups: params.bindGroups,
         inputs: params.inputs,
@@ -904,6 +908,7 @@ export function wrapDevice(device: GPUDevice) {
       outputs: Outputs;
       primitive?: GPUPrimitiveState;
       depthStencil?: GPUDepthStencilState;
+      multisample?: GPUMultisampleState;
     }): Promise<WrappedPipeline<BindGroups, Shader, Inputs, Outputs>> {
       let vertex = undefined;
 
@@ -963,6 +968,7 @@ export function wrapDevice(device: GPUDevice) {
           bindGroupLayouts: params.bindGroups.map((bg, i) => bg),
         }),
         primitive: params.primitive,
+        multisample: params.multisample,
       });
 
       // @ts-expect-error

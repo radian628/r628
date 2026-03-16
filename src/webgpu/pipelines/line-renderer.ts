@@ -13,11 +13,20 @@ import { struct, WGSLStructSpec } from "../wgsl-struct-layout-generator";
 export async function lineRenderer(
   device: GPUDevice,
   outputFormat: GPUTextureFormat,
+  settings?: {
+    multisample: GPUMultisampleState;
+  },
 ) {
   const wdevice = wrapDevice(device);
 
   const depthTexFormat = wdevice.texture("depth", {
     format: "depth32float",
+    multisampled: settings?.multisample?.count > 1,
+  });
+
+  const colorTexFormat = wdevice.texture("color", {
+    format: outputFormat,
+    multisampled: settings?.multisample?.count > 1,
   });
 
   const EVERYWHERE =
@@ -154,6 +163,7 @@ export async function lineRenderer(
   // const blend = undefined;
 
   const pointPipeline = await wdevice.pipeline({
+    multisample: settings.multisample,
     depthStencil: {
       format: "depth32float",
       depthCompare: "less",
@@ -197,6 +207,7 @@ export async function lineRenderer(
   });
 
   const linePipeline = await wdevice.pipeline({
+    multisample: settings.multisample,
     depthStencil: {
       format: "depth32float",
       depthCompare: "less",
@@ -271,6 +282,7 @@ export async function lineRenderer(
 
   return {
     depthTexFormat,
+    colorTexFormat,
     pointInstanceBufferFormat,
     lineSegInstanceBufferFormat1,
     lineSegInstanceBufferFormat2,
