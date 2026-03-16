@@ -340,7 +340,7 @@ type VBufferParametric<A extends Attribute[]> = FromEntries<{
   [N in keyof A]: [A[N]["name"], VERTEX_FORMAT_TO_JS_TYPE[A[N]["format"]]];
 }>;
 
-type WrappedBindGroupEntry =
+export type WrappedBindGroupEntry =
   | WrappedBindGroupTexture<any, any, any>
   | WrappedBindGroupUniformBuffer<WGSLStructSpec>
   | WrappedBindGroupVertexBuffer<
@@ -381,7 +381,7 @@ type BindGroupEntryToBindGroup<Entry extends WrappedBindGroupEntry> =
           }
         : never;
 
-type BindGroupEntriesToBindGroups<Entries> =
+export type BindGroupEntriesToBindGroups<Entries> =
   Entries extends Record<string, WrappedBindGroupEntry>
     ? {
         [K in keyof Entries]: BindGroupEntryToBindGroup<Entries[K]>;

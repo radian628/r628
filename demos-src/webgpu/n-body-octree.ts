@@ -1,6 +1,32 @@
-import { array, range, struct, wrapDevice } from "../../src";
+import {
+  array,
+  BindGroupEntriesToBindGroups,
+  FromEntries,
+  range,
+  struct,
+  ToKvPairs,
+  WGSL_TYPE_ALIGNMENTS,
+  WGSLStructSpec,
+  wrapDevice,
+  WrappedBindGroupEntry,
+} from "../../src";
 
-export async function createNBodyOctreeDefs(device: GPUDevice) {
+export async function createNBodyOctreeDefs<
+  ExtraBodyFields extends Record<
+    string,
+    keyof typeof WGSL_TYPE_ALIGNMENTS | WGSLStructSpec
+  >,
+  ExtraPhysicsBuffers extends WrappedBindGroupEntry[],
+>(
+  device: GPUDevice,
+  params: {
+    extraBodyFields: ExtraBodyFields;
+    bodyBodyInteraction: string;
+    applyForces: string;
+    bodyReset?: string;
+    extraPhysicsBuffers: ExtraPhysicsBuffers;
+  },
+) {
   const wdevice = wrapDevice(device);
 
   const octreeNodeFormat = wdevice.storageBuffer(
@@ -39,12 +65,12 @@ export async function createNBodyOctreeDefs(device: GPUDevice) {
 
   const bodiesFormat = wdevice.storageBuffer(
     "bodies",
+    // @ts-expect-error
     struct("Body", {
       position: "vec3f",
       mass: "f32",
       velocity: "vec3f",
-      impulse: "vec3f",
-      visit_count: "u32",
+      ...params.extraBodyFields,
     }),
   );
 
@@ -121,16 +147,6 @@ export async function createNBodyOctreeDefs(device: GPUDevice) {
         GPUBufferUsage.INDIRECT |
         GPUBufferUsage.COPY_DST |
         GPUBufferUsage.STORAGE,
-    },
-  );
-
-  const genericBufferFormat = await wdevice.uniformBuffer(
-    "generic",
-    struct("Generic", { data: "u32" }),
-    true,
-    {
-      visibility: GPUShaderStage.COMPUTE,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     },
   );
 
@@ -499,36 +515,13 @@ export async function createNBodyOctreeDefs(device: GPUDevice) {
     `,
   });
 
-  const transferBodyInfoToPointsBindGroupFormat = wdevice.bindGroup(
-    "bg",
-    bodiesFormat,
-    genericBufferFormat,
-  );
-
-  const transferBodyInfoToPointsPipeline = await wdevice.compute({
-    bindGroups: [transferBodyInfoToPointsBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    storageBufferAccess: {
-      bodies: "read_write",
-      generic: "read_write",
-    },
-    shader: `
-      let i = id.x;
-      if (i >= arrayLength(&bodies)) { return; }
-      generic[i * 5].data = bitcast<u32>(bodies[i].position.x);
-      generic[i * 5 + 1].data = bitcast<u32>(bodies[i].position.y);
-      generic[i * 5 + 2].data = bitcast<u32>(bodies[i].position.z);
-      generic[i * 5 + 3].data = bitcast<u32>(0.05 * pow(bodies[i].mass, 0.2));
-      generic[i * 5 + 4].data = 0xffffffff;
-    `,
-  });
-
   const applyBarnesHutBindGroupFormat = wdevice.bindGroup(
     "bg",
     bodiesFormat,
     octreeNodeFormat,
     octreeMetadataFormat,
     barnesHutUniformsFormat,
+    ...params.extraPhysicsBuffers,
   );
 
   const applyBarnesHutPipeline = await wdevice.compute({
@@ -540,6 +533,17 @@ export async function createNBodyOctreeDefs(device: GPUDevice) {
         next_child_idx: u32,
       } 
       
+      fn body_body_interaction(i: u32, mass: f32, center_of_mass: vec3f, dist_to_body: f32) -> vec3f {
+        ${params.bodyBodyInteraction} 
+      }
+
+      fn apply_forces(i: u32, total_impulse: vec3f) {
+        ${params.applyForces} 
+      }
+
+      fn body_reset(i: u32) {
+        ${params.bodyReset ?? ""} 
+      }
     `,
     shader: `
       if (id.x >= arrayLength(&bodies)) {
@@ -551,8 +555,8 @@ export async function createNBodyOctreeDefs(device: GPUDevice) {
 
       var total_impulse = vec3f(0.0);
 
+      body_reset(id.x);
       let body = bodies[id.x];
-      bodies[id.x].visit_count = 0u;
 
       stack[0].node_idx = 0u;
       stack[0].next_child_idx = 0u;
@@ -594,16 +598,16 @@ export async function createNBodyOctreeDefs(device: GPUDevice) {
           stack[stack_size].next_child_idx = 0u;
           stack_size += 1u;
         } else {
-          let force_mag = child_metadata.mass * bodies[id.x].mass / pow(max(1.0, dist_to_body), 2.0);
-          let force_dir = normalize(child_metadata.center_of_mass - body.position);
-          total_impulse += force_mag * force_dir; 
-          bodies[id.x].visit_count += 1u;
+          total_impulse += body_body_interaction(
+            id.x, 
+            child_metadata.mass,
+            child_metadata.center_of_mass,
+            dist_to_body
+          );
         }
       }
 
-      bodies[id.x].velocity += total_impulse / bodies[id.x].mass * params.timestep;
-      bodies[id.x].position += bodies[id.x].velocity * params.timestep;
-      bodies[id.x].impulse = total_impulse;
+      apply_forces(id.x, total_impulse);
     `,
   });
 
@@ -871,6 +875,9 @@ export async function createNBodyOctreeDefs(device: GPUDevice) {
 
   function setupOctree(params: {
     bodies: ReturnType<typeof bodiesFormat.instantiate>;
+    // extraPhysicsBuffers: BindGroupEntriesToBindGroups<
+    //   FromEntries<ToKvPairs<ExtraPhysicsBuffers, "name">>
+    // >;
     bodyCount: number;
     octreeCapacity: number;
     octreeDepth: number;
@@ -1071,7 +1078,6 @@ export async function createNBodyOctreeDefs(device: GPUDevice) {
     activeNodesInFormat,
     activeNodesOutFormat,
     computeIndirectBufferFormat,
-    genericBufferFormat,
     barnesHutUniformsFormat,
     minMaxFormat,
     minMaxUniformsFormat,
@@ -1102,9 +1108,6 @@ export async function createNBodyOctreeDefs(device: GPUDevice) {
 
     aggregateMassInOctreeBindGroupFormat,
     aggregateMassInOctreePipeline,
-
-    transferBodyInfoToPointsBindGroupFormat,
-    transferBodyInfoToPointsPipeline,
 
     applyBarnesHutBindGroupFormat,
     applyBarnesHutPipeline,

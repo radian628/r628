@@ -45,6 +45,7 @@ import {
   xyz,
 } from "../../src";
 import stringHash from "string-hash";
+import { createNBodyOctreeDefs } from "./n-body-octree";
 
 document.head.innerHTML += `<meta name="viewport" 
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>`;
@@ -491,6 +492,33 @@ user-select: none;
     visibility: GPUShaderStage.VERTEX,
   });
 
+  const accelsFormat = wdevice.storageBuffer(
+    "accels",
+    struct("Accel", {
+      accel: "vec3f",
+    }),
+  );
+
+  const nBodySim = await createNBodyOctreeDefs(device, {
+    extraBodyFields: {},
+    bodyBodyInteraction: `
+      let force_mag = 40.0 * mass * bodies[i].mass / pow(max(10.0, dist_to_body), 2.0);
+      let force_dir = -normalize(center_of_mass - bodies[i].position);
+      return force_mag * force_dir; 
+    `,
+    applyForces: `
+      var impulse = total_impulse;
+      impulse += accels[i].accel * 1.0;
+
+      bodies[i].velocity += impulse / bodies[i].mass * params.timestep;
+      bodies[i].position += bodies[i].velocity * params.timestep;
+      bodies[i].velocity *= 0.9;
+    `,
+    extraPhysicsBuffers: [accelsFormat] as const,
+  });
+
+  const bodiesFormat = nBodySim.bodiesFormat;
+
   const highPerfLinePipeline = await wdevice.pipeline({
     bindGroups: [lines.perFrameBindGroup] as const,
     depthStencil: {
@@ -545,91 +573,6 @@ user-select: none;
     }),
   );
 
-  const bodyStruct = struct("Body", {
-    position: "vec3f",
-    velocity: "vec3f",
-    mass: "f32",
-    force: "f32",
-  });
-
-  console.log(generateLayouts([bodyStruct]));
-
-  const bodiesFormat = wdevice.storageBuffer("bodies", bodyStruct);
-  const accelsFormat = wdevice.storageBuffer(
-    "accels",
-    struct("Accels", {
-      accel: "vec3f",
-    }),
-  );
-  const accelCalcUniformsFormat = wdevice.uniformBufferForComputeShader(
-    "params",
-    struct("Params", {
-      body_offset: "u32",
-      target_offset: "u32",
-      accel_stride: "u32",
-    }),
-  );
-
-  const accelCalcBindGroupFormat = wdevice.bindGroup(
-    "nbody",
-    bodiesFormat,
-    accelsFormat,
-    accelCalcUniformsFormat,
-  );
-
-  const applyPhysicsBindGroupFormat = wdevice.bindGroup(
-    "nbody",
-    bodiesFormat,
-    accelsFormat,
-  );
-
-  const sumVec3s = await parallelSum(device, { datatype: "vec3f" });
-
-  const accelCalcPipeline = await wdevice.compute({
-    bindGroups: [accelCalcBindGroupFormat] as const,
-    workgroupSize: [16, 16, 1],
-    storageBufferAccess: { bodies: "read_write", accels: "read_write" },
-    shader: `
-  let body_count = arrayLength(&bodies);
-
-  let body_index = id.x + params.body_offset;
-  let target_index = id.y + params.target_offset; 
-
-  if (body_index == target_index) { return; }
-  if (body_index >= body_count) { return; }
-  if (target_index >= body_count) { return; }
-
-  let body = bodies[body_index];
-  let force_target = bodies[target_index];
-
-  let offset = body.position - force_target.position;
-  let rawdist = length(offset);
-  let dist = max(2.0, rawdist);
-  let norm_offset = normalize(offset);
-
-  let force = norm_offset / (dist * dist) * body.force * select(1.0, -4.0, dist > 200.0);
-
-  accels[id.y * params.accel_stride + id.x].accel = select(force, vec3f(0), rawdist < 0.00001);
-`,
-  });
-
-  const applyPhysicsPipeline = await wdevice.compute({
-    bindGroups: [applyPhysicsBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    storageBufferAccess: { bodies: "read_write", accels: "read_write" },
-    shader: `
-
-  if (id.x >= arrayLength(&bodies)) { return; }
-  
-  let accel = accels[id.x].accel;
-  
-  bodies[id.x].velocity += accel * 1.0 * 0.2 / bodies[id.x].mass;
-  bodies[id.x].position += bodies[id.x].velocity * 0.2;
-  bodies[id.x].velocity *= 0.9;
-    
-    `,
-  });
-
   const genericBufferFormat = await wdevice.uniformBuffer(
     "generic",
     struct("Generic", { data: "u32" }),
@@ -659,7 +602,6 @@ user-select: none;
       generic[i * 5].data = bitcast<u32>(bodies[i].position.x);
       generic[i * 5 + 1].data = bitcast<u32>(bodies[i].position.y);
       generic[i * 5 + 2].data = bitcast<u32>(bodies[i].position.z);
-      // generic[i * 5 + 4].data = 0xffffffff - u32(floor(bodies[i].force));
     `,
   });
 
@@ -858,7 +800,6 @@ fn set_point(idx: u32, position: vec3f) {
     [...graph.vertices].map((vert, i, a) => {
       return {
         mass: 1,
-        force: -4,
         velocity: [0, 0, 0],
         position: vert.data.position,
       };
@@ -894,87 +835,7 @@ fn set_point(idx: u32, position: vec3f) {
     }),
   );
 
-  const accelUpdateBatchSize = 256;
-
-  const accelUpdateBatchCount = Math.ceil(
-    graph.vertices.size / accelUpdateBatchSize,
-  );
-
-  const accel_stride = Math.ceil(graph.vertices.size / 32) * 32;
-
-  const tempAccels = accelsFormat.quickCreateMany(
-    range(accel_stride * accelUpdateBatchSize).map(() => ({
-      accel: [0, 0, 0],
-    })),
-  );
-
-  const tempAccels2 = accelsFormat.quickCreateMany(
-    range(accel_stride * accelUpdateBatchSize).map(() => ({
-      accel: [0, 0, 0],
-    })),
-  );
-
   const accelsFinal = accelsFormat.instantiate(graph.vertices.size);
-
-  const accelCalcBindGroups = range(accelUpdateBatchCount).map((i) => {
-    const accelsCalcUniforms = accelCalcUniformsFormat.quickCreate({
-      body_offset: 0,
-      target_offset: i * accelUpdateBatchSize,
-      accel_stride,
-    });
-    return accelCalcBindGroupFormat.instantiate({
-      bodies,
-      accels: tempAccels,
-      params: accelsCalcUniforms,
-    });
-  });
-
-  const applyPhysicsBindGroup = applyPhysicsBindGroupFormat.instantiate({
-    bodies,
-    accels: accelsFinal,
-  });
-
-  function calculateAcceleration(offset: number, count: number) {
-    const workgroups = Math.ceil(count / 32);
-
-    const enc = device.createCommandEncoder();
-    enc.clearBuffer(tempAccels);
-    enc.clearBuffer(tempAccels2);
-    let pass = enc.beginComputePass();
-    pass.setPipeline(accelCalcPipeline);
-    pass.setBindGroup(
-      0,
-      accelCalcBindGroups[Math.round(offset / accelUpdateBatchSize)],
-    );
-    pass.dispatchWorkgroups(
-      Math.ceil(graph.vertices.size / 16),
-      Math.ceil(count / 16),
-      1,
-    );
-
-    // TODO: let buffersummer specify an explicit dst buffer
-    const res = sumVec3s.bufferSummer({
-      a: sumVec3s.bufferFormat.reinterpret(tempAccels),
-      b: sumVec3s.bufferFormat.reinterpret(tempAccels2),
-    })({
-      pass,
-      countPerIter: 16,
-      size: graph.vertices.size,
-      sumCount: count,
-      sumStride: accel_stride,
-    });
-    pass.end();
-
-    enc.copyBufferToBuffer(
-      res.dstBuffer,
-      0,
-      accelsFinal,
-      offset * 16,
-      count * 16,
-    );
-
-    device.queue.submit([enc.finish()]);
-  }
 
   const calcEdgeForcesBindGroup = calcEdgeForcesBindGroupFormat.instantiate({
     edges: edgesBuffer,
@@ -988,10 +849,32 @@ fn set_point(idx: u32, position: vec3f) {
     edge_loc_map: edgeLocMapBuffer,
   });
 
+  const octree = nBodySim.setupOctree({
+    bodies: bodies,
+    bodyCount: graph.vertices.size,
+    octreeCapacity: 2 ** 19,
+    octreeDepth: 20,
+  });
+
+  const barnesHutUniforms = nBodySim.barnesHutUniformsFormat.quickCreate({
+    min_width_over_distance_ratio: 1.2,
+    timestep: 0.06,
+  });
+
+  const applyBarnesHutBindGroup =
+    nBodySim.applyBarnesHutBindGroupFormat.instantiate({
+      bodies: bodies,
+      octree_metadata: octree.octreeMetadataBuffer,
+      octree_nodes: octree.octreeNodeBuffer,
+      params: barnesHutUniforms,
+      accels: accelsFinal,
+    });
+
   function moveBodies() {
-    const workgroups = Math.ceil(graph.vertices.size / 32);
+    const perBodyWorkgroups = Math.ceil(graph.vertices.size / 32);
 
     const enc = device.createCommandEncoder();
+    enc.clearBuffer(accelsFinal);
     let pass = enc.beginComputePass();
 
     pass.setPipeline(calcEdgeForcesPipeline);
@@ -1001,11 +884,13 @@ fn set_point(idx: u32, position: vec3f) {
 
     pass.setPipeline(sumEdgeForcesPipeline);
     pass.setBindGroup(0, sumEdgeForcesBindGroup);
-    pass.dispatchWorkgroups(workgroups);
+    pass.dispatchWorkgroups(perBodyWorkgroups);
 
-    pass.setPipeline(applyPhysicsPipeline);
-    pass.setBindGroup(0, applyPhysicsBindGroup);
-    pass.dispatchWorkgroups(workgroups);
+    octree.run(pass);
+
+    pass.setPipeline(nBodySim.applyBarnesHutPipeline);
+    pass.setBindGroup(0, applyBarnesHutBindGroup);
+    pass.dispatchWorkgroups(perBodyWorkgroups, 1, 1);
 
     pass.setPipeline(transferBodyInfoToPointsPipeline);
     const transferBodyInfoToPointsBindGroup =
@@ -1014,7 +899,7 @@ fn set_point(idx: u32, position: vec3f) {
         generic: genericBufferFormat.reinterpret(vertices),
       });
     pass.setBindGroup(0, transferBodyInfoToPointsBindGroup);
-    pass.dispatchWorkgroups(workgroups);
+    pass.dispatchWorkgroups(perBodyWorkgroups);
 
     pass.setPipeline(transferBodyInfoToLinesPipeline);
     const transferBodyInfoToLinesBindGroup =
@@ -1043,8 +928,6 @@ fn set_point(idx: u32, position: vec3f) {
     | "none"
     | "physics";
 
-  let amortizedPhysicsStepIndex = Math.floor(accelUpdateBatchCount / 2);
-
   async function loop(t) {
     const start = performance.now();
     const seconds = t / 1000;
@@ -1053,25 +936,7 @@ fn set_point(idx: u32, position: vec3f) {
     lastT = t;
 
     if (physicsMode === "physics") {
-      for (let i = 0; i < physicsCalculationsPerFrame; i++) {
-        const calcAccelOffset =
-          (amortizedPhysicsStepIndex % accelUpdateBatchCount) *
-          accelUpdateBatchSize;
-
-        calculateAcceleration(
-          calcAccelOffset,
-          Math.min(accelUpdateBatchSize, graph.vertices.size - calcAccelOffset),
-        );
-
-        if (
-          amortizedPhysicsStepIndex % accelUpdateBatchCount ===
-          accelUpdateBatchCount - 1
-        ) {
-          moveBodies();
-        }
-
-        amortizedPhysicsStepIndex++;
-      }
+      moveBodies();
     }
 
     viewerPos = add3(viewerPos, scale3(viewerVel, dt));

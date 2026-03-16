@@ -1672,7 +1672,7 @@
           }
           throw thenable;
         }
-        function mapIntoArray(children, array2, escapedPrefix, nameSoFar, callback) {
+        function mapIntoArray(children, array3, escapedPrefix, nameSoFar, callback) {
           var type = typeof children;
           if ("undefined" === type || "boolean" === type) children = null;
           var invokeCallback = false;
@@ -1693,7 +1693,7 @@
                   case REACT_LAZY_TYPE:
                     return invokeCallback = children._init, mapIntoArray(
                       invokeCallback(children._payload),
-                      array2,
+                      array3,
                       escapedPrefix,
                       nameSoFar,
                       callback
@@ -1704,7 +1704,7 @@
             invokeCallback = children;
             callback = callback(invokeCallback);
             var childKey = "" === nameSoFar ? "." + getElementKey(invokeCallback, 0) : nameSoFar;
-            isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array2, escapedPrefix, "", function(c) {
+            isArrayImpl(callback) ? (escapedPrefix = "", null != childKey && (escapedPrefix = childKey.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array3, escapedPrefix, "", function(c) {
               return c;
             })) : null != callback && (isValidElement(callback) && (null != callback.key && (invokeCallback && invokeCallback.key === callback.key || checkKeyStringCoercion(callback.key)), escapedPrefix = cloneAndReplaceKey(
               callback,
@@ -1712,7 +1712,7 @@
                 userProvidedKeyEscapeRegex,
                 "$&/"
               ) + "/") + childKey
-            ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array2.push(callback));
+            ), "" !== nameSoFar && null != invokeCallback && isValidElement(invokeCallback) && null == invokeCallback.key && invokeCallback._store && !invokeCallback._store.validated && (escapedPrefix._store.validated = 2), callback = escapedPrefix), array3.push(callback));
             return 1;
           }
           invokeCallback = 0;
@@ -1721,7 +1721,7 @@
             for (var i = 0; i < children.length; i++)
               nameSoFar = children[i], type = childKey + getElementKey(nameSoFar, i), invokeCallback += mapIntoArray(
                 nameSoFar,
-                array2,
+                array3,
                 escapedPrefix,
                 type,
                 callback
@@ -1732,7 +1732,7 @@
             ), didWarnAboutMaps = true), children = i.call(children), i = 0; !(nameSoFar = children.next()).done; )
               nameSoFar = nameSoFar.value, type = childKey + getElementKey(nameSoFar, i++), invokeCallback += mapIntoArray(
                 nameSoFar,
-                array2,
+                array3,
                 escapedPrefix,
                 type,
                 callback
@@ -1741,14 +1741,14 @@
             if ("function" === typeof children.then)
               return mapIntoArray(
                 resolveThenable(children),
-                array2,
+                array3,
                 escapedPrefix,
                 nameSoFar,
                 callback
               );
-            array2 = String(children);
+            array3 = String(children);
             throw Error(
-              "Objects are not valid as a React child (found: " + ("[object Object]" === array2 ? "object with keys {" + Object.keys(children).join(", ") + "}" : array2) + "). If you meant to render a collection of children, use an array instead."
+              "Objects are not valid as a React child (found: " + ("[object Object]" === array3 ? "object with keys {" + Object.keys(children).join(", ") + "}" : array3) + "). If you meant to render a collection of children, use an array instead."
             );
           }
           return invokeCallback;
@@ -3000,11 +3000,11 @@
         function warnForMissingKey() {
         }
         function setToSortedString(set) {
-          var array2 = [];
+          var array3 = [];
           set.forEach(function(value) {
-            array2.push(value);
+            array3.push(value);
           });
-          return array2.sort().join(", ");
+          return array3.sort().join(", ");
         }
         function createFiber(tag, pendingProps, key, mode) {
           return new FiberNode(tag, pendingProps, key, mode);
@@ -5585,9 +5585,9 @@
           topLevelEventsToReactNames.set(domEventName, reactName);
           registerTwoPhaseEvent(reactName, [domEventName]);
         }
-        function getArrayKind(array2) {
-          for (var kind = EMPTY_ARRAY, i = 0; i < array2.length; i++) {
-            var value = array2[i];
+        function getArrayKind(array3) {
+          for (var kind = EMPTY_ARRAY, i = 0; i < array3.length; i++) {
+            var value = array3[i];
             if ("object" === typeof value && null !== value)
               if (isArrayImpl(value) && 2 === value.length && "string" === typeof value[0]) {
                 if (kind !== EMPTY_ARRAY && kind !== ENTRIES_ARRAY)
@@ -8481,8 +8481,8 @@
           if (null == memoCache) {
             var current2 = currentlyRenderingFiber.alternate;
             null !== current2 && (current2 = current2.updateQueue, null !== current2 && (current2 = current2.memoCache, null != current2 && (memoCache = {
-              data: current2.data.map(function(array2) {
-                return array2.slice();
+              data: current2.data.map(function(array3) {
+                return array3.slice();
               }),
               index: 0
             })));
@@ -23574,6 +23574,629 @@
     }
   };
 
+  // src/audio/stream-audio.ts
+  var import_fft = __toESM(require_fft());
+  function createTrack(channels, sampleRate, constituents) {
+    const maxlen = Math.max(
+      ...constituents.map((c) => c.start + c.audio.duration)
+    );
+    const sht = new OneDimensionalSpatialHashTable(constituents.length, 0, maxlen, (a) => ({
+      start: a.start,
+      end: a.start + a.audio.duration
+    }));
+    for (const c of constituents) sht.add(c);
+    return new AudioStream({
+      channels,
+      sampleRate,
+      duration: maxlen,
+      async getRange(start, count) {
+        const startTime = start / sampleRate;
+        const endTime = (start + count) / sampleRate;
+        const audio = sht.query(startTime, endTime);
+        const out = {};
+        const inputs = await Promise.all(
+          [...audio].map(
+            (e) => e.audio.getRange(start - Math.ceil(e.start * sampleRate), count)
+          )
+        );
+        for (const ch of channels) {
+          const a = new Float32Array(count);
+          for (const inp of inputs) {
+            for (let i = 0; i < count; i++) {
+              a[i] += inp[ch][i] ?? 0;
+            }
+          }
+          out[ch] = a;
+        }
+        return out;
+      }
+    });
+  }
+  var AudioStream = class _AudioStream {
+    constructor(params) {
+      this.getRange = async (start, count) => {
+        const estimatedLength = Math.ceil(this.sampleRate * this.duration);
+        const clampedStart = clamp(start, 0, estimatedLength);
+        const clampedEnd = clamp(start + count, 0, estimatedLength);
+        const range2 = await params.getRange(
+          clampedStart,
+          clampedEnd - clampedStart
+        );
+        if (clampedEnd - clampedStart == count) return range2;
+        const out = {};
+        const padStart = -Math.min(0, start);
+        for (const ch of this.channels) {
+          console.log("eeeee", count);
+          const o = new Float32Array(count);
+          const i = range2[ch];
+          for (let idx = 0; idx < i.length; idx++) {
+            o[idx + padStart] = i[idx];
+          }
+          out[ch] = o;
+        }
+        return out;
+      };
+      this.duration = params.duration;
+      this.sampleRate = params.sampleRate;
+      this.channels = params.channels;
+    }
+    gain(gain) {
+      return combineAudio(
+        this.channels,
+        this.sampleRate,
+        [this, gain],
+        (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k]),
+        this.duration
+      );
+    }
+    add(stream) {
+      return combineAudio(
+        this.channels,
+        this.sampleRate,
+        [this, stream],
+        (time, sample, a, b) => mapObjValues(a, (k, x) => x + b[k])
+      );
+    }
+    clip(start, end) {
+      return new _AudioStream({
+        channels: this.channels,
+        duration: end - start,
+        sampleRate: this.sampleRate,
+        getRange: (start2, count2) => {
+          return this.getRange(
+            start2 + Math.floor(start * this.sampleRate),
+            count2
+          );
+        }
+      });
+    }
+    convolve(_kernel) {
+      const kernel = broadcastTo(this.channels, this.sampleRate, _kernel);
+      const kernelSampleCount = Math.ceil(kernel.duration * kernel.sampleRate);
+      const kernelData = kernel.getRange(0, kernelSampleCount);
+      return new _AudioStream({
+        channels: this.channels,
+        duration: this.duration,
+        sampleRate: this.sampleRate,
+        getRange: async (start, count) => {
+          const kern = await kernelData;
+          return mapObjValues(
+            await this.getRange(start, count + kernelSampleCount),
+            (ch, v) => overlapSaveConvolve(
+              new Float32Array(v),
+              new Float32Array(kern[ch])
+            ).slice(0, count)
+          );
+        }
+      });
+    }
+    preload() {
+      const bufs = this.getRange(0, Math.ceil(this.duration * this.sampleRate));
+      return new _AudioStream({
+        channels: this.channels,
+        duration: this.duration,
+        sampleRate: this.sampleRate,
+        getRange: async (start, count) => {
+          const bufs2 = await bufs;
+          return mapObjValues(bufs2, (k, v) => v.slice(start, start + count));
+        }
+      });
+    }
+  };
+  function fft(x) {
+    const f = new import_fft.default(x.length);
+    const out = f.createComplexArray();
+    const data = f.toComplexArray(x);
+    f.transform(out, data);
+    return new Float32Array(out);
+  }
+  function ifft(x) {
+    const f = new import_fft.default(x.length / 2);
+    const out = f.createComplexArray();
+    f.inverseTransform(out, x);
+    return new Float32Array(range(out.length / 2).map((i) => out[i * 2]));
+  }
+  function fftConvolve(x, h) {
+    const arr1 = fft(x);
+    const arr2 = fft(h);
+    let out = new Float32Array(arr1.length);
+    for (let i = 0; i < arr1.length; i += 2) {
+      out[i] = arr1[i] * arr2[i] - arr1[i + 1] * arr2[i + 1];
+      out[i + 1] = arr1[i] * arr2[i + 1] + arr1[i + 1] * arr2[i];
+    }
+    return ifft(out);
+  }
+  function nextPowerOfTwo(x) {
+    return Math.pow(2, Math.ceil(Math.log2(x)));
+  }
+  function zeroPad(x, length) {
+    if (x.length === length) return x;
+    const y = new Float32Array(length);
+    for (let i = 0; i < x.length; i++) {
+      y[i] = x[i];
+    }
+    return y;
+  }
+  var powersOfTwo = range(31).map((i) => 2 ** (i + 1));
+  var getOptimumOverlapSaveFilterSize = memo((M) => {
+    const cost = (M2, N) => N * Math.log2(N + 1) / (N - M2 + 1);
+    return argmin(
+      powersOfTwo.filter((N) => cost(M, N) > 0),
+      (N) => cost(M, N)
+    );
+  });
+  function overlapSaveConvolve(x, h) {
+    const M = h.length;
+    const N = getOptimumOverlapSaveFilterSize(M);
+    const kernel = zeroPad(h, N);
+    const L = N - M + 1;
+    const blockcount = Math.ceil(x.length / L);
+    const dst = new Float32Array(L * blockcount);
+    for (let i = 0; i < blockcount; i++) {
+      const position = L * i;
+      const xslice = zeroPad(x.slice(position, position + N), N);
+      const convolved = fftConvolve(xslice, kernel);
+      for (let j = 0; j < L; j++) {
+        dst[position + j] = convolved[M + j - 1];
+      }
+    }
+    return dst.slice(0, x.length);
+  }
+  function createSignal(params) {
+    const constr = params.constructors;
+    const constructors = constr instanceof Function ? arrayToObjKeys(params.channels, (k) => (t, c) => constr(t, c)[k]) : constr;
+    return new AudioStream({
+      channels: params.channels,
+      async getRange(start, count) {
+        return mapObjEntries(constructors, (k, v) => [
+          k,
+          new Float32Array(
+            range(count).map((s) => {
+              return v((s + start) / this.sampleRate, s + start);
+            })
+          )
+        ]);
+      },
+      sampleRate: params.sampleRate,
+      duration: params.duration
+    });
+  }
+  function sameSignalOnData(sampleRate, channels, duration, f) {
+    return createSignal({
+      channels,
+      duration,
+      sampleRate,
+      length: Math.ceil(duration * sampleRate),
+      constructors: arrayToObjKeys(channels, () => f)
+    });
+  }
+  function waveform(sampleRate, channels, seconds, frequency, amplitude, phase, profile) {
+    return sameSignalOnData(
+      sampleRate,
+      channels,
+      seconds,
+      (t) => amplitude * profile((t * frequency + phase) % 1)
+    );
+  }
+  async function getRangeAndResample(src2, dstStart, dstCount, dstSampleRate) {
+    if (src2.sampleRate === dstSampleRate) {
+      return await src2.getRange(dstStart, dstCount);
+    }
+    const startSeconds = dstStart / dstSampleRate;
+    const durationSeconds = dstCount / dstSampleRate;
+    const srcStart = Math.floor(startSeconds * src2.sampleRate);
+    const srcCount = Math.ceil((startSeconds + durationSeconds) * src2.sampleRate);
+    const srcRange = await src2.getRange(srcStart, srcCount - srcStart);
+    return mapObjValues(srcRange, (k, v) => {
+      return new Float32Array(
+        range(dstCount).map((dstIndex) => {
+          const time = dstIndex / dstSampleRate;
+          const sourceIndex = time * src2.sampleRate;
+          const srcSamplePrev = Math.floor(sourceIndex);
+          const srcSampleNext = srcSamplePrev + 1;
+          return lerp(sourceIndex % 1, v[srcSamplePrev], v[srcSampleNext]);
+        })
+      );
+    });
+  }
+  function resample(audio, targetSampleRate) {
+    return combineAudio(
+      audio.channels,
+      targetSampleRate,
+      [audio],
+      (time, sample, ch) => ch
+    );
+  }
+  function combineAudio(channels, sampleRate, audio, f, customDuration) {
+    const duration = customDuration ? customDuration : Math.max(...audio.map((a) => a.duration));
+    const length = Math.ceil(duration * sampleRate);
+    const stream = new AudioStream({
+      channels,
+      duration,
+      sampleRate,
+      async getRange(start, count) {
+        const ranges = await Promise.all(
+          audio.map(
+            async (a) => mapObjValues(
+              await getRangeAndResample(
+                a,
+                start,
+                count,
+                sampleRate
+              ),
+              (k, v) => new Float32Array(v)
+            )
+          )
+        );
+        const ch = arrayToObjKeys(
+          channels,
+          (k) => new Float32Array(count)
+        );
+        for (const i of range(count)) {
+          const samples = ranges.map((r, j) => {
+            if (audio[j].channels.length === 1 && audio[j].channels[0] === "center") {
+              return arrayToObjKeys(channels, () => r.center[i]);
+            }
+            return mapObjValues(r, (k, v) => v[i]);
+          });
+          const res = f(
+            (start + i) / sampleRate,
+            start + i,
+            ...samples
+          );
+          for (const c of channels) {
+            ch[c][i] = res[c];
+          }
+        }
+        return ch;
+      }
+    });
+    return stream;
+  }
+  function broadcastTo(channels, sampleRate, mono) {
+    return combineAudio(channels, sampleRate, [mono], (_, __, x) => x);
+  }
+  function lowPassFilterSample(n, N, m) {
+    return 1 / N * range(m * 2 + 1).map((i) => Math.cos(2 * Math.PI * (i - m) / N * n)).reduce((a, b) => a + b, 0);
+  }
+  function hannSample(n, N) {
+    return Math.sin(Math.PI * (n - N / 2) / N) ** 2;
+  }
+  var createLowPassFilter = memo(
+    (channels, sampleRate, freq, cycles) => {
+      const oneCycleSampleCount = Math.ceil(1 / freq * sampleRate);
+      const sampleCount = oneCycleSampleCount * cycles;
+      const duration = sampleCount / sampleRate;
+      console.log("created lpf");
+      const cutoff = cycles;
+      return createSignal({
+        duration,
+        sampleRate,
+        channels,
+        length: sampleCount,
+        constructors: arrayToObjKeys(
+          channels,
+          () => (t, s) => lowPassFilterSample(s, sampleCount, cutoff) * hannSample(s, sampleCount)
+        )
+      }).preload();
+    }
+  );
+  var AudioBuilder = class {
+    constructor(channels, sampleRate) {
+      this.channels = channels;
+      this.sampleRate = sampleRate;
+    }
+    lpf(freq, cycles = 16) {
+      return createLowPassFilter(
+        this.channels,
+        this.sampleRate,
+        freq,
+        cycles
+      );
+    }
+    signal(duration, constructors) {
+      return createSignal({
+        sampleRate: this.sampleRate,
+        channels: this.channels,
+        constructors,
+        duration,
+        length: Math.ceil(duration * this.sampleRate)
+      });
+    }
+    waveform(frequency, amplitude, phase, profile) {
+      return waveform(
+        this.sampleRate,
+        this.channels,
+        Infinity,
+        frequency,
+        amplitude,
+        phase,
+        profile
+      );
+    }
+    constant(x) {
+      return createSignal({
+        sampleRate: this.sampleRate,
+        channels: this.channels,
+        duration: Infinity,
+        length: Infinity,
+        constructors: arrayToObjKeys(this.channels, () => () => x)
+      });
+    }
+    sine(frequency, amplitude = 1, phase = 0) {
+      return this.waveform(
+        frequency,
+        amplitude,
+        phase,
+        (x) => Math.sin(x * Math.PI * 2)
+      );
+    }
+    square(frequency, amplitude = 1, phase = 0) {
+      return this.waveform(
+        frequency,
+        amplitude,
+        phase,
+        (x) => x > 0.5 ? -1 : 1
+      );
+    }
+    saw(frequency, amplitude = 1, phase = 0) {
+      return this.waveform(frequency, amplitude, phase, (x) => x * 2 - 1);
+    }
+    noise(amplitude = 1) {
+      return createSignal({
+        sampleRate: this.sampleRate,
+        channels: this.channels,
+        duration: Infinity,
+        length: Infinity,
+        constructors: arrayToObjKeys(
+          this.channels,
+          () => () => (Math.random() * 2 - 1) * amplitude
+        )
+      });
+    }
+    adsrgen(a, d, s, r) {
+      return (at, dt, st, rt) => {
+        return sameSignalOnData(this.sampleRate, this.channels, rt, (t) => {
+          if (t < at) return rescale(t, 0, at, 0, a);
+          if (t < dt) return rescale(t, at, dt, a, d);
+          if (t < st) return rescale(t, dt, st, d, s);
+          if (t < rt) return rescale(t, st, rt, s, r);
+          return 0;
+        });
+      };
+    }
+    boxcar(length, area = 1) {
+      const sampleCount = Math.ceil(length * this.sampleRate);
+      return this.constant(area / sampleCount).clip(
+        0,
+        sampleCount / this.sampleRate
+      );
+    }
+    adsr(a, at, d, dt, s, st, r, rt) {
+      return this.adsrgen(a, d, s, r)(at, dt, st, rt);
+    }
+    broadcast(mono) {
+      return broadcastTo(this.channels, this.sampleRate, mono);
+    }
+    createTrack(constituents) {
+      return createTrack(this.channels, this.sampleRate, constituents);
+    }
+  };
+  async function playStereo(audio) {
+    const ctx = new AudioContext();
+    const src2 = ctx.createBufferSource();
+    const len = Math.ceil(audio.sampleRate * audio.duration);
+    const buf = ctx.createBuffer(2, len, audio.sampleRate);
+    const range2 = await audio.getRange(0, len);
+    buf.copyToChannel(new Float32Array(range2.left), 0);
+    buf.copyToChannel(new Float32Array(range2.right), 1);
+    src2.buffer = buf;
+    src2.connect(ctx.destination);
+    src2.start();
+  }
+  function isWorklet() {
+    return eval("globalThis.registerProcessor") !== void 0;
+  }
+  var BLOCKSIZE = 8192;
+  async function initBufferStreamerWorklet(src) {
+    if (isWorklet()) {
+      eval("registerProcessor")(
+        "buffer-streamer",
+        class extends eval("AudioWorkletProcessor") {
+          constructor() {
+            super();
+            this.buffers = [];
+            this.offsetIntoCurrentBuffer = 0;
+            this.port.onmessage = async (e) => {
+              const data = e.data;
+              if (data.type === "buffer") {
+                this.buffers.push({
+                  left: new Float32Array(data.buffers.left),
+                  right: new Float32Array(data.buffers.right)
+                });
+              }
+            };
+          }
+          process(inputs, outputs, parameters) {
+            const output = outputs[0];
+            const outputLength = output[0].length;
+            for (let i = 0; i < outputLength; i++) {
+              if (this.buffers.length > 0) {
+                output[0][i] = this.buffers[0].left[this.offsetIntoCurrentBuffer];
+                if (output[1]) {
+                  output[1][i] = this.buffers[0].right[this.offsetIntoCurrentBuffer];
+                }
+                this.offsetIntoCurrentBuffer++;
+                if (this.offsetIntoCurrentBuffer >= this.buffers[0]?.left.length) {
+                  this.offsetIntoCurrentBuffer = 0;
+                  this.buffers.shift();
+                }
+              } else {
+                output[0][i] = 0;
+                if (output[1]) {
+                  output[1][i] = 0;
+                }
+              }
+            }
+            return true;
+          }
+        }
+      );
+    } else {
+      return async (ctx) => {
+        await ctx.audioWorklet.addModule(src);
+        return () => {
+          const worklet = new AudioWorkletNode(ctx, "buffer-streamer");
+          return {
+            worklet,
+            pushData(left, right) {
+              worklet.port.postMessage(
+                {
+                  type: "buffer",
+                  buffers: {
+                    left: left.buffer,
+                    right: right.buffer
+                  }
+                },
+                [left.buffer, right.buffer]
+              );
+            }
+          };
+        };
+      };
+    }
+  }
+  var CHUNKSIZE = 2048 * 16;
+  function streamAudioToWorklet(stream, bs) {
+    let t = 0;
+    const loop = async () => {
+      const { left, right } = await stream.getRange(t, CHUNKSIZE);
+      bs.pushData(new Float32Array(left), new Float32Array(right));
+      t += CHUNKSIZE;
+      if (t <= Math.max(stream.duration * stream.sampleRate)) {
+        setTimeout(loop);
+      }
+    };
+    loop();
+  }
+  function displayAudioSamples(samples, size, amp = 1) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = size[0];
+    canvas.height = size[1];
+    ctx.beginPath();
+    for (const i of smartRange(samples.length)) {
+      ctx.lineTo(
+        i.remap(0, canvas.width),
+        rescale(samples[i.i], -amp, amp, 0, size[1])
+      );
+    }
+    ctx.stroke();
+    return canvas;
+  }
+  async function displayAudio(stream, amp = 1, res = [1e3, 200], chunks = 1) {
+    const len = Math.ceil(stream.duration * stream.sampleRate);
+    const left = new Float32Array(len);
+    const right = new Float32Array(len);
+    let divisions = smartRange(chunks + 1).map(
+      (c) => Math.floor(c.remap(0, len, true))
+    );
+    for (let i of range(chunks)) {
+      const audio = await stream.getRange(
+        divisions[i],
+        divisions[i + 1] - divisions[i]
+      );
+      const l = new Float32Array(audio.left);
+      const r = new Float32Array(audio.right);
+      for (let j = 0; j < l.length; j++) {
+        left[j + divisions[i]] = l[j];
+        right[j + divisions[i]] = r[j];
+      }
+    }
+    return [
+      displayAudioSamples(left, res, amp),
+      displayAudioSamples(right, res, amp)
+    ];
+  }
+
+  // src/audio/notes.ts
+  var import_typescript_parsec = __toESM(require_lib());
+  var noteLexer = (0, import_typescript_parsec.buildLexer)([
+    [true, /^\(/g, 0 /* Open */],
+    [true, /^\)/g, 1 /* Close */],
+    [true, /^\:/g, 2 /* Colon */],
+    [true, /^\//g, 3 /* Slash */],
+    [false, /^\s+/g, 4 /* Whitespace */],
+    [false, /^\/\/[^\n]*/g, 7 /* Comment */],
+    [true, /^(\+|\-)?[0-9]+/g, 5 /* Integer */],
+    [true, /^[a-gA-G][b#]*[0-9]*/g, 6 /* ChromaticKey */]
+  ]);
+  var note_timing = (0, import_typescript_parsec.alt_sc)(
+    (0, import_typescript_parsec.apply)((0, import_typescript_parsec.kleft)((0, import_typescript_parsec.tok)(5 /* Integer */), (0, import_typescript_parsec.str)(":")), (t) => Number(t.text)),
+    (0, import_typescript_parsec.apply)((0, import_typescript_parsec.nil)(), () => 1)
+  );
+  var primitive_note = (0, import_typescript_parsec.apply)(
+    (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.alt_sc)((0, import_typescript_parsec.tok)(6 /* ChromaticKey */), (0, import_typescript_parsec.tok)(5 /* Integer */))),
+    ([timing, note2]) => ({
+      type: "note",
+      timing,
+      noteData: note2.text
+    })
+  );
+  var chord_inner = (0, import_typescript_parsec.rule)();
+  var chord = (0, import_typescript_parsec.apply)(
+    (0, import_typescript_parsec.seq)(
+      note_timing,
+      (0, import_typescript_parsec.lrec_sc)(
+        (0, import_typescript_parsec.apply)(chord_inner, (x) => [x]),
+        (0, import_typescript_parsec.seq)((0, import_typescript_parsec.str)("/"), chord_inner),
+        (a, [_, b]) => [...a, b]
+      )
+    ),
+    ([timing, notes]) => ({
+      type: "chord",
+      timing,
+      notes
+    })
+  );
+  var compound_note = (0, import_typescript_parsec.rule)();
+  var compound_note_inner = (0, import_typescript_parsec.rep_sc)(
+    (0, import_typescript_parsec.alt_sc)(primitive_note, chord, compound_note)
+  );
+  compound_note.setPattern(
+    (0, import_typescript_parsec.apply)(
+      (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.kmid)((0, import_typescript_parsec.str)("("), compound_note_inner, (0, import_typescript_parsec.str)(")"))),
+      ([timing, notes]) => ({ type: "compound", timing, notes })
+    )
+  );
+  chord_inner.setPattern((0, import_typescript_parsec.alt_sc)(primitive_note, compound_note));
+  var note = (0, import_typescript_parsec.alt_sc)(chord, compound_note, primitive_note);
+  var track = (0, import_typescript_parsec.rep_sc)(note);
+
+  // node_modules/ml-convolution/src/fftConvolution.js
+  var import_fft2 = __toESM(require_fft());
+  var import_next_power_of_two = __toESM(require_next_power_of_two());
+
   // src/math/round.ts
   function roundUp(factor, x) {
     return Math.ceil(x / factor) * factor;
@@ -25740,628 +26363,539 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
     return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
   }
 
-  // src/audio/stream-audio.ts
-  var import_fft = __toESM(require_fft());
-  function createTrack(channels, sampleRate, constituents) {
-    const maxlen = Math.max(
-      ...constituents.map((c) => c.start + c.audio.duration)
-    );
-    const sht = new OneDimensionalSpatialHashTable(constituents.length, 0, maxlen, (a) => ({
-      start: a.start,
-      end: a.start + a.audio.duration
-    }));
-    for (const c of constituents) sht.add(c);
-    return new AudioStream({
-      channels,
-      sampleRate,
-      duration: maxlen,
-      async getRange(start, count) {
-        const startTime = start / sampleRate;
-        const endTime = (start + count) / sampleRate;
-        const audio = sht.query(startTime, endTime);
-        const out = {};
-        const inputs = await Promise.all(
-          [...audio].map(
-            (e) => e.audio.getRange(start - Math.ceil(e.start * sampleRate), count)
-          )
-        );
-        for (const ch of channels) {
-          const a = new Float32Array(count);
-          for (const inp of inputs) {
-            for (let i = 0; i < count; i++) {
-              a[i] += inp[ch][i] ?? 0;
-            }
-          }
-          out[ch] = a;
-        }
-        return out;
-      }
+  // src/webgpu/pipelines/line-renderer.ts
+  async function lineRenderer(device, outputFormat) {
+    const wdevice = wrapDevice(device);
+    const depthTexFormat = wdevice.texture("depth", {
+      format: "depth32float"
     });
-  }
-  var AudioStream = class _AudioStream {
-    constructor(params) {
-      this.getRange = async (start, count) => {
-        const estimatedLength = Math.ceil(this.sampleRate * this.duration);
-        const clampedStart = clamp(start, 0, estimatedLength);
-        const clampedEnd = clamp(start + count, 0, estimatedLength);
-        const range2 = await params.getRange(
-          clampedStart,
-          clampedEnd - clampedStart
-        );
-        if (clampedEnd - clampedStart == count) return range2;
-        const out = {};
-        const padStart = -Math.min(0, start);
-        for (const ch of this.channels) {
-          console.log("eeeee", count);
-          const o = new Float32Array(count);
-          const i = range2[ch];
-          for (let idx = 0; idx < i.length; idx++) {
-            o[idx + padStart] = i[idx];
-          }
-          out[ch] = o;
+    const EVERYWHERE = GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
+    const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
+      types: [
+        {
+          name: "geometryPosition",
+          format: "float32x2",
+          offset: 0
         }
-        return out;
-      };
-      this.duration = params.duration;
-      this.sampleRate = params.sampleRate;
-      this.channels = params.channels;
-    }
-    gain(gain) {
-      return combineAudio(
-        this.channels,
-        this.sampleRate,
-        [this, gain],
-        (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k]),
-        this.duration
-      );
-    }
-    add(stream) {
-      return combineAudio(
-        this.channels,
-        this.sampleRate,
-        [this, stream],
-        (time, sample, a, b) => mapObjValues(a, (k, x) => x + b[k])
-      );
-    }
-    clip(start, end) {
-      return new _AudioStream({
-        channels: this.channels,
-        duration: end - start,
-        sampleRate: this.sampleRate,
-        getRange: (start2, count2) => {
-          return this.getRange(
-            start2 + Math.floor(start * this.sampleRate),
-            count2
-          );
-        }
-      });
-    }
-    convolve(_kernel) {
-      const kernel = broadcastTo(this.channels, this.sampleRate, _kernel);
-      const kernelSampleCount = Math.ceil(kernel.duration * kernel.sampleRate);
-      const kernelData = kernel.getRange(0, kernelSampleCount);
-      return new _AudioStream({
-        channels: this.channels,
-        duration: this.duration,
-        sampleRate: this.sampleRate,
-        getRange: async (start, count) => {
-          const kern = await kernelData;
-          return mapObjValues(
-            await this.getRange(start, count + kernelSampleCount),
-            (ch, v) => overlapSaveConvolve(
-              new Float32Array(v),
-              new Float32Array(kern[ch])
-            ).slice(0, count)
-          );
-        }
-      });
-    }
-    preload() {
-      const bufs = this.getRange(0, Math.ceil(this.duration * this.sampleRate));
-      return new _AudioStream({
-        channels: this.channels,
-        duration: this.duration,
-        sampleRate: this.sampleRate,
-        getRange: async (start, count) => {
-          const bufs2 = await bufs;
-          return mapObjValues(bufs2, (k, v) => v.slice(start, start + count));
-        }
-      });
-    }
-  };
-  function fft(x) {
-    const f = new import_fft.default(x.length);
-    const out = f.createComplexArray();
-    const data = f.toComplexArray(x);
-    f.transform(out, data);
-    return new Float32Array(out);
-  }
-  function ifft(x) {
-    const f = new import_fft.default(x.length / 2);
-    const out = f.createComplexArray();
-    f.inverseTransform(out, x);
-    return new Float32Array(range(out.length / 2).map((i) => out[i * 2]));
-  }
-  function fftConvolve(x, h) {
-    const arr1 = fft(x);
-    const arr2 = fft(h);
-    let out = new Float32Array(arr1.length);
-    for (let i = 0; i < arr1.length; i += 2) {
-      out[i] = arr1[i] * arr2[i] - arr1[i + 1] * arr2[i + 1];
-      out[i + 1] = arr1[i] * arr2[i + 1] + arr1[i + 1] * arr2[i];
-    }
-    return ifft(out);
-  }
-  function nextPowerOfTwo(x) {
-    return Math.pow(2, Math.ceil(Math.log2(x)));
-  }
-  function zeroPad(x, length) {
-    if (x.length === length) return x;
-    const y = new Float32Array(length);
-    for (let i = 0; i < x.length; i++) {
-      y[i] = x[i];
-    }
-    return y;
-  }
-  var powersOfTwo = range(31).map((i) => 2 ** (i + 1));
-  var getOptimumOverlapSaveFilterSize = memo((M) => {
-    const cost = (M2, N) => N * Math.log2(N + 1) / (N - M2 + 1);
-    return argmin(
-      powersOfTwo.filter((N) => cost(M, N) > 0),
-      (N) => cost(M, N)
-    );
-  });
-  function overlapSaveConvolve(x, h) {
-    const M = h.length;
-    const N = getOptimumOverlapSaveFilterSize(M);
-    const kernel = zeroPad(h, N);
-    const L = N - M + 1;
-    const blockcount = Math.ceil(x.length / L);
-    const dst = new Float32Array(L * blockcount);
-    for (let i = 0; i < blockcount; i++) {
-      const position = L * i;
-      const xslice = zeroPad(x.slice(position, position + N), N);
-      const convolved = fftConvolve(xslice, kernel);
-      for (let j = 0; j < L; j++) {
-        dst[position + j] = convolved[M + j - 1];
-      }
-    }
-    return dst.slice(0, x.length);
-  }
-  function createSignal(params) {
-    const constr = params.constructors;
-    const constructors = constr instanceof Function ? arrayToObjKeys(params.channels, (k) => (t, c) => constr(t, c)[k]) : constr;
-    return new AudioStream({
-      channels: params.channels,
-      async getRange(start, count) {
-        return mapObjEntries(constructors, (k, v) => [
-          k,
-          new Float32Array(
-            range(count).map((s) => {
-              return v((s + start) / this.sampleRate, s + start);
-            })
-          )
-        ]);
+      ],
+      stride: 8,
+      stepMode: "vertex",
+      visibility: EVERYWHERE
+    });
+    const quad = geometryBufferFormat.quickCreate([
+      {
+        geometryPosition: [-1, -1]
       },
-      sampleRate: params.sampleRate,
-      duration: params.duration
-    });
-  }
-  function sameSignalOnData(sampleRate, channels, duration, f) {
-    return createSignal({
-      channels,
-      duration,
-      sampleRate,
-      length: Math.ceil(duration * sampleRate),
-      constructors: arrayToObjKeys(channels, () => f)
-    });
-  }
-  function waveform(sampleRate, channels, seconds, frequency, amplitude, phase, profile) {
-    return sameSignalOnData(
-      sampleRate,
-      channels,
-      seconds,
-      (t) => amplitude * profile((t * frequency + phase) % 1)
-    );
-  }
-  async function getRangeAndResample(src2, dstStart, dstCount, dstSampleRate) {
-    if (src2.sampleRate === dstSampleRate) {
-      return await src2.getRange(dstStart, dstCount);
-    }
-    const startSeconds = dstStart / dstSampleRate;
-    const durationSeconds = dstCount / dstSampleRate;
-    const srcStart = Math.floor(startSeconds * src2.sampleRate);
-    const srcCount = Math.ceil((startSeconds + durationSeconds) * src2.sampleRate);
-    const srcRange = await src2.getRange(srcStart, srcCount - srcStart);
-    return mapObjValues(srcRange, (k, v) => {
-      return new Float32Array(
-        range(dstCount).map((dstIndex) => {
-          const time = dstIndex / dstSampleRate;
-          const sourceIndex = time * src2.sampleRate;
-          const srcSamplePrev = Math.floor(sourceIndex);
-          const srcSampleNext = srcSamplePrev + 1;
-          return lerp(sourceIndex % 1, v[srcSamplePrev], v[srcSampleNext]);
-        })
-      );
-    });
-  }
-  function resample(audio, targetSampleRate) {
-    return combineAudio(
-      audio.channels,
-      targetSampleRate,
-      [audio],
-      (time, sample, ch) => ch
-    );
-  }
-  function combineAudio(channels, sampleRate, audio, f, customDuration) {
-    const duration = customDuration ? customDuration : Math.max(...audio.map((a) => a.duration));
-    const length = Math.ceil(duration * sampleRate);
-    const stream = new AudioStream({
-      channels,
-      duration,
-      sampleRate,
-      async getRange(start, count) {
-        const ranges = await Promise.all(
-          audio.map(
-            async (a) => mapObjValues(
-              await getRangeAndResample(
-                a,
-                start,
-                count,
-                sampleRate
-              ),
-              (k, v) => new Float32Array(v)
-            )
-          )
-        );
-        const ch = arrayToObjKeys(
-          channels,
-          (k) => new Float32Array(count)
-        );
-        for (const i of range(count)) {
-          const samples = ranges.map((r, j) => {
-            if (audio[j].channels.length === 1 && audio[j].channels[0] === "center") {
-              return arrayToObjKeys(channels, () => r.center[i]);
-            }
-            return mapObjValues(r, (k, v) => v[i]);
-          });
-          const res = f(
-            (start + i) / sampleRate,
-            start + i,
-            ...samples
-          );
-          for (const c of channels) {
-            ch[c][i] = res[c];
-          }
+      {
+        geometryPosition: [1, -1]
+      },
+      {
+        geometryPosition: [-1, 1]
+      },
+      {
+        geometryPosition: [1, -1]
+      },
+      {
+        geometryPosition: [-1, 1]
+      },
+      {
+        geometryPosition: [1, 1]
+      }
+    ]);
+    const pointInstanceBufferFormat = wdevice.vertexBuffer("points", {
+      types: [
+        {
+          name: "position",
+          format: "float32x3",
+          offset: 0
+        },
+        {
+          name: "size",
+          format: "float32",
+          offset: 12
+        },
+        {
+          name: "color",
+          format: "unorm8x4",
+          offset: 16
         }
-        return ch;
+      ],
+      stride: 20,
+      stepMode: "instance",
+      visibility: EVERYWHERE
+    });
+    const lineSegInstanceBufferFormat1 = wdevice.vertexBuffer("lineSegments1", {
+      types: [
+        {
+          name: "position1",
+          format: "float32x3",
+          offset: 0
+        },
+        {
+          name: "size1",
+          format: "float32",
+          offset: 12
+        },
+        {
+          name: "color1",
+          format: "unorm8x4",
+          offset: 16
+        }
+      ],
+      stride: 20,
+      stepMode: "instance",
+      visibility: EVERYWHERE
+    });
+    const lineSegInstanceBufferFormat2 = wdevice.vertexBuffer("lineSegments2", {
+      types: [
+        {
+          name: "position2",
+          format: "float32x3",
+          offset: 0
+        },
+        {
+          name: "size2",
+          format: "float32",
+          offset: 12
+        },
+        {
+          name: "color2",
+          format: "unorm8x4",
+          offset: 16
+        }
+      ],
+      stride: 20,
+      stepMode: "instance",
+      visibility: EVERYWHERE
+    });
+    const uniforms = wdevice.uniformBuffer(
+      "params",
+      struct("Params", {
+        mvp: "mat4x4f",
+        aspect: "f32"
+      })
+    );
+    const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
+    const blend = void 0;
+    const pointPipeline = await wdevice.pipeline({
+      depthStencil: {
+        format: "depth32float",
+        depthCompare: "less",
+        depthWriteEnabled: true
+      },
+      inputs: [pointInstanceBufferFormat, geometryBufferFormat],
+      outputs: {
+        color: {
+          format: outputFormat,
+          blend
+        }
+      },
+      bindGroups: [perFrameBindGroup],
+      vertex: `
+      var frag: FragInput;
+      let pos = params.mvp * vec4f(vertex.position, 1.0); 
+      frag.position = vec4f(pos.xy + 
+        vertex.geometryPosition * vertex.size
+        * vec2f(1.0, params.aspect)
+      , pos.zw);
+      frag.signedUv = vertex.geometryPosition;
+      frag.color = vertex.color;
+      frag.size = vertex.size;
+      return frag;
+    `,
+      fragment: {
+        function: `
+      var pixel: FragOutput;
+
+      let mag = length(input.signedUv);
+
+      if (mag > 1.0) { discard; }
+      pixel.color = input.color;
+
+      return pixel;`,
+        struct: `@builtin(position) position : vec4f,
+@location(0) color : vec4f,
+@location(1) signedUv : vec2f,
+@location(2) size : f32,`
       }
     });
-    return stream;
-  }
-  function broadcastTo(channels, sampleRate, mono) {
-    return combineAudio(channels, sampleRate, [mono], (_, __, x) => x);
-  }
-  function lowPassFilterSample(n, N, m) {
-    return 1 / N * range(m * 2 + 1).map((i) => Math.cos(2 * Math.PI * (i - m) / N * n)).reduce((a, b) => a + b, 0);
-  }
-  function hannSample(n, N) {
-    return Math.sin(Math.PI * (n - N / 2) / N) ** 2;
-  }
-  var createLowPassFilter = memo(
-    (channels, sampleRate, freq, cycles) => {
-      const oneCycleSampleCount = Math.ceil(1 / freq * sampleRate);
-      const sampleCount = oneCycleSampleCount * cycles;
-      const duration = sampleCount / sampleRate;
-      console.log("created lpf");
-      const cutoff = cycles;
-      return createSignal({
-        duration,
-        sampleRate,
-        channels,
-        length: sampleCount,
-        constructors: arrayToObjKeys(
-          channels,
-          () => (t, s) => lowPassFilterSample(s, sampleCount, cutoff) * hannSample(s, sampleCount)
-        )
-      }).preload();
-    }
-  );
-  var AudioBuilder = class {
-    constructor(channels, sampleRate) {
-      this.channels = channels;
-      this.sampleRate = sampleRate;
-    }
-    lpf(freq, cycles = 16) {
-      return createLowPassFilter(
-        this.channels,
-        this.sampleRate,
-        freq,
-        cycles
-      );
-    }
-    signal(duration, constructors) {
-      return createSignal({
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        constructors,
-        duration,
-        length: Math.ceil(duration * this.sampleRate)
-      });
-    }
-    waveform(frequency, amplitude, phase, profile) {
-      return waveform(
-        this.sampleRate,
-        this.channels,
-        Infinity,
-        frequency,
-        amplitude,
-        phase,
-        profile
-      );
-    }
-    constant(x) {
-      return createSignal({
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        duration: Infinity,
-        length: Infinity,
-        constructors: arrayToObjKeys(this.channels, () => () => x)
-      });
-    }
-    sine(frequency, amplitude = 1, phase = 0) {
-      return this.waveform(
-        frequency,
-        amplitude,
-        phase,
-        (x) => Math.sin(x * Math.PI * 2)
-      );
-    }
-    square(frequency, amplitude = 1, phase = 0) {
-      return this.waveform(
-        frequency,
-        amplitude,
-        phase,
-        (x) => x > 0.5 ? -1 : 1
-      );
-    }
-    saw(frequency, amplitude = 1, phase = 0) {
-      return this.waveform(frequency, amplitude, phase, (x) => x * 2 - 1);
-    }
-    noise(amplitude = 1) {
-      return createSignal({
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        duration: Infinity,
-        length: Infinity,
-        constructors: arrayToObjKeys(
-          this.channels,
-          () => () => (Math.random() * 2 - 1) * amplitude
-        )
-      });
-    }
-    adsrgen(a, d, s, r) {
-      return (at, dt, st, rt) => {
-        return sameSignalOnData(this.sampleRate, this.channels, rt, (t) => {
-          if (t < at) return rescale(t, 0, at, 0, a);
-          if (t < dt) return rescale(t, at, dt, a, d);
-          if (t < st) return rescale(t, dt, st, d, s);
-          if (t < rt) return rescale(t, st, rt, s, r);
-          return 0;
-        });
-      };
-    }
-    boxcar(length, area = 1) {
-      const sampleCount = Math.ceil(length * this.sampleRate);
-      return this.constant(area / sampleCount).clip(
-        0,
-        sampleCount / this.sampleRate
-      );
-    }
-    adsr(a, at, d, dt, s, st, r, rt) {
-      return this.adsrgen(a, d, s, r)(at, dt, st, rt);
-    }
-    broadcast(mono) {
-      return broadcastTo(this.channels, this.sampleRate, mono);
-    }
-    createTrack(constituents) {
-      return createTrack(this.channels, this.sampleRate, constituents);
-    }
-  };
-  async function playStereo(audio) {
-    const ctx = new AudioContext();
-    const src2 = ctx.createBufferSource();
-    const len = Math.ceil(audio.sampleRate * audio.duration);
-    const buf = ctx.createBuffer(2, len, audio.sampleRate);
-    const range2 = await audio.getRange(0, len);
-    buf.copyToChannel(new Float32Array(range2.left), 0);
-    buf.copyToChannel(new Float32Array(range2.right), 1);
-    src2.buffer = buf;
-    src2.connect(ctx.destination);
-    src2.start();
-  }
-  function isWorklet() {
-    return eval("globalThis.registerProcessor") !== void 0;
-  }
-  var BLOCKSIZE = 8192;
-  async function initBufferStreamerWorklet(src) {
-    if (isWorklet()) {
-      eval("registerProcessor")(
-        "buffer-streamer",
-        class extends eval("AudioWorkletProcessor") {
-          constructor() {
-            super();
-            this.buffers = [];
-            this.offsetIntoCurrentBuffer = 0;
-            this.port.onmessage = async (e) => {
-              const data = e.data;
-              if (data.type === "buffer") {
-                this.buffers.push({
-                  left: new Float32Array(data.buffers.left),
-                  right: new Float32Array(data.buffers.right)
-                });
-              }
-            };
-          }
-          process(inputs, outputs, parameters) {
-            const output = outputs[0];
-            const outputLength = output[0].length;
-            for (let i = 0; i < outputLength; i++) {
-              if (this.buffers.length > 0) {
-                output[0][i] = this.buffers[0].left[this.offsetIntoCurrentBuffer];
-                if (output[1]) {
-                  output[1][i] = this.buffers[0].right[this.offsetIntoCurrentBuffer];
-                }
-                this.offsetIntoCurrentBuffer++;
-                if (this.offsetIntoCurrentBuffer >= this.buffers[0]?.left.length) {
-                  this.offsetIntoCurrentBuffer = 0;
-                  this.buffers.shift();
-                }
-              } else {
-                output[0][i] = 0;
-                if (output[1]) {
-                  output[1][i] = 0;
-                }
-              }
-            }
-            return true;
-          }
+    const linePipeline = await wdevice.pipeline({
+      depthStencil: {
+        format: "depth32float",
+        depthCompare: "less",
+        depthWriteEnabled: true
+      },
+      inputs: [
+        lineSegInstanceBufferFormat1,
+        lineSegInstanceBufferFormat2,
+        geometryBufferFormat
+      ],
+      outputs: {
+        color: {
+          format: outputFormat,
+          blend
         }
+      },
+      bindGroups: [perFrameBindGroup],
+      vertex: `
+      var frag: FragInput;
+      let pos1 = params.mvp * vec4f(vertex.position1, 1.0); 
+      let pos2 = params.mvp * vec4f(vertex.position2, 1.0); 
+
+      let offset = normalize(pos2.xy / pos2.w - pos1.xy / pos1.w);
+
+      var localy = vec3f(
+        -offset.y, offset.x * params.aspect
+      , 0.0);
+
+
+      let uv = vertex.geometryPosition * 0.5 + 0.5;
+
+      let size = mix(
+        vertex.size1,
+        vertex.size2,
+        uv.x 
       );
-    } else {
-      return async (ctx) => {
-        await ctx.audioWorklet.addModule(src);
-        return () => {
-          const worklet = new AudioWorkletNode(ctx, "buffer-streamer");
-          return {
-            worklet,
-            pushData(left, right) {
-              worklet.port.postMessage(
+
+      frag.position = vec4f(
+        mix(
+          pos1.xy,
+          pos2.xy,
+          uv.x 
+        ), 
+        mix(
+          pos1.zw,
+          pos2.zw,
+          uv.x 
+        )
+      ) + vec4f(
+        localy * vertex.geometryPosition.y * size, 
+        0.0  
+      );
+
+      frag.color = mix(vertex.color1, vertex.color2, uv.x);
+
+      frag.size = size / frag.position.z;
+      frag.signedUv = vertex.geometryPosition;
+
+      return frag;
+    `,
+      fragment: {
+        function: `
+      var pixel: FragOutput;
+      pixel.color = input.color;
+      return pixel;`,
+        struct: `@location(0) color : vec4f,
+@builtin(position) position : vec4f,
+@location(1) signedUv : vec2f,
+@location(2) size : f32,`
+      }
+    });
+    return {
+      depthTexFormat,
+      pointInstanceBufferFormat,
+      lineSegInstanceBufferFormat1,
+      lineSegInstanceBufferFormat2,
+      geometryBufferFormat,
+      uniforms,
+      quad,
+      blend,
+      perFrameBindGroup,
+      linePipeline,
+      pointPipeline,
+      createEmptyLines(count, depthLoadOp) {
+        const perFrameUniforms = uniforms.instantiate(1);
+        const perFrame = perFrameBindGroup.instantiate({
+          params: perFrameUniforms
+        });
+        const vertexBuf = pointInstanceBufferFormat.instantiate(count);
+        const pass = device.createRenderBundleEncoder({
+          colorFormats: [outputFormat],
+          depthStencilFormat: depthTexFormat.format
+        });
+        pass.setPipeline(pointPipeline);
+        pipelineRenderpass(
+          pointPipeline,
+          pass
+        )({
+          points: vertexBuf,
+          geometry: quad,
+          perFrame
+        });
+        pass.draw(6, count);
+        pass.setPipeline(linePipeline);
+        pipelineRenderpass(
+          linePipeline,
+          pass
+        )({
+          lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
+          lineSegments2: [
+            lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
+            20
+          ],
+          geometry: quad
+        });
+        pass.draw(6, count - 1);
+        const bundle = pass.finish();
+        return {
+          buffer: vertexBuf,
+          draw(target, depthTarget, transform) {
+            uniforms.fill(perFrameUniforms, 0, {
+              aspect: target.width / target.height,
+              mvp: transform
+            });
+            const encoder = device.createCommandEncoder();
+            const pass2 = encoder.beginRenderPass({
+              colorAttachments: [
                 {
-                  type: "buffer",
-                  buffers: {
-                    left: left.buffer,
-                    right: right.buffer
-                  }
-                },
-                [left.buffer, right.buffer]
-              );
-            }
-          };
+                  view: target,
+                  loadOp: "load",
+                  storeOp: "store"
+                }
+              ],
+              depthStencilAttachment: {
+                view: depthTarget,
+                depthClearValue: 1,
+                depthLoadOp,
+                depthStoreOp: "store"
+              }
+            });
+            pass2.executeBundles([bundle]);
+            pass2.end();
+            device.queue.submit([encoder.finish()]);
+          }
         };
-      };
-    }
-  }
-  var CHUNKSIZE = 2048 * 16;
-  function streamAudioToWorklet(stream, bs) {
-    let t = 0;
-    const loop = async () => {
-      const { left, right } = await stream.getRange(t, CHUNKSIZE);
-      bs.pushData(new Float32Array(left), new Float32Array(right));
-      t += CHUNKSIZE;
-      if (t <= Math.max(stream.duration * stream.sampleRate)) {
-        setTimeout(loop);
+      },
+      createLines(points, color, thickness, depthLoadOp) {
+        const perFrameUniforms = uniforms.instantiate(1);
+        const perFrame = perFrameBindGroup.instantiate({
+          params: perFrameUniforms
+        });
+        const vertexBuf = pointInstanceBufferFormat.quickCreate(
+          points.map((position) => ({
+            position,
+            color,
+            size: thickness
+          }))
+        );
+        const pass = device.createRenderBundleEncoder({
+          colorFormats: [outputFormat],
+          depthStencilFormat: depthTexFormat.format
+        });
+        pass.setPipeline(pointPipeline);
+        pipelineRenderpass(
+          pointPipeline,
+          pass
+        )({
+          points: vertexBuf,
+          geometry: quad,
+          perFrame
+        });
+        pass.draw(6, points.length);
+        pass.setPipeline(linePipeline);
+        pipelineRenderpass(
+          linePipeline,
+          pass
+        )({
+          lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
+          lineSegments2: [
+            lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
+            20
+          ],
+          geometry: quad
+        });
+        pass.draw(6, points.length - 1);
+        const bundle = pass.finish();
+        return {
+          draw(target, depthTarget, transform) {
+            uniforms.fill(perFrameUniforms, 0, {
+              aspect: target.width / target.height,
+              mvp: transform
+            });
+            const encoder = device.createCommandEncoder();
+            const pass2 = encoder.beginRenderPass({
+              colorAttachments: [
+                {
+                  view: target,
+                  loadOp: "load",
+                  storeOp: "store"
+                }
+              ],
+              depthStencilAttachment: {
+                view: depthTarget,
+                depthClearValue: 1,
+                depthLoadOp,
+                depthStoreOp: "store"
+              }
+            });
+            pass2.executeBundles([bundle]);
+            pass2.end();
+            device.queue.submit([encoder.finish()]);
+          }
+        };
+      },
+      drawLinesSimple(target, depthTarget, depthLoadOp, points, color, thickness, transform) {
+        const vertexBuf = pointInstanceBufferFormat.quickCreate(
+          points.map((position) => ({
+            position,
+            color,
+            size: thickness
+          }))
+        );
+        const encoder = device.createCommandEncoder();
+        const pass = encoder.beginRenderPass({
+          colorAttachments: [
+            {
+              view: target,
+              loadOp: "load",
+              storeOp: "store"
+            }
+          ],
+          depthStencilAttachment: {
+            view: depthTarget,
+            depthClearValue: 1,
+            depthLoadOp,
+            depthStoreOp: "store"
+          }
+        });
+        pass.setPipeline(pointPipeline);
+        const bg = perFrameBindGroup.instantiate({
+          params: uniforms.quickCreate({
+            mvp: transform,
+            aspect: target.width / target.height
+          })
+        });
+        pipelineRenderpass(
+          pointPipeline,
+          pass
+        )({
+          points: vertexBuf,
+          geometry: quad,
+          perFrame: bg
+        });
+        pass.draw(6, points.length);
+        pass.setPipeline(linePipeline);
+        pipelineRenderpass(
+          linePipeline,
+          pass
+        )({
+          lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
+          lineSegments2: [
+            lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
+            20
+          ],
+          geometry: quad
+        });
+        pass.draw(6, points.length - 1);
+        pass.end();
+        device.queue.submit([encoder.finish()]);
       }
     };
-    loop();
   }
-  function displayAudioSamples(samples, size, amp = 1) {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = size[0];
-    canvas.height = size[1];
-    ctx.beginPath();
-    for (const i of smartRange(samples.length)) {
-      ctx.lineTo(
-        i.remap(0, canvas.width),
-        rescale(samples[i.i], -amp, amp, 0, size[1])
-      );
-    }
-    ctx.stroke();
-    return canvas;
-  }
-  async function displayAudio(stream, amp = 1, res = [1e3, 200], chunks = 1) {
-    const len = Math.ceil(stream.duration * stream.sampleRate);
-    const left = new Float32Array(len);
-    const right = new Float32Array(len);
-    let divisions = smartRange(chunks + 1).map(
-      (c) => Math.floor(c.remap(0, len, true))
-    );
-    for (let i of range(chunks)) {
-      const audio = await stream.getRange(
-        divisions[i],
-        divisions[i + 1] - divisions[i]
-      );
-      const l = new Float32Array(audio.left);
-      const r = new Float32Array(audio.right);
-      for (let j = 0; j < l.length; j++) {
-        left[j + divisions[i]] = l[j];
-        right[j + divisions[i]] = r[j];
+
+  // src/webgpu/pipelines/clear.ts
+  async function clearRenderer(device, outputFormat) {
+    const wdevice = wrapDevice(device);
+    const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
+      types: [
+        {
+          name: "geometryPosition",
+          format: "float32x2",
+          offset: 0
+        }
+      ],
+      stride: 8,
+      stepMode: "vertex",
+      visibility: GPUShaderStage.VERTEX
+    });
+    const quad = geometryBufferFormat.quickCreate([
+      {
+        geometryPosition: [-1, -1]
+      },
+      {
+        geometryPosition: [1, -1]
+      },
+      {
+        geometryPosition: [-1, 1]
+      },
+      {
+        geometryPosition: [1, -1]
+      },
+      {
+        geometryPosition: [-1, 1]
+      },
+      {
+        geometryPosition: [1, 1]
       }
-    }
-    return [
-      displayAudioSamples(left, res, amp),
-      displayAudioSamples(right, res, amp)
-    ];
+    ]);
+    const uniforms = wdevice.uniformBuffer(
+      "params",
+      struct("Params", {
+        clearColor: "vec4f"
+      })
+    );
+    const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
+    const pipeline = await wdevice.pipeline({
+      inputs: [geometryBufferFormat],
+      outputs: {
+        color: {
+          format: outputFormat
+        }
+      },
+      bindGroups: [perFrameBindGroup],
+      vertex: `
+    var frag: FragInput;
+    frag.position = vec4f(vertex.geometryPosition.xy, 1.0, 1.0);
+    return frag;
+`,
+      fragment: {
+        function: `
+      var pixel: FragOutput;
+      pixel.color = params.clearColor;
+      return pixel;
+      `,
+        struct: `@builtin(position) position : vec4f
+      `
+      }
+    });
+    const perFrameUniforms = uniforms.instantiate(1);
+    const perFrame = perFrameBindGroup.instantiate({
+      params: perFrameUniforms
+    });
+    const pass = device.createRenderBundleEncoder({
+      colorFormats: [outputFormat]
+    });
+    pass.setPipeline(pipeline);
+    pipelineRenderpass(
+      pipeline,
+      pass
+    )({
+      geometry: quad,
+      perFrame
+    });
+    pass.draw(6);
+    const bundle = pass.finish();
+    return {
+      clear(tex, color) {
+        uniforms.fill(perFrameUniforms, 0, {
+          clearColor: color
+        });
+        const encoder = device.createCommandEncoder();
+        const pass2 = encoder.beginRenderPass({
+          colorAttachments: [
+            {
+              view: tex,
+              loadOp: "clear",
+              storeOp: "store"
+            }
+          ]
+        });
+        pass2.executeBundles([bundle]);
+        pass2.end();
+        device.queue.submit([encoder.finish()]);
+      }
+    };
   }
-
-  // src/audio/notes.ts
-  var import_typescript_parsec = __toESM(require_lib());
-  var noteLexer = (0, import_typescript_parsec.buildLexer)([
-    [true, /^\(/g, 0 /* Open */],
-    [true, /^\)/g, 1 /* Close */],
-    [true, /^\:/g, 2 /* Colon */],
-    [true, /^\//g, 3 /* Slash */],
-    [false, /^\s+/g, 4 /* Whitespace */],
-    [false, /^\/\/[^\n]*/g, 7 /* Comment */],
-    [true, /^(\+|\-)?[0-9]+/g, 5 /* Integer */],
-    [true, /^[a-gA-G][b#]*[0-9]*/g, 6 /* ChromaticKey */]
-  ]);
-  var note_timing = (0, import_typescript_parsec.alt_sc)(
-    (0, import_typescript_parsec.apply)((0, import_typescript_parsec.kleft)((0, import_typescript_parsec.tok)(5 /* Integer */), (0, import_typescript_parsec.str)(":")), (t) => Number(t.text)),
-    (0, import_typescript_parsec.apply)((0, import_typescript_parsec.nil)(), () => 1)
-  );
-  var primitive_note = (0, import_typescript_parsec.apply)(
-    (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.alt_sc)((0, import_typescript_parsec.tok)(6 /* ChromaticKey */), (0, import_typescript_parsec.tok)(5 /* Integer */))),
-    ([timing, note2]) => ({
-      type: "note",
-      timing,
-      noteData: note2.text
-    })
-  );
-  var chord_inner = (0, import_typescript_parsec.rule)();
-  var chord = (0, import_typescript_parsec.apply)(
-    (0, import_typescript_parsec.seq)(
-      note_timing,
-      (0, import_typescript_parsec.lrec_sc)(
-        (0, import_typescript_parsec.apply)(chord_inner, (x) => [x]),
-        (0, import_typescript_parsec.seq)((0, import_typescript_parsec.str)("/"), chord_inner),
-        (a, [_, b]) => [...a, b]
-      )
-    ),
-    ([timing, notes]) => ({
-      type: "chord",
-      timing,
-      notes
-    })
-  );
-  var compound_note = (0, import_typescript_parsec.rule)();
-  var compound_note_inner = (0, import_typescript_parsec.rep_sc)(
-    (0, import_typescript_parsec.alt_sc)(primitive_note, chord, compound_note)
-  );
-  compound_note.setPattern(
-    (0, import_typescript_parsec.apply)(
-      (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.kmid)((0, import_typescript_parsec.str)("("), compound_note_inner, (0, import_typescript_parsec.str)(")"))),
-      ([timing, notes]) => ({ type: "compound", timing, notes })
-    )
-  );
-  chord_inner.setPattern((0, import_typescript_parsec.alt_sc)(primitive_note, compound_note));
-  var note = (0, import_typescript_parsec.alt_sc)(chord, compound_note, primitive_note);
-  var track = (0, import_typescript_parsec.rep_sc)(note);
-
-  // node_modules/ml-convolution/src/fftConvolution.js
-  var import_fft2 = __toESM(require_fft());
-  var import_next_power_of_two = __toESM(require_next_power_of_two());
 
   // src/webgpu/gpudoc/ui.tsx
   var import_react4 = __toESM(require_react());
@@ -27219,540 +27753,6 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     return device;
   }
 
-  // src/webgpu/pipelines/line-renderer.ts
-  async function lineRenderer(device, outputFormat) {
-    const wdevice = wrapDevice(device);
-    const depthTexFormat = wdevice.texture("depth", {
-      format: "depth32float"
-    });
-    const EVERYWHERE = GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
-    const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
-      types: [
-        {
-          name: "geometryPosition",
-          format: "float32x2",
-          offset: 0
-        }
-      ],
-      stride: 8,
-      stepMode: "vertex",
-      visibility: EVERYWHERE
-    });
-    const quad = geometryBufferFormat.quickCreate([
-      {
-        geometryPosition: [-1, -1]
-      },
-      {
-        geometryPosition: [1, -1]
-      },
-      {
-        geometryPosition: [-1, 1]
-      },
-      {
-        geometryPosition: [1, -1]
-      },
-      {
-        geometryPosition: [-1, 1]
-      },
-      {
-        geometryPosition: [1, 1]
-      }
-    ]);
-    const pointInstanceBufferFormat = wdevice.vertexBuffer("points", {
-      types: [
-        {
-          name: "position",
-          format: "float32x3",
-          offset: 0
-        },
-        {
-          name: "size",
-          format: "float32",
-          offset: 12
-        },
-        {
-          name: "color",
-          format: "unorm8x4",
-          offset: 16
-        }
-      ],
-      stride: 20,
-      stepMode: "instance",
-      visibility: EVERYWHERE
-    });
-    const lineSegInstanceBufferFormat1 = wdevice.vertexBuffer("lineSegments1", {
-      types: [
-        {
-          name: "position1",
-          format: "float32x3",
-          offset: 0
-        },
-        {
-          name: "size1",
-          format: "float32",
-          offset: 12
-        },
-        {
-          name: "color1",
-          format: "unorm8x4",
-          offset: 16
-        }
-      ],
-      stride: 20,
-      stepMode: "instance",
-      visibility: EVERYWHERE
-    });
-    const lineSegInstanceBufferFormat2 = wdevice.vertexBuffer("lineSegments2", {
-      types: [
-        {
-          name: "position2",
-          format: "float32x3",
-          offset: 0
-        },
-        {
-          name: "size2",
-          format: "float32",
-          offset: 12
-        },
-        {
-          name: "color2",
-          format: "unorm8x4",
-          offset: 16
-        }
-      ],
-      stride: 20,
-      stepMode: "instance",
-      visibility: EVERYWHERE
-    });
-    const uniforms = wdevice.uniformBuffer(
-      "params",
-      struct("Params", {
-        mvp: "mat4x4f",
-        aspect: "f32"
-      })
-    );
-    const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
-    const blend = void 0;
-    const pointPipeline = await wdevice.pipeline({
-      depthStencil: {
-        format: "depth32float",
-        depthCompare: "less",
-        depthWriteEnabled: true
-      },
-      inputs: [pointInstanceBufferFormat, geometryBufferFormat],
-      outputs: {
-        color: {
-          format: outputFormat,
-          blend
-        }
-      },
-      bindGroups: [perFrameBindGroup],
-      vertex: `
-      var frag: FragInput;
-      let pos = params.mvp * vec4f(vertex.position, 1.0); 
-      frag.position = vec4f(pos.xy + 
-        vertex.geometryPosition * vertex.size
-        * vec2f(1.0, params.aspect)
-      , pos.zw);
-      frag.signedUv = vertex.geometryPosition;
-      frag.color = vertex.color;
-      frag.size = vertex.size;
-      return frag;
-    `,
-      fragment: {
-        function: `
-      var pixel: FragOutput;
-
-      let mag = length(input.signedUv);
-
-      if (mag > 1.0) { discard; }
-      pixel.color = input.color;
-
-      return pixel;`,
-        struct: `@builtin(position) position : vec4f,
-@location(0) color : vec4f,
-@location(1) signedUv : vec2f,
-@location(2) size : f32,`
-      }
-    });
-    const linePipeline = await wdevice.pipeline({
-      depthStencil: {
-        format: "depth32float",
-        depthCompare: "less",
-        depthWriteEnabled: true
-      },
-      inputs: [
-        lineSegInstanceBufferFormat1,
-        lineSegInstanceBufferFormat2,
-        geometryBufferFormat
-      ],
-      outputs: {
-        color: {
-          format: outputFormat,
-          blend
-        }
-      },
-      bindGroups: [perFrameBindGroup],
-      vertex: `
-      var frag: FragInput;
-      let pos1 = params.mvp * vec4f(vertex.position1, 1.0); 
-      let pos2 = params.mvp * vec4f(vertex.position2, 1.0); 
-
-      let offset = normalize(pos2.xy / pos2.w - pos1.xy / pos1.w);
-
-      var localy = vec3f(
-        -offset.y, offset.x * params.aspect
-      , 0.0);
-
-
-      let uv = vertex.geometryPosition * 0.5 + 0.5;
-
-      let size = mix(
-        vertex.size1,
-        vertex.size2,
-        uv.x 
-      );
-
-      frag.position = vec4f(
-        mix(
-          pos1.xy,
-          pos2.xy,
-          uv.x 
-        ), 
-        mix(
-          pos1.zw,
-          pos2.zw,
-          uv.x 
-        )
-      ) + vec4f(
-        localy * vertex.geometryPosition.y * size, 
-        0.0  
-      );
-
-      frag.color = mix(vertex.color1, vertex.color2, uv.x);
-
-      frag.size = size / frag.position.z;
-      frag.signedUv = vertex.geometryPosition;
-
-      return frag;
-    `,
-      fragment: {
-        function: `
-      var pixel: FragOutput;
-      pixel.color = input.color;
-      return pixel;`,
-        struct: `@location(0) color : vec4f,
-@builtin(position) position : vec4f,
-@location(1) signedUv : vec2f,
-@location(2) size : f32,`
-      }
-    });
-    return {
-      depthTexFormat,
-      pointInstanceBufferFormat,
-      lineSegInstanceBufferFormat1,
-      lineSegInstanceBufferFormat2,
-      geometryBufferFormat,
-      uniforms,
-      quad,
-      blend,
-      perFrameBindGroup,
-      linePipeline,
-      pointPipeline,
-      createEmptyLines(count, depthLoadOp) {
-        const perFrameUniforms = uniforms.instantiate(1);
-        const perFrame = perFrameBindGroup.instantiate({
-          params: perFrameUniforms
-        });
-        const vertexBuf = pointInstanceBufferFormat.instantiate(count);
-        const pass = device.createRenderBundleEncoder({
-          colorFormats: [outputFormat],
-          depthStencilFormat: depthTexFormat.format
-        });
-        pass.setPipeline(pointPipeline);
-        pipelineRenderpass(
-          pointPipeline,
-          pass
-        )({
-          points: vertexBuf,
-          geometry: quad,
-          perFrame
-        });
-        pass.draw(6, count);
-        pass.setPipeline(linePipeline);
-        pipelineRenderpass(
-          linePipeline,
-          pass
-        )({
-          lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
-          lineSegments2: [
-            lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
-            20
-          ],
-          geometry: quad
-        });
-        pass.draw(6, count - 1);
-        const bundle = pass.finish();
-        return {
-          buffer: vertexBuf,
-          draw(target, depthTarget, transform) {
-            uniforms.fill(perFrameUniforms, 0, {
-              aspect: target.width / target.height,
-              mvp: transform
-            });
-            const encoder = device.createCommandEncoder();
-            const pass2 = encoder.beginRenderPass({
-              colorAttachments: [
-                {
-                  view: target,
-                  loadOp: "load",
-                  storeOp: "store"
-                }
-              ],
-              depthStencilAttachment: {
-                view: depthTarget,
-                depthClearValue: 1,
-                depthLoadOp,
-                depthStoreOp: "store"
-              }
-            });
-            pass2.executeBundles([bundle]);
-            pass2.end();
-            device.queue.submit([encoder.finish()]);
-          }
-        };
-      },
-      createLines(points, color, thickness, depthLoadOp) {
-        const perFrameUniforms = uniforms.instantiate(1);
-        const perFrame = perFrameBindGroup.instantiate({
-          params: perFrameUniforms
-        });
-        const vertexBuf = pointInstanceBufferFormat.quickCreate(
-          points.map((position) => ({
-            position,
-            color,
-            size: thickness
-          }))
-        );
-        const pass = device.createRenderBundleEncoder({
-          colorFormats: [outputFormat],
-          depthStencilFormat: depthTexFormat.format
-        });
-        pass.setPipeline(pointPipeline);
-        pipelineRenderpass(
-          pointPipeline,
-          pass
-        )({
-          points: vertexBuf,
-          geometry: quad,
-          perFrame
-        });
-        pass.draw(6, points.length);
-        pass.setPipeline(linePipeline);
-        pipelineRenderpass(
-          linePipeline,
-          pass
-        )({
-          lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
-          lineSegments2: [
-            lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
-            20
-          ],
-          geometry: quad
-        });
-        pass.draw(6, points.length - 1);
-        const bundle = pass.finish();
-        return {
-          draw(target, depthTarget, transform) {
-            uniforms.fill(perFrameUniforms, 0, {
-              aspect: target.width / target.height,
-              mvp: transform
-            });
-            const encoder = device.createCommandEncoder();
-            const pass2 = encoder.beginRenderPass({
-              colorAttachments: [
-                {
-                  view: target,
-                  loadOp: "load",
-                  storeOp: "store"
-                }
-              ],
-              depthStencilAttachment: {
-                view: depthTarget,
-                depthClearValue: 1,
-                depthLoadOp,
-                depthStoreOp: "store"
-              }
-            });
-            pass2.executeBundles([bundle]);
-            pass2.end();
-            device.queue.submit([encoder.finish()]);
-          }
-        };
-      },
-      drawLinesSimple(target, depthTarget, depthLoadOp, points, color, thickness, transform) {
-        const vertexBuf = pointInstanceBufferFormat.quickCreate(
-          points.map((position) => ({
-            position,
-            color,
-            size: thickness
-          }))
-        );
-        const encoder = device.createCommandEncoder();
-        const pass = encoder.beginRenderPass({
-          colorAttachments: [
-            {
-              view: target,
-              loadOp: "load",
-              storeOp: "store"
-            }
-          ],
-          depthStencilAttachment: {
-            view: depthTarget,
-            depthClearValue: 1,
-            depthLoadOp,
-            depthStoreOp: "store"
-          }
-        });
-        pass.setPipeline(pointPipeline);
-        const bg = perFrameBindGroup.instantiate({
-          params: uniforms.quickCreate({
-            mvp: transform,
-            aspect: target.width / target.height
-          })
-        });
-        pipelineRenderpass(
-          pointPipeline,
-          pass
-        )({
-          points: vertexBuf,
-          geometry: quad,
-          perFrame: bg
-        });
-        pass.draw(6, points.length);
-        pass.setPipeline(linePipeline);
-        pipelineRenderpass(
-          linePipeline,
-          pass
-        )({
-          lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
-          lineSegments2: [
-            lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
-            20
-          ],
-          geometry: quad
-        });
-        pass.draw(6, points.length - 1);
-        pass.end();
-        device.queue.submit([encoder.finish()]);
-      }
-    };
-  }
-
-  // src/webgpu/pipelines/clear.ts
-  async function clearRenderer(device, outputFormat) {
-    const wdevice = wrapDevice(device);
-    const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
-      types: [
-        {
-          name: "geometryPosition",
-          format: "float32x2",
-          offset: 0
-        }
-      ],
-      stride: 8,
-      stepMode: "vertex",
-      visibility: GPUShaderStage.VERTEX
-    });
-    const quad = geometryBufferFormat.quickCreate([
-      {
-        geometryPosition: [-1, -1]
-      },
-      {
-        geometryPosition: [1, -1]
-      },
-      {
-        geometryPosition: [-1, 1]
-      },
-      {
-        geometryPosition: [1, -1]
-      },
-      {
-        geometryPosition: [-1, 1]
-      },
-      {
-        geometryPosition: [1, 1]
-      }
-    ]);
-    const uniforms = wdevice.uniformBuffer(
-      "params",
-      struct("Params", {
-        clearColor: "vec4f"
-      })
-    );
-    const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
-    const pipeline = await wdevice.pipeline({
-      inputs: [geometryBufferFormat],
-      outputs: {
-        color: {
-          format: outputFormat
-        }
-      },
-      bindGroups: [perFrameBindGroup],
-      vertex: `
-    var frag: FragInput;
-    frag.position = vec4f(vertex.geometryPosition.xy, 1.0, 1.0);
-    return frag;
-`,
-      fragment: {
-        function: `
-      var pixel: FragOutput;
-      pixel.color = params.clearColor;
-      return pixel;
-      `,
-        struct: `@builtin(position) position : vec4f
-      `
-      }
-    });
-    const perFrameUniforms = uniforms.instantiate(1);
-    const perFrame = perFrameBindGroup.instantiate({
-      params: perFrameUniforms
-    });
-    const pass = device.createRenderBundleEncoder({
-      colorFormats: [outputFormat]
-    });
-    pass.setPipeline(pipeline);
-    pipelineRenderpass(
-      pipeline,
-      pass
-    )({
-      geometry: quad,
-      perFrame
-    });
-    pass.draw(6);
-    const bundle = pass.finish();
-    return {
-      clear(tex, color) {
-        uniforms.fill(perFrameUniforms, 0, {
-          clearColor: color
-        });
-        const encoder = device.createCommandEncoder();
-        const pass2 = encoder.beginRenderPass({
-          colorAttachments: [
-            {
-              view: tex,
-              loadOp: "clear",
-              storeOp: "store"
-            }
-          ]
-        });
-        pass2.executeBundles([bundle]);
-        pass2.end();
-        device.queue.submit([encoder.finish()]);
-      }
-    };
-  }
-
   // src/ui/use-latest.tsx
   var import_react5 = __toESM(require_react());
 
@@ -27800,29 +27800,8 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     return { keysDown };
   }
 
-  // demos-src/webgpu/octree3.demo.ts
-  (async () => {
-    function fail(msg) {
-      window.alert(msg);
-      throw new Error(msg);
-    }
-    const adapter = await navigator.gpu.requestAdapter();
-    if (!adapter) {
-      fail("No GPU adapter!");
-      return;
-    }
-    const device = hookGPUDevice(
-      await adapter.requestDevice({
-        requiredFeatures: ["timestamp-query"]
-      })
-    );
-    device.addEventListener(
-      "uncapturederror",
-      (event) => console.error(event.error)
-    );
-    if (!device) {
-      fail("No GPU device!");
-    }
+  // demos-src/webgpu/n-body-octree.ts
+  async function createNBodyOctreeDefs(device, params) {
     const wdevice = wrapDevice(device);
     const octreeNodeFormat = wdevice.storageBuffer(
       "octree_nodes",
@@ -27857,12 +27836,12 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     );
     const bodiesFormat = wdevice.storageBuffer(
       "bodies",
+      // @ts-expect-error
       struct("Body", {
         position: "vec3f",
         mass: "f32",
         velocity: "vec3f",
-        impulse: "vec3f",
-        visit_count: "u32"
+        ...params.extraBodyFields
       })
     );
     const aggregatedBodiesFormat = wdevice.storageBuffer(
@@ -27898,12 +27877,6 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         node_idx: "u32"
       })
     );
-    const bodyNodeAssignmentsInFormat = bodyNodeAssignmentsFormat.withName(
-      "body_node_assignments_in"
-    );
-    const bodyNodeAssignmentsOutFormat = bodyNodeAssignmentsFormat.withName(
-      "body_node_assignments_out"
-    );
     const bodyNodeChildSubOffsetsFormat = bodyNodeAssignmentsFormat.withName(
       "body_node_child_sub_offsets"
     );
@@ -27932,15 +27905,6 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       {
         arrayify: false,
         usage: GPUBufferUsage.INDIRECT | GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE
-      }
-    );
-    const genericBufferFormat = await wdevice.uniformBuffer(
-      "generic",
-      struct("Generic", { data: "u32" }),
-      true,
-      {
-        visibility: GPUShaderStage.COMPUTE,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
       }
     );
     const barnesHutUniformsFormat = wdevice.uniformBufferForComputeShader(
@@ -28285,34 +28249,13 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         - agg_bodies[start].mass * agg_bodies[start].center_of_mass) / mass;
     `
     });
-    const transferBodyInfoToPointsBindGroupFormat = wdevice.bindGroup(
-      "bg",
-      bodiesFormat,
-      genericBufferFormat
-    );
-    const transferBodyInfoToPointsPipeline = await wdevice.compute({
-      bindGroups: [transferBodyInfoToPointsBindGroupFormat],
-      workgroupSize: [32, 1, 1],
-      storageBufferAccess: {
-        bodies: "read_write",
-        generic: "read_write"
-      },
-      shader: `
-      let i = id.x;
-      if (i >= arrayLength(&bodies)) { return; }
-      generic[i * 5].data = bitcast<u32>(bodies[i].position.x);
-      generic[i * 5 + 1].data = bitcast<u32>(bodies[i].position.y);
-      generic[i * 5 + 2].data = bitcast<u32>(bodies[i].position.z);
-      generic[i * 5 + 3].data = bitcast<u32>(0.05 * pow(bodies[i].mass, 0.2));
-      generic[i * 5 + 4].data = 0xffffffff;
-    `
-    });
     const applyBarnesHutBindGroupFormat = wdevice.bindGroup(
       "bg",
       bodiesFormat,
       octreeNodeFormat,
       octreeMetadataFormat,
-      barnesHutUniformsFormat
+      barnesHutUniformsFormat,
+      ...params.extraPhysicsBuffers
     );
     const applyBarnesHutPipeline = await wdevice.compute({
       bindGroups: [applyBarnesHutBindGroupFormat],
@@ -28323,6 +28266,17 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         next_child_idx: u32,
       } 
       
+      fn body_body_interaction(i: u32, mass: f32, center_of_mass: vec3f, dist_to_body: f32) -> vec3f {
+        ${params.bodyBodyInteraction} 
+      }
+
+      fn apply_forces(i: u32, total_impulse: vec3f) {
+        ${params.applyForces} 
+      }
+
+      fn body_reset(i: u32) {
+        ${params.bodyReset ?? ""} 
+      }
     `,
       shader: `
       if (id.x >= arrayLength(&bodies)) {
@@ -28334,8 +28288,8 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
 
       var total_impulse = vec3f(0.0);
 
+      body_reset(id.x);
       let body = bodies[id.x];
-      bodies[id.x].visit_count = 0u;
 
       stack[0].node_idx = 0u;
       stack[0].next_child_idx = 0u;
@@ -28377,16 +28331,16 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
           stack[stack_size].next_child_idx = 0u;
           stack_size += 1u;
         } else {
-          let force_mag = child_metadata.mass * bodies[id.x].mass / pow(max(1.0, dist_to_body), 2.0);
-          let force_dir = normalize(child_metadata.center_of_mass - body.position);
-          total_impulse += force_mag * force_dir; 
-          bodies[id.x].visit_count += 1u;
+          total_impulse += body_body_interaction(
+            id.x, 
+            child_metadata.mass,
+            child_metadata.center_of_mass,
+            dist_to_body
+          );
         }
       }
 
-      bodies[id.x].velocity += total_impulse / bodies[id.x].mass * params.timestep;
-      bodies[id.x].position += bodies[id.x].velocity * params.timestep;
-      bodies[id.x].impulse = total_impulse;
+      apply_forces(id.x, total_impulse);
     `
     });
     const reduceMinMaxBindGroupFormat = wdevice.bindGroup(
@@ -28507,62 +28461,8 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     body_node_assignments[id.x].node_idx = 0u;
     `
     });
-    const bodiesData = [
-      // {
-      //   mass: 1,
-      //   velocity: [0, 0, 0],
-      //   position: [0.9, 0.1, 0.1],
-      //   impulse: [0, 0, 0],
-      // },
-      // {
-      //   mass: 2,
-      //   velocity: [0, 0, 0],
-      //   position: [0.9, 0.9, 0.9],
-      //   impulse: [0, 0, 0],
-      // },
-      // {
-      //   mass: 3,
-      //   velocity: [0, 0, 0],
-      //   position: [0.3, 0.3, 0.3],
-      //   impulse: [0, 0, 0],
-      // },
-      // {
-      //   mass: 4,
-      //   velocity: [0, 0, 0],
-      //   position: [0.7, 0.7, 0.7],
-      //   impulse: [0, 0, 0],
-      // },
-      // {
-      //   mass: 10,
-      //   velocity: [0, 0, 0],
-      //   position: [0.1, 0.1, 0.1],
-      //   impulse: [0, 0, 0],
-      //   visit_count: 0,
-      // },
-      ...range(2e4).map(() => {
-        return {
-          mass: Math.pow(Math.random(), 4) * 0.01 + 1e-4 + (Math.random() > 0.999 ? 1 : 0),
-          velocity: scale3(
-            [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
-            0
-          ),
-          position: scale3(
-            [Math.random() * 4 - 2, Math.random() * 4 - 2, Math.random() * 4 - 2],
-            10
-          ),
-          impulse: [0, 0, 0],
-          visit_count: 0
-        };
-      })
-      // {
-      //   mass: 1,
-      //   velocity: [-1, 0, 0],
-      //   position: [0.9, 0.9, 0.9],
-      //   impulse: [0, 0, 0],
-      // },
-    ];
-    function setupMinMaxReduction(params) {
-      const countExponent = Math.ceil(Math.log2(params.count));
+    function setupMinMaxReduction(params2) {
+      const countExponent = Math.ceil(Math.log2(params2.count));
       const nextPowerOfTwo2 = 2 ** countExponent;
       const iterSteps = countExponent;
       const minmax = minMaxFormat.instantiate(nextPowerOfTwo2);
@@ -28585,7 +28485,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       });
       console.log(steps);
       const initMinMaxBindGroup = initMinMaxBindGroupFormat.instantiate({
-        bodies: params.bodies,
+        bodies: params2.bodies,
         vecs: minmax
       });
       return {
@@ -28602,8 +28502,8 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         minmax
       };
     }
-    function setupAggregatedBodyPrefixSum(params) {
-      const countWithExtra = params.count + 1;
+    function setupAggregatedBodyPrefixSum(params2) {
+      const countWithExtra = params2.count + 1;
       const countExponent = Math.ceil(Math.log2(countWithExtra));
       const nextPowerOfTwo2 = 2 ** countExponent;
       const iterSteps = countExponent;
@@ -28635,8 +28535,8 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       );
       const initBg = initAggregatedBodiesBindGroupFormat.instantiate({
         agg_bodies: aggBodies,
-        bodies: params.bodies,
-        body_order: params.bodyOrder
+        bodies: params2.bodies,
+        body_order: params2.bodyOrder
       });
       const dispatchCount = Math.ceil(nextPowerOfTwo2 / 32);
       return {
@@ -28665,28 +28565,28 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         aggBodies
       };
     }
-    function setupOctree(params) {
+    function setupOctree(params2) {
       const octreeNodeBuffer = octreeNodeFormat.instantiate(
-        params.octreeCapacity
+        params2.octreeCapacity
       );
       const octreeMetadataBuffer = octreeMetadataFormat.instantiate(
-        params.octreeCapacity
+        params2.octreeCapacity
       );
       const octreeCountersBuffer = octreeCountersFormat.instantiate(
-        params.octreeCapacity
+        params2.octreeCapacity
       );
-      const bodiesOrderBuffer1 = bodyOrderFormat.instantiate(params.bodyCount);
-      const bodiesOrderBuffer2 = bodyOrderFormat.instantiate(params.bodyCount);
+      const bodiesOrderBuffer1 = bodyOrderFormat.instantiate(params2.bodyCount);
+      const bodiesOrderBuffer2 = bodyOrderFormat.instantiate(params2.bodyCount);
       const nextfreesBuffer = nextfreesFormat.instantiate(1);
       const nodeBodyAssignmentsBuffer = bodyNodeAssignmentsFormat.instantiate(
-        params.bodyCount
+        params2.bodyCount
       );
-      const bodyNodeChildSubOffsetsBuffer = bodyNodeChildSubOffsetsFormat.instantiate(params.bodyCount);
+      const bodyNodeChildSubOffsetsBuffer = bodyNodeChildSubOffsetsFormat.instantiate(params2.bodyCount);
       const activeNodesBuffer1 = bodyNodeAssignmentsFormat.instantiate(
-        params.octreeCapacity
+        params2.octreeCapacity
       );
       const activeNodesBuffer2 = bodyNodeAssignmentsFormat.instantiate(
-        params.octreeCapacity
+        params2.octreeCapacity
       );
       const activeNodesInfoBuffer = activeNodesInfoFormat.instantiate(1);
       const computeIndirectBuffer = computeIndirectBufferFormat.instantiate(1);
@@ -28697,7 +28597,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
           octree_counters: octreeCountersBuffer,
           octree_nodes: octreeNodeBuffer,
           body_order: [bodiesOrderBuffer1, bodiesOrderBuffer1][i],
-          bodies: params.bodies,
+          bodies: params2.bodies,
           octree_metadata: octreeMetadataBuffer
         })
       );
@@ -28719,7 +28619,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
           body_node_assignments: nodeBodyAssignmentsBuffer,
           body_node_child_sub_offsets: bodyNodeChildSubOffsetsBuffer,
           octree_nodes: octreeNodeBuffer,
-          bodies: params.bodies
+          bodies: params2.bodies
         })
       );
       const setupNextIterationBindGroup = setupNextIterationBindGroupFormat.instantiate({
@@ -28728,16 +28628,16 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         active_nodes_info: activeNodesInfoBuffer
       });
       const aggPrefixSum = setupAggregatedBodyPrefixSum({
-        bodies: bodiesBuffer,
-        count: bodiesData.length,
+        bodies: params2.bodies,
+        count: params2.bodyCount,
         bodyOrder: bodiesOrderBuffer1
       });
       const minMaxReduce = setupMinMaxReduction({
-        bodies: bodiesBuffer,
-        count: bodiesData.length
+        bodies: params2.bodies,
+        count: params2.bodyCount
       });
       const initRootNodeBindGroup = initRootNodeBindGroupFormat.instantiate({
-        bodies: params.bodies,
+        bodies: params2.bodies,
         octree_metadata: octreeMetadataBuffer,
         octree_nodes: octreeNodeBuffer,
         nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
@@ -28759,7 +28659,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         agg_bodies: aggPrefixSum.aggBodies,
         nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer)
       });
-      const perBodyWorkgroupCount = Math.ceil(bodiesData.length / 32);
+      const perBodyWorkgroupCount = Math.ceil(params2.bodyCount / 32);
       return {
         octreeNodeBuffer,
         octreeMetadataBuffer,
@@ -28796,7 +28696,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
           pass.setPipeline(initPerBodyStatePipeline);
           pass.setBindGroup(0, initPerBodyStateBindGroup);
           pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
-          for (let i = 0; i < params.octreeDepth; i++) {
+          for (let i = 0; i < params2.octreeDepth; i++) {
             pass.setPipeline(assignBodiesPipeline);
             pass.setBindGroup(0, assignBodiesBindGroups[i % 2]);
             pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
@@ -28813,22 +28713,170 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
           aggPrefixSum.run(pass);
           pass.setPipeline(aggregateMassInOctreePipeline);
           pass.setBindGroup(0, aggregateMassInOctreeBindGroup);
-          pass.dispatchWorkgroups(params.octreeCapacity / 32, 1, 1);
+          pass.dispatchWorkgroups(params2.octreeCapacity / 32, 1, 1);
         }
       };
     }
-    const bodiesBuffer = bodiesFormat.quickCreateMany(bodiesData);
-    const barnesHutUniforms = barnesHutUniformsFormat.quickCreate({
+    return {
+      octreeNodeFormat,
+      octreeMetadataFormat,
+      octreeCountersFormat,
+      octreeCountersNonatomicFormat,
+      bodiesFormat,
+      aggregatedBodiesFormat,
+      nextfreesFormat,
+      nextfreesNonatomicFormat,
+      bodyNodeAssignmentsFormat,
+      bodyNodeChildSubOffsetsFormat,
+      activeNodesInfoFormat,
+      bodyOrderFormat,
+      bodyOrderInFormat,
+      bodyOrderOutFormat,
+      activeNodesInFormat,
+      activeNodesOutFormat,
+      computeIndirectBufferFormat,
+      barnesHutUniformsFormat,
+      minMaxFormat,
+      minMaxUniformsFormat,
+      prefixSumAggBodiesUniformFormat,
+      setupPrefixSumBodiesDownstrokeUniformFormat,
+      assignBodiesBindGroupFormat,
+      assignBodiesPipeline,
+      createNewNodesBindGroupFormat,
+      createNewNodesPipeline,
+      reorderBodiesBindGroupFormat,
+      reorderBodiesPipeline,
+      setupNextIterationBindGroupFormat,
+      setupNextIterationPipeline,
+      prefixSumAggBodiesBindGroupFormat,
+      prefixSumAggBodiesUpstrokePipeline,
+      prefixSumAggBodiesDownstrokePipeline,
+      setupPrefixSumBodiesDownstrokeBindGroupFormat,
+      setupPrefixSumBodiesDownstrokePipeline,
+      initAggregatedBodiesBindGroupFormat,
+      initAggregatedBodiesPipeline,
+      aggregateMassInOctreeBindGroupFormat,
+      aggregateMassInOctreePipeline,
+      applyBarnesHutBindGroupFormat,
+      applyBarnesHutPipeline,
+      reduceMinMaxBindGroupFormat,
+      reduceMinMaxPipeline,
+      initMinMaxBindGroupFormat,
+      initMinMaxPipeline,
+      initRootNodeBindGroupFormat,
+      initRootNodePipeline,
+      initRootNodeBindGroup2Format,
+      initRootNodePipeline2,
+      initPerBodyStateBindGroupFormat,
+      initPerBodyStatePipeline,
+      setupAggregatedBodyPrefixSum,
+      setupMinMaxReduction,
+      setupOctree
+    };
+  }
+
+  // demos-src/webgpu/octree3.demo.ts
+  (async () => {
+    function fail(msg) {
+      window.alert(msg);
+      throw new Error(msg);
+    }
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) {
+      fail("No GPU adapter!");
+      return;
+    }
+    const device = hookGPUDevice(
+      await adapter.requestDevice({
+        requiredFeatures: ["timestamp-query"]
+      })
+    );
+    device.addEventListener(
+      "uncapturederror",
+      (event) => console.error(event.error)
+    );
+    if (!device) {
+      fail("No GPU device!");
+    }
+    const wdevice = wrapDevice(device);
+    const nBodySim = await createNBodyOctreeDefs(device, {
+      extraBodyFields: {
+        impulse: "vec3f",
+        visit_count: "u32"
+      },
+      bodyBodyInteraction: `
+      let force_mag = mass * bodies[i].mass / pow(max(1.0, dist_to_body), 2.0);
+      let force_dir = normalize(center_of_mass - bodies[i].position);
+      bodies[i].visit_count += 1u;
+      return force_mag * force_dir; 
+    `,
+      applyForces: `
+      bodies[i].velocity += total_impulse / bodies[i].mass * params.timestep;
+      bodies[i].position += bodies[i].velocity * params.timestep;
+      bodies[i].impulse = total_impulse;
+    `,
+      extraPhysicsBuffers: []
+    });
+    const genericBufferFormat = await wdevice.uniformBuffer(
+      "generic",
+      struct("Generic", { data: "u32" }),
+      true,
+      {
+        visibility: GPUShaderStage.COMPUTE,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+      }
+    );
+    const transferBodyInfoToPointsBindGroupFormat = wdevice.bindGroup(
+      "bg",
+      nBodySim.bodiesFormat,
+      genericBufferFormat
+    );
+    const transferBodyInfoToPointsPipeline = await wdevice.compute({
+      bindGroups: [transferBodyInfoToPointsBindGroupFormat],
+      workgroupSize: [32, 1, 1],
+      storageBufferAccess: {
+        bodies: "read_write",
+        generic: "read_write"
+      },
+      shader: `
+      let i = id.x;
+      if (i >= arrayLength(&bodies)) { return; }
+      generic[i * 5].data = bitcast<u32>(bodies[i].position.x);
+      generic[i * 5 + 1].data = bitcast<u32>(bodies[i].position.y);
+      generic[i * 5 + 2].data = bitcast<u32>(bodies[i].position.z);
+      generic[i * 5 + 3].data = bitcast<u32>(0.05 * pow(bodies[i].mass, 0.2));
+      generic[i * 5 + 4].data = 0xffffffff;
+    `
+    });
+    const bodiesData = [
+      ...range(2e4).map(() => {
+        return {
+          mass: Math.pow(Math.random(), 4) * 0.01 + 1e-4 + (Math.random() > 0.999 ? 1 : 0),
+          velocity: scale3(
+            [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
+            0
+          ),
+          position: scale3(
+            [Math.random() * 4 - 2, Math.random() * 4 - 2, Math.random() * 4 - 2],
+            10
+          ),
+          impulse: [0, 0, 0],
+          visit_count: 0
+        };
+      })
+    ];
+    const bodiesBuffer = nBodySim.bodiesFormat.quickCreateMany(bodiesData);
+    const barnesHutUniforms = nBodySim.barnesHutUniformsFormat.quickCreate({
       min_width_over_distance_ratio: 1.2,
       timestep: 0.02
     });
-    const octree = setupOctree({
+    const octree = nBodySim.setupOctree({
       bodies: bodiesBuffer,
       bodyCount: bodiesData.length,
       octreeCapacity: 2 ** 19,
       octreeDepth: 20
     });
-    const applyBarnesHutBindGroup = applyBarnesHutBindGroupFormat.instantiate({
+    const applyBarnesHutBindGroup = nBodySim.applyBarnesHutBindGroupFormat.instantiate({
       bodies: bodiesBuffer,
       octree_metadata: octree.octreeMetadataBuffer,
       octree_nodes: octree.octreeNodeBuffer,
@@ -28837,7 +28885,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     function runPhysicsStep(pass, enc) {
       const perBodyWorkgroupCount = Math.ceil(bodiesData.length / 32);
       octree.run(pass);
-      pass.setPipeline(applyBarnesHutPipeline);
+      pass.setPipeline(nBodySim.applyBarnesHutPipeline);
       pass.setBindGroup(0, applyBarnesHutBindGroup);
       pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
     }
@@ -28853,7 +28901,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       console.log(
         "body-to-node assignments",
         await quickMapWithFormat(
-          bodyNodeAssignmentsFormat.format,
+          nBodySim.bodyNodeAssignmentsFormat.format,
           device,
           octree.nodeBodyAssignmentsBuffer
         )
@@ -28861,7 +28909,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       console.log(
         "octree nodes",
         await quickMapWithFormat(
-          octreeNodeFormat.format,
+          nBodySim.octreeNodeFormat.format,
           device,
           octree.octreeNodeBuffer
         )
@@ -28869,19 +28917,23 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       console.log(
         "octree metadata",
         await quickMapWithFormat(
-          octreeMetadataFormat.format,
+          nBodySim.octreeMetadataFormat.format,
           device,
           octree.octreeMetadataBuffer
         )
       );
       console.log(
         "bodies",
-        await quickMapWithFormat(bodiesFormat.format, device, bodiesBuffer)
+        await quickMapWithFormat(
+          nBodySim.bodiesFormat.format,
+          device,
+          bodiesBuffer
+        )
       );
       console.log(
         "nextfrees",
         await quickMapWithFormat(
-          nextfreesFormat.format,
+          nBodySim.nextfreesFormat.format,
           device,
           octree.nextfreesBuffer
         )
