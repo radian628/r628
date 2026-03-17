@@ -147,6 +147,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
     applyForces: `
       var impulse = total_impulse * physics_params.repulsion_multiplier;
       impulse += accels[i].accel * physics_params.attraction_multiplier;
+      impulse -= bodies[i].position * 0.0001; 
 
       bodies[i].velocity += impulse / bodies[i].mass * params.timestep;
       bodies[i].position += bodies[i].velocity * params.timestep;
@@ -938,7 +939,9 @@ user-select: none;
         updateLabels() {
           loopIter++;
           for (const n of vertGroups[loopIter % vertGroups.length]) {
-            const isNearby = distance3(n.position, scale3(viewerPos, -1)) < 20;
+            const isNearby =
+              distance3(n.position, scale3(viewerPos, -1)) <
+              params.ui.state.showLabelThreshold;
 
             const labelElem = labels.get(n.label);
 
@@ -1007,7 +1010,7 @@ user-select: none;
                 Math.PI / 2,
                 canvas.width / canvas.height,
                 0.1,
-                1000,
+                params.ui.state.farPlane,
               ),
               currTransform,
             ),

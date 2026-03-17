@@ -18,6 +18,8 @@ import { FileField } from "../../src/ui/react-file-field";
 export type UIState = {
   viewerSpeed: number;
   lineWidth: number;
+  farPlane: number;
+  showLabelThreshold: number;
 
   physics: boolean;
   repulsionMultiplier: number;
@@ -34,6 +36,8 @@ export type UIState = {
 const DEFAULT_UI_STATE = {
   viewerSpeed: 1,
   lineWidth: 0.2,
+  farPlane: 2000,
+  showLabelThreshold: 50,
 
   physics: true,
   repulsionMultiplier: 1,
@@ -204,6 +208,10 @@ h2 {
           <NumberFieldM {...prop("viewerSpeed")}></NumberFieldM>
           <label>Line Thickness</label>
           <NumberFieldM {...prop("lineWidth")}></NumberFieldM>
+          <label>Far Plane</label>
+          <NumberFieldM {...prop("farPlane")} min={0}></NumberFieldM>
+          <label>Show Label Threshold</label>
+          <NumberFieldM {...prop("showLabelThreshold")} min={0}></NumberFieldM>
         </div>
         <h2>Physics</h2>
         <div className="ui-object">
