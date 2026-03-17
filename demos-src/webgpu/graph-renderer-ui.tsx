@@ -17,6 +17,7 @@ import { FileField } from "../../src/ui/react-file-field";
 
 export type UIState = {
   viewerSpeed: number;
+  lineWidth: number;
 
   physics: boolean;
   repulsionMultiplier: number;
@@ -32,6 +33,7 @@ export type UIState = {
 
 const DEFAULT_UI_STATE = {
   viewerSpeed: 1,
+  lineWidth: 0.2,
 
   physics: true,
   repulsionMultiplier: 1,
@@ -200,6 +202,8 @@ h2 {
         <div className="ui-object">
           <label>Movement Speed</label>
           <NumberFieldM {...prop("viewerSpeed")}></NumberFieldM>
+          <label>Line Thickness</label>
+          <NumberFieldM {...prop("lineWidth")}></NumberFieldM>
         </div>
         <h2>Physics</h2>
         <div className="ui-object">
@@ -207,6 +211,8 @@ h2 {
           <BooleanField {...prop("physics")}></BooleanField>
           <label>Repulsion Multiplier</label>
           <NumberFieldM {...prop("repulsionMultiplier")}></NumberFieldM>
+          <label>Repulsion Exponent</label>
+          <NumberFieldM {...prop("repulsionExponent")}></NumberFieldM>
           <label>Attraction Multiplier</label>
           <NumberFieldM {...prop("attractionMultiplier")}></NumberFieldM>
           <label>Velocity Damping</label>
@@ -215,8 +221,6 @@ h2 {
             min={0}
             max={1}
           ></NumberFieldM>
-          <label>Repulsion Exponent</label>
-          <NumberFieldM {...prop("repulsionExponent")}></NumberFieldM>
           <label>Simulation Accuracy</label>
           <NumberFieldM {...prop("simulationAccuracy")} min={0}></NumberFieldM>
           <label>Timestep</label>

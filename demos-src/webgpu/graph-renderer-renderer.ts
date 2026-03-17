@@ -314,11 +314,20 @@ export async function setupGraphRenderer(device: GPUDevice) {
     `,
   });
 
+  const transferBodyInfoToLinesUniformsFormat =
+    wdevice.uniformBufferForComputeShader(
+      "params",
+      struct("Params", {
+        line_width_multiplier: "f32",
+      }),
+    );
+
   const transferBodyInfoToLinesBindGroupFormat = wdevice.bindGroup(
     "nbody",
     bodiesFormat,
     genericBufferFormat,
     edgesBufferFormat,
+    transferBodyInfoToLinesUniformsFormat,
   );
 
   const transferBodyInfoToLinesPipeline = await wdevice.compute({
@@ -330,11 +339,17 @@ export async function setupGraphRenderer(device: GPUDevice) {
       edges: "read_write",
     },
     globals: `
-fn set_point(idx: u32, position: vec3f) {
+
+var<private> endpoint1: vec3f;
+var<private> endpoint2: vec3f;
+
+fn set_point(idx: u32, across: f32, width: f32) {
   let i = idx * 5;
+  let position = mix(endpoint1, endpoint2, across);
   generic[i].data = bitcast<u32>(position.x);
   generic[i + 1].data = bitcast<u32>(position.y);
   generic[i + 2].data = bitcast<u32>(position.z);
+  generic[i + 3].data = bitcast<u32>(width * params.line_width_multiplier);
 }    
     `,
     shader: `
@@ -348,13 +363,22 @@ fn set_point(idx: u32, position: vec3f) {
 
       let dist = length(src.position - dst.position);
       let margin = 0.8 / dist; 
+      endpoint1 = mix(src.position, dst.position, margin);
+      endpoint2 = mix(src.position, dst.position, 1 - margin);
 
-      set_point(ipt, mix(src.position, dst.position, margin));
-      set_point(ipt + 1, mix(src.position, dst.position, 0.1));
-      set_point(ipt + 2, mix(src.position, dst.position, 0.33));
-      set_point(ipt + 3, mix(src.position, dst.position, 0.67));
-      set_point(ipt + 4, mix(src.position, dst.position, 0.9));
-      set_point(ipt + 5, mix(src.position, dst.position, 1 - margin));
+      set_point(ipt, 0.0, 1.0);
+      set_point(ipt + 1, 0.1, 0.25);
+      set_point(ipt + 2, 0.33, 0.1);
+      set_point(ipt + 3, 0.67, 0.1);
+      set_point(ipt + 4, 0.9, 0.25);
+      set_point(ipt + 5, 1.0, 1.0);
+
+      // set_point(ipt, mix(src.position, dst.position, margin));
+      // set_point(ipt + 1, mix(src.position, dst.position, 0.1));
+      // set_point(ipt + 2, mix(src.position, dst.position, 0.33));
+      // set_point(ipt + 3, mix(src.position, dst.position, 0.67));
+      // set_point(ipt + 4, mix(src.position, dst.position, 0.9));
+      // set_point(ipt + 5, mix(src.position, dst.position, 1 - margin));
     `,
   });
 
@@ -759,6 +783,9 @@ user-select: none;
         edgeList.length,
       );
 
+      const transferBodyInfoToLinesUniforms =
+        transferBodyInfoToLinesUniformsFormat.instantiate(1);
+
       const bodies = bodiesFormat.quickCreateMany(
         [...graph.vertices].map((vert, i, a) => {
           return {
@@ -820,6 +847,13 @@ user-select: none;
           min_width_over_distance_ratio: 1 / params.ui.state.simulationAccuracy,
           timestep: params.ui.state.timestep,
         });
+        transferBodyInfoToLinesUniformsFormat.fill(
+          transferBodyInfoToLinesUniforms,
+          0,
+          {
+            line_width_multiplier: params.ui.state.lineWidth,
+          },
+        );
 
         const perBodyWorkgroups = Math.ceil(graph.vertices.size / 32);
 
@@ -857,6 +891,7 @@ user-select: none;
             bodies,
             generic: genericBufferFormat.reinterpret(edges),
             edges: unidirectionalEdgesBuffer,
+            params: transferBodyInfoToLinesUniforms,
           });
         pass.setBindGroup(0, transferBodyInfoToLinesBindGroup);
         pass.dispatchWorkgroups(Math.ceil(unidirectionalEdgeList.length / 32));
