@@ -1329,7 +1329,7 @@
           return dispatcher;
         }
         "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-        var React16 = require_react(), Internals = {
+        var React17 = require_react(), Internals = {
           d: {
             f: noop,
             r: function() {
@@ -1347,7 +1347,7 @@
           },
           p: 0,
           findDOMNode: null
-        }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React16.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+        }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React17.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
         "function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error(
           "React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills"
         );
@@ -2882,7 +2882,7 @@
           "number" === type && getActiveElement(node.ownerDocument) === node || node.defaultValue === "" + value || (node.defaultValue = "" + value);
         }
         function validateOptionProps(element, props) {
-          null == props.value && ("object" === typeof props.children && null !== props.children ? React16.Children.forEach(props.children, function(child) {
+          null == props.value && ("object" === typeof props.children && null !== props.children ? React17.Children.forEach(props.children, function(child) {
             null == child || "string" === typeof child || "number" === typeof child || "bigint" === typeof child || didWarnInvalidChild || (didWarnInvalidChild = true, console.error(
               "Cannot infer the option value of complex children. Pass a `value` prop or use a plain string as children to <option>."
             ));
@@ -18514,14 +18514,14 @@
           ));
         }
         "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-        var Scheduler = require_scheduler(), React16 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
+        var Scheduler = require_scheduler(), React17 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
         Symbol.for("react.scope");
         var REACT_ACTIVITY_TYPE = Symbol.for("react.activity");
         Symbol.for("react.legacy_hidden");
         Symbol.for("react.tracing_marker");
         var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel");
         Symbol.for("react.view_transition");
-        var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React16.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
+        var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React17.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
           pending: false,
           data: null,
           method: null,
@@ -21309,7 +21309,7 @@
           }
         };
         (function() {
-          var isomorphicReactPackageVersion = React16.version;
+          var isomorphicReactPackageVersion = React17.version;
           if ("19.2.4" !== isomorphicReactPackageVersion)
             throw Error(
               'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' + (isomorphicReactPackageVersion + "\n  - react-dom:  19.2.4\nLearn more: https://react.dev/warnings/version-mismatch")
@@ -24690,18 +24690,21 @@ fn perlinNoise3(P: vec3f) -> f32 {
   // src/ui/react-file-field.tsx
   var import_react12 = __toESM(require_react());
 
-  // src/ui/react-drag-and-drop.tsx
+  // src/ui/react-enum-field.tsx
   var import_react13 = __toESM(require_react());
+
+  // src/ui/react-drag-and-drop.tsx
   var import_react14 = __toESM(require_react());
+  var import_react15 = __toESM(require_react());
   function createDragContext() {
-    const DragContext = (0, import_react14.createContext)(void 0);
+    const DragContext = (0, import_react15.createContext)(void 0);
     return {
       DragContext,
       DragContextContainer(props) {
         const { dragCtx, setDragCtx } = props;
-        const destinationCallbacks = (0, import_react13.useRef)(/* @__PURE__ */ new Set());
-        const endDragCallbacks = (0, import_react13.useRef)(/* @__PURE__ */ new Set());
-        (0, import_react13.useEffect)(() => {
+        const destinationCallbacks = (0, import_react14.useRef)(/* @__PURE__ */ new Set());
+        const endDragCallbacks = (0, import_react14.useRef)(/* @__PURE__ */ new Set());
+        (0, import_react14.useEffect)(() => {
           if (dragCtx === void 0) return;
           const mouseup = () => {
             setDragCtx(void 0);
@@ -24719,7 +24722,7 @@ fn perlinNoise3(P: vec3f) -> f32 {
             document.removeEventListener("mouseup", mouseup);
           };
         }, [dragCtx]);
-        return /* @__PURE__ */ import_react13.default.createElement(
+        return /* @__PURE__ */ import_react14.default.createElement(
           DragContext.Provider,
           {
             value: {
@@ -24733,8 +24736,8 @@ fn perlinNoise3(P: vec3f) -> f32 {
         );
       },
       DragSource(props) {
-        const { dragCtx, setDragCtx, destinationCallbacks, endDragCallbacks } = (0, import_react13.useContext)(DragContext);
-        return /* @__PURE__ */ import_react13.default.createElement(
+        const { dragCtx, setDragCtx, destinationCallbacks, endDragCallbacks } = (0, import_react14.useContext)(DragContext);
+        return /* @__PURE__ */ import_react14.default.createElement(
           "div",
           {
             className: "drag-source",
@@ -24755,8 +24758,8 @@ fn perlinNoise3(P: vec3f) -> f32 {
         );
       },
       DragDestination(props) {
-        const { dragCtx, setDragCtx, destinationCallbacks, endDragCallbacks } = (0, import_react13.useContext)(DragContext);
-        return /* @__PURE__ */ import_react13.default.createElement(
+        const { dragCtx, setDragCtx, destinationCallbacks, endDragCallbacks } = (0, import_react14.useContext)(DragContext);
+        return /* @__PURE__ */ import_react14.default.createElement(
           "div",
           {
             className: dragCtx === void 0 ? "drag-destination" : "drag-destination drag-active",
@@ -24778,9 +24781,9 @@ fn perlinNoise3(P: vec3f) -> f32 {
         );
       },
       DragFloat(props) {
-        const { dragCtx, setDragCtx } = (0, import_react13.useContext)(DragContext);
-        const [pos, setPos] = (0, import_react13.useState)([0, 0]);
-        (0, import_react13.useEffect)(() => {
+        const { dragCtx, setDragCtx } = (0, import_react14.useContext)(DragContext);
+        const [pos, setPos] = (0, import_react14.useState)([0, 0]);
+        (0, import_react14.useEffect)(() => {
           const listener = (e) => {
             setPos([e.clientX, e.clientY]);
           };
@@ -24789,8 +24792,8 @@ fn perlinNoise3(P: vec3f) -> f32 {
             document.removeEventListener("mousemove", listener);
           };
         }, []);
-        if (dragCtx === void 0) return /* @__PURE__ */ import_react13.default.createElement(import_react13.default.Fragment, null);
-        return /* @__PURE__ */ import_react13.default.createElement(
+        if (dragCtx === void 0) return /* @__PURE__ */ import_react14.default.createElement(import_react14.default.Fragment, null);
+        return /* @__PURE__ */ import_react14.default.createElement(
           "div",
           {
             className: "drag-float",
@@ -24807,41 +24810,41 @@ fn perlinNoise3(P: vec3f) -> f32 {
   }
 
   // src/ui/react-datetime-field.tsx
-  var import_react15 = __toESM(require_react());
-
-  // src/ui/react-boolean-field.tsx
   var import_react16 = __toESM(require_react());
 
-  // src/ui/progress-bar.tsx
+  // src/ui/react-boolean-field.tsx
   var import_react17 = __toESM(require_react());
+
+  // src/ui/progress-bar.tsx
+  var import_react18 = __toESM(require_react());
   var import_client2 = __toESM(require_client());
 
   // demos-src/ui/drag-and-drop-array.demo.tsx
-  var import_react18 = __toESM(require_react());
   var import_react19 = __toESM(require_react());
+  var import_react20 = __toESM(require_react());
 
   // raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/ui/r628-ui.css?raw
-  var r628_ui_default = '@import url("https://rsms.me/inter/inter.css");\r\n\r\n:root {\r\n  --bg-darker: #000;\r\n  --bg: #181818;\r\n  --bg-lighter: #333;\r\n  --fg: #eee;\r\n  --border-color: #444;\r\n  --border: 1px solid var(--border-color);\r\n  --shadow: #0007;\r\n  --gap: 2px;\r\n  --gap-big: 5px;\r\n  --font: "InterVariable", sans-serif;\r\n  --highlight: orange;\r\n\r\n  --bg-button: #444;\r\n  --bg-button-hover: #555;\r\n}\r\n\r\ninput {\r\n  color: var(--fg);\r\n  border-radius: 5px;\r\n  border-width: 1px;\r\n  background-color: var(--bg-lighter);\r\n  border: none;\r\n}\r\n\r\n.ui-container {\r\n  background-color: var(--bg);\r\n  color: var(--fg);\r\n  font-family: var(--font);\r\n}\r\n\r\n.ui-array {\r\n  list-style: none;\r\n  padding-inline-start: 0;\r\n  margin-block: 0;\r\n}\r\n\r\n.ui-is-being-dragged > :not(.drag-destination) {\r\n  opacity: 0.5;\r\n}\r\n\r\n.ui-array-draggable > li {\r\n  position: relative;\r\n  padding-bottom: var(--gap);\r\n}\r\n\r\n.ui-array-draggable > li > .drag-source {\r\n  display: flex;\r\n  cursor: grab;\r\n}\r\n\r\n.ui-array-draggable .drag-destination {\r\n  width: 100%;\r\n  height: 0px;\r\n}\r\n\r\n.ui-array-draggable .ui-drag-dst {\r\n  width: 100%;\r\n  height: 0px;\r\n  position: absolute;\r\n  top: 0;\r\n  left: 0;\r\n}\r\n\r\n.ui-array-draggable .drag-float {\r\n  pointer-events: none;\r\n}\r\n\r\n.ui-drag-src {\r\n  width: 20px;\r\n  margin-right: var(--gap);\r\n\r\n  background-image: radial-gradient(\r\n    #555 0%,\r\n    #555 10%,\r\n    transparent 40%,\r\n    transparent 100%\r\n  );\r\n  background-size: 20% 20%;\r\n  background-position: center;\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst {\r\n  height: 100%;\r\n  transform: translateY(-50%);\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst:hover {\r\n  background-image: linear-gradient(\r\n    to bottom,\r\n    transparent 0%,\r\n    transparent 40%,\r\n    var(--highlight) 40%,\r\n    var(--highlight) 60%,\r\n    transparent 60%,\r\n    transparent 100%\r\n  );\r\n}\r\n\r\n.ui-object {\r\n  display: grid;\r\n  grid-template-columns: repeat(2, auto);\r\n  gap: var(--gap-big);\r\n}\r\n\r\n.ui-object > input {\r\n  justify-self: right;\r\n}\r\n\r\n.ui-container button {\r\n  background-color: var(--bg-button);\r\n  border: none;\r\n  border-radius: 5px;\r\n  color: var(--fg);\r\n  cursor: pointer;\r\n  margin: var(--gap-big);\r\n}\r\n\r\n.ui-container button:hover {\r\n  background-color: var(--bg-button-hover);\r\n}\r\n';
+  var r628_ui_default = '@import url("https://rsms.me/inter/inter.css");\r\n\r\n:root {\r\n  --bg-darker: #000;\r\n  --bg: #181818;\r\n  --bg-lighter: #333;\r\n  --fg: #eee;\r\n  --border-color: #444;\r\n  --border: 1px solid var(--border-color);\r\n  --shadow: #0007;\r\n  --gap: 2px;\r\n  --gap-big: 5px;\r\n  --font: "InterVariable", sans-serif;\r\n  --highlight: orange;\r\n\r\n  --bg-button: #444;\r\n  --bg-button-hover: #555;\r\n}\r\n\r\ninput {\r\n  color: var(--fg);\r\n  border-radius: 5px;\r\n  border-width: 1px;\r\n  background-color: var(--bg-lighter);\r\n  border: none;\r\n}\r\n\r\n.ui-container {\r\n  background-color: var(--bg);\r\n  color: var(--fg);\r\n  font-family: var(--font);\r\n}\r\n\r\n.ui-array {\r\n  list-style: none;\r\n  padding-inline-start: 0;\r\n  margin-block: 0;\r\n}\r\n\r\n.ui-is-being-dragged > :not(.drag-destination) {\r\n  opacity: 0.5;\r\n}\r\n\r\n.ui-array-draggable > li {\r\n  position: relative;\r\n  padding-bottom: var(--gap);\r\n}\r\n\r\n.ui-array-draggable > li > .drag-source {\r\n  display: flex;\r\n  cursor: grab;\r\n}\r\n\r\n.ui-array-draggable .drag-destination {\r\n  width: 100%;\r\n  height: 0px;\r\n}\r\n\r\n.ui-array-draggable .ui-drag-dst {\r\n  width: 100%;\r\n  height: 0px;\r\n  position: absolute;\r\n  top: 0;\r\n  left: 0;\r\n}\r\n\r\n.ui-array-draggable .drag-float {\r\n  pointer-events: none;\r\n}\r\n\r\n.ui-drag-src {\r\n  width: 20px;\r\n  margin-right: var(--gap);\r\n\r\n  background-image: radial-gradient(\r\n    #555 0%,\r\n    #555 10%,\r\n    transparent 40%,\r\n    transparent 100%\r\n  );\r\n  background-size: 20% 20%;\r\n  background-position: center;\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst {\r\n  height: 100%;\r\n  transform: translateY(-50%);\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst:hover {\r\n  background-image: linear-gradient(\r\n    to bottom,\r\n    transparent 0%,\r\n    transparent 40%,\r\n    var(--highlight) 40%,\r\n    var(--highlight) 60%,\r\n    transparent 60%,\r\n    transparent 100%\r\n  );\r\n}\r\n\r\n.ui-object {\r\n  display: grid;\r\n  grid-template-columns: repeat(2, auto);\r\n  gap: var(--gap-big);\r\n}\r\n\r\n.ui-object > input {\r\n  justify-self: right;\r\n}\r\n\r\n.ui-container button {\r\n  background-color: var(--bg-button);\r\n  border: none;\r\n  border-radius: 5px;\r\n  color: var(--fg);\r\n  cursor: pointer;\r\n}\r\n\r\n.ui-container button:hover {\r\n  background-color: var(--bg-button-hover);\r\n}\r\n\r\n.ui-container button.selected {\r\n  background-color: var(--highlight);\r\n  color: black;\r\n}\r\n\r\n.enum-ui,\r\n.button-set {\r\n  display: flex;\r\n}\r\n\r\n:is(.enum-ui, .button-set) button {\r\n  margin-right: var(--gap-big);\r\n}\r\n:is(.enum-ui, .button-set) button:nth-last-child(1) {\r\n  margin-right: 0;\r\n}\r\n\r\n.button-set {\r\n  margin-block: var(--gap-big);\r\n}\r\n';
 
   // demos-src/ui/drag-and-drop-array.demo.tsx
   var root = document.createElement("div");
   document.body.appendChild(root);
-  (0, import_client3.createRoot)(root).render(/* @__PURE__ */ import_react19.default.createElement(App, null));
+  (0, import_client3.createRoot)(root).render(/* @__PURE__ */ import_react20.default.createElement(App, null));
   var dnd = createDragContext();
   var StringArrayUI = draggableArrayUI({
     Element: useprop("data", mutatify(StringField)),
     key: (t) => t.id,
     context: dnd,
-    DragDst: () => /* @__PURE__ */ import_react19.default.createElement("div", { className: "ui-drag-dst" }),
-    DragSrc: () => /* @__PURE__ */ import_react19.default.createElement("div", { className: "ui-drag-src" })
+    DragDst: () => /* @__PURE__ */ import_react20.default.createElement("div", { className: "ui-drag-dst" }),
+    DragSrc: () => /* @__PURE__ */ import_react20.default.createElement("div", { className: "ui-drag-src" })
   });
   var RootUI = objectUI({
     a: StringArrayUI,
     b: StringArrayUI
   });
   function App() {
-    const [dragCtx, setDragCtx] = (0, import_react18.useState)();
-    const [value, setValue] = (0, import_react18.useState)({
+    const [dragCtx, setDragCtx] = (0, import_react19.useState)();
+    const [value, setValue] = (0, import_react19.useState)({
       a: range(10).map((r) => ({
         id: v4_default(),
         data: r.toString()
@@ -24851,7 +24854,7 @@ fn perlinNoise3(P: vec3f) -> f32 {
         data: r.toString() + "b"
       }))
     });
-    return /* @__PURE__ */ import_react19.default.createElement(import_react19.default.Fragment, null, /* @__PURE__ */ import_react19.default.createElement("style", null, r628_ui_default), /* @__PURE__ */ import_react19.default.createElement("div", { className: "ui-container" }, /* @__PURE__ */ import_react19.default.createElement(dnd.DragContextContainer, { ...{ dragCtx, setDragCtx } }, /* @__PURE__ */ import_react19.default.createElement(RootUI, { ...{ value, setValue } }), /* @__PURE__ */ import_react19.default.createElement(dnd.DragFloat, null, dragCtx?.data))));
+    return /* @__PURE__ */ import_react20.default.createElement(import_react20.default.Fragment, null, /* @__PURE__ */ import_react20.default.createElement("style", null, r628_ui_default), /* @__PURE__ */ import_react20.default.createElement("div", { className: "ui-container" }, /* @__PURE__ */ import_react20.default.createElement(dnd.DragContextContainer, { ...{ dragCtx, setDragCtx } }, /* @__PURE__ */ import_react20.default.createElement(RootUI, { ...{ value, setValue } }), /* @__PURE__ */ import_react20.default.createElement(dnd.DragFloat, null, dragCtx?.data))));
   }
 })();
 /*! Bundled license information:

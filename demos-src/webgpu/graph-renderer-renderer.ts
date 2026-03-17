@@ -233,6 +233,15 @@ export async function setupGraphRenderer(device: GPUDevice) {
     }),
   );
 
+  const weightedEdgesBufferFormat = wdevice.storageBuffer(
+    "edges",
+    struct("WeightedEdge", {
+      src: "u32",
+      dst: "u32",
+      weight: "f32",
+    }),
+  );
+
   const accelVectorPairsFormat = wdevice.storageBuffer(
     "accel_vectors",
     struct("AccelVectors", {
@@ -250,7 +259,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
 
   const calcEdgeForcesBindGroupFormat = wdevice.bindGroup(
     "bg",
-    edgesBufferFormat,
+    weightedEdgesBufferFormat,
     accelVectorPairsFormat,
     bodiesFormat,
   );
@@ -270,8 +279,8 @@ export async function setupGraphRenderer(device: GPUDevice) {
     } 
 
     let edge = edges[i];
-    let src = bodies[edges[i].src]; 
-    let dst = bodies[edges[i].dst]; 
+    let src = bodies[edge.src]; 
+    let dst = bodies[edge.dst]; 
 
     let offset = dst.position - src.position;
     let dist = length(offset);
@@ -279,7 +288,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
 
     let mag = dist * 0.02;
 
-    accel_vectors[i].to_src = mag * offset_norm;
+    accel_vectors[i].to_src = mag * offset_norm * edge.weight;
     // accel_vectors[i].to_src = vec3f(1.0, 0.0, 0.0);
     `,
   });
@@ -385,7 +394,7 @@ fn set_point(idx: u32, across: f32, width: f32) {
 
   let keysDown = new Set<string>();
 
-  const isDesktop = window.matchMedia("(pointer: fine)").matches;
+  let isDesktop = true;
 
   const multiTransform = variadify(mulMat4);
 
@@ -453,10 +462,9 @@ fn set_point(idx: u32, across: f32, width: f32) {
     rotateBy(-e.movementX * 0.003, e.movementY * 0.003);
   });
 
-  if (!isDesktop) {
-    const moveControls = document.createElement("div");
-    document.body.appendChild(moveControls);
-    moveControls.style = `
+  const moveControls = document.createElement("div");
+  document.body.appendChild(moveControls);
+  moveControls.style = `
 position: absolute;
 bottom: 10px;
 left: 10px;    
@@ -470,10 +478,10 @@ grid-template-areas:
     ". down ."
     `;
 
-    function mappedButton(text: string, gridArea: string, key: string) {
-      const forwardButton = document.createElement("button");
-      forwardButton.innerText = text;
-      forwardButton.style = `
+  function mappedButton(text: string, gridArea: string, key: string) {
+    const forwardButton = document.createElement("button");
+    forwardButton.innerText = text;
+    forwardButton.style = `
 grid-area: ${gridArea};    
 height: 30px;
 border-radius: 5px;
@@ -483,23 +491,22 @@ color: white;
 margin: 2px;
 user-select: none;
     `;
-      forwardButton.addEventListener("touchstart", () => {
-        keysDown.add(key);
-      });
-      forwardButton.addEventListener("touchend", () => {
-        keysDown.delete(key);
-      });
+    forwardButton.addEventListener("touchstart", () => {
+      keysDown.add(key);
+    });
+    forwardButton.addEventListener("touchend", () => {
+      keysDown.delete(key);
+    });
 
-      moveControls.appendChild(forwardButton);
-    }
-
-    mappedButton("Forward", "forward", "w");
-    mappedButton("Left", "left", "a");
-    mappedButton("Backward", "backward", "s");
-    mappedButton("Right", "right", "d");
-    mappedButton("Up", "up", " ");
-    mappedButton("Down", "down", "shift");
+    moveControls.appendChild(forwardButton);
   }
+
+  mappedButton("Forward", "forward", "w");
+  mappedButton("Left", "left", "a");
+  mappedButton("Backward", "backward", "s");
+  mappedButton("Right", "right", "d");
+  mappedButton("Up", "up", " ");
+  mappedButton("Down", "down", "shift");
 
   function rotateBy(dx, dy) {
     const localXAxis = mulVec4ByMat4([1, 0, 0, 0], rotationMatrix);
@@ -726,6 +733,7 @@ user-select: none;
       const edgeList: {
         src: number;
         dst: number;
+        weight: number;
       }[] = [];
       const unidirectionalEdgeList: {
         src: number;
@@ -741,13 +749,17 @@ user-select: none;
 
       const edgesWithThisSrc = new Map<
         number,
-        { src: number; dst: number }[]
+        { src: number; dst: number; weight: number }[]
       >();
 
-      const addEdgeToEdgesWithThisSrc = (src: number, dst: number) =>
+      const addEdgeToEdgesWithThisSrc = (
+        src: number,
+        dst: number,
+        weight: number,
+      ) =>
         edgesWithThisSrc.set(
           src,
-          (edgesWithThisSrc.get(src) ?? []).concat({ src, dst }),
+          (edgesWithThisSrc.get(src) ?? []).concat({ src, dst, weight }),
         );
 
       for (const vert of graph.vertices) {
@@ -757,8 +769,9 @@ user-select: none;
           const endIndex = vertToIndexMap.get(outgoing.endpoints[1])!;
           unidirectionalEdgeList.push({ src: startIndex, dst: endIndex });
           if (startIndex === endIndex) continue;
-          addEdgeToEdgesWithThisSrc(startIndex, endIndex);
-          addEdgeToEdgesWithThisSrc(endIndex, startIndex);
+          const weight = 1;
+          addEdgeToEdgesWithThisSrc(startIndex, endIndex, weight);
+          addEdgeToEdgesWithThisSrc(endIndex, startIndex, weight);
         }
       }
 
@@ -773,7 +786,7 @@ user-select: none;
         edgeLocMap.push({ location, count });
       }
 
-      const edgesBuffer = edgesBufferFormat.quickCreateMany(edgeList);
+      const edgesBuffer = weightedEdgesBufferFormat.quickCreateMany(edgeList);
       const unidirectionalEdgesBuffer = edgesBufferFormat.quickCreateMany(
         unidirectionalEdgeList,
       );
@@ -935,6 +948,17 @@ user-select: none;
           }
 
           currTransform = mulMat4(rotationMatrix, translate(viewerPos));
+
+          isDesktop =
+            params.ui.state.uiMode === "auto"
+              ? window.matchMedia("(pointer: fine)").matches
+              : params.ui.state.uiMode === "desktop";
+
+          if (isDesktop) {
+            moveControls.style.display = "none";
+          } else {
+            moveControls.style.display = "grid";
+          }
         },
         updateLabels() {
           loopIter++;

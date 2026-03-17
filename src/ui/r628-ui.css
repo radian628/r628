@@ -115,9 +115,29 @@ input {
   border-radius: 5px;
   color: var(--fg);
   cursor: pointer;
-  margin: var(--gap-big);
 }
 
 .ui-container button:hover {
   background-color: var(--bg-button-hover);
+}
+
+.ui-container button.selected {
+  background-color: var(--highlight);
+  color: black;
+}
+
+.enum-ui,
+.button-set {
+  display: flex;
+}
+
+:is(.enum-ui, .button-set) button {
+  margin-right: var(--gap-big);
+}
+:is(.enum-ui, .button-set) button:nth-last-child(1) {
+  margin-right: 0;
+}
+
+.button-set {
+  margin-block: var(--gap-big);
 }

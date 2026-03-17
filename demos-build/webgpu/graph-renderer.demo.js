@@ -2724,7 +2724,7 @@
           return dispatcher;
         }
         "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-        var React16 = require_react(), Internals = {
+        var React17 = require_react(), Internals = {
           d: {
             f: noop,
             r: function() {
@@ -2742,7 +2742,7 @@
           },
           p: 0,
           findDOMNode: null
-        }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React16.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+        }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React17.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
         "function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error(
           "React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills"
         );
@@ -4277,7 +4277,7 @@
           "number" === type && getActiveElement(node.ownerDocument) === node || node.defaultValue === "" + value || (node.defaultValue = "" + value);
         }
         function validateOptionProps(element, props) {
-          null == props.value && ("object" === typeof props.children && null !== props.children ? React16.Children.forEach(props.children, function(child) {
+          null == props.value && ("object" === typeof props.children && null !== props.children ? React17.Children.forEach(props.children, function(child) {
             null == child || "string" === typeof child || "number" === typeof child || "bigint" === typeof child || didWarnInvalidChild || (didWarnInvalidChild = true, console.error(
               "Cannot infer the option value of complex children. Pass a `value` prop or use a plain string as children to <option>."
             ));
@@ -19909,14 +19909,14 @@
           ));
         }
         "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-        var Scheduler = require_scheduler(), React16 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
+        var Scheduler = require_scheduler(), React17 = require_react(), ReactDOM = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
         Symbol.for("react.scope");
         var REACT_ACTIVITY_TYPE = Symbol.for("react.activity");
         Symbol.for("react.legacy_hidden");
         Symbol.for("react.tracing_marker");
         var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel");
         Symbol.for("react.view_transition");
-        var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React16.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
+        var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React17.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
           pending: false,
           data: null,
           method: null,
@@ -22704,7 +22704,7 @@
           }
         };
         (function() {
-          var isomorphicReactPackageVersion = React16.version;
+          var isomorphicReactPackageVersion = React17.version;
           if ("19.2.4" !== isomorphicReactPackageVersion)
             throw Error(
               'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' + (isomorphicReactPackageVersion + "\n  - react-dom:  19.2.4\nLearn more: https://react.dev/warnings/version-mismatch")
@@ -23647,36 +23647,6 @@
       );
     }
   };
-
-  // src/webgl/mesh.ts
-  function normalize(v) {
-    const len = Math.hypot(...v);
-    return scale3(v, 1 / len);
-  }
-  function rodrigues(v, k, theta) {
-    k = normalize(k);
-    return add3(
-      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
-      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
-    );
-  }
-  function rotate(axis, angle) {
-    return [
-      ...rodrigues([1, 0, 0], axis, angle),
-      0,
-      ...rodrigues([0, 1, 0], axis, angle),
-      0,
-      ...rodrigues([0, 0, 1], axis, angle),
-      0,
-      0,
-      0,
-      0,
-      1
-    ];
-  }
-  function translate(v) {
-    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
-  }
 
   // src/math/round.ts
   function roundUp(factor, x) {
@@ -25775,6 +25745,36 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
       near * far * rangeInv,
       0
     ];
+  }
+
+  // src/webgl/mesh.ts
+  function normalize(v) {
+    const len = Math.hypot(...v);
+    return scale3(v, 1 / len);
+  }
+  function rodrigues(v, k, theta) {
+    k = normalize(k);
+    return add3(
+      add3(scale3(v, Math.cos(theta)), scale3(cross(k, v), Math.sin(theta))),
+      scale3(k, dot3(k, v) * (1 - Math.cos(theta)))
+    );
+  }
+  function rotate(axis, angle) {
+    return [
+      ...rodrigues([1, 0, 0], axis, angle),
+      0,
+      ...rodrigues([0, 1, 0], axis, angle),
+      0,
+      ...rodrigues([0, 0, 1], axis, angle),
+      0,
+      0,
+      0,
+      0,
+      1
+    ];
+  }
+  function translate(v) {
+    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
   }
 
   // src/audio/stream-audio.ts
@@ -27891,17 +27891,32 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     );
   }
 
-  // src/ui/react-drag-and-drop.tsx
+  // src/ui/react-enum-field.tsx
   var import_react13 = __toESM(require_react());
-  var import_react14 = __toESM(require_react());
+  function EnumField(props) {
+    return /* @__PURE__ */ import_react13.default.createElement("div", { className: "enum-ui" }, props.variants.map((v) => /* @__PURE__ */ import_react13.default.createElement(
+      "button",
+      {
+        className: props.value === v[0] ? "selected" : "",
+        onClick: () => {
+          props.setValue(() => v[0]);
+        }
+      },
+      v[1]
+    )));
+  }
 
-  // src/ui/react-datetime-field.tsx
+  // src/ui/react-drag-and-drop.tsx
+  var import_react14 = __toESM(require_react());
   var import_react15 = __toESM(require_react());
 
-  // src/ui/react-boolean-field.tsx
+  // src/ui/react-datetime-field.tsx
   var import_react16 = __toESM(require_react());
+
+  // src/ui/react-boolean-field.tsx
+  var import_react17 = __toESM(require_react());
   function BooleanField(props) {
-    return /* @__PURE__ */ import_react16.default.createElement(
+    return /* @__PURE__ */ import_react17.default.createElement(
       "input",
       {
         type: "checkbox",
@@ -27914,18 +27929,19 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
   }
 
   // src/ui/progress-bar.tsx
-  var import_react17 = __toESM(require_react());
+  var import_react18 = __toESM(require_react());
   var import_client2 = __toESM(require_client());
 
   // demos-src/webgpu/graph-renderer-ui.tsx
-  var import_react18 = __toESM(require_react());
+  var import_react19 = __toESM(require_react());
   var import_client3 = __toESM(require_client());
 
   // raw-ns:/mnt/c/Users/baker/Documents/GitHub/r628/src/ui/r628-ui.css?raw
-  var r628_ui_default = '@import url("https://rsms.me/inter/inter.css");\r\n\r\n:root {\r\n  --bg-darker: #000;\r\n  --bg: #181818;\r\n  --bg-lighter: #333;\r\n  --fg: #eee;\r\n  --border-color: #444;\r\n  --border: 1px solid var(--border-color);\r\n  --shadow: #0007;\r\n  --gap: 2px;\r\n  --gap-big: 5px;\r\n  --font: "InterVariable", sans-serif;\r\n  --highlight: orange;\r\n\r\n  --bg-button: #444;\r\n  --bg-button-hover: #555;\r\n}\r\n\r\ninput {\r\n  color: var(--fg);\r\n  border-radius: 5px;\r\n  border-width: 1px;\r\n  background-color: var(--bg-lighter);\r\n  border: none;\r\n}\r\n\r\n.ui-container {\r\n  background-color: var(--bg);\r\n  color: var(--fg);\r\n  font-family: var(--font);\r\n}\r\n\r\n.ui-array {\r\n  list-style: none;\r\n  padding-inline-start: 0;\r\n  margin-block: 0;\r\n}\r\n\r\n.ui-is-being-dragged > :not(.drag-destination) {\r\n  opacity: 0.5;\r\n}\r\n\r\n.ui-array-draggable > li {\r\n  position: relative;\r\n  padding-bottom: var(--gap);\r\n}\r\n\r\n.ui-array-draggable > li > .drag-source {\r\n  display: flex;\r\n  cursor: grab;\r\n}\r\n\r\n.ui-array-draggable .drag-destination {\r\n  width: 100%;\r\n  height: 0px;\r\n}\r\n\r\n.ui-array-draggable .ui-drag-dst {\r\n  width: 100%;\r\n  height: 0px;\r\n  position: absolute;\r\n  top: 0;\r\n  left: 0;\r\n}\r\n\r\n.ui-array-draggable .drag-float {\r\n  pointer-events: none;\r\n}\r\n\r\n.ui-drag-src {\r\n  width: 20px;\r\n  margin-right: var(--gap);\r\n\r\n  background-image: radial-gradient(\r\n    #555 0%,\r\n    #555 10%,\r\n    transparent 40%,\r\n    transparent 100%\r\n  );\r\n  background-size: 20% 20%;\r\n  background-position: center;\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst {\r\n  height: 100%;\r\n  transform: translateY(-50%);\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst:hover {\r\n  background-image: linear-gradient(\r\n    to bottom,\r\n    transparent 0%,\r\n    transparent 40%,\r\n    var(--highlight) 40%,\r\n    var(--highlight) 60%,\r\n    transparent 60%,\r\n    transparent 100%\r\n  );\r\n}\r\n\r\n.ui-object {\r\n  display: grid;\r\n  grid-template-columns: repeat(2, auto);\r\n  gap: var(--gap-big);\r\n}\r\n\r\n.ui-object > input {\r\n  justify-self: right;\r\n}\r\n\r\n.ui-container button {\r\n  background-color: var(--bg-button);\r\n  border: none;\r\n  border-radius: 5px;\r\n  color: var(--fg);\r\n  cursor: pointer;\r\n  margin: var(--gap-big);\r\n}\r\n\r\n.ui-container button:hover {\r\n  background-color: var(--bg-button-hover);\r\n}\r\n';
+  var r628_ui_default = '@import url("https://rsms.me/inter/inter.css");\r\n\r\n:root {\r\n  --bg-darker: #000;\r\n  --bg: #181818;\r\n  --bg-lighter: #333;\r\n  --fg: #eee;\r\n  --border-color: #444;\r\n  --border: 1px solid var(--border-color);\r\n  --shadow: #0007;\r\n  --gap: 2px;\r\n  --gap-big: 5px;\r\n  --font: "InterVariable", sans-serif;\r\n  --highlight: orange;\r\n\r\n  --bg-button: #444;\r\n  --bg-button-hover: #555;\r\n}\r\n\r\ninput {\r\n  color: var(--fg);\r\n  border-radius: 5px;\r\n  border-width: 1px;\r\n  background-color: var(--bg-lighter);\r\n  border: none;\r\n}\r\n\r\n.ui-container {\r\n  background-color: var(--bg);\r\n  color: var(--fg);\r\n  font-family: var(--font);\r\n}\r\n\r\n.ui-array {\r\n  list-style: none;\r\n  padding-inline-start: 0;\r\n  margin-block: 0;\r\n}\r\n\r\n.ui-is-being-dragged > :not(.drag-destination) {\r\n  opacity: 0.5;\r\n}\r\n\r\n.ui-array-draggable > li {\r\n  position: relative;\r\n  padding-bottom: var(--gap);\r\n}\r\n\r\n.ui-array-draggable > li > .drag-source {\r\n  display: flex;\r\n  cursor: grab;\r\n}\r\n\r\n.ui-array-draggable .drag-destination {\r\n  width: 100%;\r\n  height: 0px;\r\n}\r\n\r\n.ui-array-draggable .ui-drag-dst {\r\n  width: 100%;\r\n  height: 0px;\r\n  position: absolute;\r\n  top: 0;\r\n  left: 0;\r\n}\r\n\r\n.ui-array-draggable .drag-float {\r\n  pointer-events: none;\r\n}\r\n\r\n.ui-drag-src {\r\n  width: 20px;\r\n  margin-right: var(--gap);\r\n\r\n  background-image: radial-gradient(\r\n    #555 0%,\r\n    #555 10%,\r\n    transparent 40%,\r\n    transparent 100%\r\n  );\r\n  background-size: 20% 20%;\r\n  background-position: center;\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst {\r\n  height: 100%;\r\n  transform: translateY(-50%);\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst:hover {\r\n  background-image: linear-gradient(\r\n    to bottom,\r\n    transparent 0%,\r\n    transparent 40%,\r\n    var(--highlight) 40%,\r\n    var(--highlight) 60%,\r\n    transparent 60%,\r\n    transparent 100%\r\n  );\r\n}\r\n\r\n.ui-object {\r\n  display: grid;\r\n  grid-template-columns: repeat(2, auto);\r\n  gap: var(--gap-big);\r\n}\r\n\r\n.ui-object > input {\r\n  justify-self: right;\r\n}\r\n\r\n.ui-container button {\r\n  background-color: var(--bg-button);\r\n  border: none;\r\n  border-radius: 5px;\r\n  color: var(--fg);\r\n  cursor: pointer;\r\n}\r\n\r\n.ui-container button:hover {\r\n  background-color: var(--bg-button-hover);\r\n}\r\n\r\n.ui-container button.selected {\r\n  background-color: var(--highlight);\r\n  color: black;\r\n}\r\n\r\n.enum-ui,\r\n.button-set {\r\n  display: flex;\r\n}\r\n\r\n:is(.enum-ui, .button-set) button {\r\n  margin-right: var(--gap-big);\r\n}\r\n:is(.enum-ui, .button-set) button:nth-last-child(1) {\r\n  margin-right: 0;\r\n}\r\n\r\n.button-set {\r\n  margin-block: var(--gap-big);\r\n}\r\n';
 
   // demos-src/webgpu/graph-renderer-ui.tsx
   var DEFAULT_UI_STATE = {
+    uiMode: "auto",
     viewerSpeed: 1,
     lineWidth: 0.2,
     farPlane: 2e3,
@@ -27944,7 +27960,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     const root = document.createElement("div");
     let subscriptions = /* @__PURE__ */ new Set();
     (0, import_client3.createRoot)(root).render(
-      /* @__PURE__ */ import_react18.default.createElement(
+      /* @__PURE__ */ import_react19.default.createElement(
         UI,
         {
           subscribe: (cb2) => {
@@ -27992,15 +28008,15 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
   });
   var TextareaM = using(StringFieldM, { isTextarea: true });
   function UI(props) {
-    const state = (0, import_react18.useSyncExternalStore)(props.subscribe, props.getSnapshot);
+    const state = (0, import_react19.useSyncExternalStore)(props.subscribe, props.getSnapshot);
     function prop(p) {
       return getSetProp(
         { value: state.state, setValue: state.setState },
         p
       );
     }
-    const [hideUI, setHideUI] = (0, import_react18.useState)(false);
-    (0, import_react18.useEffect)(() => {
+    const [hideUI, setHideUI] = (0, import_react19.useState)(false);
+    (0, import_react19.useEffect)(() => {
       const interval = setInterval(() => {
         setHideUI(document.pointerLockElement instanceof HTMLCanvasElement);
       }, 200);
@@ -28008,7 +28024,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         clearInterval(interval);
       };
     }, []);
-    return /* @__PURE__ */ import_react18.default.createElement(import_react18.default.Fragment, null, /* @__PURE__ */ import_react18.default.createElement("style", null, r628_ui_default), /* @__PURE__ */ import_react18.default.createElement("style", null, `
+    return /* @__PURE__ */ import_react19.default.createElement(import_react19.default.Fragment, null, /* @__PURE__ */ import_react19.default.createElement("style", null, r628_ui_default), /* @__PURE__ */ import_react19.default.createElement("style", null, `
 .ui-root {
   top: 0;
   right: 0;
@@ -28034,7 +28050,7 @@ h2 {
   margin-bottom: var(--gap-big);
   padding-bottom: var(--gap-big);
 }
-`), /* @__PURE__ */ import_react18.default.createElement(
+`), /* @__PURE__ */ import_react19.default.createElement(
       "div",
       {
         className: "ui-root ui-container",
@@ -28042,21 +28058,30 @@ h2 {
           opacity: hideUI ? 0 : 1
         }
       },
-      /* @__PURE__ */ import_react18.default.createElement("h2", null, "Viewer"),
-      /* @__PURE__ */ import_react18.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react18.default.createElement("label", null, "Movement Speed"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("viewerSpeed") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Line Thickness"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("lineWidth") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Far Plane"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("farPlane"), min: 0 }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Show Label Threshold"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("showLabelThreshold"), min: 0 })),
-      /* @__PURE__ */ import_react18.default.createElement("h2", null, "Physics"),
-      /* @__PURE__ */ import_react18.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react18.default.createElement("label", null, "Physics Enabled"), /* @__PURE__ */ import_react18.default.createElement(BooleanField, { ...prop("physics") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Repulsion Multiplier"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("repulsionMultiplier") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Repulsion Exponent"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("repulsionExponent") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Attraction Multiplier"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("attractionMultiplier") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Velocity Damping"), /* @__PURE__ */ import_react18.default.createElement(
+      /* @__PURE__ */ import_react19.default.createElement("h2", null, "Viewer"),
+      /* @__PURE__ */ import_react19.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react19.default.createElement("label", null, "UI Mode"), /* @__PURE__ */ import_react19.default.createElement(
+        EnumField,
+        {
+          ...prop("uiMode"),
+          variants: [
+            ["auto", "Auto-Detect"],
+            ["desktop", "Desktop"],
+            ["mobile", "Mobile"]
+          ]
+        }
+      ), /* @__PURE__ */ import_react19.default.createElement("label", null, "Movement Speed"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("viewerSpeed") }), /* @__PURE__ */ import_react19.default.createElement("label", null, "Line Thickness"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("lineWidth") }), /* @__PURE__ */ import_react19.default.createElement("label", null, "Far Plane"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("farPlane"), min: 0 }), /* @__PURE__ */ import_react19.default.createElement("label", null, "Show Label Threshold"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("showLabelThreshold"), min: 0 })),
+      /* @__PURE__ */ import_react19.default.createElement("h2", null, "Physics"),
+      /* @__PURE__ */ import_react19.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react19.default.createElement("label", null, "Physics Enabled"), /* @__PURE__ */ import_react19.default.createElement(BooleanField, { ...prop("physics") }), /* @__PURE__ */ import_react19.default.createElement("label", null, "Repulsion Multiplier"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("repulsionMultiplier") }), /* @__PURE__ */ import_react19.default.createElement("label", null, "Repulsion Exponent"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("repulsionExponent") }), /* @__PURE__ */ import_react19.default.createElement("label", null, "Attraction Multiplier"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("attractionMultiplier") }), /* @__PURE__ */ import_react19.default.createElement("label", null, "Velocity Damping"), /* @__PURE__ */ import_react19.default.createElement(
         NumberFieldM,
         {
           ...prop("velocityDamping"),
           min: 0,
           max: 1
         }
-      ), /* @__PURE__ */ import_react18.default.createElement("label", null, "Simulation Accuracy"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("simulationAccuracy"), min: 0 }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Timestep"), /* @__PURE__ */ import_react18.default.createElement(NumberFieldM, { ...prop("timestep"), min: 0 })),
-      /* @__PURE__ */ import_react18.default.createElement("h2", null, "Initial Conditions"),
-      /* @__PURE__ */ import_react18.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react18.default.createElement("label", null, "Tags"), /* @__PURE__ */ import_react18.default.createElement(StringFieldM, { ...prop("tags") }), /* @__PURE__ */ import_react18.default.createElement("label", null, "Positions"), /* @__PURE__ */ import_react18.default.createElement(FileField, { ...prop("positions") })),
-      /* @__PURE__ */ import_react18.default.createElement("button", { onClick: props.updateRenderer }, "Apply Initial Conditions"),
-      /* @__PURE__ */ import_react18.default.createElement(
+      ), /* @__PURE__ */ import_react19.default.createElement("label", null, "Simulation Accuracy"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("simulationAccuracy"), min: 0 }), /* @__PURE__ */ import_react19.default.createElement("label", null, "Timestep"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("timestep"), min: 0 })),
+      /* @__PURE__ */ import_react19.default.createElement("h2", null, "Initial Conditions"),
+      /* @__PURE__ */ import_react19.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react19.default.createElement("label", null, "Tags"), /* @__PURE__ */ import_react19.default.createElement(StringFieldM, { ...prop("tags") }), /* @__PURE__ */ import_react19.default.createElement("label", null, "Positions"), /* @__PURE__ */ import_react19.default.createElement(FileField, { ...prop("positions") })),
+      /* @__PURE__ */ import_react19.default.createElement("div", { className: "button-set" }, /* @__PURE__ */ import_react19.default.createElement("button", { onClick: props.updateRenderer }, "Apply Initial Conditions"), /* @__PURE__ */ import_react19.default.createElement(
         "button",
         {
           onClick: () => {
@@ -28071,7 +28096,7 @@ h2 {
           }
         },
         "Export Current Node Positions"
-      )
+      ))
     ));
   }
 
@@ -29222,6 +29247,14 @@ h2 {
         dst: "u32"
       })
     );
+    const weightedEdgesBufferFormat = wdevice.storageBuffer(
+      "edges",
+      struct("WeightedEdge", {
+        src: "u32",
+        dst: "u32",
+        weight: "f32"
+      })
+    );
     const accelVectorPairsFormat = wdevice.storageBuffer(
       "accel_vectors",
       struct("AccelVectors", {
@@ -29237,7 +29270,7 @@ h2 {
     );
     const calcEdgeForcesBindGroupFormat = wdevice.bindGroup(
       "bg",
-      edgesBufferFormat,
+      weightedEdgesBufferFormat,
       accelVectorPairsFormat,
       bodiesFormat
     );
@@ -29256,8 +29289,8 @@ h2 {
     } 
 
     let edge = edges[i];
-    let src = bodies[edges[i].src]; 
-    let dst = bodies[edges[i].dst]; 
+    let src = bodies[edge.src]; 
+    let dst = bodies[edge.dst]; 
 
     let offset = dst.position - src.position;
     let dist = length(offset);
@@ -29265,7 +29298,7 @@ h2 {
 
     let mag = dist * 0.02;
 
-    accel_vectors[i].to_src = mag * offset_norm;
+    accel_vectors[i].to_src = mag * offset_norm * edge.weight;
     // accel_vectors[i].to_src = vec3f(1.0, 0.0, 0.0);
     `
     });
@@ -29363,7 +29396,7 @@ fn set_point(idx: u32, across: f32, width: f32) {
     `
     });
     let keysDown = /* @__PURE__ */ new Set();
-    const isDesktop = window.matchMedia("(pointer: fine)").matches;
+    let isDesktop = true;
     const multiTransform = variadify(mulMat4);
     let rotationMatrix = rotate([0, 1, 0], 0.1);
     document.addEventListener("keydown", (e) => {
@@ -29417,31 +29450,9 @@ fn set_point(idx: u32, across: f32, width: f32) {
       if (document.pointerLockElement !== canvas) return;
       rotateBy(-e.movementX * 3e-3, e.movementY * 3e-3);
     });
-    if (!isDesktop) {
-      let mappedButton = function(text, gridArea, key) {
-        const forwardButton = document.createElement("button");
-        forwardButton.innerText = text;
-        forwardButton.style = `
-grid-area: ${gridArea};    
-height: 30px;
-border-radius: 5px;
-border: 1px solid #888;
-background-color: #000a; 
-color: white;
-margin: 2px;
-user-select: none;
-    `;
-        forwardButton.addEventListener("touchstart", () => {
-          keysDown.add(key);
-        });
-        forwardButton.addEventListener("touchend", () => {
-          keysDown.delete(key);
-        });
-        moveControls.appendChild(forwardButton);
-      };
-      const moveControls = document.createElement("div");
-      document.body.appendChild(moveControls);
-      moveControls.style = `
+    const moveControls = document.createElement("div");
+    document.body.appendChild(moveControls);
+    moveControls.style = `
 position: absolute;
 bottom: 10px;
 left: 10px;    
@@ -29454,13 +29465,33 @@ grid-template-areas:
     ". backward ."
     ". down ."
     `;
-      mappedButton("Forward", "forward", "w");
-      mappedButton("Left", "left", "a");
-      mappedButton("Backward", "backward", "s");
-      mappedButton("Right", "right", "d");
-      mappedButton("Up", "up", " ");
-      mappedButton("Down", "down", "shift");
+    function mappedButton(text, gridArea, key) {
+      const forwardButton = document.createElement("button");
+      forwardButton.innerText = text;
+      forwardButton.style = `
+grid-area: ${gridArea};    
+height: 30px;
+border-radius: 5px;
+border: 1px solid #888;
+background-color: #000a; 
+color: white;
+margin: 2px;
+user-select: none;
+    `;
+      forwardButton.addEventListener("touchstart", () => {
+        keysDown.add(key);
+      });
+      forwardButton.addEventListener("touchend", () => {
+        keysDown.delete(key);
+      });
+      moveControls.appendChild(forwardButton);
     }
+    mappedButton("Forward", "forward", "w");
+    mappedButton("Left", "left", "a");
+    mappedButton("Backward", "backward", "s");
+    mappedButton("Right", "right", "d");
+    mappedButton("Up", "up", " ");
+    mappedButton("Down", "down", "shift");
     function rotateBy(dx, dy) {
       const localXAxis = mulVec4ByMat4([1, 0, 0, 0], rotationMatrix);
       const localYAxis = mulVec4ByMat4([0, -1, 0, 0], rotationMatrix);
@@ -29627,9 +29658,9 @@ grid-template-areas:
         const edgeLocMap = [];
         const vertToIndexMap = new Map([...graph.vertices].map((e, i) => [e, i]));
         const edgesWithThisSrc = /* @__PURE__ */ new Map();
-        const addEdgeToEdgesWithThisSrc = (src2, dst) => edgesWithThisSrc.set(
+        const addEdgeToEdgesWithThisSrc = (src2, dst, weight) => edgesWithThisSrc.set(
           src2,
-          (edgesWithThisSrc.get(src2) ?? []).concat({ src: src2, dst })
+          (edgesWithThisSrc.get(src2) ?? []).concat({ src: src2, dst, weight })
         );
         for (const vert of graph.vertices) {
           for (const outgoing of vert.outgoing) {
@@ -29637,8 +29668,9 @@ grid-template-areas:
             const endIndex = vertToIndexMap.get(outgoing.endpoints[1]);
             unidirectionalEdgeList.push({ src: startIndex, dst: endIndex });
             if (startIndex === endIndex) continue;
-            addEdgeToEdgesWithThisSrc(startIndex, endIndex);
-            addEdgeToEdgesWithThisSrc(endIndex, startIndex);
+            const weight = 1;
+            addEdgeToEdgesWithThisSrc(startIndex, endIndex, weight);
+            addEdgeToEdgesWithThisSrc(endIndex, startIndex, weight);
           }
         }
         for (let i = 0; i < graph.vertices.size; i++) {
@@ -29648,7 +29680,7 @@ grid-template-areas:
           let count = edgeList.length - location;
           edgeLocMap.push({ location, count });
         }
-        const edgesBuffer = edgesBufferFormat.quickCreateMany(edgeList);
+        const edgesBuffer = weightedEdgesBufferFormat.quickCreateMany(edgeList);
         const unidirectionalEdgesBuffer = edgesBufferFormat.quickCreateMany(
           unidirectionalEdgeList
         );
@@ -29777,6 +29809,12 @@ grid-template-areas:
               viewerVel = [0, 0, 0];
             }
             currTransform = mulMat4(rotationMatrix, translate(viewerPos));
+            isDesktop = params.ui.state.uiMode === "auto" ? window.matchMedia("(pointer: fine)").matches : params.ui.state.uiMode === "desktop";
+            if (isDesktop) {
+              moveControls.style.display = "none";
+            } else {
+              moveControls.style.display = "grid";
+            }
           },
           updateLabels() {
             loopIter++;

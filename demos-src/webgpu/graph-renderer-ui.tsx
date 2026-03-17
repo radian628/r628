@@ -14,8 +14,10 @@ import {
 } from "../../src";
 import { BooleanField } from "../../src/ui/react-boolean-field";
 import { FileField } from "../../src/ui/react-file-field";
+import { EnumField } from "../../src/ui/react-enum-field";
 
 export type UIState = {
+  uiMode: "auto" | "desktop" | "mobile";
   viewerSpeed: number;
   lineWidth: number;
   farPlane: number;
@@ -33,7 +35,9 @@ export type UIState = {
   positions: Blob | undefined;
 };
 
-const DEFAULT_UI_STATE = {
+const DEFAULT_UI_STATE: UIState = {
+  uiMode: "auto",
+
   viewerSpeed: 1,
   lineWidth: 0.2,
   farPlane: 2000,
@@ -204,6 +208,15 @@ h2 {
         {/* <RootUI value={state.state} setValue={state.setState}></RootUI> */}
         <h2>Viewer</h2>
         <div className="ui-object">
+          <label>UI Mode</label>
+          <EnumField
+            {...prop("uiMode")}
+            variants={[
+              ["auto", "Auto-Detect"],
+              ["desktop", "Desktop"],
+              ["mobile", "Mobile"],
+            ]}
+          ></EnumField>
           <label>Movement Speed</label>
           <NumberFieldM {...prop("viewerSpeed")}></NumberFieldM>
           <label>Line Thickness</label>
@@ -241,22 +254,26 @@ h2 {
           <label>Positions</label>
           <FileField {...prop("positions")}></FileField>
         </div>
-        <button onClick={props.updateRenderer}>Apply Initial Conditions</button>
-        <button
-          onClick={() => {
-            (async () => {
-              const positionedNodes = await props.exportPositions();
-              const json = JSON.stringify(positionedNodes, null, 2);
+        <div className="button-set">
+          <button onClick={props.updateRenderer}>
+            Apply Initial Conditions
+          </button>
+          <button
+            onClick={() => {
+              (async () => {
+                const positionedNodes = await props.exportPositions();
+                const json = JSON.stringify(positionedNodes, null, 2);
 
-              download(
-                new Blob([json], { type: "application/json" }),
-                "positions.json",
-              );
-            })();
-          }}
-        >
-          Export Current Node Positions
-        </button>
+                download(
+                  new Blob([json], { type: "application/json" }),
+                  "positions.json",
+                );
+              })();
+            }}
+          >
+            Export Current Node Positions
+          </button>
+        </div>
       </div>
     </>
   );
