@@ -1,3 +1,4 @@
+import stringHash from "string-hash";
 import {
   add3,
   addEdge,
@@ -11,6 +12,7 @@ import {
   Mat4,
   mix3,
   mix4,
+  mul3,
   mul4,
   mulMat4,
   mulMat4ByVec4,
@@ -35,6 +37,7 @@ import {
 } from "../../src";
 import { graphRendererUI, PositionedNode } from "./graph-renderer-ui";
 import { createNBodyOctreeDefs } from "./n-body-octree";
+import { CANON_TAGS, SERIES_TAGS } from "./tags";
 
 type Node = {
   position: Vec3;
@@ -138,7 +141,9 @@ export async function setupGraphRenderer(device: GPUDevice) {
   );
 
   const nBodySim = await createNBodyOctreeDefs(device, {
-    extraBodyFields: {},
+    extraBodyFields: {
+      color: "vec4f",
+    },
     bodyBodyInteraction: `
       let force_mag = 40.0 * mass * bodies[i].mass / pow(max(10.0, dist_to_body), physics_params.repulsion_exponent);
       let force_dir = -normalize(center_of_mass - bodies[i].position);
@@ -222,6 +227,8 @@ export async function setupGraphRenderer(device: GPUDevice) {
       generic[i * 5].data = bitcast<u32>(bodies[i].position.x);
       generic[i * 5 + 1].data = bitcast<u32>(bodies[i].position.y);
       generic[i * 5 + 2].data = bitcast<u32>(bodies[i].position.z);
+      generic[i * 5 + 3].data = bitcast<u32>(0.5);
+      generic[i * 5 + 4].data = pack4x8unorm(bodies[i].color);
     `,
   });
 
@@ -230,6 +237,15 @@ export async function setupGraphRenderer(device: GPUDevice) {
     struct("Edge", {
       src: "u32",
       dst: "u32",
+    }),
+  );
+
+  const displayEdgesBufferFormat = wdevice.storageBuffer(
+    "edges",
+    struct("Edge", {
+      src: "u32",
+      dst: "u32",
+      color_mul: "f32",
     }),
   );
 
@@ -329,6 +345,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
       "params",
       struct("Params", {
         line_width_multiplier: "f32",
+        nan: "f32",
       }),
     );
 
@@ -336,7 +353,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
     "nbody",
     bodiesFormat,
     genericBufferFormat,
-    edgesBufferFormat,
+    displayEdgesBufferFormat,
     transferBodyInfoToLinesUniformsFormat,
   );
 
@@ -352,6 +369,9 @@ export async function setupGraphRenderer(device: GPUDevice) {
 
 var<private> endpoint1: vec3f;
 var<private> endpoint2: vec3f;
+var<private> color1: vec4f;
+var<private> color2: vec4f;
+var<private> color_mul: f32;
 
 fn set_point(idx: u32, across: f32, width: f32) {
   let i = idx * 5;
@@ -360,6 +380,7 @@ fn set_point(idx: u32, across: f32, width: f32) {
   generic[i + 1].data = bitcast<u32>(position.y);
   generic[i + 2].data = bitcast<u32>(position.z);
   generic[i + 3].data = bitcast<u32>(width * params.line_width_multiplier);
+  generic[i + 4].data = pack4x8unorm(mix(color1, color2, across) * color_mul);
 }    
     `,
     shader: `
@@ -375,6 +396,9 @@ fn set_point(idx: u32, across: f32, width: f32) {
       let margin = 0.8 / dist; 
       endpoint1 = mix(src.position, dst.position, margin);
       endpoint2 = mix(src.position, dst.position, 1 - margin);
+      color1 = src.color;
+      color2 = dst.color;
+      color_mul = edges[i].color_mul;
 
       set_point(ipt, 0.0, 1.0);
       set_point(ipt + 1, 0.1, 0.25);
@@ -382,13 +406,7 @@ fn set_point(idx: u32, across: f32, width: f32) {
       set_point(ipt + 3, 0.67, 0.1);
       set_point(ipt + 4, 0.9, 0.25);
       set_point(ipt + 5, 1.0, 1.0);
-
-      // set_point(ipt, mix(src.position, dst.position, margin));
-      // set_point(ipt + 1, mix(src.position, dst.position, 0.1));
-      // set_point(ipt + 2, mix(src.position, dst.position, 0.33));
-      // set_point(ipt + 3, mix(src.position, dst.position, 0.67));
-      // set_point(ipt + 4, mix(src.position, dst.position, 0.9));
-      // set_point(ipt + 5, mix(src.position, dst.position, 1 - margin));
+      set_point(ipt + 6, params.nan, 1.0);
     `,
   });
 
@@ -559,41 +577,79 @@ user-select: none;
 
       let nodeMap = new Map<string, Vertex<Node, Vec4>>();
 
+      let urlToNodeData = new Map<string, { tags: string[] }>();
+
+      for (const n of graphData) {
+        urlToNodeData.set(n.url, {
+          tags: n.tags,
+        });
+      }
+
+      let tagCounts = new Map<string, number>();
+
+      for (const [url, { tags }] of urlToNodeData) {
+        for (const tag of tags) {
+          tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+        }
+      }
+
+      function getNodeColor(url: string): Vec4 {
+        const tags = urlToNodeData.get(url)?.tags ?? [];
+        const tagWeights = tags.map((t) => ({
+          tag: t,
+          weight:
+            (1 / (tagCounts.get(t) ?? 20000)) *
+            (CANON_TAGS.has(t) ? 1 : SERIES_TAGS.has(t) ? 5 : 0),
+        }));
+        const tagWeightSum = tagWeights.reduce((a, b) => a + b.weight, 0);
+
+        if (tagWeightSum === 0) return [180, 180, 180, 255];
+
+        let sum: Vec3 = [0, 0, 0];
+
+        for (const { tag, weight } of tagWeights) {
+          const hash = stringHash(tag);
+          sum = add3(
+            sum,
+            scale3(
+              [
+                hash % 256,
+                Math.floor(hash / 256) % 256,
+                Math.floor(hash / 256 / 256) % 256,
+              ],
+              weight / tagWeightSum,
+            ),
+          );
+        }
+
+        console.log(sum);
+
+        return [...sum, 255];
+      }
+
       const customPositions = params.ui.state.positions;
       console.log("custom positions", customPositions);
 
-      if (customPositions) {
-        for (const { position, slug } of JSON.parse(
-          await customPositions.text(),
-        )) {
-          const url = `http://scp-wiki.wikidot.com/${slug}`;
+      const nodePositions: PositionedNode[] = customPositions
+        ? JSON.parse(await customPositions.text())
+        : graphData.map((g) => ({
+            position: scale3([g.x, g.y, g.z], 0.005),
+            slug: g.url.replace("http://scp-wiki.wikidot.com/", ""),
+          }));
 
-          nodeMap.set(
-            url,
-            addVertex(graph, {
-              position,
-              color: [255, 255, 255, 255],
-              initialized: false,
-              label: slug,
-              slug: slug,
-            }),
-          );
-        }
-      } else {
-        for (const n of graphData) {
-          let position = scale3([n.x, n.y, n.z], 0.005);
+      for (const { position, slug } of nodePositions) {
+        const url = `http://scp-wiki.wikidot.com/${slug}`;
 
-          nodeMap.set(
-            n.url,
-            addVertex(graph, {
-              position,
-              color: [255, 255, 255, 255],
-              initialized: false,
-              label: n.url.replace("http://scp-wiki.wikidot.com/", ""),
-              slug: n.url.replace("http://scp-wiki.wikidot.com/", ""),
-            }),
-          );
-        }
+        nodeMap.set(
+          url,
+          addVertex(graph, {
+            position,
+            color: getNodeColor(url),
+            initialized: false,
+            label: slug,
+            slug,
+          }),
+        );
       }
 
       for (const n of graphData) {
@@ -620,90 +676,22 @@ user-select: none;
 
       const vertGroups = splitBy(labelVertsArray, 500);
 
-      const vertices = lines.pointInstanceBufferFormat.quickCreate(
-        [...graph.vertices].map((v, i) => ({
-          position: v.data.position,
-          color: v.data.color,
-          size: 0.5,
-        })),
+      const vertices = lines.pointInstanceBufferFormat.instantiate(
+        graph.vertices.size,
         {
           usage:
             GPUBufferUsage.VERTEX |
-            GPUBufferUsage.COPY_DST |
-            GPUBufferUsage.COPY_SRC |
-            GPUBufferUsage.STORAGE,
+            GPUBufferUsage.STORAGE |
+            GPUBufferUsage.COPY_SRC,
         },
       );
 
       const edgeThickness = 0.2;
 
-      const edges = lines.pointInstanceBufferFormat.quickCreate(
-        [...graph.edges].flatMap((v) => {
-          let len = distance3(
-            v.endpoints[0].data.position,
-            v.endpoints[1].data.position,
-          );
-
-          const distFromEdge = 0.8 / len;
-
-          const across = (x) =>
-            mix3(
-              lerp(x, distFromEdge, 1 - distFromEdge),
-              v.endpoints[0].data.position,
-              v.endpoints[1].data.position,
-            );
-
-          let colorMul = Math.random() * 0.2 + 0.4;
-
-          const lerpColor = (x) =>
-            mul4(
-              mix4(x, v.endpoints[0].data.color, v.endpoints[1].data.color),
-              [colorMul, colorMul, colorMul, 1],
-            );
-
-          return [
-            {
-              position: across(0),
-              color: lerpColor(0),
-              size: edgeThickness,
-            },
-            {
-              position: across(0.1),
-              color: lerpColor(0.1),
-              size: edgeThickness * 0.25,
-            },
-            {
-              position: across(0.33),
-              color: lerpColor(0.33),
-              size: edgeThickness * 0.1,
-            },
-            {
-              position: across(0.67),
-              color: lerpColor(0.67),
-              size: edgeThickness * 0.1,
-            },
-            {
-              position: across(0.9),
-              color: lerpColor(0.9),
-              size: edgeThickness * 0.25,
-            },
-            {
-              position: across(1),
-              color: lerpColor(1),
-              size: edgeThickness,
-            },
-            {
-              position: [NaN, NaN, NaN],
-              color: v.data,
-              size: edgeThickness,
-            },
-          ];
-        }),
+      const edges = lines.pointInstanceBufferFormat.instantiate(
+        graph.edges.size * 7,
         {
-          usage:
-            GPUBufferUsage.VERTEX |
-            GPUBufferUsage.COPY_DST |
-            GPUBufferUsage.STORAGE,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE,
         },
       );
 
@@ -740,6 +728,7 @@ user-select: none;
       const unidirectionalEdgeList: {
         src: number;
         dst: number;
+        color_mul: number;
       }[] = [];
 
       const edgeLocMap: {
@@ -769,7 +758,11 @@ user-select: none;
         for (const outgoing of vert.outgoing) {
           const startIndex = vertToIndexMap.get(vert)!;
           const endIndex = vertToIndexMap.get(outgoing.endpoints[1])!;
-          unidirectionalEdgeList.push({ src: startIndex, dst: endIndex });
+          unidirectionalEdgeList.push({
+            src: startIndex,
+            dst: endIndex,
+            color_mul: Math.random() * 0.3 + 0.3,
+          });
           if (startIndex === endIndex) continue;
           const weight = 1;
           addEdgeToEdgesWithThisSrc(startIndex, endIndex, weight);
@@ -789,9 +782,8 @@ user-select: none;
       }
 
       const edgesBuffer = weightedEdgesBufferFormat.quickCreateMany(edgeList);
-      const unidirectionalEdgesBuffer = edgesBufferFormat.quickCreateMany(
-        unidirectionalEdgeList,
-      );
+      const unidirectionalEdgesBuffer =
+        displayEdgesBufferFormat.quickCreateMany(unidirectionalEdgeList);
       const edgeLocMapBuffer =
         edgeLocationMapFormat.quickCreateMany(edgeLocMap);
 
@@ -808,6 +800,7 @@ user-select: none;
             mass: 1,
             velocity: [0, 0, 0],
             position: vert.data.position,
+            color: scale4(vert.data.color, 1 / 256),
           };
         }),
       );
@@ -852,6 +845,29 @@ user-select: none;
           physics_params: physicsUniforms,
         });
 
+      function updateGeometry(pass: GPUComputePassEncoder) {
+        const perBodyWorkgroups = Math.ceil(graph.vertices.size / 32);
+        pass.setPipeline(transferBodyInfoToPointsPipeline);
+        const transferBodyInfoToPointsBindGroup =
+          transferBodyInfoToPointsBindGroupFormat.instantiate({
+            bodies,
+            generic: genericBufferFormat.reinterpret(vertices),
+          });
+        pass.setBindGroup(0, transferBodyInfoToPointsBindGroup);
+        pass.dispatchWorkgroups(perBodyWorkgroups);
+
+        pass.setPipeline(transferBodyInfoToLinesPipeline);
+        const transferBodyInfoToLinesBindGroup =
+          transferBodyInfoToLinesBindGroupFormat.instantiate({
+            bodies,
+            generic: genericBufferFormat.reinterpret(edges),
+            edges: unidirectionalEdgesBuffer,
+            params: transferBodyInfoToLinesUniforms,
+          });
+        pass.setBindGroup(0, transferBodyInfoToLinesBindGroup);
+        pass.dispatchWorkgroups(Math.ceil(unidirectionalEdgeList.length / 32));
+      }
+
       function moveBodies() {
         physicsUniformsFormat.fill(physicsUniforms, 0, {
           repulsion_multiplier: params.ui.state.repulsionMultiplier,
@@ -868,6 +884,7 @@ user-select: none;
           0,
           {
             line_width_multiplier: params.ui.state.lineWidth,
+            nan: NaN,
           },
         );
 
@@ -892,29 +909,17 @@ user-select: none;
         pass.setBindGroup(0, applyBarnesHutBindGroup);
         pass.dispatchWorkgroups(perBodyWorkgroups, 1, 1);
 
-        pass.setPipeline(transferBodyInfoToPointsPipeline);
-        const transferBodyInfoToPointsBindGroup =
-          transferBodyInfoToPointsBindGroupFormat.instantiate({
-            bodies,
-            generic: genericBufferFormat.reinterpret(vertices),
-          });
-        pass.setBindGroup(0, transferBodyInfoToPointsBindGroup);
-        pass.dispatchWorkgroups(perBodyWorkgroups);
-
-        pass.setPipeline(transferBodyInfoToLinesPipeline);
-        const transferBodyInfoToLinesBindGroup =
-          transferBodyInfoToLinesBindGroupFormat.instantiate({
-            bodies,
-            generic: genericBufferFormat.reinterpret(edges),
-            edges: unidirectionalEdgesBuffer,
-            params: transferBodyInfoToLinesUniforms,
-          });
-        pass.setBindGroup(0, transferBodyInfoToLinesBindGroup);
-        pass.dispatchWorkgroups(Math.ceil(unidirectionalEdgeList.length / 32));
+        updateGeometry(pass);
 
         pass.end();
         device.queue.submit([enc.finish()]);
       }
+
+      const enc = device.createCommandEncoder();
+      let pass = enc.beginComputePass();
+      updateGeometry(pass);
+      pass.end();
+      device.queue.submit([enc.finish()]);
 
       let loopIter = 0;
 
@@ -974,7 +979,7 @@ user-select: none;
             if (isNearby) {
               if (!labelElem) {
                 const newLabelElem = document.createElement("a");
-                newLabelElem.href = `https://scp-wiki.wikidot.com${n.label}`;
+                newLabelElem.href = `https://scp-wiki.wikidot.com/${n.slug}`;
                 newLabelElem.target = "_blank";
                 newLabelElem.innerText = n.label;
                 newLabelElem.style = `color: white; background-color: #000b; padding: 5px; transform: translateX(-50%); font-family: sans-serif;`;
