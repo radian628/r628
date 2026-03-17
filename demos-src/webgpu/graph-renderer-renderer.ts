@@ -490,6 +490,8 @@ background-color: #000a;
 color: white;
 margin: 2px;
 user-select: none;
+-webkit-user-select: none;
+-webkit-touch-callout: none;
     `;
     forwardButton.addEventListener("touchstart", () => {
       keysDown.add(key);

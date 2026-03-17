@@ -22844,6 +22844,890 @@
     }
   });
 
+  // node_modules/react-is/cjs/react-is.development.js
+  var require_react_is_development = __commonJS({
+    "node_modules/react-is/cjs/react-is.development.js"(exports) {
+      "use strict";
+      if (true) {
+        (function() {
+          "use strict";
+          var hasSymbol = typeof Symbol === "function" && Symbol.for;
+          var REACT_ELEMENT_TYPE = hasSymbol ? Symbol.for("react.element") : 60103;
+          var REACT_PORTAL_TYPE = hasSymbol ? Symbol.for("react.portal") : 60106;
+          var REACT_FRAGMENT_TYPE = hasSymbol ? Symbol.for("react.fragment") : 60107;
+          var REACT_STRICT_MODE_TYPE = hasSymbol ? Symbol.for("react.strict_mode") : 60108;
+          var REACT_PROFILER_TYPE = hasSymbol ? Symbol.for("react.profiler") : 60114;
+          var REACT_PROVIDER_TYPE = hasSymbol ? Symbol.for("react.provider") : 60109;
+          var REACT_CONTEXT_TYPE = hasSymbol ? Symbol.for("react.context") : 60110;
+          var REACT_ASYNC_MODE_TYPE = hasSymbol ? Symbol.for("react.async_mode") : 60111;
+          var REACT_CONCURRENT_MODE_TYPE = hasSymbol ? Symbol.for("react.concurrent_mode") : 60111;
+          var REACT_FORWARD_REF_TYPE = hasSymbol ? Symbol.for("react.forward_ref") : 60112;
+          var REACT_SUSPENSE_TYPE = hasSymbol ? Symbol.for("react.suspense") : 60113;
+          var REACT_SUSPENSE_LIST_TYPE = hasSymbol ? Symbol.for("react.suspense_list") : 60120;
+          var REACT_MEMO_TYPE = hasSymbol ? Symbol.for("react.memo") : 60115;
+          var REACT_LAZY_TYPE = hasSymbol ? Symbol.for("react.lazy") : 60116;
+          var REACT_BLOCK_TYPE = hasSymbol ? Symbol.for("react.block") : 60121;
+          var REACT_FUNDAMENTAL_TYPE = hasSymbol ? Symbol.for("react.fundamental") : 60117;
+          var REACT_RESPONDER_TYPE = hasSymbol ? Symbol.for("react.responder") : 60118;
+          var REACT_SCOPE_TYPE = hasSymbol ? Symbol.for("react.scope") : 60119;
+          function isValidElementType(type) {
+            return typeof type === "string" || typeof type === "function" || // Note: its typeof might be other than 'symbol' or 'number' if it's a polyfill.
+            type === REACT_FRAGMENT_TYPE || type === REACT_CONCURRENT_MODE_TYPE || type === REACT_PROFILER_TYPE || type === REACT_STRICT_MODE_TYPE || type === REACT_SUSPENSE_TYPE || type === REACT_SUSPENSE_LIST_TYPE || typeof type === "object" && type !== null && (type.$$typeof === REACT_LAZY_TYPE || type.$$typeof === REACT_MEMO_TYPE || type.$$typeof === REACT_PROVIDER_TYPE || type.$$typeof === REACT_CONTEXT_TYPE || type.$$typeof === REACT_FORWARD_REF_TYPE || type.$$typeof === REACT_FUNDAMENTAL_TYPE || type.$$typeof === REACT_RESPONDER_TYPE || type.$$typeof === REACT_SCOPE_TYPE || type.$$typeof === REACT_BLOCK_TYPE);
+          }
+          function typeOf(object) {
+            if (typeof object === "object" && object !== null) {
+              var $$typeof = object.$$typeof;
+              switch ($$typeof) {
+                case REACT_ELEMENT_TYPE:
+                  var type = object.type;
+                  switch (type) {
+                    case REACT_ASYNC_MODE_TYPE:
+                    case REACT_CONCURRENT_MODE_TYPE:
+                    case REACT_FRAGMENT_TYPE:
+                    case REACT_PROFILER_TYPE:
+                    case REACT_STRICT_MODE_TYPE:
+                    case REACT_SUSPENSE_TYPE:
+                      return type;
+                    default:
+                      var $$typeofType = type && type.$$typeof;
+                      switch ($$typeofType) {
+                        case REACT_CONTEXT_TYPE:
+                        case REACT_FORWARD_REF_TYPE:
+                        case REACT_LAZY_TYPE:
+                        case REACT_MEMO_TYPE:
+                        case REACT_PROVIDER_TYPE:
+                          return $$typeofType;
+                        default:
+                          return $$typeof;
+                      }
+                  }
+                case REACT_PORTAL_TYPE:
+                  return $$typeof;
+              }
+            }
+            return void 0;
+          }
+          var AsyncMode = REACT_ASYNC_MODE_TYPE;
+          var ConcurrentMode = REACT_CONCURRENT_MODE_TYPE;
+          var ContextConsumer = REACT_CONTEXT_TYPE;
+          var ContextProvider = REACT_PROVIDER_TYPE;
+          var Element = REACT_ELEMENT_TYPE;
+          var ForwardRef = REACT_FORWARD_REF_TYPE;
+          var Fragment2 = REACT_FRAGMENT_TYPE;
+          var Lazy = REACT_LAZY_TYPE;
+          var Memo = REACT_MEMO_TYPE;
+          var Portal = REACT_PORTAL_TYPE;
+          var Profiler = REACT_PROFILER_TYPE;
+          var StrictMode = REACT_STRICT_MODE_TYPE;
+          var Suspense = REACT_SUSPENSE_TYPE;
+          var hasWarnedAboutDeprecatedIsAsyncMode = false;
+          function isAsyncMode(object) {
+            {
+              if (!hasWarnedAboutDeprecatedIsAsyncMode) {
+                hasWarnedAboutDeprecatedIsAsyncMode = true;
+                console["warn"]("The ReactIs.isAsyncMode() alias has been deprecated, and will be removed in React 17+. Update your code to use ReactIs.isConcurrentMode() instead. It has the exact same API.");
+              }
+            }
+            return isConcurrentMode(object) || typeOf(object) === REACT_ASYNC_MODE_TYPE;
+          }
+          function isConcurrentMode(object) {
+            return typeOf(object) === REACT_CONCURRENT_MODE_TYPE;
+          }
+          function isContextConsumer(object) {
+            return typeOf(object) === REACT_CONTEXT_TYPE;
+          }
+          function isContextProvider(object) {
+            return typeOf(object) === REACT_PROVIDER_TYPE;
+          }
+          function isElement(object) {
+            return typeof object === "object" && object !== null && object.$$typeof === REACT_ELEMENT_TYPE;
+          }
+          function isForwardRef(object) {
+            return typeOf(object) === REACT_FORWARD_REF_TYPE;
+          }
+          function isFragment(object) {
+            return typeOf(object) === REACT_FRAGMENT_TYPE;
+          }
+          function isLazy(object) {
+            return typeOf(object) === REACT_LAZY_TYPE;
+          }
+          function isMemo(object) {
+            return typeOf(object) === REACT_MEMO_TYPE;
+          }
+          function isPortal(object) {
+            return typeOf(object) === REACT_PORTAL_TYPE;
+          }
+          function isProfiler(object) {
+            return typeOf(object) === REACT_PROFILER_TYPE;
+          }
+          function isStrictMode(object) {
+            return typeOf(object) === REACT_STRICT_MODE_TYPE;
+          }
+          function isSuspense(object) {
+            return typeOf(object) === REACT_SUSPENSE_TYPE;
+          }
+          exports.AsyncMode = AsyncMode;
+          exports.ConcurrentMode = ConcurrentMode;
+          exports.ContextConsumer = ContextConsumer;
+          exports.ContextProvider = ContextProvider;
+          exports.Element = Element;
+          exports.ForwardRef = ForwardRef;
+          exports.Fragment = Fragment2;
+          exports.Lazy = Lazy;
+          exports.Memo = Memo;
+          exports.Portal = Portal;
+          exports.Profiler = Profiler;
+          exports.StrictMode = StrictMode;
+          exports.Suspense = Suspense;
+          exports.isAsyncMode = isAsyncMode;
+          exports.isConcurrentMode = isConcurrentMode;
+          exports.isContextConsumer = isContextConsumer;
+          exports.isContextProvider = isContextProvider;
+          exports.isElement = isElement;
+          exports.isForwardRef = isForwardRef;
+          exports.isFragment = isFragment;
+          exports.isLazy = isLazy;
+          exports.isMemo = isMemo;
+          exports.isPortal = isPortal;
+          exports.isProfiler = isProfiler;
+          exports.isStrictMode = isStrictMode;
+          exports.isSuspense = isSuspense;
+          exports.isValidElementType = isValidElementType;
+          exports.typeOf = typeOf;
+        })();
+      }
+    }
+  });
+
+  // node_modules/react-is/index.js
+  var require_react_is = __commonJS({
+    "node_modules/react-is/index.js"(exports, module) {
+      "use strict";
+      if (false) {
+        module.exports = null;
+      } else {
+        module.exports = require_react_is_development();
+      }
+    }
+  });
+
+  // node_modules/object-assign/index.js
+  var require_object_assign = __commonJS({
+    "node_modules/object-assign/index.js"(exports, module) {
+      "use strict";
+      var getOwnPropertySymbols = Object.getOwnPropertySymbols;
+      var hasOwnProperty = Object.prototype.hasOwnProperty;
+      var propIsEnumerable = Object.prototype.propertyIsEnumerable;
+      function toObject(val) {
+        if (val === null || val === void 0) {
+          throw new TypeError("Object.assign cannot be called with null or undefined");
+        }
+        return Object(val);
+      }
+      function shouldUseNative() {
+        try {
+          if (!Object.assign) {
+            return false;
+          }
+          var test1 = new String("abc");
+          test1[5] = "de";
+          if (Object.getOwnPropertyNames(test1)[0] === "5") {
+            return false;
+          }
+          var test2 = {};
+          for (var i = 0; i < 10; i++) {
+            test2["_" + String.fromCharCode(i)] = i;
+          }
+          var order2 = Object.getOwnPropertyNames(test2).map(function(n) {
+            return test2[n];
+          });
+          if (order2.join("") !== "0123456789") {
+            return false;
+          }
+          var test3 = {};
+          "abcdefghijklmnopqrst".split("").forEach(function(letter) {
+            test3[letter] = letter;
+          });
+          if (Object.keys(Object.assign({}, test3)).join("") !== "abcdefghijklmnopqrst") {
+            return false;
+          }
+          return true;
+        } catch (err2) {
+          return false;
+        }
+      }
+      module.exports = shouldUseNative() ? Object.assign : function(target, source) {
+        var from;
+        var to = toObject(target);
+        var symbols;
+        for (var s = 1; s < arguments.length; s++) {
+          from = Object(arguments[s]);
+          for (var key in from) {
+            if (hasOwnProperty.call(from, key)) {
+              to[key] = from[key];
+            }
+          }
+          if (getOwnPropertySymbols) {
+            symbols = getOwnPropertySymbols(from);
+            for (var i = 0; i < symbols.length; i++) {
+              if (propIsEnumerable.call(from, symbols[i])) {
+                to[symbols[i]] = from[symbols[i]];
+              }
+            }
+          }
+        }
+        return to;
+      };
+    }
+  });
+
+  // node_modules/prop-types/lib/ReactPropTypesSecret.js
+  var require_ReactPropTypesSecret = __commonJS({
+    "node_modules/prop-types/lib/ReactPropTypesSecret.js"(exports, module) {
+      "use strict";
+      var ReactPropTypesSecret = "SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED";
+      module.exports = ReactPropTypesSecret;
+    }
+  });
+
+  // node_modules/prop-types/lib/has.js
+  var require_has = __commonJS({
+    "node_modules/prop-types/lib/has.js"(exports, module) {
+      module.exports = Function.call.bind(Object.prototype.hasOwnProperty);
+    }
+  });
+
+  // node_modules/prop-types/checkPropTypes.js
+  var require_checkPropTypes = __commonJS({
+    "node_modules/prop-types/checkPropTypes.js"(exports, module) {
+      "use strict";
+      var printWarning = function() {
+      };
+      if (true) {
+        ReactPropTypesSecret = require_ReactPropTypesSecret();
+        loggedTypeFailures = {};
+        has = require_has();
+        printWarning = function(text) {
+          var message = "Warning: " + text;
+          if (typeof console !== "undefined") {
+            console.error(message);
+          }
+          try {
+            throw new Error(message);
+          } catch (x) {
+          }
+        };
+      }
+      var ReactPropTypesSecret;
+      var loggedTypeFailures;
+      var has;
+      function checkPropTypes(typeSpecs, values, location, componentName, getStack) {
+        if (true) {
+          for (var typeSpecName in typeSpecs) {
+            if (has(typeSpecs, typeSpecName)) {
+              var error;
+              try {
+                if (typeof typeSpecs[typeSpecName] !== "function") {
+                  var err2 = Error(
+                    (componentName || "React class") + ": " + location + " type `" + typeSpecName + "` is invalid; it must be a function, usually from the `prop-types` package, but received `" + typeof typeSpecs[typeSpecName] + "`.This often happens because of typos such as `PropTypes.function` instead of `PropTypes.func`."
+                  );
+                  err2.name = "Invariant Violation";
+                  throw err2;
+                }
+                error = typeSpecs[typeSpecName](values, typeSpecName, componentName, location, null, ReactPropTypesSecret);
+              } catch (ex) {
+                error = ex;
+              }
+              if (error && !(error instanceof Error)) {
+                printWarning(
+                  (componentName || "React class") + ": type specification of " + location + " `" + typeSpecName + "` is invalid; the type checker function must return `null` or an `Error` but returned a " + typeof error + ". You may have forgotten to pass an argument to the type checker creator (arrayOf, instanceOf, objectOf, oneOf, oneOfType, and shape all require an argument)."
+                );
+              }
+              if (error instanceof Error && !(error.message in loggedTypeFailures)) {
+                loggedTypeFailures[error.message] = true;
+                var stack = getStack ? getStack() : "";
+                printWarning(
+                  "Failed " + location + " type: " + error.message + (stack != null ? stack : "")
+                );
+              }
+            }
+          }
+        }
+      }
+      checkPropTypes.resetWarningCache = function() {
+        if (true) {
+          loggedTypeFailures = {};
+        }
+      };
+      module.exports = checkPropTypes;
+    }
+  });
+
+  // node_modules/prop-types/factoryWithTypeCheckers.js
+  var require_factoryWithTypeCheckers = __commonJS({
+    "node_modules/prop-types/factoryWithTypeCheckers.js"(exports, module) {
+      "use strict";
+      var ReactIs = require_react_is();
+      var assign = require_object_assign();
+      var ReactPropTypesSecret = require_ReactPropTypesSecret();
+      var has = require_has();
+      var checkPropTypes = require_checkPropTypes();
+      var printWarning = function() {
+      };
+      if (true) {
+        printWarning = function(text) {
+          var message = "Warning: " + text;
+          if (typeof console !== "undefined") {
+            console.error(message);
+          }
+          try {
+            throw new Error(message);
+          } catch (x) {
+          }
+        };
+      }
+      function emptyFunctionThatReturnsNull() {
+        return null;
+      }
+      module.exports = function(isValidElement, throwOnDirectAccess) {
+        var ITERATOR_SYMBOL = typeof Symbol === "function" && Symbol.iterator;
+        var FAUX_ITERATOR_SYMBOL = "@@iterator";
+        function getIteratorFn(maybeIterable) {
+          var iteratorFn = maybeIterable && (ITERATOR_SYMBOL && maybeIterable[ITERATOR_SYMBOL] || maybeIterable[FAUX_ITERATOR_SYMBOL]);
+          if (typeof iteratorFn === "function") {
+            return iteratorFn;
+          }
+        }
+        var ANONYMOUS = "<<anonymous>>";
+        var ReactPropTypes = {
+          array: createPrimitiveTypeChecker("array"),
+          bigint: createPrimitiveTypeChecker("bigint"),
+          bool: createPrimitiveTypeChecker("boolean"),
+          func: createPrimitiveTypeChecker("function"),
+          number: createPrimitiveTypeChecker("number"),
+          object: createPrimitiveTypeChecker("object"),
+          string: createPrimitiveTypeChecker("string"),
+          symbol: createPrimitiveTypeChecker("symbol"),
+          any: createAnyTypeChecker(),
+          arrayOf: createArrayOfTypeChecker,
+          element: createElementTypeChecker(),
+          elementType: createElementTypeTypeChecker(),
+          instanceOf: createInstanceTypeChecker,
+          node: createNodeChecker(),
+          objectOf: createObjectOfTypeChecker,
+          oneOf: createEnumTypeChecker,
+          oneOfType: createUnionTypeChecker,
+          shape: createShapeTypeChecker,
+          exact: createStrictShapeTypeChecker
+        };
+        function is(x, y) {
+          if (x === y) {
+            return x !== 0 || 1 / x === 1 / y;
+          } else {
+            return x !== x && y !== y;
+          }
+        }
+        function PropTypeError(message, data) {
+          this.message = message;
+          this.data = data && typeof data === "object" ? data : {};
+          this.stack = "";
+        }
+        PropTypeError.prototype = Error.prototype;
+        function createChainableTypeChecker(validate) {
+          if (true) {
+            var manualPropTypeCallCache = {};
+            var manualPropTypeWarningCount = 0;
+          }
+          function checkType(isRequired, props, propName, componentName, location, propFullName, secret) {
+            componentName = componentName || ANONYMOUS;
+            propFullName = propFullName || propName;
+            if (secret !== ReactPropTypesSecret) {
+              if (throwOnDirectAccess) {
+                var err2 = new Error(
+                  "Calling PropTypes validators directly is not supported by the `prop-types` package. Use `PropTypes.checkPropTypes()` to call them. Read more at http://fb.me/use-check-prop-types"
+                );
+                err2.name = "Invariant Violation";
+                throw err2;
+              } else if (typeof console !== "undefined") {
+                var cacheKey = componentName + ":" + propName;
+                if (!manualPropTypeCallCache[cacheKey] && // Avoid spamming the console because they are often not actionable except for lib authors
+                manualPropTypeWarningCount < 3) {
+                  printWarning(
+                    "You are manually calling a React.PropTypes validation function for the `" + propFullName + "` prop on `" + componentName + "`. This is deprecated and will throw in the standalone `prop-types` package. You may be seeing this warning due to a third-party PropTypes library. See https://fb.me/react-warning-dont-call-proptypes for details."
+                  );
+                  manualPropTypeCallCache[cacheKey] = true;
+                  manualPropTypeWarningCount++;
+                }
+              }
+            }
+            if (props[propName] == null) {
+              if (isRequired) {
+                if (props[propName] === null) {
+                  return new PropTypeError("The " + location + " `" + propFullName + "` is marked as required " + ("in `" + componentName + "`, but its value is `null`."));
+                }
+                return new PropTypeError("The " + location + " `" + propFullName + "` is marked as required in " + ("`" + componentName + "`, but its value is `undefined`."));
+              }
+              return null;
+            } else {
+              return validate(props, propName, componentName, location, propFullName);
+            }
+          }
+          var chainedCheckType = checkType.bind(null, false);
+          chainedCheckType.isRequired = checkType.bind(null, true);
+          return chainedCheckType;
+        }
+        function createPrimitiveTypeChecker(expectedType) {
+          function validate(props, propName, componentName, location, propFullName, secret) {
+            var propValue = props[propName];
+            var propType = getPropType(propValue);
+            if (propType !== expectedType) {
+              var preciseType = getPreciseType(propValue);
+              return new PropTypeError(
+                "Invalid " + location + " `" + propFullName + "` of type " + ("`" + preciseType + "` supplied to `" + componentName + "`, expected ") + ("`" + expectedType + "`."),
+                { expectedType }
+              );
+            }
+            return null;
+          }
+          return createChainableTypeChecker(validate);
+        }
+        function createAnyTypeChecker() {
+          return createChainableTypeChecker(emptyFunctionThatReturnsNull);
+        }
+        function createArrayOfTypeChecker(typeChecker) {
+          function validate(props, propName, componentName, location, propFullName) {
+            if (typeof typeChecker !== "function") {
+              return new PropTypeError("Property `" + propFullName + "` of component `" + componentName + "` has invalid PropType notation inside arrayOf.");
+            }
+            var propValue = props[propName];
+            if (!Array.isArray(propValue)) {
+              var propType = getPropType(propValue);
+              return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type " + ("`" + propType + "` supplied to `" + componentName + "`, expected an array."));
+            }
+            for (var i = 0; i < propValue.length; i++) {
+              var error = typeChecker(propValue, i, componentName, location, propFullName + "[" + i + "]", ReactPropTypesSecret);
+              if (error instanceof Error) {
+                return error;
+              }
+            }
+            return null;
+          }
+          return createChainableTypeChecker(validate);
+        }
+        function createElementTypeChecker() {
+          function validate(props, propName, componentName, location, propFullName) {
+            var propValue = props[propName];
+            if (!isValidElement(propValue)) {
+              var propType = getPropType(propValue);
+              return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type " + ("`" + propType + "` supplied to `" + componentName + "`, expected a single ReactElement."));
+            }
+            return null;
+          }
+          return createChainableTypeChecker(validate);
+        }
+        function createElementTypeTypeChecker() {
+          function validate(props, propName, componentName, location, propFullName) {
+            var propValue = props[propName];
+            if (!ReactIs.isValidElementType(propValue)) {
+              var propType = getPropType(propValue);
+              return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type " + ("`" + propType + "` supplied to `" + componentName + "`, expected a single ReactElement type."));
+            }
+            return null;
+          }
+          return createChainableTypeChecker(validate);
+        }
+        function createInstanceTypeChecker(expectedClass) {
+          function validate(props, propName, componentName, location, propFullName) {
+            if (!(props[propName] instanceof expectedClass)) {
+              var expectedClassName = expectedClass.name || ANONYMOUS;
+              var actualClassName = getClassName(props[propName]);
+              return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type " + ("`" + actualClassName + "` supplied to `" + componentName + "`, expected ") + ("instance of `" + expectedClassName + "`."));
+            }
+            return null;
+          }
+          return createChainableTypeChecker(validate);
+        }
+        function createEnumTypeChecker(expectedValues) {
+          if (!Array.isArray(expectedValues)) {
+            if (true) {
+              if (arguments.length > 1) {
+                printWarning(
+                  "Invalid arguments supplied to oneOf, expected an array, got " + arguments.length + " arguments. A common mistake is to write oneOf(x, y, z) instead of oneOf([x, y, z])."
+                );
+              } else {
+                printWarning("Invalid argument supplied to oneOf, expected an array.");
+              }
+            }
+            return emptyFunctionThatReturnsNull;
+          }
+          function validate(props, propName, componentName, location, propFullName) {
+            var propValue = props[propName];
+            for (var i = 0; i < expectedValues.length; i++) {
+              if (is(propValue, expectedValues[i])) {
+                return null;
+              }
+            }
+            var valuesString = JSON.stringify(expectedValues, function replacer(key, value) {
+              var type = getPreciseType(value);
+              if (type === "symbol") {
+                return String(value);
+              }
+              return value;
+            });
+            return new PropTypeError("Invalid " + location + " `" + propFullName + "` of value `" + String(propValue) + "` " + ("supplied to `" + componentName + "`, expected one of " + valuesString + "."));
+          }
+          return createChainableTypeChecker(validate);
+        }
+        function createObjectOfTypeChecker(typeChecker) {
+          function validate(props, propName, componentName, location, propFullName) {
+            if (typeof typeChecker !== "function") {
+              return new PropTypeError("Property `" + propFullName + "` of component `" + componentName + "` has invalid PropType notation inside objectOf.");
+            }
+            var propValue = props[propName];
+            var propType = getPropType(propValue);
+            if (propType !== "object") {
+              return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type " + ("`" + propType + "` supplied to `" + componentName + "`, expected an object."));
+            }
+            for (var key in propValue) {
+              if (has(propValue, key)) {
+                var error = typeChecker(propValue, key, componentName, location, propFullName + "." + key, ReactPropTypesSecret);
+                if (error instanceof Error) {
+                  return error;
+                }
+              }
+            }
+            return null;
+          }
+          return createChainableTypeChecker(validate);
+        }
+        function createUnionTypeChecker(arrayOfTypeCheckers) {
+          if (!Array.isArray(arrayOfTypeCheckers)) {
+            true ? printWarning("Invalid argument supplied to oneOfType, expected an instance of array.") : void 0;
+            return emptyFunctionThatReturnsNull;
+          }
+          for (var i = 0; i < arrayOfTypeCheckers.length; i++) {
+            var checker = arrayOfTypeCheckers[i];
+            if (typeof checker !== "function") {
+              printWarning(
+                "Invalid argument supplied to oneOfType. Expected an array of check functions, but received " + getPostfixForTypeWarning(checker) + " at index " + i + "."
+              );
+              return emptyFunctionThatReturnsNull;
+            }
+          }
+          function validate(props, propName, componentName, location, propFullName) {
+            var expectedTypes = [];
+            for (var i2 = 0; i2 < arrayOfTypeCheckers.length; i2++) {
+              var checker2 = arrayOfTypeCheckers[i2];
+              var checkerResult = checker2(props, propName, componentName, location, propFullName, ReactPropTypesSecret);
+              if (checkerResult == null) {
+                return null;
+              }
+              if (checkerResult.data && has(checkerResult.data, "expectedType")) {
+                expectedTypes.push(checkerResult.data.expectedType);
+              }
+            }
+            var expectedTypesMessage = expectedTypes.length > 0 ? ", expected one of type [" + expectedTypes.join(", ") + "]" : "";
+            return new PropTypeError("Invalid " + location + " `" + propFullName + "` supplied to " + ("`" + componentName + "`" + expectedTypesMessage + "."));
+          }
+          return createChainableTypeChecker(validate);
+        }
+        function createNodeChecker() {
+          function validate(props, propName, componentName, location, propFullName) {
+            if (!isNode(props[propName])) {
+              return new PropTypeError("Invalid " + location + " `" + propFullName + "` supplied to " + ("`" + componentName + "`, expected a ReactNode."));
+            }
+            return null;
+          }
+          return createChainableTypeChecker(validate);
+        }
+        function invalidValidatorError(componentName, location, propFullName, key, type) {
+          return new PropTypeError(
+            (componentName || "React class") + ": " + location + " type `" + propFullName + "." + key + "` is invalid; it must be a function, usually from the `prop-types` package, but received `" + type + "`."
+          );
+        }
+        function createShapeTypeChecker(shapeTypes) {
+          function validate(props, propName, componentName, location, propFullName) {
+            var propValue = props[propName];
+            var propType = getPropType(propValue);
+            if (propType !== "object") {
+              return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type `" + propType + "` " + ("supplied to `" + componentName + "`, expected `object`."));
+            }
+            for (var key in shapeTypes) {
+              var checker = shapeTypes[key];
+              if (typeof checker !== "function") {
+                return invalidValidatorError(componentName, location, propFullName, key, getPreciseType(checker));
+              }
+              var error = checker(propValue, key, componentName, location, propFullName + "." + key, ReactPropTypesSecret);
+              if (error) {
+                return error;
+              }
+            }
+            return null;
+          }
+          return createChainableTypeChecker(validate);
+        }
+        function createStrictShapeTypeChecker(shapeTypes) {
+          function validate(props, propName, componentName, location, propFullName) {
+            var propValue = props[propName];
+            var propType = getPropType(propValue);
+            if (propType !== "object") {
+              return new PropTypeError("Invalid " + location + " `" + propFullName + "` of type `" + propType + "` " + ("supplied to `" + componentName + "`, expected `object`."));
+            }
+            var allKeys = assign({}, props[propName], shapeTypes);
+            for (var key in allKeys) {
+              var checker = shapeTypes[key];
+              if (has(shapeTypes, key) && typeof checker !== "function") {
+                return invalidValidatorError(componentName, location, propFullName, key, getPreciseType(checker));
+              }
+              if (!checker) {
+                return new PropTypeError(
+                  "Invalid " + location + " `" + propFullName + "` key `" + key + "` supplied to `" + componentName + "`.\nBad object: " + JSON.stringify(props[propName], null, "  ") + "\nValid keys: " + JSON.stringify(Object.keys(shapeTypes), null, "  ")
+                );
+              }
+              var error = checker(propValue, key, componentName, location, propFullName + "." + key, ReactPropTypesSecret);
+              if (error) {
+                return error;
+              }
+            }
+            return null;
+          }
+          return createChainableTypeChecker(validate);
+        }
+        function isNode(propValue) {
+          switch (typeof propValue) {
+            case "number":
+            case "string":
+            case "undefined":
+              return true;
+            case "boolean":
+              return !propValue;
+            case "object":
+              if (Array.isArray(propValue)) {
+                return propValue.every(isNode);
+              }
+              if (propValue === null || isValidElement(propValue)) {
+                return true;
+              }
+              var iteratorFn = getIteratorFn(propValue);
+              if (iteratorFn) {
+                var iterator = iteratorFn.call(propValue);
+                var step;
+                if (iteratorFn !== propValue.entries) {
+                  while (!(step = iterator.next()).done) {
+                    if (!isNode(step.value)) {
+                      return false;
+                    }
+                  }
+                } else {
+                  while (!(step = iterator.next()).done) {
+                    var entry = step.value;
+                    if (entry) {
+                      if (!isNode(entry[1])) {
+                        return false;
+                      }
+                    }
+                  }
+                }
+              } else {
+                return false;
+              }
+              return true;
+            default:
+              return false;
+          }
+        }
+        function isSymbol(propType, propValue) {
+          if (propType === "symbol") {
+            return true;
+          }
+          if (!propValue) {
+            return false;
+          }
+          if (propValue["@@toStringTag"] === "Symbol") {
+            return true;
+          }
+          if (typeof Symbol === "function" && propValue instanceof Symbol) {
+            return true;
+          }
+          return false;
+        }
+        function getPropType(propValue) {
+          var propType = typeof propValue;
+          if (Array.isArray(propValue)) {
+            return "array";
+          }
+          if (propValue instanceof RegExp) {
+            return "object";
+          }
+          if (isSymbol(propType, propValue)) {
+            return "symbol";
+          }
+          return propType;
+        }
+        function getPreciseType(propValue) {
+          if (typeof propValue === "undefined" || propValue === null) {
+            return "" + propValue;
+          }
+          var propType = getPropType(propValue);
+          if (propType === "object") {
+            if (propValue instanceof Date) {
+              return "date";
+            } else if (propValue instanceof RegExp) {
+              return "regexp";
+            }
+          }
+          return propType;
+        }
+        function getPostfixForTypeWarning(value) {
+          var type = getPreciseType(value);
+          switch (type) {
+            case "array":
+            case "object":
+              return "an " + type;
+            case "boolean":
+            case "date":
+            case "regexp":
+              return "a " + type;
+            default:
+              return type;
+          }
+        }
+        function getClassName(propValue) {
+          if (!propValue.constructor || !propValue.constructor.name) {
+            return ANONYMOUS;
+          }
+          return propValue.constructor.name;
+        }
+        ReactPropTypes.checkPropTypes = checkPropTypes;
+        ReactPropTypes.resetWarningCache = checkPropTypes.resetWarningCache;
+        ReactPropTypes.PropTypes = ReactPropTypes;
+        return ReactPropTypes;
+      };
+    }
+  });
+
+  // node_modules/prop-types/index.js
+  var require_prop_types = __commonJS({
+    "node_modules/prop-types/index.js"(exports, module) {
+      if (true) {
+        ReactIs = require_react_is();
+        throwOnDirectAccess = true;
+        module.exports = require_factoryWithTypeCheckers()(ReactIs.isElement, throwOnDirectAccess);
+      } else {
+        module.exports = null();
+      }
+      var ReactIs;
+      var throwOnDirectAccess;
+    }
+  });
+
+  // node_modules/@mdi/react/Icon.js
+  var require_Icon = __commonJS({
+    "node_modules/@mdi/react/Icon.js"(exports, module) {
+      module.exports = (function(e) {
+        var t = {};
+        function r(n) {
+          if (t[n]) return t[n].exports;
+          var o = t[n] = { i: n, l: false, exports: {} };
+          return e[n].call(o.exports, o, o.exports, r), o.l = true, o.exports;
+        }
+        return r.m = e, r.c = t, r.d = function(e2, t2, n) {
+          r.o(e2, t2) || Object.defineProperty(e2, t2, { enumerable: true, get: n });
+        }, r.r = function(e2) {
+          "undefined" != typeof Symbol && Symbol.toStringTag && Object.defineProperty(e2, Symbol.toStringTag, { value: "Module" }), Object.defineProperty(e2, "__esModule", { value: true });
+        }, r.t = function(e2, t2) {
+          if (1 & t2 && (e2 = r(e2)), 8 & t2) return e2;
+          if (4 & t2 && "object" == typeof e2 && e2 && e2.__esModule) return e2;
+          var n = /* @__PURE__ */ Object.create(null);
+          if (r.r(n), Object.defineProperty(n, "default", { enumerable: true, value: e2 }), 2 & t2 && "string" != typeof e2) for (var o in e2) r.d(n, o, function(t3) {
+            return e2[t3];
+          }.bind(null, o));
+          return n;
+        }, r.n = function(e2) {
+          var t2 = e2 && e2.__esModule ? function() {
+            return e2.default;
+          } : function() {
+            return e2;
+          };
+          return r.d(t2, "a", t2), t2;
+        }, r.o = function(e2, t2) {
+          return Object.prototype.hasOwnProperty.call(e2, t2);
+        }, r.p = "", r(r.s = 2);
+      })([function(e, t) {
+        e.exports = require_prop_types();
+      }, function(e, t) {
+        e.exports = require_react();
+      }, function(e, t, r) {
+        "use strict";
+        r.r(t);
+        var n = r(1), o = r(0), l = function() {
+          return (l = Object.assign || function(e2) {
+            for (var t2, r2 = 1, n2 = arguments.length; r2 < n2; r2++) for (var o2 in t2 = arguments[r2]) Object.prototype.hasOwnProperty.call(t2, o2) && (e2[o2] = t2[o2]);
+            return e2;
+          }).apply(this, arguments);
+        }, i = function(e2, t2) {
+          var r2 = {};
+          for (var n2 in e2) Object.prototype.hasOwnProperty.call(e2, n2) && t2.indexOf(n2) < 0 && (r2[n2] = e2[n2]);
+          if (null != e2 && "function" == typeof Object.getOwnPropertySymbols) {
+            var o2 = 0;
+            for (n2 = Object.getOwnPropertySymbols(e2); o2 < n2.length; o2++) t2.indexOf(n2[o2]) < 0 && Object.prototype.propertyIsEnumerable.call(e2, n2[o2]) && (r2[n2[o2]] = e2[n2[o2]]);
+          }
+          return r2;
+        }, a = 0, s = n.forwardRef((function(e2, t2) {
+          var r2 = e2.title, o2 = void 0 === r2 ? null : r2, s2 = e2.description, c2 = void 0 === s2 ? null : s2, u2 = e2.size, p2 = void 0 === u2 ? null : u2, f2 = e2.color, d2 = void 0 === f2 ? "currentColor" : f2, y = e2.horizontal, v = void 0 === y ? null : y, b = e2.vertical, m = void 0 === b ? null : b, h = e2.rotate, g = void 0 === h ? null : h, O = e2.spin, w2 = void 0 === O ? null : O, j = e2.style, z = void 0 === j ? {} : j, E = e2.children, P = i(e2, ["title", "description", "size", "color", "horizontal", "vertical", "rotate", "spin", "style", "children"]);
+          a++;
+          var S, x = null !== w2 && w2, _ = n.Children.map(E, (function(e3) {
+            var t3 = e3;
+            true !== x && (x = true === (null === w2 ? t3.props.spin : w2));
+            var r3 = t3.props.size;
+            "number" == typeof p2 && "number" == typeof t3.props.size && (r3 = t3.props.size / p2);
+            var o3 = { size: r3, color: null === d2 ? t3.props.color : d2, horizontal: null === v ? t3.props.horizontal : v, vertical: null === m ? t3.props.vertical : m, rotate: null === g ? t3.props.rotate : g, spin: null === w2 ? t3.props.spin : w2, inStack: true };
+            return n.cloneElement(t3, o3);
+          }));
+          null !== p2 && (z.width = "string" == typeof p2 ? p2 : 1.5 * p2 + "rem");
+          var k, T = "stack_labelledby_" + a, q = "stack_describedby_" + a;
+          if (o2) S = c2 ? T + " " + q : T;
+          else if (k = "presentation", c2) throw new Error("title attribute required when description is set");
+          return n.createElement("svg", l({ ref: t2, viewBox: "0 0 24 24", style: z, role: k, "aria-labelledby": S }, P), o2 && n.createElement("title", { id: T }, o2), c2 && n.createElement("desc", { id: q }, c2), x && n.createElement("style", null, "@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }", "@keyframes spin-inverse { from { transform: rotate(0deg) } to { transform: rotate(-360deg) } }"), _);
+        }));
+        s.displayName = "Stack", s.propTypes = { size: o.oneOfType([o.number, o.string]), color: o.string, horizontal: o.bool, vertical: o.bool, rotate: o.number, spin: o.oneOfType([o.bool, o.number]), children: o.oneOfType([o.arrayOf(o.node), o.node]).isRequired, className: o.string, style: o.object }, s.defaultProps = { size: null, color: null, horizontal: null, vertical: null, rotate: null, spin: null };
+        var c = s;
+        r.d(t, "Icon", (function() {
+          return d;
+        })), r.d(t, "Stack", (function() {
+          return c;
+        }));
+        var u = function() {
+          return (u = Object.assign || function(e2) {
+            for (var t2, r2 = 1, n2 = arguments.length; r2 < n2; r2++) for (var o2 in t2 = arguments[r2]) Object.prototype.hasOwnProperty.call(t2, o2) && (e2[o2] = t2[o2]);
+            return e2;
+          }).apply(this, arguments);
+        }, p = function(e2, t2) {
+          var r2 = {};
+          for (var n2 in e2) Object.prototype.hasOwnProperty.call(e2, n2) && t2.indexOf(n2) < 0 && (r2[n2] = e2[n2]);
+          if (null != e2 && "function" == typeof Object.getOwnPropertySymbols) {
+            var o2 = 0;
+            for (n2 = Object.getOwnPropertySymbols(e2); o2 < n2.length; o2++) t2.indexOf(n2[o2]) < 0 && Object.prototype.propertyIsEnumerable.call(e2, n2[o2]) && (r2[n2[o2]] = e2[n2[o2]]);
+          }
+          return r2;
+        }, f = 0, d = n.forwardRef((function(e2, t2) {
+          var r2 = e2.path, o2 = e2.id, l2 = void 0 === o2 ? ++f : o2, i2 = e2.title, a2 = void 0 === i2 ? null : i2, s2 = e2.description, c2 = void 0 === s2 ? null : s2, d2 = e2.size, y = void 0 === d2 ? null : d2, v = e2.color, b = void 0 === v ? "currentColor" : v, m = e2.horizontal, h = void 0 !== m && m, g = e2.vertical, O = void 0 !== g && g, w2 = e2.rotate, j = void 0 === w2 ? 0 : w2, z = e2.spin, E = void 0 !== z && z, P = e2.style, S = void 0 === P ? {} : P, x = e2.inStack, _ = void 0 !== x && x, k = p(e2, ["path", "id", "title", "description", "size", "color", "horizontal", "vertical", "rotate", "spin", "style", "inStack"]), T = {}, q = [];
+          null !== y && (_ ? q.push("scale(" + y + ")") : (S.width = "string" == typeof y ? y : 1.5 * y + "rem", S.height = S.width)), h && q.push("scaleX(-1)"), O && q.push("scaleY(-1)"), 0 !== j && q.push("rotate(" + j + "deg)"), null !== b && (T.fill = b);
+          var M = n.createElement("path", u({ d: r2, style: T }, _ ? k : {})), C = M;
+          q.length > 0 && (S.transform = q.join(" "), S.transformOrigin = "center", _ && (C = n.createElement("g", { style: S }, M, n.createElement("rect", { width: "24", height: "24", fill: "transparent" }))));
+          var I, N = C, R = true === E || "number" != typeof E ? 2 : E, B = !_ && (h || O);
+          if (R < 0 && (B = !B), E && (N = n.createElement("g", { style: { animation: "spin" + (B ? "-inverse" : "") + " linear " + Math.abs(R) + "s infinite", transformOrigin: "center" } }, C, !(h || O || 0 !== j) && n.createElement("rect", { width: "24", height: "24", fill: "transparent" }))), _) return N;
+          var X, Y = "icon_labelledby_" + l2, A = "icon_describedby_" + l2;
+          if (a2) I = c2 ? Y + " " + A : Y;
+          else if (X = "presentation", c2) throw new Error("title attribute required when description is set");
+          return n.createElement("svg", u({ ref: t2, viewBox: "0 0 24 24", style: S, role: X, "aria-labelledby": I }, k), a2 && n.createElement("title", { id: Y }, a2), c2 && n.createElement("desc", { id: A }, c2), !_ && E && (B ? n.createElement("style", null, "@keyframes spin-inverse { from { transform: rotate(0deg) } to { transform: rotate(-360deg) } }") : n.createElement("style", null, "@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }")), N);
+        }));
+        d.displayName = "Icon", d.propTypes = { path: o.string.isRequired, size: o.oneOfType([o.number, o.string]), color: o.string, horizontal: o.bool, vertical: o.bool, rotate: o.number, spin: o.oneOfType([o.bool, o.number]), style: o.object, inStack: o.bool, className: o.string }, d.defaultProps = { size: null, color: "currentColor", horizontal: false, vertical: false, rotate: 0, spin: false };
+        t.default = d;
+      }]);
+    }
+  });
+
   // src/fp.ts
   function variadify(fn, rightAssociative = false) {
     if (rightAssociative) {
@@ -23647,6 +24531,629 @@
       );
     }
   };
+
+  // src/audio/stream-audio.ts
+  var import_fft = __toESM(require_fft());
+  function createTrack(channels, sampleRate, constituents) {
+    const maxlen = Math.max(
+      ...constituents.map((c) => c.start + c.audio.duration)
+    );
+    const sht = new OneDimensionalSpatialHashTable(constituents.length, 0, maxlen, (a) => ({
+      start: a.start,
+      end: a.start + a.audio.duration
+    }));
+    for (const c of constituents) sht.add(c);
+    return new AudioStream({
+      channels,
+      sampleRate,
+      duration: maxlen,
+      async getRange(start, count) {
+        const startTime = start / sampleRate;
+        const endTime = (start + count) / sampleRate;
+        const audio = sht.query(startTime, endTime);
+        const out = {};
+        const inputs = await Promise.all(
+          [...audio].map(
+            (e) => e.audio.getRange(start - Math.ceil(e.start * sampleRate), count)
+          )
+        );
+        for (const ch of channels) {
+          const a = new Float32Array(count);
+          for (const inp of inputs) {
+            for (let i = 0; i < count; i++) {
+              a[i] += inp[ch][i] ?? 0;
+            }
+          }
+          out[ch] = a;
+        }
+        return out;
+      }
+    });
+  }
+  var AudioStream = class _AudioStream {
+    constructor(params) {
+      this.getRange = async (start, count) => {
+        const estimatedLength = Math.ceil(this.sampleRate * this.duration);
+        const clampedStart = clamp(start, 0, estimatedLength);
+        const clampedEnd = clamp(start + count, 0, estimatedLength);
+        const range3 = await params.getRange(
+          clampedStart,
+          clampedEnd - clampedStart
+        );
+        if (clampedEnd - clampedStart == count) return range3;
+        const out = {};
+        const padStart = -Math.min(0, start);
+        for (const ch of this.channels) {
+          console.log("eeeee", count);
+          const o = new Float32Array(count);
+          const i = range3[ch];
+          for (let idx = 0; idx < i.length; idx++) {
+            o[idx + padStart] = i[idx];
+          }
+          out[ch] = o;
+        }
+        return out;
+      };
+      this.duration = params.duration;
+      this.sampleRate = params.sampleRate;
+      this.channels = params.channels;
+    }
+    gain(gain) {
+      return combineAudio(
+        this.channels,
+        this.sampleRate,
+        [this, gain],
+        (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k]),
+        this.duration
+      );
+    }
+    add(stream) {
+      return combineAudio(
+        this.channels,
+        this.sampleRate,
+        [this, stream],
+        (time, sample, a, b) => mapObjValues(a, (k, x) => x + b[k])
+      );
+    }
+    clip(start, end) {
+      return new _AudioStream({
+        channels: this.channels,
+        duration: end - start,
+        sampleRate: this.sampleRate,
+        getRange: (start2, count2) => {
+          return this.getRange(
+            start2 + Math.floor(start * this.sampleRate),
+            count2
+          );
+        }
+      });
+    }
+    convolve(_kernel) {
+      const kernel = broadcastTo(this.channels, this.sampleRate, _kernel);
+      const kernelSampleCount = Math.ceil(kernel.duration * kernel.sampleRate);
+      const kernelData = kernel.getRange(0, kernelSampleCount);
+      return new _AudioStream({
+        channels: this.channels,
+        duration: this.duration,
+        sampleRate: this.sampleRate,
+        getRange: async (start, count) => {
+          const kern = await kernelData;
+          return mapObjValues(
+            await this.getRange(start, count + kernelSampleCount),
+            (ch, v) => overlapSaveConvolve(
+              new Float32Array(v),
+              new Float32Array(kern[ch])
+            ).slice(0, count)
+          );
+        }
+      });
+    }
+    preload() {
+      const bufs = this.getRange(0, Math.ceil(this.duration * this.sampleRate));
+      return new _AudioStream({
+        channels: this.channels,
+        duration: this.duration,
+        sampleRate: this.sampleRate,
+        getRange: async (start, count) => {
+          const bufs2 = await bufs;
+          return mapObjValues(bufs2, (k, v) => v.slice(start, start + count));
+        }
+      });
+    }
+  };
+  function fft(x) {
+    const f = new import_fft.default(x.length);
+    const out = f.createComplexArray();
+    const data = f.toComplexArray(x);
+    f.transform(out, data);
+    return new Float32Array(out);
+  }
+  function ifft(x) {
+    const f = new import_fft.default(x.length / 2);
+    const out = f.createComplexArray();
+    f.inverseTransform(out, x);
+    return new Float32Array(range(out.length / 2).map((i) => out[i * 2]));
+  }
+  function fftConvolve(x, h) {
+    const arr1 = fft(x);
+    const arr2 = fft(h);
+    let out = new Float32Array(arr1.length);
+    for (let i = 0; i < arr1.length; i += 2) {
+      out[i] = arr1[i] * arr2[i] - arr1[i + 1] * arr2[i + 1];
+      out[i + 1] = arr1[i] * arr2[i + 1] + arr1[i + 1] * arr2[i];
+    }
+    return ifft(out);
+  }
+  function nextPowerOfTwo(x) {
+    return Math.pow(2, Math.ceil(Math.log2(x)));
+  }
+  function zeroPad(x, length) {
+    if (x.length === length) return x;
+    const y = new Float32Array(length);
+    for (let i = 0; i < x.length; i++) {
+      y[i] = x[i];
+    }
+    return y;
+  }
+  var powersOfTwo = range(31).map((i) => 2 ** (i + 1));
+  var getOptimumOverlapSaveFilterSize = memo((M) => {
+    const cost = (M2, N) => N * Math.log2(N + 1) / (N - M2 + 1);
+    return argmin(
+      powersOfTwo.filter((N) => cost(M, N) > 0),
+      (N) => cost(M, N)
+    );
+  });
+  function overlapSaveConvolve(x, h) {
+    const M = h.length;
+    const N = getOptimumOverlapSaveFilterSize(M);
+    const kernel = zeroPad(h, N);
+    const L = N - M + 1;
+    const blockcount = Math.ceil(x.length / L);
+    const dst = new Float32Array(L * blockcount);
+    for (let i = 0; i < blockcount; i++) {
+      const position = L * i;
+      const xslice = zeroPad(x.slice(position, position + N), N);
+      const convolved = fftConvolve(xslice, kernel);
+      for (let j = 0; j < L; j++) {
+        dst[position + j] = convolved[M + j - 1];
+      }
+    }
+    return dst.slice(0, x.length);
+  }
+  function createSignal(params) {
+    const constr = params.constructors;
+    const constructors = constr instanceof Function ? arrayToObjKeys(params.channels, (k) => (t, c) => constr(t, c)[k]) : constr;
+    return new AudioStream({
+      channels: params.channels,
+      async getRange(start, count) {
+        return mapObjEntries(constructors, (k, v) => [
+          k,
+          new Float32Array(
+            range(count).map((s) => {
+              return v((s + start) / this.sampleRate, s + start);
+            })
+          )
+        ]);
+      },
+      sampleRate: params.sampleRate,
+      duration: params.duration
+    });
+  }
+  function sameSignalOnData(sampleRate, channels, duration, f) {
+    return createSignal({
+      channels,
+      duration,
+      sampleRate,
+      length: Math.ceil(duration * sampleRate),
+      constructors: arrayToObjKeys(channels, () => f)
+    });
+  }
+  function waveform(sampleRate, channels, seconds, frequency, amplitude, phase, profile) {
+    return sameSignalOnData(
+      sampleRate,
+      channels,
+      seconds,
+      (t) => amplitude * profile((t * frequency + phase) % 1)
+    );
+  }
+  async function getRangeAndResample(src2, dstStart, dstCount, dstSampleRate) {
+    if (src2.sampleRate === dstSampleRate) {
+      return await src2.getRange(dstStart, dstCount);
+    }
+    const startSeconds = dstStart / dstSampleRate;
+    const durationSeconds = dstCount / dstSampleRate;
+    const srcStart = Math.floor(startSeconds * src2.sampleRate);
+    const srcCount = Math.ceil((startSeconds + durationSeconds) * src2.sampleRate);
+    const srcRange = await src2.getRange(srcStart, srcCount - srcStart);
+    return mapObjValues(srcRange, (k, v) => {
+      return new Float32Array(
+        range(dstCount).map((dstIndex) => {
+          const time = dstIndex / dstSampleRate;
+          const sourceIndex = time * src2.sampleRate;
+          const srcSamplePrev = Math.floor(sourceIndex);
+          const srcSampleNext = srcSamplePrev + 1;
+          return lerp(sourceIndex % 1, v[srcSamplePrev], v[srcSampleNext]);
+        })
+      );
+    });
+  }
+  function resample(audio, targetSampleRate) {
+    return combineAudio(
+      audio.channels,
+      targetSampleRate,
+      [audio],
+      (time, sample, ch) => ch
+    );
+  }
+  function combineAudio(channels, sampleRate, audio, f, customDuration) {
+    const duration = customDuration ? customDuration : Math.max(...audio.map((a) => a.duration));
+    const length = Math.ceil(duration * sampleRate);
+    const stream = new AudioStream({
+      channels,
+      duration,
+      sampleRate,
+      async getRange(start, count) {
+        const ranges = await Promise.all(
+          audio.map(
+            async (a) => mapObjValues(
+              await getRangeAndResample(
+                a,
+                start,
+                count,
+                sampleRate
+              ),
+              (k, v) => new Float32Array(v)
+            )
+          )
+        );
+        const ch = arrayToObjKeys(
+          channels,
+          (k) => new Float32Array(count)
+        );
+        for (const i of range(count)) {
+          const samples = ranges.map((r, j) => {
+            if (audio[j].channels.length === 1 && audio[j].channels[0] === "center") {
+              return arrayToObjKeys(channels, () => r.center[i]);
+            }
+            return mapObjValues(r, (k, v) => v[i]);
+          });
+          const res = f(
+            (start + i) / sampleRate,
+            start + i,
+            ...samples
+          );
+          for (const c of channels) {
+            ch[c][i] = res[c];
+          }
+        }
+        return ch;
+      }
+    });
+    return stream;
+  }
+  function broadcastTo(channels, sampleRate, mono) {
+    return combineAudio(channels, sampleRate, [mono], (_, __, x) => x);
+  }
+  function lowPassFilterSample(n, N, m) {
+    return 1 / N * range(m * 2 + 1).map((i) => Math.cos(2 * Math.PI * (i - m) / N * n)).reduce((a, b) => a + b, 0);
+  }
+  function hannSample(n, N) {
+    return Math.sin(Math.PI * (n - N / 2) / N) ** 2;
+  }
+  var createLowPassFilter = memo(
+    (channels, sampleRate, freq, cycles) => {
+      const oneCycleSampleCount = Math.ceil(1 / freq * sampleRate);
+      const sampleCount = oneCycleSampleCount * cycles;
+      const duration = sampleCount / sampleRate;
+      console.log("created lpf");
+      const cutoff = cycles;
+      return createSignal({
+        duration,
+        sampleRate,
+        channels,
+        length: sampleCount,
+        constructors: arrayToObjKeys(
+          channels,
+          () => (t, s) => lowPassFilterSample(s, sampleCount, cutoff) * hannSample(s, sampleCount)
+        )
+      }).preload();
+    }
+  );
+  var AudioBuilder = class {
+    constructor(channels, sampleRate) {
+      this.channels = channels;
+      this.sampleRate = sampleRate;
+    }
+    lpf(freq, cycles = 16) {
+      return createLowPassFilter(
+        this.channels,
+        this.sampleRate,
+        freq,
+        cycles
+      );
+    }
+    signal(duration, constructors) {
+      return createSignal({
+        sampleRate: this.sampleRate,
+        channels: this.channels,
+        constructors,
+        duration,
+        length: Math.ceil(duration * this.sampleRate)
+      });
+    }
+    waveform(frequency, amplitude, phase, profile) {
+      return waveform(
+        this.sampleRate,
+        this.channels,
+        Infinity,
+        frequency,
+        amplitude,
+        phase,
+        profile
+      );
+    }
+    constant(x) {
+      return createSignal({
+        sampleRate: this.sampleRate,
+        channels: this.channels,
+        duration: Infinity,
+        length: Infinity,
+        constructors: arrayToObjKeys(this.channels, () => () => x)
+      });
+    }
+    sine(frequency, amplitude = 1, phase = 0) {
+      return this.waveform(
+        frequency,
+        amplitude,
+        phase,
+        (x) => Math.sin(x * Math.PI * 2)
+      );
+    }
+    square(frequency, amplitude = 1, phase = 0) {
+      return this.waveform(
+        frequency,
+        amplitude,
+        phase,
+        (x) => x > 0.5 ? -1 : 1
+      );
+    }
+    saw(frequency, amplitude = 1, phase = 0) {
+      return this.waveform(frequency, amplitude, phase, (x) => x * 2 - 1);
+    }
+    noise(amplitude = 1) {
+      return createSignal({
+        sampleRate: this.sampleRate,
+        channels: this.channels,
+        duration: Infinity,
+        length: Infinity,
+        constructors: arrayToObjKeys(
+          this.channels,
+          () => () => (Math.random() * 2 - 1) * amplitude
+        )
+      });
+    }
+    adsrgen(a, d, s, r) {
+      return (at, dt, st, rt) => {
+        return sameSignalOnData(this.sampleRate, this.channels, rt, (t) => {
+          if (t < at) return rescale(t, 0, at, 0, a);
+          if (t < dt) return rescale(t, at, dt, a, d);
+          if (t < st) return rescale(t, dt, st, d, s);
+          if (t < rt) return rescale(t, st, rt, s, r);
+          return 0;
+        });
+      };
+    }
+    boxcar(length, area = 1) {
+      const sampleCount = Math.ceil(length * this.sampleRate);
+      return this.constant(area / sampleCount).clip(
+        0,
+        sampleCount / this.sampleRate
+      );
+    }
+    adsr(a, at, d, dt, s, st, r, rt) {
+      return this.adsrgen(a, d, s, r)(at, dt, st, rt);
+    }
+    broadcast(mono) {
+      return broadcastTo(this.channels, this.sampleRate, mono);
+    }
+    createTrack(constituents) {
+      return createTrack(this.channels, this.sampleRate, constituents);
+    }
+  };
+  async function playStereo(audio) {
+    const ctx = new AudioContext();
+    const src2 = ctx.createBufferSource();
+    const len = Math.ceil(audio.sampleRate * audio.duration);
+    const buf = ctx.createBuffer(2, len, audio.sampleRate);
+    const range3 = await audio.getRange(0, len);
+    buf.copyToChannel(new Float32Array(range3.left), 0);
+    buf.copyToChannel(new Float32Array(range3.right), 1);
+    src2.buffer = buf;
+    src2.connect(ctx.destination);
+    src2.start();
+  }
+  function isWorklet() {
+    return eval("globalThis.registerProcessor") !== void 0;
+  }
+  var BLOCKSIZE = 8192;
+  async function initBufferStreamerWorklet(src) {
+    if (isWorklet()) {
+      eval("registerProcessor")(
+        "buffer-streamer",
+        class extends eval("AudioWorkletProcessor") {
+          constructor() {
+            super();
+            this.buffers = [];
+            this.offsetIntoCurrentBuffer = 0;
+            this.port.onmessage = async (e) => {
+              const data = e.data;
+              if (data.type === "buffer") {
+                this.buffers.push({
+                  left: new Float32Array(data.buffers.left),
+                  right: new Float32Array(data.buffers.right)
+                });
+              }
+            };
+          }
+          process(inputs, outputs, parameters) {
+            const output = outputs[0];
+            const outputLength = output[0].length;
+            for (let i = 0; i < outputLength; i++) {
+              if (this.buffers.length > 0) {
+                output[0][i] = this.buffers[0].left[this.offsetIntoCurrentBuffer];
+                if (output[1]) {
+                  output[1][i] = this.buffers[0].right[this.offsetIntoCurrentBuffer];
+                }
+                this.offsetIntoCurrentBuffer++;
+                if (this.offsetIntoCurrentBuffer >= this.buffers[0]?.left.length) {
+                  this.offsetIntoCurrentBuffer = 0;
+                  this.buffers.shift();
+                }
+              } else {
+                output[0][i] = 0;
+                if (output[1]) {
+                  output[1][i] = 0;
+                }
+              }
+            }
+            return true;
+          }
+        }
+      );
+    } else {
+      return async (ctx) => {
+        await ctx.audioWorklet.addModule(src);
+        return () => {
+          const worklet = new AudioWorkletNode(ctx, "buffer-streamer");
+          return {
+            worklet,
+            pushData(left, right) {
+              worklet.port.postMessage(
+                {
+                  type: "buffer",
+                  buffers: {
+                    left: left.buffer,
+                    right: right.buffer
+                  }
+                },
+                [left.buffer, right.buffer]
+              );
+            }
+          };
+        };
+      };
+    }
+  }
+  var CHUNKSIZE = 2048 * 16;
+  function streamAudioToWorklet(stream, bs) {
+    let t = 0;
+    const loop = async () => {
+      const { left, right } = await stream.getRange(t, CHUNKSIZE);
+      bs.pushData(new Float32Array(left), new Float32Array(right));
+      t += CHUNKSIZE;
+      if (t <= Math.max(stream.duration * stream.sampleRate)) {
+        setTimeout(loop);
+      }
+    };
+    loop();
+  }
+  function displayAudioSamples(samples, size, amp = 1) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = size[0];
+    canvas.height = size[1];
+    ctx.beginPath();
+    for (const i of smartRange(samples.length)) {
+      ctx.lineTo(
+        i.remap(0, canvas.width),
+        rescale(samples[i.i], -amp, amp, 0, size[1])
+      );
+    }
+    ctx.stroke();
+    return canvas;
+  }
+  async function displayAudio(stream, amp = 1, res = [1e3, 200], chunks = 1) {
+    const len = Math.ceil(stream.duration * stream.sampleRate);
+    const left = new Float32Array(len);
+    const right = new Float32Array(len);
+    let divisions = smartRange(chunks + 1).map(
+      (c) => Math.floor(c.remap(0, len, true))
+    );
+    for (let i of range(chunks)) {
+      const audio = await stream.getRange(
+        divisions[i],
+        divisions[i + 1] - divisions[i]
+      );
+      const l = new Float32Array(audio.left);
+      const r = new Float32Array(audio.right);
+      for (let j = 0; j < l.length; j++) {
+        left[j + divisions[i]] = l[j];
+        right[j + divisions[i]] = r[j];
+      }
+    }
+    return [
+      displayAudioSamples(left, res, amp),
+      displayAudioSamples(right, res, amp)
+    ];
+  }
+
+  // src/audio/notes.ts
+  var import_typescript_parsec = __toESM(require_lib());
+  var noteLexer = (0, import_typescript_parsec.buildLexer)([
+    [true, /^\(/g, 0 /* Open */],
+    [true, /^\)/g, 1 /* Close */],
+    [true, /^\:/g, 2 /* Colon */],
+    [true, /^\//g, 3 /* Slash */],
+    [false, /^\s+/g, 4 /* Whitespace */],
+    [false, /^\/\/[^\n]*/g, 7 /* Comment */],
+    [true, /^(\+|\-)?[0-9]+/g, 5 /* Integer */],
+    [true, /^[a-gA-G][b#]*[0-9]*/g, 6 /* ChromaticKey */]
+  ]);
+  var note_timing = (0, import_typescript_parsec.alt_sc)(
+    (0, import_typescript_parsec.apply)((0, import_typescript_parsec.kleft)((0, import_typescript_parsec.tok)(5 /* Integer */), (0, import_typescript_parsec.str)(":")), (t) => Number(t.text)),
+    (0, import_typescript_parsec.apply)((0, import_typescript_parsec.nil)(), () => 1)
+  );
+  var primitive_note = (0, import_typescript_parsec.apply)(
+    (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.alt_sc)((0, import_typescript_parsec.tok)(6 /* ChromaticKey */), (0, import_typescript_parsec.tok)(5 /* Integer */))),
+    ([timing, note2]) => ({
+      type: "note",
+      timing,
+      noteData: note2.text
+    })
+  );
+  var chord_inner = (0, import_typescript_parsec.rule)();
+  var chord = (0, import_typescript_parsec.apply)(
+    (0, import_typescript_parsec.seq)(
+      note_timing,
+      (0, import_typescript_parsec.lrec_sc)(
+        (0, import_typescript_parsec.apply)(chord_inner, (x) => [x]),
+        (0, import_typescript_parsec.seq)((0, import_typescript_parsec.str)("/"), chord_inner),
+        (a, [_, b]) => [...a, b]
+      )
+    ),
+    ([timing, notes]) => ({
+      type: "chord",
+      timing,
+      notes
+    })
+  );
+  var compound_note = (0, import_typescript_parsec.rule)();
+  var compound_note_inner = (0, import_typescript_parsec.rep_sc)(
+    (0, import_typescript_parsec.alt_sc)(primitive_note, chord, compound_note)
+  );
+  compound_note.setPattern(
+    (0, import_typescript_parsec.apply)(
+      (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.kmid)((0, import_typescript_parsec.str)("("), compound_note_inner, (0, import_typescript_parsec.str)(")"))),
+      ([timing, notes]) => ({ type: "compound", timing, notes })
+    )
+  );
+  chord_inner.setPattern((0, import_typescript_parsec.alt_sc)(primitive_note, compound_note));
+  var note = (0, import_typescript_parsec.alt_sc)(chord, compound_note, primitive_note);
+  var track = (0, import_typescript_parsec.rep_sc)(note);
+
+  // node_modules/ml-convolution/src/fftConvolution.js
+  var import_fft2 = __toESM(require_fft());
+  var import_next_power_of_two = __toESM(require_next_power_of_two());
 
   // src/math/round.ts
   function roundUp(factor, x) {
@@ -25777,629 +27284,6 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
     return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ...v, 1];
   }
 
-  // src/audio/stream-audio.ts
-  var import_fft = __toESM(require_fft());
-  function createTrack(channels, sampleRate, constituents) {
-    const maxlen = Math.max(
-      ...constituents.map((c) => c.start + c.audio.duration)
-    );
-    const sht = new OneDimensionalSpatialHashTable(constituents.length, 0, maxlen, (a) => ({
-      start: a.start,
-      end: a.start + a.audio.duration
-    }));
-    for (const c of constituents) sht.add(c);
-    return new AudioStream({
-      channels,
-      sampleRate,
-      duration: maxlen,
-      async getRange(start, count) {
-        const startTime = start / sampleRate;
-        const endTime = (start + count) / sampleRate;
-        const audio = sht.query(startTime, endTime);
-        const out = {};
-        const inputs = await Promise.all(
-          [...audio].map(
-            (e) => e.audio.getRange(start - Math.ceil(e.start * sampleRate), count)
-          )
-        );
-        for (const ch of channels) {
-          const a = new Float32Array(count);
-          for (const inp of inputs) {
-            for (let i = 0; i < count; i++) {
-              a[i] += inp[ch][i] ?? 0;
-            }
-          }
-          out[ch] = a;
-        }
-        return out;
-      }
-    });
-  }
-  var AudioStream = class _AudioStream {
-    constructor(params) {
-      this.getRange = async (start, count) => {
-        const estimatedLength = Math.ceil(this.sampleRate * this.duration);
-        const clampedStart = clamp(start, 0, estimatedLength);
-        const clampedEnd = clamp(start + count, 0, estimatedLength);
-        const range3 = await params.getRange(
-          clampedStart,
-          clampedEnd - clampedStart
-        );
-        if (clampedEnd - clampedStart == count) return range3;
-        const out = {};
-        const padStart = -Math.min(0, start);
-        for (const ch of this.channels) {
-          console.log("eeeee", count);
-          const o = new Float32Array(count);
-          const i = range3[ch];
-          for (let idx = 0; idx < i.length; idx++) {
-            o[idx + padStart] = i[idx];
-          }
-          out[ch] = o;
-        }
-        return out;
-      };
-      this.duration = params.duration;
-      this.sampleRate = params.sampleRate;
-      this.channels = params.channels;
-    }
-    gain(gain) {
-      return combineAudio(
-        this.channels,
-        this.sampleRate,
-        [this, gain],
-        (time, sample, a, g) => mapObjValues(a, (k, x) => x * g[k]),
-        this.duration
-      );
-    }
-    add(stream) {
-      return combineAudio(
-        this.channels,
-        this.sampleRate,
-        [this, stream],
-        (time, sample, a, b) => mapObjValues(a, (k, x) => x + b[k])
-      );
-    }
-    clip(start, end) {
-      return new _AudioStream({
-        channels: this.channels,
-        duration: end - start,
-        sampleRate: this.sampleRate,
-        getRange: (start2, count2) => {
-          return this.getRange(
-            start2 + Math.floor(start * this.sampleRate),
-            count2
-          );
-        }
-      });
-    }
-    convolve(_kernel) {
-      const kernel = broadcastTo(this.channels, this.sampleRate, _kernel);
-      const kernelSampleCount = Math.ceil(kernel.duration * kernel.sampleRate);
-      const kernelData = kernel.getRange(0, kernelSampleCount);
-      return new _AudioStream({
-        channels: this.channels,
-        duration: this.duration,
-        sampleRate: this.sampleRate,
-        getRange: async (start, count) => {
-          const kern = await kernelData;
-          return mapObjValues(
-            await this.getRange(start, count + kernelSampleCount),
-            (ch, v) => overlapSaveConvolve(
-              new Float32Array(v),
-              new Float32Array(kern[ch])
-            ).slice(0, count)
-          );
-        }
-      });
-    }
-    preload() {
-      const bufs = this.getRange(0, Math.ceil(this.duration * this.sampleRate));
-      return new _AudioStream({
-        channels: this.channels,
-        duration: this.duration,
-        sampleRate: this.sampleRate,
-        getRange: async (start, count) => {
-          const bufs2 = await bufs;
-          return mapObjValues(bufs2, (k, v) => v.slice(start, start + count));
-        }
-      });
-    }
-  };
-  function fft(x) {
-    const f = new import_fft.default(x.length);
-    const out = f.createComplexArray();
-    const data = f.toComplexArray(x);
-    f.transform(out, data);
-    return new Float32Array(out);
-  }
-  function ifft(x) {
-    const f = new import_fft.default(x.length / 2);
-    const out = f.createComplexArray();
-    f.inverseTransform(out, x);
-    return new Float32Array(range(out.length / 2).map((i) => out[i * 2]));
-  }
-  function fftConvolve(x, h) {
-    const arr1 = fft(x);
-    const arr2 = fft(h);
-    let out = new Float32Array(arr1.length);
-    for (let i = 0; i < arr1.length; i += 2) {
-      out[i] = arr1[i] * arr2[i] - arr1[i + 1] * arr2[i + 1];
-      out[i + 1] = arr1[i] * arr2[i + 1] + arr1[i + 1] * arr2[i];
-    }
-    return ifft(out);
-  }
-  function nextPowerOfTwo(x) {
-    return Math.pow(2, Math.ceil(Math.log2(x)));
-  }
-  function zeroPad(x, length) {
-    if (x.length === length) return x;
-    const y = new Float32Array(length);
-    for (let i = 0; i < x.length; i++) {
-      y[i] = x[i];
-    }
-    return y;
-  }
-  var powersOfTwo = range(31).map((i) => 2 ** (i + 1));
-  var getOptimumOverlapSaveFilterSize = memo((M) => {
-    const cost = (M2, N) => N * Math.log2(N + 1) / (N - M2 + 1);
-    return argmin(
-      powersOfTwo.filter((N) => cost(M, N) > 0),
-      (N) => cost(M, N)
-    );
-  });
-  function overlapSaveConvolve(x, h) {
-    const M = h.length;
-    const N = getOptimumOverlapSaveFilterSize(M);
-    const kernel = zeroPad(h, N);
-    const L = N - M + 1;
-    const blockcount = Math.ceil(x.length / L);
-    const dst = new Float32Array(L * blockcount);
-    for (let i = 0; i < blockcount; i++) {
-      const position = L * i;
-      const xslice = zeroPad(x.slice(position, position + N), N);
-      const convolved = fftConvolve(xslice, kernel);
-      for (let j = 0; j < L; j++) {
-        dst[position + j] = convolved[M + j - 1];
-      }
-    }
-    return dst.slice(0, x.length);
-  }
-  function createSignal(params) {
-    const constr = params.constructors;
-    const constructors = constr instanceof Function ? arrayToObjKeys(params.channels, (k) => (t, c) => constr(t, c)[k]) : constr;
-    return new AudioStream({
-      channels: params.channels,
-      async getRange(start, count) {
-        return mapObjEntries(constructors, (k, v) => [
-          k,
-          new Float32Array(
-            range(count).map((s) => {
-              return v((s + start) / this.sampleRate, s + start);
-            })
-          )
-        ]);
-      },
-      sampleRate: params.sampleRate,
-      duration: params.duration
-    });
-  }
-  function sameSignalOnData(sampleRate, channels, duration, f) {
-    return createSignal({
-      channels,
-      duration,
-      sampleRate,
-      length: Math.ceil(duration * sampleRate),
-      constructors: arrayToObjKeys(channels, () => f)
-    });
-  }
-  function waveform(sampleRate, channels, seconds, frequency, amplitude, phase, profile) {
-    return sameSignalOnData(
-      sampleRate,
-      channels,
-      seconds,
-      (t) => amplitude * profile((t * frequency + phase) % 1)
-    );
-  }
-  async function getRangeAndResample(src2, dstStart, dstCount, dstSampleRate) {
-    if (src2.sampleRate === dstSampleRate) {
-      return await src2.getRange(dstStart, dstCount);
-    }
-    const startSeconds = dstStart / dstSampleRate;
-    const durationSeconds = dstCount / dstSampleRate;
-    const srcStart = Math.floor(startSeconds * src2.sampleRate);
-    const srcCount = Math.ceil((startSeconds + durationSeconds) * src2.sampleRate);
-    const srcRange = await src2.getRange(srcStart, srcCount - srcStart);
-    return mapObjValues(srcRange, (k, v) => {
-      return new Float32Array(
-        range(dstCount).map((dstIndex) => {
-          const time = dstIndex / dstSampleRate;
-          const sourceIndex = time * src2.sampleRate;
-          const srcSamplePrev = Math.floor(sourceIndex);
-          const srcSampleNext = srcSamplePrev + 1;
-          return lerp(sourceIndex % 1, v[srcSamplePrev], v[srcSampleNext]);
-        })
-      );
-    });
-  }
-  function resample(audio, targetSampleRate) {
-    return combineAudio(
-      audio.channels,
-      targetSampleRate,
-      [audio],
-      (time, sample, ch) => ch
-    );
-  }
-  function combineAudio(channels, sampleRate, audio, f, customDuration) {
-    const duration = customDuration ? customDuration : Math.max(...audio.map((a) => a.duration));
-    const length = Math.ceil(duration * sampleRate);
-    const stream = new AudioStream({
-      channels,
-      duration,
-      sampleRate,
-      async getRange(start, count) {
-        const ranges = await Promise.all(
-          audio.map(
-            async (a) => mapObjValues(
-              await getRangeAndResample(
-                a,
-                start,
-                count,
-                sampleRate
-              ),
-              (k, v) => new Float32Array(v)
-            )
-          )
-        );
-        const ch = arrayToObjKeys(
-          channels,
-          (k) => new Float32Array(count)
-        );
-        for (const i of range(count)) {
-          const samples = ranges.map((r, j) => {
-            if (audio[j].channels.length === 1 && audio[j].channels[0] === "center") {
-              return arrayToObjKeys(channels, () => r.center[i]);
-            }
-            return mapObjValues(r, (k, v) => v[i]);
-          });
-          const res = f(
-            (start + i) / sampleRate,
-            start + i,
-            ...samples
-          );
-          for (const c of channels) {
-            ch[c][i] = res[c];
-          }
-        }
-        return ch;
-      }
-    });
-    return stream;
-  }
-  function broadcastTo(channels, sampleRate, mono) {
-    return combineAudio(channels, sampleRate, [mono], (_, __, x) => x);
-  }
-  function lowPassFilterSample(n, N, m) {
-    return 1 / N * range(m * 2 + 1).map((i) => Math.cos(2 * Math.PI * (i - m) / N * n)).reduce((a, b) => a + b, 0);
-  }
-  function hannSample(n, N) {
-    return Math.sin(Math.PI * (n - N / 2) / N) ** 2;
-  }
-  var createLowPassFilter = memo(
-    (channels, sampleRate, freq, cycles) => {
-      const oneCycleSampleCount = Math.ceil(1 / freq * sampleRate);
-      const sampleCount = oneCycleSampleCount * cycles;
-      const duration = sampleCount / sampleRate;
-      console.log("created lpf");
-      const cutoff = cycles;
-      return createSignal({
-        duration,
-        sampleRate,
-        channels,
-        length: sampleCount,
-        constructors: arrayToObjKeys(
-          channels,
-          () => (t, s) => lowPassFilterSample(s, sampleCount, cutoff) * hannSample(s, sampleCount)
-        )
-      }).preload();
-    }
-  );
-  var AudioBuilder = class {
-    constructor(channels, sampleRate) {
-      this.channels = channels;
-      this.sampleRate = sampleRate;
-    }
-    lpf(freq, cycles = 16) {
-      return createLowPassFilter(
-        this.channels,
-        this.sampleRate,
-        freq,
-        cycles
-      );
-    }
-    signal(duration, constructors) {
-      return createSignal({
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        constructors,
-        duration,
-        length: Math.ceil(duration * this.sampleRate)
-      });
-    }
-    waveform(frequency, amplitude, phase, profile) {
-      return waveform(
-        this.sampleRate,
-        this.channels,
-        Infinity,
-        frequency,
-        amplitude,
-        phase,
-        profile
-      );
-    }
-    constant(x) {
-      return createSignal({
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        duration: Infinity,
-        length: Infinity,
-        constructors: arrayToObjKeys(this.channels, () => () => x)
-      });
-    }
-    sine(frequency, amplitude = 1, phase = 0) {
-      return this.waveform(
-        frequency,
-        amplitude,
-        phase,
-        (x) => Math.sin(x * Math.PI * 2)
-      );
-    }
-    square(frequency, amplitude = 1, phase = 0) {
-      return this.waveform(
-        frequency,
-        amplitude,
-        phase,
-        (x) => x > 0.5 ? -1 : 1
-      );
-    }
-    saw(frequency, amplitude = 1, phase = 0) {
-      return this.waveform(frequency, amplitude, phase, (x) => x * 2 - 1);
-    }
-    noise(amplitude = 1) {
-      return createSignal({
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        duration: Infinity,
-        length: Infinity,
-        constructors: arrayToObjKeys(
-          this.channels,
-          () => () => (Math.random() * 2 - 1) * amplitude
-        )
-      });
-    }
-    adsrgen(a, d, s, r) {
-      return (at, dt, st, rt) => {
-        return sameSignalOnData(this.sampleRate, this.channels, rt, (t) => {
-          if (t < at) return rescale(t, 0, at, 0, a);
-          if (t < dt) return rescale(t, at, dt, a, d);
-          if (t < st) return rescale(t, dt, st, d, s);
-          if (t < rt) return rescale(t, st, rt, s, r);
-          return 0;
-        });
-      };
-    }
-    boxcar(length, area = 1) {
-      const sampleCount = Math.ceil(length * this.sampleRate);
-      return this.constant(area / sampleCount).clip(
-        0,
-        sampleCount / this.sampleRate
-      );
-    }
-    adsr(a, at, d, dt, s, st, r, rt) {
-      return this.adsrgen(a, d, s, r)(at, dt, st, rt);
-    }
-    broadcast(mono) {
-      return broadcastTo(this.channels, this.sampleRate, mono);
-    }
-    createTrack(constituents) {
-      return createTrack(this.channels, this.sampleRate, constituents);
-    }
-  };
-  async function playStereo(audio) {
-    const ctx = new AudioContext();
-    const src2 = ctx.createBufferSource();
-    const len = Math.ceil(audio.sampleRate * audio.duration);
-    const buf = ctx.createBuffer(2, len, audio.sampleRate);
-    const range3 = await audio.getRange(0, len);
-    buf.copyToChannel(new Float32Array(range3.left), 0);
-    buf.copyToChannel(new Float32Array(range3.right), 1);
-    src2.buffer = buf;
-    src2.connect(ctx.destination);
-    src2.start();
-  }
-  function isWorklet() {
-    return eval("globalThis.registerProcessor") !== void 0;
-  }
-  var BLOCKSIZE = 8192;
-  async function initBufferStreamerWorklet(src) {
-    if (isWorklet()) {
-      eval("registerProcessor")(
-        "buffer-streamer",
-        class extends eval("AudioWorkletProcessor") {
-          constructor() {
-            super();
-            this.buffers = [];
-            this.offsetIntoCurrentBuffer = 0;
-            this.port.onmessage = async (e) => {
-              const data = e.data;
-              if (data.type === "buffer") {
-                this.buffers.push({
-                  left: new Float32Array(data.buffers.left),
-                  right: new Float32Array(data.buffers.right)
-                });
-              }
-            };
-          }
-          process(inputs, outputs, parameters) {
-            const output = outputs[0];
-            const outputLength = output[0].length;
-            for (let i = 0; i < outputLength; i++) {
-              if (this.buffers.length > 0) {
-                output[0][i] = this.buffers[0].left[this.offsetIntoCurrentBuffer];
-                if (output[1]) {
-                  output[1][i] = this.buffers[0].right[this.offsetIntoCurrentBuffer];
-                }
-                this.offsetIntoCurrentBuffer++;
-                if (this.offsetIntoCurrentBuffer >= this.buffers[0]?.left.length) {
-                  this.offsetIntoCurrentBuffer = 0;
-                  this.buffers.shift();
-                }
-              } else {
-                output[0][i] = 0;
-                if (output[1]) {
-                  output[1][i] = 0;
-                }
-              }
-            }
-            return true;
-          }
-        }
-      );
-    } else {
-      return async (ctx) => {
-        await ctx.audioWorklet.addModule(src);
-        return () => {
-          const worklet = new AudioWorkletNode(ctx, "buffer-streamer");
-          return {
-            worklet,
-            pushData(left, right) {
-              worklet.port.postMessage(
-                {
-                  type: "buffer",
-                  buffers: {
-                    left: left.buffer,
-                    right: right.buffer
-                  }
-                },
-                [left.buffer, right.buffer]
-              );
-            }
-          };
-        };
-      };
-    }
-  }
-  var CHUNKSIZE = 2048 * 16;
-  function streamAudioToWorklet(stream, bs) {
-    let t = 0;
-    const loop = async () => {
-      const { left, right } = await stream.getRange(t, CHUNKSIZE);
-      bs.pushData(new Float32Array(left), new Float32Array(right));
-      t += CHUNKSIZE;
-      if (t <= Math.max(stream.duration * stream.sampleRate)) {
-        setTimeout(loop);
-      }
-    };
-    loop();
-  }
-  function displayAudioSamples(samples, size, amp = 1) {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = size[0];
-    canvas.height = size[1];
-    ctx.beginPath();
-    for (const i of smartRange(samples.length)) {
-      ctx.lineTo(
-        i.remap(0, canvas.width),
-        rescale(samples[i.i], -amp, amp, 0, size[1])
-      );
-    }
-    ctx.stroke();
-    return canvas;
-  }
-  async function displayAudio(stream, amp = 1, res = [1e3, 200], chunks = 1) {
-    const len = Math.ceil(stream.duration * stream.sampleRate);
-    const left = new Float32Array(len);
-    const right = new Float32Array(len);
-    let divisions = smartRange(chunks + 1).map(
-      (c) => Math.floor(c.remap(0, len, true))
-    );
-    for (let i of range(chunks)) {
-      const audio = await stream.getRange(
-        divisions[i],
-        divisions[i + 1] - divisions[i]
-      );
-      const l = new Float32Array(audio.left);
-      const r = new Float32Array(audio.right);
-      for (let j = 0; j < l.length; j++) {
-        left[j + divisions[i]] = l[j];
-        right[j + divisions[i]] = r[j];
-      }
-    }
-    return [
-      displayAudioSamples(left, res, amp),
-      displayAudioSamples(right, res, amp)
-    ];
-  }
-
-  // src/audio/notes.ts
-  var import_typescript_parsec = __toESM(require_lib());
-  var noteLexer = (0, import_typescript_parsec.buildLexer)([
-    [true, /^\(/g, 0 /* Open */],
-    [true, /^\)/g, 1 /* Close */],
-    [true, /^\:/g, 2 /* Colon */],
-    [true, /^\//g, 3 /* Slash */],
-    [false, /^\s+/g, 4 /* Whitespace */],
-    [false, /^\/\/[^\n]*/g, 7 /* Comment */],
-    [true, /^(\+|\-)?[0-9]+/g, 5 /* Integer */],
-    [true, /^[a-gA-G][b#]*[0-9]*/g, 6 /* ChromaticKey */]
-  ]);
-  var note_timing = (0, import_typescript_parsec.alt_sc)(
-    (0, import_typescript_parsec.apply)((0, import_typescript_parsec.kleft)((0, import_typescript_parsec.tok)(5 /* Integer */), (0, import_typescript_parsec.str)(":")), (t) => Number(t.text)),
-    (0, import_typescript_parsec.apply)((0, import_typescript_parsec.nil)(), () => 1)
-  );
-  var primitive_note = (0, import_typescript_parsec.apply)(
-    (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.alt_sc)((0, import_typescript_parsec.tok)(6 /* ChromaticKey */), (0, import_typescript_parsec.tok)(5 /* Integer */))),
-    ([timing, note2]) => ({
-      type: "note",
-      timing,
-      noteData: note2.text
-    })
-  );
-  var chord_inner = (0, import_typescript_parsec.rule)();
-  var chord = (0, import_typescript_parsec.apply)(
-    (0, import_typescript_parsec.seq)(
-      note_timing,
-      (0, import_typescript_parsec.lrec_sc)(
-        (0, import_typescript_parsec.apply)(chord_inner, (x) => [x]),
-        (0, import_typescript_parsec.seq)((0, import_typescript_parsec.str)("/"), chord_inner),
-        (a, [_, b]) => [...a, b]
-      )
-    ),
-    ([timing, notes]) => ({
-      type: "chord",
-      timing,
-      notes
-    })
-  );
-  var compound_note = (0, import_typescript_parsec.rule)();
-  var compound_note_inner = (0, import_typescript_parsec.rep_sc)(
-    (0, import_typescript_parsec.alt_sc)(primitive_note, chord, compound_note)
-  );
-  compound_note.setPattern(
-    (0, import_typescript_parsec.apply)(
-      (0, import_typescript_parsec.seq)(note_timing, (0, import_typescript_parsec.kmid)((0, import_typescript_parsec.str)("("), compound_note_inner, (0, import_typescript_parsec.str)(")"))),
-      ([timing, notes]) => ({ type: "compound", timing, notes })
-    )
-  );
-  chord_inner.setPattern((0, import_typescript_parsec.alt_sc)(primitive_note, compound_note));
-  var note = (0, import_typescript_parsec.alt_sc)(chord, compound_note, primitive_note);
-  var track = (0, import_typescript_parsec.rep_sc)(note);
-
-  // node_modules/ml-convolution/src/fftConvolution.js
-  var import_fft2 = __toESM(require_fft());
-  var import_next_power_of_two = __toESM(require_next_power_of_two());
-
   // src/webgpu/gpudoc/ui.tsx
   var import_react4 = __toESM(require_react());
   var import_client = __toESM(require_client());
@@ -27940,6 +28824,12 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
   var r628_ui_default = '@import url("https://rsms.me/inter/inter.css");\r\n\r\n:root {\r\n  --bg-darker: #000;\r\n  --bg: #181818;\r\n  --bg-lighter: #333;\r\n  --fg: #eee;\r\n  --border-color: #444;\r\n  --border: 1px solid var(--border-color);\r\n  --shadow: #0007;\r\n  --gap: 2px;\r\n  --gap-big: 5px;\r\n  --font: "InterVariable", sans-serif;\r\n  --highlight: orange;\r\n\r\n  --bg-button: #444;\r\n  --bg-button-hover: #555;\r\n}\r\n\r\ninput {\r\n  color: var(--fg);\r\n  border-radius: 5px;\r\n  border-width: 1px;\r\n  background-color: var(--bg-lighter);\r\n  border: none;\r\n}\r\n\r\n.ui-container {\r\n  background-color: var(--bg);\r\n  color: var(--fg);\r\n  font-family: var(--font);\r\n}\r\n\r\n.ui-array {\r\n  list-style: none;\r\n  padding-inline-start: 0;\r\n  margin-block: 0;\r\n}\r\n\r\n.ui-is-being-dragged > :not(.drag-destination) {\r\n  opacity: 0.5;\r\n}\r\n\r\n.ui-array-draggable > li {\r\n  position: relative;\r\n  padding-bottom: var(--gap);\r\n}\r\n\r\n.ui-array-draggable > li > .drag-source {\r\n  display: flex;\r\n  cursor: grab;\r\n}\r\n\r\n.ui-array-draggable .drag-destination {\r\n  width: 100%;\r\n  height: 0px;\r\n}\r\n\r\n.ui-array-draggable .ui-drag-dst {\r\n  width: 100%;\r\n  height: 0px;\r\n  position: absolute;\r\n  top: 0;\r\n  left: 0;\r\n}\r\n\r\n.ui-array-draggable .drag-float {\r\n  pointer-events: none;\r\n}\r\n\r\n.ui-drag-src {\r\n  width: 20px;\r\n  margin-right: var(--gap);\r\n\r\n  background-image: radial-gradient(\r\n    #555 0%,\r\n    #555 10%,\r\n    transparent 40%,\r\n    transparent 100%\r\n  );\r\n  background-size: 20% 20%;\r\n  background-position: center;\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst {\r\n  height: 100%;\r\n  transform: translateY(-50%);\r\n}\r\n\r\n.ui-array-draggable .drag-active.drag-destination .ui-drag-dst:hover {\r\n  background-image: linear-gradient(\r\n    to bottom,\r\n    transparent 0%,\r\n    transparent 40%,\r\n    var(--highlight) 40%,\r\n    var(--highlight) 60%,\r\n    transparent 60%,\r\n    transparent 100%\r\n  );\r\n}\r\n\r\n.ui-object {\r\n  display: grid;\r\n  grid-template-columns: repeat(2, auto);\r\n  gap: var(--gap-big);\r\n}\r\n\r\n.ui-object > input {\r\n  justify-self: right;\r\n}\r\n\r\n.ui-container button {\r\n  background-color: var(--bg-button);\r\n  border: none;\r\n  border-radius: 5px;\r\n  color: var(--fg);\r\n  cursor: pointer;\r\n}\r\n\r\n.ui-container button:hover {\r\n  background-color: var(--bg-button-hover);\r\n}\r\n\r\n.ui-container button.selected {\r\n  background-color: var(--highlight);\r\n  color: black;\r\n}\r\n\r\n.enum-ui,\r\n.button-set {\r\n  display: flex;\r\n}\r\n\r\n:is(.enum-ui, .button-set) button {\r\n  margin-right: var(--gap-big);\r\n}\r\n:is(.enum-ui, .button-set) button:nth-last-child(1) {\r\n  margin-right: 0;\r\n}\r\n\r\n.button-set {\r\n  margin-block: var(--gap-big);\r\n}\r\n';
 
   // demos-src/webgpu/graph-renderer-ui.tsx
+  var import_react20 = __toESM(require_Icon());
+
+  // node_modules/@mdi/js/mdi.js
+  var mdiCog = "M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z";
+
+  // demos-src/webgpu/graph-renderer-ui.tsx
   var DEFAULT_UI_STATE = {
     uiMode: "auto",
     viewerSpeed: 1,
@@ -28016,6 +28906,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       );
     }
     const [hideUI, setHideUI] = (0, import_react19.useState)(false);
+    const [uiExpanded, setUIExpanded] = (0, import_react19.useState)(true);
     (0, import_react19.useEffect)(() => {
       const interval = setInterval(() => {
         setHideUI(document.pointerLockElement instanceof HTMLCanvasElement);
@@ -28050,12 +28941,33 @@ h2 {
   margin-bottom: var(--gap-big);
   padding-bottom: var(--gap-big);
 }
+
+.menu-button {
+  background-color: var(--bg);
+  border-radius: 0;
+  border: none;
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  padding: 3px;
+}
 `), /* @__PURE__ */ import_react19.default.createElement(
+      "button",
+      {
+        onClick: () => {
+          setUIExpanded(!uiExpanded);
+        },
+        className: "menu-button"
+      },
+      /* @__PURE__ */ import_react19.default.createElement(import_react20.default, { path: mdiCog, color: "white", size: 1 })
+    ), /* @__PURE__ */ import_react19.default.createElement(
       "div",
       {
         className: "ui-root ui-container",
         style: {
-          opacity: hideUI ? 0 : 1
+          opacity: hideUI ? 0 : 1,
+          display: uiExpanded ? "block" : "none"
         }
       },
       /* @__PURE__ */ import_react19.default.createElement("h2", null, "Viewer"),
@@ -29477,6 +30389,8 @@ background-color: #000a;
 color: white;
 margin: 2px;
 user-select: none;
+-webkit-user-select: none;
+-webkit-touch-callout: none;
     `;
       forwardButton.addEventListener("touchstart", () => {
         keysDown.add(key);
@@ -30144,4 +31058,21 @@ react-dom/cjs/react-dom-client.development.js:
    * This source code is licensed under the MIT license found in the
    * LICENSE file in the root directory of this source tree.
    *)
+
+react-is/cjs/react-is.development.js:
+  (** @license React v16.13.1
+   * react-is.development.js
+   *
+   * Copyright (c) Facebook, Inc. and its affiliates.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
+   *)
+
+object-assign/index.js:
+  (*
+  object-assign
+  (c) Sindre Sorhus
+  @license MIT
+  *)
 */

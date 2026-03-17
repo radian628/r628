@@ -15,6 +15,8 @@ import {
 import { BooleanField } from "../../src/ui/react-boolean-field";
 import { FileField } from "../../src/ui/react-file-field";
 import { EnumField } from "../../src/ui/react-enum-field";
+import Icon from "@mdi/react";
+import { mdiCog } from "@mdi/js";
 
 export type UIState = {
   uiMode: "auto" | "desktop" | "mobile";
@@ -159,6 +161,8 @@ function UI(
 
   const [hideUI, setHideUI] = useState(false);
 
+  const [uiExpanded, setUIExpanded] = useState(true);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setHideUI(document.pointerLockElement instanceof HTMLCanvasElement);
@@ -198,11 +202,31 @@ h2 {
   margin-bottom: var(--gap-big);
   padding-bottom: var(--gap-big);
 }
+
+.menu-button {
+  background-color: var(--bg);
+  border-radius: 0;
+  border: none;
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  padding: 3px;
+}
 `}</style>
+      <button
+        onClick={() => {
+          setUIExpanded(!uiExpanded);
+        }}
+        className="menu-button"
+      >
+        <Icon path={mdiCog} color={"white"} size={1}></Icon>
+      </button>
       <div
         className="ui-root ui-container"
         style={{
           opacity: hideUI ? 0 : 1,
+          display: uiExpanded ? "block" : "none",
         }}
       >
         {/* <RootUI value={state.state} setValue={state.setState}></RootUI> */}
