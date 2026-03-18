@@ -22,6 +22,7 @@ import {
   perspectiveWebgpu,
   pipelineRenderpass,
   quickMap,
+  quickMapWithFormat,
   rescale,
   rotate,
   scale3,
@@ -302,6 +303,11 @@ export async function setupGraphRenderer(device: GPUDevice) {
 
     let offset = dst.position - src.position;
     let dist = length(offset);
+
+    // avoid division by zero
+    if (dist < 0.0001) {
+      return; 
+    }
     let offset_norm = offset / dist;
 
     let mag = dist * 0.02;
@@ -643,7 +649,7 @@ user-select: none;
         nodeMap.set(
           url,
           addVertex(graph, {
-            position,
+            position: add3(position, [0, 0, 0]),
             color: getNodeColor(url),
             initialized: false,
             label: slug,
@@ -950,6 +956,35 @@ user-select: none;
 
       let viewerPos = [0, 0, -150] as Vec3;
       let viewerVel = [0, 0, 0] as Vec3;
+
+      // @ts-expect-error
+      window.getBodyInfo = async () => {
+        console.log(
+          "bodies",
+          await quickMapWithFormat(bodiesFormat.format, device, bodies),
+        );
+        console.log(
+          "nodes",
+          await quickMapWithFormat(
+            nBodySim.octreeNodeFormat.format,
+            device,
+            octree.octreeNodeBuffer,
+          ),
+        );
+        console.log(
+          "node metadata",
+          await quickMapWithFormat(
+            nBodySim.octreeMetadataFormat.format,
+            device,
+            octree.octreeMetadataBuffer,
+          ),
+        );
+      };
+
+      // @ts-expect-error
+      window.doOnePhysicsStep = async () => {
+        moveBodies();
+      };
 
       return {
         moveBodies,

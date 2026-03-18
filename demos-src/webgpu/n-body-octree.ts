@@ -82,6 +82,13 @@ export async function createNBodyOctreeDefs<
     }),
   );
 
+  const createNewNodesUniforms = wdevice.uniformBufferForComputeShader(
+    "params",
+    struct("Params", {
+      is_final_iter: "u32",
+    }),
+  );
+
   const nextfreesFormat = wdevice.storageBuffer(
     "nextfrees",
     struct("Nextfrees", {
@@ -233,6 +240,7 @@ export async function createNBodyOctreeDefs<
     octreeNodeFormat,
     octreeCountersNonatomicFormat,
     activeNodesInfoFormat,
+    createNewNodesUniforms,
   );
 
   const createNewNodesPipeline = await wdevice.compute({
@@ -296,7 +304,7 @@ export async function createNBodyOctreeDefs<
       octree_metadata[metadata_idx].min_corner = min_corner + offset;
       octree_metadata[metadata_idx].max_corner = halfway + offset;
 
-      if (parent_node_counters[i] > 1u) {
+      if (parent_node_counters[i] > 1u && params.is_final_iter == 0u) {
         let counter_idx = 
           atomicAdd(&nextfrees.counters, 1u);
         octree_metadata[metadata_idx].counters_idx = counter_idx;
@@ -545,7 +553,7 @@ export async function createNBodyOctreeDefs<
         ${params.bodyReset ?? ""} 
       }
 
-      const STACK_CAP = 21u;
+      const STACK_CAP = 20u;
     `,
     shader: `
       if (id.x >= arrayLength(&bodies)) {
@@ -909,6 +917,12 @@ export async function createNBodyOctreeDefs<
     );
     const activeNodesInfoBuffer = activeNodesInfoFormat.instantiate(1);
     const computeIndirectBuffer = computeIndirectBufferFormat.instantiate(1);
+    const nonfinalIterBuffer = createNewNodesUniforms.quickCreate({
+      is_final_iter: 0,
+    });
+    const finalIterBuffer = createNewNodesUniforms.quickCreate({
+      is_final_iter: 1,
+    });
 
     const assignBodiesBindGroups = range(2).map((i) =>
       assignBodiesBindGroupFormat.instantiate({
@@ -922,17 +936,20 @@ export async function createNBodyOctreeDefs<
       }),
     );
 
-    const createNewNodesBindGroup = range(2).map((i) =>
-      createNewNodesBindGroupFormat.instantiate({
-        active_nodes_in: [activeNodesBuffer1, activeNodesBuffer2][i],
-        active_nodes_out: [activeNodesBuffer2, activeNodesBuffer1][i],
-        active_nodes_info: activeNodesInfoBuffer,
-        nextfrees: nextfreesBuffer,
-        octree_nodes: octreeNodeBuffer,
-        octree_metadata: octreeMetadataBuffer,
-        octree_counters:
-          octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer),
-      }),
+    const createNewNodesBindGroup = range(2).map((j) =>
+      range(2).map((i) =>
+        createNewNodesBindGroupFormat.instantiate({
+          active_nodes_in: [activeNodesBuffer1, activeNodesBuffer2][i],
+          active_nodes_out: [activeNodesBuffer2, activeNodesBuffer1][i],
+          active_nodes_info: activeNodesInfoBuffer,
+          nextfrees: nextfreesBuffer,
+          octree_nodes: octreeNodeBuffer,
+          octree_metadata: octreeMetadataBuffer,
+          octree_counters:
+            octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer),
+          params: [nonfinalIterBuffer, finalIterBuffer][j],
+        }),
+      ),
     );
 
     const reorderBodiesBindGroups = range(2).map((i) =>
@@ -1041,7 +1058,12 @@ export async function createNBodyOctreeDefs<
           pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
 
           pass.setPipeline(createNewNodesPipeline);
-          pass.setBindGroup(0, createNewNodesBindGroup[i % 2]);
+          pass.setBindGroup(
+            0,
+            createNewNodesBindGroup[i === params.octreeDepth - 1 ? 1 : 0][
+              i % 2
+            ],
+          );
           pass.dispatchWorkgroupsIndirect(computeIndirectBuffer, 0);
 
           pass.setPipeline(reorderBodiesPipeline);
