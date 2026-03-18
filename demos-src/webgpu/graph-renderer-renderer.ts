@@ -10,6 +10,8 @@ import {
   lerp,
   lineRenderer,
   Mat4,
+  max3,
+  min3,
   mix3,
   mix4,
   mul3,
@@ -622,8 +624,6 @@ user-select: none;
           );
         }
 
-        console.log(sum);
-
         return [...sum, 255];
       }
 
@@ -634,7 +634,7 @@ user-select: none;
         ? JSON.parse(await customPositions.text())
         : graphData.map((g) => ({
             position: scale3([g.x, g.y, g.z], 0.005),
-            slug: g.url.replace("http://scp-wiki.wikidot.com/", ""),
+            slug: g.url.replace("http://scp-wiki.wikidot.com/", "").trim(),
           }));
 
       for (const { position, slug } of nodePositions) {
@@ -654,7 +654,7 @@ user-select: none;
 
       for (const n of graphData) {
         for (const link of n.other) {
-          const src = nodeMap.get(n.url);
+          const src = nodeMap.get(n.url.trim());
           const dst = nodeMap.get(link.trim());
 
           if (!src) {
@@ -669,6 +669,8 @@ user-select: none;
           addEdge(graph, [src, dst], [127, 127, 127, 255]);
         }
       }
+
+      console.log("edges", graph.edges);
 
       const labelVertsArray = [...graph.vertices].map((vert) => ({
         ...vert.data,
@@ -691,7 +693,10 @@ user-select: none;
       const edges = lines.pointInstanceBufferFormat.instantiate(
         graph.edges.size * 7,
         {
-          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE,
+          usage:
+            GPUBufferUsage.VERTEX |
+            GPUBufferUsage.STORAGE |
+            GPUBufferUsage.COPY_SRC,
         },
       );
 
@@ -794,6 +799,19 @@ user-select: none;
       const transferBodyInfoToLinesUniforms =
         transferBodyInfoToLinesUniformsFormat.instantiate(1);
 
+      console.log(
+        "MINS",
+        [...graph.vertices].reduce((a, b) => min3(a, b.data.position), [
+          0, 0, 0,
+        ] as Vec3),
+      );
+      console.log(
+        "MAXES",
+        [...graph.vertices].reduce((a, b) => max3(a, b.data.position), [
+          0, 0, 0,
+        ] as Vec3),
+      );
+
       const bodies = bodiesFormat.quickCreateMany(
         [...graph.vertices].map((vert, i, a) => {
           return {
@@ -845,25 +863,36 @@ user-select: none;
           physics_params: physicsUniforms,
         });
 
+      const transferBodyInfoToPointsBindGroup =
+        transferBodyInfoToPointsBindGroupFormat.instantiate({
+          bodies,
+          generic: genericBufferFormat.reinterpret(vertices),
+        });
+
+      const transferBodyInfoToLinesBindGroup =
+        transferBodyInfoToLinesBindGroupFormat.instantiate({
+          bodies,
+          generic: genericBufferFormat.reinterpret(edges),
+          edges: unidirectionalEdgesBuffer,
+          params: transferBodyInfoToLinesUniforms,
+        });
+
       function updateGeometry(pass: GPUComputePassEncoder) {
+        transferBodyInfoToLinesUniformsFormat.fill(
+          transferBodyInfoToLinesUniforms,
+          0,
+          {
+            line_width_multiplier: params.ui.state.lineWidth,
+            nan: NaN,
+          },
+        );
+
         const perBodyWorkgroups = Math.ceil(graph.vertices.size / 32);
         pass.setPipeline(transferBodyInfoToPointsPipeline);
-        const transferBodyInfoToPointsBindGroup =
-          transferBodyInfoToPointsBindGroupFormat.instantiate({
-            bodies,
-            generic: genericBufferFormat.reinterpret(vertices),
-          });
         pass.setBindGroup(0, transferBodyInfoToPointsBindGroup);
         pass.dispatchWorkgroups(perBodyWorkgroups);
 
         pass.setPipeline(transferBodyInfoToLinesPipeline);
-        const transferBodyInfoToLinesBindGroup =
-          transferBodyInfoToLinesBindGroupFormat.instantiate({
-            bodies,
-            generic: genericBufferFormat.reinterpret(edges),
-            edges: unidirectionalEdgesBuffer,
-            params: transferBodyInfoToLinesUniforms,
-          });
         pass.setBindGroup(0, transferBodyInfoToLinesBindGroup);
         pass.dispatchWorkgroups(Math.ceil(unidirectionalEdgeList.length / 32));
       }
@@ -879,14 +908,6 @@ user-select: none;
           min_width_over_distance_ratio: 1 / params.ui.state.simulationAccuracy,
           timestep: params.ui.state.timestep,
         });
-        transferBodyInfoToLinesUniformsFormat.fill(
-          transferBodyInfoToLinesUniforms,
-          0,
-          {
-            line_width_multiplier: params.ui.state.lineWidth,
-            nan: NaN,
-          },
-        );
 
         const perBodyWorkgroups = Math.ceil(graph.vertices.size / 32);
 

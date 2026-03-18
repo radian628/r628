@@ -1014,6 +1014,7 @@ function EnumField(props) {
   return /* @__PURE__ */ import_react.default.createElement("div", { className: "enum-ui" }, props.variants.map((v) => /* @__PURE__ */ import_react.default.createElement(
     "button",
     {
+      key: v[0],
       className: props.value === v[0] ? "selected" : "",
       onClick: () => {
         props.setValue(() => v[0]);

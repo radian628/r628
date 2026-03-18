@@ -24209,6 +24209,12 @@
   function sub3(a, b) {
     return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
   }
+  function min3(a, b) {
+    return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.min(a[2], b[2])];
+  }
+  function max3(a, b) {
+    return [Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.max(a[2], b[2])];
+  }
   function length2(a) {
     return Math.sqrt(dot2(a, a));
   }
@@ -28784,6 +28790,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     return /* @__PURE__ */ import_react13.default.createElement("div", { className: "enum-ui" }, props.variants.map((v) => /* @__PURE__ */ import_react13.default.createElement(
       "button",
       {
+        key: v[0],
         className: props.value === v[0] ? "selected" : "",
         onClick: () => {
           props.setValue(() => v[0]);
@@ -30600,14 +30607,13 @@ user-select: none;
               )
             );
           }
-          console.log(sum);
           return [...sum, 255];
         }
         const customPositions = params.ui.state.positions;
         console.log("custom positions", customPositions);
         const nodePositions = customPositions ? JSON.parse(await customPositions.text()) : graphData.map((g) => ({
           position: scale3([g.x, g.y, g.z], 5e-3),
-          slug: g.url.replace("http://scp-wiki.wikidot.com/", "")
+          slug: g.url.replace("http://scp-wiki.wikidot.com/", "").trim()
         }));
         for (const { position, slug } of nodePositions) {
           const url = `http://scp-wiki.wikidot.com/${slug}`;
@@ -30624,7 +30630,7 @@ user-select: none;
         }
         for (const n of graphData) {
           for (const link of n.other) {
-            const src2 = nodeMap.get(n.url);
+            const src2 = nodeMap.get(n.url.trim());
             const dst = nodeMap.get(link.trim());
             if (!src2) {
               continue;
@@ -30635,6 +30641,7 @@ user-select: none;
             addEdge(graph, [src2, dst], [127, 127, 127, 255]);
           }
         }
+        console.log("edges", graph.edges);
         const labelVertsArray = [...graph.vertices].map((vert) => ({
           ...vert.data
         }));
@@ -30649,7 +30656,7 @@ user-select: none;
         const edges = lines.pointInstanceBufferFormat.instantiate(
           graph.edges.size * 7,
           {
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
           }
         );
         const graphUniforms = lines.uniforms.instantiate(1);
@@ -30710,6 +30717,22 @@ user-select: none;
           edgeList.length
         );
         const transferBodyInfoToLinesUniforms = transferBodyInfoToLinesUniformsFormat.instantiate(1);
+        console.log(
+          "MINS",
+          [...graph.vertices].reduce((a, b) => min3(a, b.data.position), [
+            0,
+            0,
+            0
+          ])
+        );
+        console.log(
+          "MAXES",
+          [...graph.vertices].reduce((a, b) => max3(a, b.data.position), [
+            0,
+            0,
+            0
+          ])
+        );
         const bodies = bodiesFormat.quickCreateMany(
           [...graph.vertices].map((vert, i, a) => {
             return {
@@ -30752,22 +30775,30 @@ user-select: none;
           accels: accelsFinal,
           physics_params: physicsUniforms
         });
+        const transferBodyInfoToPointsBindGroup = transferBodyInfoToPointsBindGroupFormat.instantiate({
+          bodies,
+          generic: genericBufferFormat.reinterpret(vertices)
+        });
+        const transferBodyInfoToLinesBindGroup = transferBodyInfoToLinesBindGroupFormat.instantiate({
+          bodies,
+          generic: genericBufferFormat.reinterpret(edges),
+          edges: unidirectionalEdgesBuffer,
+          params: transferBodyInfoToLinesUniforms
+        });
         function updateGeometry(pass2) {
+          transferBodyInfoToLinesUniformsFormat.fill(
+            transferBodyInfoToLinesUniforms,
+            0,
+            {
+              line_width_multiplier: params.ui.state.lineWidth,
+              nan: NaN
+            }
+          );
           const perBodyWorkgroups = Math.ceil(graph.vertices.size / 32);
           pass2.setPipeline(transferBodyInfoToPointsPipeline);
-          const transferBodyInfoToPointsBindGroup = transferBodyInfoToPointsBindGroupFormat.instantiate({
-            bodies,
-            generic: genericBufferFormat.reinterpret(vertices)
-          });
           pass2.setBindGroup(0, transferBodyInfoToPointsBindGroup);
           pass2.dispatchWorkgroups(perBodyWorkgroups);
           pass2.setPipeline(transferBodyInfoToLinesPipeline);
-          const transferBodyInfoToLinesBindGroup = transferBodyInfoToLinesBindGroupFormat.instantiate({
-            bodies,
-            generic: genericBufferFormat.reinterpret(edges),
-            edges: unidirectionalEdgesBuffer,
-            params: transferBodyInfoToLinesUniforms
-          });
           pass2.setBindGroup(0, transferBodyInfoToLinesBindGroup);
           pass2.dispatchWorkgroups(Math.ceil(unidirectionalEdgeList.length / 32));
         }
@@ -30782,14 +30813,6 @@ user-select: none;
             min_width_over_distance_ratio: 1 / params.ui.state.simulationAccuracy,
             timestep: params.ui.state.timestep
           });
-          transferBodyInfoToLinesUniformsFormat.fill(
-            transferBodyInfoToLinesUniforms,
-            0,
-            {
-              line_width_multiplier: params.ui.state.lineWidth,
-              nan: NaN
-            }
-          );
           const perBodyWorkgroups = Math.ceil(graph.vertices.size / 32);
           const enc2 = device.createCommandEncoder();
           enc2.clearBuffer(accelsFinal);
