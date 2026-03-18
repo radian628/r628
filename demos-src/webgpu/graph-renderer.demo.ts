@@ -70,7 +70,9 @@ document.head.innerHTML += `<meta name="viewport"
 
   const device = hookGPUDevice(
     await adapter.requestDevice({
-      requiredFeatures: ["timestamp-query"],
+      requiredFeatures: [
+        //  "timestamp-query"
+      ],
     }),
   );
   device.addEventListener("uncapturederror", (event) =>

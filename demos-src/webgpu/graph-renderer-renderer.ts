@@ -1047,17 +1047,17 @@ user-select: none;
             ),
             aspect: canvas.width / canvas.height,
           });
-          const queryCount = 2;
+          // const queryCount = 2;
 
-          const queryResolveBuffer = device.createBuffer({
-            size: queryCount * 8,
-            usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
-          });
+          // const queryResolveBuffer = device.createBuffer({
+          //   size: queryCount * 8,
+          //   usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
+          // });
 
-          const stagingBuffer = device.createBuffer({
-            size: queryResolveBuffer.size,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-          });
+          // const stagingBuffer = device.createBuffer({
+          //   size: queryResolveBuffer.size,
+          //   usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+          // });
 
           const colorTex = ctx.getCurrentTexture();
 
@@ -1069,10 +1069,10 @@ user-select: none;
 
           const enc = device.createCommandEncoder();
 
-          const querySet = device.createQuerySet({
-            type: "timestamp",
-            count: queryCount,
-          });
+          // const querySet = device.createQuerySet({
+          //   type: "timestamp",
+          //   count: queryCount,
+          // });
 
           const pass =
             aaMode === "msaa"
@@ -1091,11 +1091,11 @@ user-select: none;
                     depthLoadOp: "clear",
                     depthStoreOp: "store",
                   },
-                  timestampWrites: {
-                    querySet,
-                    beginningOfPassWriteIndex: 0,
-                    endOfPassWriteIndex: 1,
-                  },
+                  // timestampWrites: {
+                  //   querySet,
+                  //   beginningOfPassWriteIndex: 0,
+                  //   endOfPassWriteIndex: 1,
+                  // },
                 })
               : enc.beginRenderPass({
                   colorAttachments: [
@@ -1111,11 +1111,11 @@ user-select: none;
                     depthLoadOp: "clear",
                     depthStoreOp: "store",
                   },
-                  timestampWrites: {
-                    querySet,
-                    beginningOfPassWriteIndex: 0,
-                    endOfPassWriteIndex: 1,
-                  },
+                  // timestampWrites: {
+                  //   querySet,
+                  //   beginningOfPassWriteIndex: 0,
+                  //   endOfPassWriteIndex: 1,
+                  // },
                 });
 
           pass.setPipeline(lines.pointPipeline);
@@ -1167,21 +1167,21 @@ user-select: none;
 
           pass.end();
 
-          enc.resolveQuerySet(
-            querySet,
-            0,
-            querySet.count,
-            queryResolveBuffer,
-            0,
-          );
+          // enc.resolveQuerySet(
+          //   querySet,
+          //   0,
+          //   querySet.count,
+          //   queryResolveBuffer,
+          //   0,
+          // );
 
-          enc.copyBufferToBuffer(
-            queryResolveBuffer,
-            0,
-            stagingBuffer,
-            0,
-            queryResolveBuffer.size,
-          );
+          // enc.copyBufferToBuffer(
+          //   queryResolveBuffer,
+          //   0,
+          //   stagingBuffer,
+          //   0,
+          //   queryResolveBuffer.size,
+          // );
 
           device.queue.submit([enc.finish()]);
         },
