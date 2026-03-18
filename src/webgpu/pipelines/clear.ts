@@ -113,10 +113,10 @@ export async function clearRenderer(
       const pass = encoder.beginRenderPass({
         colorAttachments: [
           {
-            view: tex,
+            view: tex.createView(),
             loadOp: "clear",
             storeOp: "store",
-            resolveTarget,
+            resolveTarget: resolveTarget?.createView(),
           },
         ],
       });
