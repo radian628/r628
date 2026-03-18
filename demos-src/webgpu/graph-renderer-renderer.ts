@@ -380,7 +380,7 @@ fn set_point(idx: u32, across: f32, width: f32) {
   generic[i + 1].data = bitcast<u32>(position.y);
   generic[i + 2].data = bitcast<u32>(position.z);
   generic[i + 3].data = bitcast<u32>(width * params.line_width_multiplier);
-  generic[i + 4].data = pack4x8unorm(mix(color1, color2, across) * color_mul);
+  generic[i + 4].data = pack4x8unorm(mix(color1, color2, across) * vec4f(vec3f(color_mul), 1.0));
 }    
     `,
     shader: `
@@ -927,7 +927,7 @@ user-select: none;
 
       let currTransform = translate([0, 0, 0]);
 
-      let viewerPos = [0, 0, 0] as Vec3;
+      let viewerPos = [0, 0, -150] as Vec3;
       let viewerVel = [0, 0, 0] as Vec3;
 
       return {

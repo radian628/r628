@@ -28973,6 +28973,8 @@ h2 {
           display: uiExpanded ? "block" : "none"
         }
       },
+      /* @__PURE__ */ import_react19.default.createElement("br", null),
+      /* @__PURE__ */ import_react19.default.createElement("p", null, "Controls (Desktop): Click screen to rotate, ESC to exit, WASD/Shift/Space to move."),
       /* @__PURE__ */ import_react19.default.createElement("h2", null, "Viewer"),
       /* @__PURE__ */ import_react19.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react19.default.createElement("label", null, "UI Mode"), /* @__PURE__ */ import_react19.default.createElement(
         EnumField,
@@ -30414,7 +30416,7 @@ fn set_point(idx: u32, across: f32, width: f32) {
   generic[i + 1].data = bitcast<u32>(position.y);
   generic[i + 2].data = bitcast<u32>(position.z);
   generic[i + 3].data = bitcast<u32>(width * params.line_width_multiplier);
-  generic[i + 4].data = pack4x8unorm(mix(color1, color2, across) * color_mul);
+  generic[i + 4].data = pack4x8unorm(mix(color1, color2, across) * vec4f(vec3f(color_mul), 1.0));
 }    
     `,
       shader: `
@@ -30815,7 +30817,7 @@ user-select: none;
         let loopIter = 0;
         const labels = /* @__PURE__ */ new Map();
         let currTransform = translate([0, 0, 0]);
-        let viewerPos = [0, 0, 0];
+        let viewerPos = [0, 0, -150];
         let viewerVel = [0, 0, 0];
         return {
           moveBodies,
@@ -31040,6 +31042,10 @@ user-select: none;
   document.head.innerHTML += `<meta name="viewport" 
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>`;
   (async () => {
+    const loadingMsg = document.createElement("div");
+    loadingMsg.innerText = "Loading...";
+    loadingMsg.style = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 300%`;
+    document.body.appendChild(loadingMsg);
     const params = new URLSearchParams(window.location.search);
     let i = 0;
     function fail(msg) {
@@ -31085,6 +31091,7 @@ user-select: none;
     document.body.appendChild(graphRenderer.canvas);
     document.body.appendChild(ui.dom);
     async function loop(t) {
+      loadingMsg.style.display = "none";
       let dt = (t - lastT) / 1e3;
       lastT = t;
       graphRendererInstance.updateViewer(dt);

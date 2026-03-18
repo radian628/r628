@@ -53,6 +53,11 @@ document.head.innerHTML += `<meta name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>`;
 
 (async () => {
+  const loadingMsg = document.createElement("div");
+  loadingMsg.innerText = "Loading...";
+  loadingMsg.style = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 300%`;
+  document.body.appendChild(loadingMsg);
+
   const params = new URLSearchParams(window.location.search);
 
   let i = 0;
@@ -111,6 +116,8 @@ document.head.innerHTML += `<meta name="viewport"
   document.body.appendChild(ui.dom);
 
   async function loop(t) {
+    loadingMsg.style.display = "none";
+
     let dt = (t - lastT) / 1000;
     lastT = t;
 

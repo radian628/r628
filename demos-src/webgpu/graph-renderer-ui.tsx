@@ -230,6 +230,11 @@ h2 {
         }}
       >
         {/* <RootUI value={state.state} setValue={state.setState}></RootUI> */}
+        <br></br>
+        <p>
+          Controls (Desktop): Click screen to rotate, ESC to exit,
+          WASD/Shift/Space to move.
+        </p>
         <h2>Viewer</h2>
         <div className="ui-object">
           <label>UI Mode</label>
