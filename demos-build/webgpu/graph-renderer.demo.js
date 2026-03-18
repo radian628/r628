@@ -31039,14 +31039,14 @@ user-select: none;
             const pass2 = aaMode === "msaa" ? enc2.beginRenderPass({
               colorAttachments: [
                 {
-                  view: multisampleTex,
+                  view: multisampleTex.createView(),
                   loadOp: "load",
                   storeOp: "store",
                   resolveTarget: colorTex
                 }
               ],
               depthStencilAttachment: {
-                view: depthTex,
+                view: depthTex.createView(),
                 depthClearValue: 1,
                 depthLoadOp: "clear",
                 depthStoreOp: "store"
@@ -31059,13 +31059,13 @@ user-select: none;
             }) : enc2.beginRenderPass({
               colorAttachments: [
                 {
-                  view: colorTex,
+                  view: colorTex.createView(),
                   loadOp: "load",
                   storeOp: "store"
                 }
               ],
               depthStencilAttachment: {
-                view: depthTex,
+                view: depthTex.createView(),
                 depthClearValue: 1,
                 depthLoadOp: "clear",
                 depthStoreOp: "store"

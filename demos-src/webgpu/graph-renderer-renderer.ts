@@ -1135,14 +1135,14 @@ user-select: none;
               ? enc.beginRenderPass({
                   colorAttachments: [
                     {
-                      view: multisampleTex,
+                      view: multisampleTex.createView(),
                       loadOp: "load",
                       storeOp: "store",
                       resolveTarget: colorTex,
                     },
                   ],
                   depthStencilAttachment: {
-                    view: depthTex,
+                    view: depthTex.createView(),
                     depthClearValue: 1.0,
                     depthLoadOp: "clear",
                     depthStoreOp: "store",
@@ -1156,13 +1156,13 @@ user-select: none;
               : enc.beginRenderPass({
                   colorAttachments: [
                     {
-                      view: colorTex,
+                      view: colorTex.createView(),
                       loadOp: "load",
                       storeOp: "store",
                     },
                   ],
                   depthStencilAttachment: {
-                    view: depthTex,
+                    view: depthTex.createView(),
                     depthClearValue: 1.0,
                     depthLoadOp: "clear",
                     depthStoreOp: "store",
