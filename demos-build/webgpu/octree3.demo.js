@@ -27968,11 +27968,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     );
     const bodyNodeAssignmentsFormat = td.storageBufferFormat(
       "body_node_assignments",
-      runtimeArray(
-        struct("NodeIdx", {
-          node_idx: "u32"
-        })
-      )
+      runtimeArray("u32")
     );
     const bodyNodeChildSubOffsetsFormat = bodyNodeAssignmentsFormat.name(
       "body_node_child_sub_offsets"
@@ -27985,11 +27981,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     );
     const bodyOrderFormat = td.storageBufferFormat(
       "body_order",
-      runtimeArray(
-        struct("BodyIdx", {
-          body_idx: "u32"
-        })
-      )
+      runtimeArray("u32")
     );
     const bodyOrderInFormat = bodyOrderFormat.name("body_order_in");
     const bodyOrderOutFormat = bodyOrderFormat.name("body_order_out");
@@ -28042,9 +28034,9 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       return; 
     }
 
-    let body_idx = body_order[id.x].body_idx;
+    let body_idx = body_order[id.x];
     let body = bodies[body_idx];
-    let parent_node_idx = body_node_assignments[body_idx].node_idx;
+    let parent_node_idx = body_node_assignments[body_idx];
     let parent_node = octree_nodes[parent_node_idx];
     let parent_node_metadata = octree_metadata[parent_node.metadata_idx];
 
@@ -28062,13 +28054,13 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       + select(0u, 2u, halfway.y < body.position.y)
       + select(0u, 1u, halfway.x < body.position.x);
   
-    body_node_child_sub_offsets[body_idx].node_idx = 
+    body_node_child_sub_offsets[body_idx] = 
       atomicAdd(
         &octree_counters[parent_node_metadata.counters_idx].counters[child_offset],
         1u
       );
 
-    body_node_assignments[body_idx].node_idx = 
+    body_node_assignments[body_idx] = 
       parent_node.child_idx + child_offset;
     `
     });
@@ -28091,7 +28083,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       return; 
     } 
 
-    let parent_node_idx = active_nodes_in[id.x].node_idx;
+    let parent_node_idx = active_nodes_in[id.x];
     let parent_node = octree_nodes[parent_node_idx];
     let parent_node_metadata = octree_metadata[parent_node.metadata_idx];
     let parent_node_counters = 
@@ -28159,7 +28151,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
         octree_nodes[child_node_idx].child_idx = child_idx;
 
         let active_idx = atomicAdd(&nextfrees.active_nodes_index, 1u);
-        active_nodes_out[active_idx].node_idx = child_node_idx;
+        active_nodes_out[active_idx] = child_node_idx;
       }
     }
 
@@ -28182,15 +28174,15 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       return; 
     }
 
-    let body_idx = body_order_in[id.x].body_idx;
+    let body_idx = body_order_in[id.x];
     let body = bodies[body_idx];
 
-    let node_idx = body_node_assignments[body_idx].node_idx;
+    let node_idx = body_node_assignments[body_idx];
     let node = octree_nodes[node_idx];
     let start = node.data_start_idx;
-    let sub_offset = body_node_child_sub_offsets[body_idx].node_idx;
+    let sub_offset = body_node_child_sub_offsets[body_idx];
 
-    body_order_out[start + sub_offset].body_idx = body_idx;
+    body_order_out[start + sub_offset] = body_idx;
     `
     });
     const setupNextIterationBindGroupFormat = td.bindGroupFormat(
@@ -28304,7 +28296,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     }
 
     if (id.x < arrayLength(&bodies)) {
-      let body_idx = body_order[id.x].body_idx;
+      let body_idx = body_order[id.x];
 
       agg_bodies[id.x].mass = bodies[body_idx].mass;
       agg_bodies[id.x].center_of_mass = bodies[body_idx].position;
@@ -28529,7 +28521,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     nextfrees.active_nodes_index = 0u;
 
     active_nodes_info.count = 1u;
-    active_nodes_in[0].node_idx = 0u;
+    active_nodes_in[0] = 0u;
     `
     });
     const initRootNodeBindGroup2Format = td.bindGroupFormat(
@@ -28556,8 +28548,8 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       return;
     }
 
-    body_order[id.x].body_idx = id.x;
-    body_node_assignments[id.x].node_idx = 0u;
+    body_order[id.x] = id.x;
+    body_node_assignments[id.x] = 0u;
     `
     });
     function setupMinMaxReduction(params2) {

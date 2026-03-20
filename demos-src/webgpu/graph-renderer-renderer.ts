@@ -123,14 +123,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
     },
   ] as const);
 
-  const accelsFormat = td.storageBufferFormat(
-    "accels",
-    runtimeArray(
-      struct("Accel", {
-        accel: "vec3f",
-      }),
-    ),
-  );
+  const accelsFormat = td.storageBufferFormat("accels", runtimeArray("vec3f"));
 
   const physicsUniformsFormat = td.uniformBufferComputeFormat(
     "physics_params",
@@ -153,7 +146,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
     `,
     applyForces: `
       var impulse = total_impulse * physics_params.repulsion_multiplier;
-      impulse += accels[i].accel * physics_params.attraction_multiplier;
+      impulse += accels[i] * physics_params.attraction_multiplier;
       impulse -= bodies[i].position * 0.0001; 
 
       bodies[i].velocity += impulse / bodies[i].mass * params.timestep;
@@ -201,33 +194,26 @@ export async function setupGraphRenderer(device: GPUDevice) {
   });
 
   const genericBufferFormat = td
-    .storageBufferFormat(
-      "generic",
-      runtimeArray(struct("Generic", { data: "u32" })),
-    )
+    .storageBufferFormat("generic", runtimeArray("u32"))
     .usage("storage", "copy-src");
 
   const transferBodyInfoToPointsBindGroupFormat = td.bindGroupFormat(
     "nbody",
     bodiesFormat,
-    genericBufferFormat,
+    genericBufferFormat.name("points"),
   );
 
   const transferBodyInfoToPointsPipeline = await td.computePipeline({
     bindGroups: [transferBodyInfoToPointsBindGroupFormat],
     workgroupSize: [32, 1, 1],
-    storageBufferAccess: {
-      bodies: "read_write",
-      generic: "read_write",
-    },
     shader: `
       let i = id.x;
       if (i >= arrayLength(&bodies)) { return; }
-      generic[i * 5].data = bitcast<u32>(bodies[i].position.x);
-      generic[i * 5 + 1].data = bitcast<u32>(bodies[i].position.y);
-      generic[i * 5 + 2].data = bitcast<u32>(bodies[i].position.z);
-      generic[i * 5 + 3].data = bitcast<u32>(0.5);
-      generic[i * 5 + 4].data = pack4x8unorm(bodies[i].color);
+      points[i * 5] = bitcast<u32>(bodies[i].position.x);
+      points[i * 5 + 1] = bitcast<u32>(bodies[i].position.y);
+      points[i * 5 + 2] = bitcast<u32>(bodies[i].position.z);
+      points[i * 5 + 3] = bitcast<u32>(0.5);
+      points[i * 5 + 4] = pack4x8unorm(bodies[i].color);
     `,
   });
 
@@ -348,7 +334,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
     let edge_index_end = edge_index_start + edge_loc_map[i].count;
 
     for (var j = edge_index_start; j < edge_index_end; j++) {
-      accels[i].accel += accel_vectors[j].to_src;
+      accels[i] += accel_vectors[j].to_src;
     }
 
     `,
@@ -366,7 +352,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
   const transferBodyInfoToLinesBindGroupFormat = td.bindGroupFormat(
     "nbody",
     bodiesFormat,
-    genericBufferFormat,
+    genericBufferFormat.name("lines"),
     displayEdgesBufferFormat,
     transferBodyInfoToLinesUniformsFormat,
   );
@@ -390,11 +376,11 @@ var<private> color_mul: f32;
 fn set_point(idx: u32, across: f32, width: f32) {
   let i = idx * 5;
   let position = mix(endpoint1, endpoint2, across);
-  generic[i].data = bitcast<u32>(position.x);
-  generic[i + 1].data = bitcast<u32>(position.y);
-  generic[i + 2].data = bitcast<u32>(position.z);
-  generic[i + 3].data = bitcast<u32>(width * params.line_width_multiplier);
-  generic[i + 4].data = pack4x8unorm(mix(color1, color2, across) * vec4f(vec3f(color_mul), 1.0));
+  lines[i] = bitcast<u32>(position.x);
+  lines[i + 1] = bitcast<u32>(position.y);
+  lines[i + 2] = bitcast<u32>(position.z);
+  lines[i + 3] = bitcast<u32>(width * params.line_width_multiplier);
+  lines[i + 4] = pack4x8unorm(mix(color1, color2, across) * vec4f(vec3f(color_mul), 1.0));
 }    
     `,
     shader: `
@@ -864,13 +850,13 @@ user-select: none;
       const transferBodyInfoToPointsBindGroup =
         transferBodyInfoToPointsBindGroupFormat.new({
           bodies,
-          generic: genericBufferFormat.reinterpret(vertices),
+          points: genericBufferFormat.reinterpret(vertices),
         });
 
       const transferBodyInfoToLinesBindGroup =
         transferBodyInfoToLinesBindGroupFormat.new({
           bodies,
-          generic: genericBufferFormat.reinterpret(edges),
+          lines: genericBufferFormat.reinterpret(edges),
           edges: unidirectionalEdgesBuffer,
           params: transferBodyInfoToLinesUniforms,
         });

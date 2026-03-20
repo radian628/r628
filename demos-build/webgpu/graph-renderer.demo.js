@@ -29207,11 +29207,7 @@ h2 {
     );
     const bodyNodeAssignmentsFormat = td.storageBufferFormat(
       "body_node_assignments",
-      runtimeArray(
-        struct("NodeIdx", {
-          node_idx: "u32"
-        })
-      )
+      runtimeArray("u32")
     );
     const bodyNodeChildSubOffsetsFormat = bodyNodeAssignmentsFormat.name(
       "body_node_child_sub_offsets"
@@ -29224,11 +29220,7 @@ h2 {
     );
     const bodyOrderFormat = td.storageBufferFormat(
       "body_order",
-      runtimeArray(
-        struct("BodyIdx", {
-          body_idx: "u32"
-        })
-      )
+      runtimeArray("u32")
     );
     const bodyOrderInFormat = bodyOrderFormat.name("body_order_in");
     const bodyOrderOutFormat = bodyOrderFormat.name("body_order_out");
@@ -29281,9 +29273,9 @@ h2 {
       return; 
     }
 
-    let body_idx = body_order[id.x].body_idx;
+    let body_idx = body_order[id.x];
     let body = bodies[body_idx];
-    let parent_node_idx = body_node_assignments[body_idx].node_idx;
+    let parent_node_idx = body_node_assignments[body_idx];
     let parent_node = octree_nodes[parent_node_idx];
     let parent_node_metadata = octree_metadata[parent_node.metadata_idx];
 
@@ -29301,13 +29293,13 @@ h2 {
       + select(0u, 2u, halfway.y < body.position.y)
       + select(0u, 1u, halfway.x < body.position.x);
   
-    body_node_child_sub_offsets[body_idx].node_idx = 
+    body_node_child_sub_offsets[body_idx] = 
       atomicAdd(
         &octree_counters[parent_node_metadata.counters_idx].counters[child_offset],
         1u
       );
 
-    body_node_assignments[body_idx].node_idx = 
+    body_node_assignments[body_idx] = 
       parent_node.child_idx + child_offset;
     `
     });
@@ -29330,7 +29322,7 @@ h2 {
       return; 
     } 
 
-    let parent_node_idx = active_nodes_in[id.x].node_idx;
+    let parent_node_idx = active_nodes_in[id.x];
     let parent_node = octree_nodes[parent_node_idx];
     let parent_node_metadata = octree_metadata[parent_node.metadata_idx];
     let parent_node_counters = 
@@ -29398,7 +29390,7 @@ h2 {
         octree_nodes[child_node_idx].child_idx = child_idx;
 
         let active_idx = atomicAdd(&nextfrees.active_nodes_index, 1u);
-        active_nodes_out[active_idx].node_idx = child_node_idx;
+        active_nodes_out[active_idx] = child_node_idx;
       }
     }
 
@@ -29421,15 +29413,15 @@ h2 {
       return; 
     }
 
-    let body_idx = body_order_in[id.x].body_idx;
+    let body_idx = body_order_in[id.x];
     let body = bodies[body_idx];
 
-    let node_idx = body_node_assignments[body_idx].node_idx;
+    let node_idx = body_node_assignments[body_idx];
     let node = octree_nodes[node_idx];
     let start = node.data_start_idx;
-    let sub_offset = body_node_child_sub_offsets[body_idx].node_idx;
+    let sub_offset = body_node_child_sub_offsets[body_idx];
 
-    body_order_out[start + sub_offset].body_idx = body_idx;
+    body_order_out[start + sub_offset] = body_idx;
     `
     });
     const setupNextIterationBindGroupFormat = td.bindGroupFormat(
@@ -29543,7 +29535,7 @@ h2 {
     }
 
     if (id.x < arrayLength(&bodies)) {
-      let body_idx = body_order[id.x].body_idx;
+      let body_idx = body_order[id.x];
 
       agg_bodies[id.x].mass = bodies[body_idx].mass;
       agg_bodies[id.x].center_of_mass = bodies[body_idx].position;
@@ -29768,7 +29760,7 @@ h2 {
     nextfrees.active_nodes_index = 0u;
 
     active_nodes_info.count = 1u;
-    active_nodes_in[0].node_idx = 0u;
+    active_nodes_in[0] = 0u;
     `
     });
     const initRootNodeBindGroup2Format = td.bindGroupFormat(
@@ -29795,8 +29787,8 @@ h2 {
       return;
     }
 
-    body_order[id.x].body_idx = id.x;
-    body_node_assignments[id.x].node_idx = 0u;
+    body_order[id.x] = id.x;
+    body_node_assignments[id.x] = 0u;
     `
     });
     function setupMinMaxReduction(params2) {
@@ -30302,14 +30294,7 @@ h2 {
         offset: 12
       }
     ]);
-    const accelsFormat = td.storageBufferFormat(
-      "accels",
-      runtimeArray(
-        struct("Accel", {
-          accel: "vec3f"
-        })
-      )
-    );
+    const accelsFormat = td.storageBufferFormat("accels", runtimeArray("vec3f"));
     const physicsUniformsFormat = td.uniformBufferComputeFormat(
       "physics_params",
       struct("PhysicsParams", {
@@ -30330,7 +30315,7 @@ h2 {
     `,
       applyForces: `
       var impulse = total_impulse * physics_params.repulsion_multiplier;
-      impulse += accels[i].accel * physics_params.attraction_multiplier;
+      impulse += accels[i] * physics_params.attraction_multiplier;
       impulse -= bodies[i].position * 0.0001; 
 
       bodies[i].velocity += impulse / bodies[i].mass * params.timestep;
@@ -30374,30 +30359,23 @@ h2 {
         topology: "line-list"
       }
     });
-    const genericBufferFormat = td.storageBufferFormat(
-      "generic",
-      runtimeArray(struct("Generic", { data: "u32" }))
-    ).usage("storage", "copy-src");
+    const genericBufferFormat = td.storageBufferFormat("generic", runtimeArray("u32")).usage("storage", "copy-src");
     const transferBodyInfoToPointsBindGroupFormat = td.bindGroupFormat(
       "nbody",
       bodiesFormat,
-      genericBufferFormat
+      genericBufferFormat.name("points")
     );
     const transferBodyInfoToPointsPipeline = await td.computePipeline({
       bindGroups: [transferBodyInfoToPointsBindGroupFormat],
       workgroupSize: [32, 1, 1],
-      storageBufferAccess: {
-        bodies: "read_write",
-        generic: "read_write"
-      },
       shader: `
       let i = id.x;
       if (i >= arrayLength(&bodies)) { return; }
-      generic[i * 5].data = bitcast<u32>(bodies[i].position.x);
-      generic[i * 5 + 1].data = bitcast<u32>(bodies[i].position.y);
-      generic[i * 5 + 2].data = bitcast<u32>(bodies[i].position.z);
-      generic[i * 5 + 3].data = bitcast<u32>(0.5);
-      generic[i * 5 + 4].data = pack4x8unorm(bodies[i].color);
+      points[i * 5] = bitcast<u32>(bodies[i].position.x);
+      points[i * 5 + 1] = bitcast<u32>(bodies[i].position.y);
+      points[i * 5 + 2] = bitcast<u32>(bodies[i].position.z);
+      points[i * 5 + 3] = bitcast<u32>(0.5);
+      points[i * 5 + 4] = pack4x8unorm(bodies[i].color);
     `
     });
     const edgesBufferFormat = td.storageBufferFormat(
@@ -30509,7 +30487,7 @@ h2 {
     let edge_index_end = edge_index_start + edge_loc_map[i].count;
 
     for (var j = edge_index_start; j < edge_index_end; j++) {
-      accels[i].accel += accel_vectors[j].to_src;
+      accels[i] += accel_vectors[j].to_src;
     }
 
     `
@@ -30524,7 +30502,7 @@ h2 {
     const transferBodyInfoToLinesBindGroupFormat = td.bindGroupFormat(
       "nbody",
       bodiesFormat,
-      genericBufferFormat,
+      genericBufferFormat.name("lines"),
       displayEdgesBufferFormat,
       transferBodyInfoToLinesUniformsFormat
     );
@@ -30547,11 +30525,11 @@ var<private> color_mul: f32;
 fn set_point(idx: u32, across: f32, width: f32) {
   let i = idx * 5;
   let position = mix(endpoint1, endpoint2, across);
-  generic[i].data = bitcast<u32>(position.x);
-  generic[i + 1].data = bitcast<u32>(position.y);
-  generic[i + 2].data = bitcast<u32>(position.z);
-  generic[i + 3].data = bitcast<u32>(width * params.line_width_multiplier);
-  generic[i + 4].data = pack4x8unorm(mix(color1, color2, across) * vec4f(vec3f(color_mul), 1.0));
+  lines[i] = bitcast<u32>(position.x);
+  lines[i + 1] = bitcast<u32>(position.y);
+  lines[i + 2] = bitcast<u32>(position.z);
+  lines[i + 3] = bitcast<u32>(width * params.line_width_multiplier);
+  lines[i + 4] = pack4x8unorm(mix(color1, color2, across) * vec4f(vec3f(color_mul), 1.0));
 }    
     `,
       shader: `
@@ -30895,11 +30873,11 @@ user-select: none;
         });
         const transferBodyInfoToPointsBindGroup = transferBodyInfoToPointsBindGroupFormat.new({
           bodies,
-          generic: genericBufferFormat.reinterpret(vertices)
+          points: genericBufferFormat.reinterpret(vertices)
         });
         const transferBodyInfoToLinesBindGroup = transferBodyInfoToLinesBindGroupFormat.new({
           bodies,
-          generic: genericBufferFormat.reinterpret(edges),
+          lines: genericBufferFormat.reinterpret(edges),
           edges: unidirectionalEdgesBuffer,
           params: transferBodyInfoToLinesUniforms
         });
