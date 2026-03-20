@@ -115,7 +115,7 @@ document.head.innerHTML += `<meta name="viewport"
   document.body.appendChild(graphRenderer.canvas);
   document.body.appendChild(ui.dom);
 
-  async function loop(t) {
+  async function loop(t: number) {
     if (!document.hidden) {
       loadingMsg.style.display = "none";
 

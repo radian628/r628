@@ -1,22 +1,20 @@
 import {
   array,
-  BindGroupEntriesToBindGroups,
-  FromEntries,
   range,
+  runtimeArray,
   struct,
-  ToKvPairs,
   WGSL_TYPE_ALIGNMENTS,
   WGSLStructSpec,
-  wrapDevice,
-  WrappedBindGroupEntry,
 } from "../../src";
+import { TypedBindGroupEntry } from "../../src/webgpu/easygpu/bind-group";
+import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
 
 export async function createNBodyOctreeDefs<
   ExtraBodyFields extends Record<
     string,
     keyof typeof WGSL_TYPE_ALIGNMENTS | WGSLStructSpec
   >,
-  ExtraPhysicsBuffers extends WrappedBindGroupEntry[],
+  ExtraPhysicsBuffers extends TypedBindGroupEntry[],
 >(
   device: GPUDevice,
   params: {
@@ -27,69 +25,81 @@ export async function createNBodyOctreeDefs<
     extraPhysicsBuffers: ExtraPhysicsBuffers;
   },
 ) {
-  const wdevice = wrapDevice(device);
+  const td = typeDevice(device);
 
-  const octreeNodeFormat = wdevice.storageBuffer(
+  const octreeNodeFormat = td.storageBufferFormat(
     "octree_nodes",
-    struct("OctreeNode", {
-      child_idx: "u32",
-      data_start_idx: "u32",
-      data_end_idx: "u32",
-      metadata_idx: "u32",
-    }),
+    runtimeArray(
+      struct("OctreeNode", {
+        child_idx: "u32",
+        data_start_idx: "u32",
+        data_end_idx: "u32",
+        metadata_idx: "u32",
+      }),
+    ),
   );
 
-  const octreeMetadataFormat = wdevice.storageBuffer(
+  const octreeMetadataFormat = td.storageBufferFormat(
     "octree_metadata",
-    struct("OctreeMetadata", {
-      min_corner: "vec3f",
-      counters_idx: "u32",
-      max_corner: "vec3f",
-      mass: "f32",
-      center_of_mass: "vec3f",
-    }),
+    runtimeArray(
+      struct("OctreeMetadata", {
+        min_corner: "vec3f",
+        counters_idx: "u32",
+        max_corner: "vec3f",
+        mass: "f32",
+        center_of_mass: "vec3f",
+      }),
+    ),
   );
 
-  const octreeCountersFormat = wdevice.storageBuffer(
+  const octreeCountersFormat = td.storageBufferFormat(
     "octree_counters",
-    struct("OctreeCounters", {
-      counters: array(8, "atomic<u32>"),
-    }),
+    runtimeArray(
+      struct("OctreeCounters", {
+        counters: array(8, "atomic<u32>"),
+      }),
+    ),
   );
-  const octreeCountersNonatomicFormat = wdevice.storageBuffer(
+  const octreeCountersNonatomicFormat = td.storageBufferFormat(
     "octree_counters",
-    struct("OctreeCounters", {
-      counters: array(8, "u32"),
-    }),
+    runtimeArray(
+      struct("OctreeCounters", {
+        counters: array(8, "u32"),
+      }),
+    ),
   );
 
-  const bodiesFormat = wdevice.storageBuffer(
+  const bodiesFormat = td.storageBufferFormat(
     "bodies",
-    // @ts-expect-error
-    struct("Body", {
-      position: "vec3f",
-      mass: "f32",
-      velocity: "vec3f",
-      ...params.extraBodyFields,
-    }),
+    runtimeArray(
+      // @ts-expect-error
+      struct("Body", {
+        position: "vec3f",
+        mass: "f32",
+        velocity: "vec3f",
+        ...params.extraBodyFields,
+      }),
+    ),
   );
 
-  const aggregatedBodiesFormat = wdevice.storageBuffer(
+  const aggregatedBodiesFormat = td.storageBufferFormat(
     "agg_bodies",
-    struct("AggBody", {
-      center_of_mass: "vec3f",
-      mass: "f32",
-    }),
+    runtimeArray(
+      struct("AggBody", {
+        center_of_mass: "vec3f",
+        mass: "f32",
+      }),
+    ),
   );
 
-  const createNewNodesUniforms = wdevice.uniformBufferForComputeShader(
+  const createNewNodesUniforms = td.uniformBufferComputeFormat(
     "params",
     struct("Params", {
       is_final_iter: "u32",
     }),
   );
 
-  const nextfreesFormat = wdevice.storageBuffer(
+  const nextfreesFormat = td.storageBufferFormat(
     "nextfrees",
     struct("Nextfrees", {
       node: "atomic<u32>",
@@ -97,10 +107,9 @@ export async function createNBodyOctreeDefs<
       counters: "atomic<u32>",
       active_nodes_index: "atomic<u32>",
     }),
-    { arrayify: false },
   );
 
-  const nextfreesNonatomicFormat = wdevice.storageBuffer(
+  const nextfreesNonatomicFormat = td.storageBufferFormat(
     "nextfrees",
     struct("Nextfrees", {
       node: "u32",
@@ -108,56 +117,52 @@ export async function createNBodyOctreeDefs<
       counters: "u32",
       active_nodes_index: "u32",
     }),
-    { arrayify: false },
   );
 
-  const bodyNodeAssignmentsFormat = wdevice.storageBuffer(
+  const bodyNodeAssignmentsFormat = td.storageBufferFormat(
     "body_node_assignments",
-    struct("NodeIdx", {
-      node_idx: "u32",
-    }),
+    runtimeArray(
+      struct("NodeIdx", {
+        node_idx: "u32",
+      }),
+    ),
   );
-  const bodyNodeChildSubOffsetsFormat = bodyNodeAssignmentsFormat.withName(
+  const bodyNodeChildSubOffsetsFormat = bodyNodeAssignmentsFormat.name(
     "body_node_child_sub_offsets",
   );
 
-  const activeNodesInfoFormat = wdevice.storageBuffer(
+  const activeNodesInfoFormat = td.storageBufferFormat(
     "active_nodes_info",
     struct("ActiveNodesInfo", {
       count: "u32",
     }),
-    { arrayify: false },
   );
 
-  const bodyOrderFormat = wdevice.storageBuffer(
+  const bodyOrderFormat = td.storageBufferFormat(
     "body_order",
-    struct("BodyIdx", {
-      body_idx: "u32",
-    }),
+    runtimeArray(
+      struct("BodyIdx", {
+        body_idx: "u32",
+      }),
+    ),
   );
-  const bodyOrderInFormat = bodyOrderFormat.withName("body_order_in");
-  const bodyOrderOutFormat = bodyOrderFormat.withName("body_order_out");
+  const bodyOrderInFormat = bodyOrderFormat.name("body_order_in");
+  const bodyOrderOutFormat = bodyOrderFormat.name("body_order_out");
 
-  const activeNodesInFormat =
-    bodyNodeAssignmentsFormat.withName("active_nodes_in");
+  const activeNodesInFormat = bodyNodeAssignmentsFormat.name("active_nodes_in");
   const activeNodesOutFormat =
-    bodyNodeAssignmentsFormat.withName("active_nodes_out");
+    bodyNodeAssignmentsFormat.name("active_nodes_out");
 
-  const computeIndirectBufferFormat = wdevice.storageBuffer(
-    "compute_indirect",
-    struct("ComputeIndirect", {
-      workgroups: "vec3u",
-    }),
-    {
-      arrayify: false,
-      usage:
-        GPUBufferUsage.INDIRECT |
-        GPUBufferUsage.COPY_DST |
-        GPUBufferUsage.STORAGE,
-    },
-  );
+  const computeIndirectBufferFormat = td
+    .storageBufferFormat(
+      "compute_indirect",
+      struct("ComputeIndirect", {
+        workgroups: "vec3u",
+      }),
+    )
+    .usage("indirect", "copy-dst", "storage");
 
-  const barnesHutUniformsFormat = wdevice.uniformBufferForComputeShader(
+  const barnesHutUniformsFormat = td.uniformBufferComputeFormat(
     "params",
     struct("Params", {
       min_width_over_distance_ratio: "f32",
@@ -165,15 +170,17 @@ export async function createNBodyOctreeDefs<
     }),
   );
 
-  const minMaxFormat = wdevice.storageBuffer(
+  const minMaxFormat = td.storageBufferFormat(
     "vecs",
-    struct("MinMax", {
-      min: "vec3f",
-      max: "vec3f",
-    }),
+    runtimeArray(
+      struct("MinMax", {
+        min: "vec3f",
+        max: "vec3f",
+      }),
+    ),
   );
 
-  const minMaxUniformsFormat = wdevice.uniformBufferForComputeShader(
+  const minMaxUniformsFormat = td.uniformBufferComputeFormat(
     "params",
     struct("Params", {
       stride: "u32",
@@ -181,7 +188,7 @@ export async function createNBodyOctreeDefs<
     }),
   );
 
-  const assignBodiesBindGroupFormat = wdevice.bindGroup(
+  const assignBodiesBindGroupFormat = td.bindGroupFormat(
     "bg",
     bodyNodeAssignmentsFormat,
     bodyNodeChildSubOffsetsFormat,
@@ -192,7 +199,7 @@ export async function createNBodyOctreeDefs<
     octreeMetadataFormat,
   );
 
-  const assignBodiesPipeline = await wdevice.compute({
+  const assignBodiesPipeline = await td.computePipeline({
     bindGroups: [assignBodiesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -231,7 +238,7 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const createNewNodesBindGroupFormat = wdevice.bindGroup(
+  const createNewNodesBindGroupFormat = td.bindGroupFormat(
     "bg",
     activeNodesInFormat,
     activeNodesOutFormat,
@@ -243,7 +250,7 @@ export async function createNBodyOctreeDefs<
     createNewNodesUniforms,
   );
 
-  const createNewNodesPipeline = await wdevice.compute({
+  const createNewNodesPipeline = await td.computePipeline({
     bindGroups: [createNewNodesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -326,7 +333,7 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const reorderBodiesBindGroupFormat = wdevice.bindGroup(
+  const reorderBodiesBindGroupFormat = td.bindGroupFormat(
     "bg",
     bodyOrderInFormat,
     bodyOrderOutFormat,
@@ -336,7 +343,7 @@ export async function createNBodyOctreeDefs<
     bodiesFormat,
   );
 
-  const reorderBodiesPipeline = await wdevice.compute({
+  const reorderBodiesPipeline = await td.computePipeline({
     bindGroups: [reorderBodiesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -356,14 +363,14 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const setupNextIterationBindGroupFormat = wdevice.bindGroup(
+  const setupNextIterationBindGroupFormat = td.bindGroupFormat(
     "bg",
     computeIndirectBufferFormat,
     nextfreesFormat,
     activeNodesInfoFormat,
   );
 
-  const setupNextIterationPipeline = await wdevice.compute({
+  const setupNextIterationPipeline = await td.computePipeline({
     bindGroups: [setupNextIterationBindGroupFormat] as const,
     workgroupSize: [1, 1, 1],
     shader: `
@@ -378,7 +385,7 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const prefixSumAggBodiesUniformFormat = wdevice.uniformBufferForComputeShader(
+  const prefixSumAggBodiesUniformFormat = td.uniformBufferComputeFormat(
     "params",
     struct("Params", {
       stride: "u32",
@@ -386,13 +393,13 @@ export async function createNBodyOctreeDefs<
     }),
   );
 
-  const prefixSumAggBodiesBindGroupFormat = wdevice.bindGroup(
+  const prefixSumAggBodiesBindGroupFormat = td.bindGroupFormat(
     "bg",
     prefixSumAggBodiesUniformFormat,
     aggregatedBodiesFormat,
   );
 
-  const prefixSumAggBodiesUpstrokePipeline = await wdevice.compute({
+  const prefixSumAggBodiesUpstrokePipeline = await td.computePipeline({
     bindGroups: [prefixSumAggBodiesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -416,20 +423,21 @@ export async function createNBodyOctreeDefs<
   });
 
   const setupPrefixSumBodiesDownstrokeUniformFormat =
-    wdevice.uniformBufferForComputeShader(
+    td.uniformBufferComputeFormat(
       "params",
       struct("Params", {
         end: "u32",
       }),
     );
 
-  const setupPrefixSumBodiesDownstrokeBindGroupFormat = await wdevice.bindGroup(
-    "bg",
-    aggregatedBodiesFormat,
-    setupPrefixSumBodiesDownstrokeUniformFormat,
-  );
+  const setupPrefixSumBodiesDownstrokeBindGroupFormat =
+    await td.bindGroupFormat(
+      "bg",
+      aggregatedBodiesFormat,
+      setupPrefixSumBodiesDownstrokeUniformFormat,
+    );
 
-  const setupPrefixSumBodiesDownstrokePipeline = await wdevice.compute({
+  const setupPrefixSumBodiesDownstrokePipeline = await td.computePipeline({
     bindGroups: [setupPrefixSumBodiesDownstrokeBindGroupFormat] as const,
     workgroupSize: [1, 1, 1],
     shader: `
@@ -438,7 +446,7 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const prefixSumAggBodiesDownstrokePipeline = await wdevice.compute({
+  const prefixSumAggBodiesDownstrokePipeline = await td.computePipeline({
     bindGroups: [prefixSumAggBodiesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -462,14 +470,14 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const initAggregatedBodiesBindGroupFormat = wdevice.bindGroup(
+  const initAggregatedBodiesBindGroupFormat = td.bindGroupFormat(
     "bg",
     aggregatedBodiesFormat,
     bodiesFormat,
     bodyOrderFormat,
   );
 
-  const initAggregatedBodiesPipeline = await wdevice.compute({
+  const initAggregatedBodiesPipeline = await td.computePipeline({
     bindGroups: [initAggregatedBodiesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -490,7 +498,7 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const aggregateMassInOctreeBindGroupFormat = wdevice.bindGroup(
+  const aggregateMassInOctreeBindGroupFormat = td.bindGroupFormat(
     "bg",
     octreeNodeFormat,
     octreeMetadataFormat,
@@ -498,7 +506,7 @@ export async function createNBodyOctreeDefs<
     nextfreesNonatomicFormat,
   );
 
-  const aggregateMassInOctreePipeline = await wdevice.compute({
+  const aggregateMassInOctreePipeline = await td.computePipeline({
     bindGroups: [aggregateMassInOctreeBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -523,7 +531,7 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const applyBarnesHutBindGroupFormat = wdevice.bindGroup(
+  const applyBarnesHutBindGroupFormat = td.bindGroupFormat(
     "bg",
     bodiesFormat,
     octreeNodeFormat,
@@ -532,7 +540,7 @@ export async function createNBodyOctreeDefs<
     ...params.extraPhysicsBuffers,
   );
 
-  const applyBarnesHutPipeline = await wdevice.compute({
+  const applyBarnesHutPipeline = await td.computePipeline({
     bindGroups: [applyBarnesHutBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     globals: `
@@ -621,13 +629,13 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const reduceMinMaxBindGroupFormat = wdevice.bindGroup(
+  const reduceMinMaxBindGroupFormat = td.bindGroupFormat(
     "bg",
     minMaxFormat,
     minMaxUniformsFormat,
   );
 
-  const reduceMinMaxPipeline = await wdevice.compute({
+  const reduceMinMaxPipeline = await td.computePipeline({
     bindGroups: [reduceMinMaxBindGroupFormat],
     workgroupSize: [32, 1, 1],
     shader: `
@@ -648,13 +656,13 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const initMinMaxBindGroupFormat = wdevice.bindGroup(
+  const initMinMaxBindGroupFormat = td.bindGroupFormat(
     "bg",
     bodiesFormat,
     minMaxFormat,
   );
 
-  const initMinMaxPipeline = await wdevice.compute({
+  const initMinMaxPipeline = await td.computePipeline({
     bindGroups: [initMinMaxBindGroupFormat],
     workgroupSize: [32, 1, 1],
     shader: `
@@ -673,7 +681,7 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const initRootNodeBindGroupFormat = wdevice.bindGroup(
+  const initRootNodeBindGroupFormat = td.bindGroupFormat(
     "bg",
     bodiesFormat,
     minMaxFormat,
@@ -685,7 +693,7 @@ export async function createNBodyOctreeDefs<
     activeNodesInFormat,
   );
 
-  const initRootNodePipeline = await wdevice.compute({
+  const initRootNodePipeline = await td.computePipeline({
     bindGroups: [initRootNodeBindGroupFormat],
     workgroupSize: [1, 1, 1],
     shader: `
@@ -717,12 +725,12 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const initRootNodeBindGroup2Format = wdevice.bindGroup(
+  const initRootNodeBindGroup2Format = td.bindGroupFormat(
     "bg",
     computeIndirectBufferFormat,
   );
 
-  const initRootNodePipeline2 = await wdevice.compute({
+  const initRootNodePipeline2 = await td.computePipeline({
     bindGroups: [initRootNodeBindGroup2Format],
     workgroupSize: [1, 1, 1],
     shader: `
@@ -730,13 +738,13 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const initPerBodyStateBindGroupFormat = wdevice.bindGroup(
+  const initPerBodyStateBindGroupFormat = td.bindGroupFormat(
     "bg",
     bodyOrderFormat,
     bodyNodeAssignmentsFormat,
   );
 
-  const initPerBodyStatePipeline = await wdevice.compute({
+  const initPerBodyStatePipeline = await td.computePipeline({
     bindGroups: [initPerBodyStateBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -750,21 +758,21 @@ export async function createNBodyOctreeDefs<
   });
 
   function setupMinMaxReduction(params: {
-    bodies: ReturnType<typeof bodiesFormat.instantiate>;
+    bodies: ReturnType<typeof bodiesFormat.new>;
     count: number;
   }) {
     const countExponent = Math.ceil(Math.log2(params.count));
     const nextPowerOfTwo = 2 ** countExponent;
     const iterSteps = countExponent;
 
-    const minmax = minMaxFormat.instantiate(nextPowerOfTwo);
+    const minmax = minMaxFormat.new(nextPowerOfTwo);
 
     const steps = range(iterSteps).map((i) => {
       const stride = 2 ** i;
       const count = nextPowerOfTwo / stride / 2;
       const workgroups = Math.ceil(count / 32);
       return {
-        bg: reduceMinMaxBindGroupFormat.instantiate({
+        bg: reduceMinMaxBindGroupFormat.new({
           vecs: minmax,
           params: minMaxUniformsFormat.quickCreate({
             stride,
@@ -779,7 +787,7 @@ export async function createNBodyOctreeDefs<
 
     console.log(steps);
 
-    const initMinMaxBindGroup = initMinMaxBindGroupFormat.instantiate({
+    const initMinMaxBindGroup = initMinMaxBindGroupFormat.new({
       bodies: params.bodies,
       vecs: minmax,
     });
@@ -801,8 +809,8 @@ export async function createNBodyOctreeDefs<
   }
 
   function setupAggregatedBodyPrefixSum(params: {
-    bodies: ReturnType<typeof bodiesFormat.instantiate>;
-    bodyOrder: ReturnType<typeof bodyOrderFormat.instantiate>;
+    bodies: ReturnType<typeof bodiesFormat.new>;
+    bodyOrder: ReturnType<typeof bodyOrderFormat.new>;
     count: number;
   }) {
     const countWithExtra = params.count + 1;
@@ -811,7 +819,7 @@ export async function createNBodyOctreeDefs<
 
     const iterSteps = countExponent;
 
-    const aggBodies = aggregatedBodiesFormat.instantiate(nextPowerOfTwo);
+    const aggBodies = aggregatedBodiesFormat.new(nextPowerOfTwo);
 
     const setupDownstrokeUniforms =
       setupPrefixSumBodiesDownstrokeUniformFormat.quickCreate({
@@ -819,7 +827,7 @@ export async function createNBodyOctreeDefs<
       });
 
     const setupDownstrokeBindGroup =
-      setupPrefixSumBodiesDownstrokeBindGroupFormat.instantiate({
+      setupPrefixSumBodiesDownstrokeBindGroupFormat.new({
         agg_bodies: aggBodies,
         params: setupDownstrokeUniforms,
       });
@@ -832,20 +840,20 @@ export async function createNBodyOctreeDefs<
     );
 
     const upstrokeBindGroups = range(iterSteps).map((i) =>
-      prefixSumAggBodiesBindGroupFormat.instantiate({
+      prefixSumAggBodiesBindGroupFormat.new({
         agg_bodies: aggBodies,
         params: uniformBufs[i],
       }),
     );
 
     const downstrokeBindGroups = range(iterSteps).map((i) =>
-      prefixSumAggBodiesBindGroupFormat.instantiate({
+      prefixSumAggBodiesBindGroupFormat.new({
         agg_bodies: aggBodies,
         params: uniformBufs[iterSteps - i - 1],
       }),
     );
 
-    const initBg = initAggregatedBodiesBindGroupFormat.instantiate({
+    const initBg = initAggregatedBodiesBindGroupFormat.new({
       agg_bodies: aggBodies,
       bodies: params.bodies,
       body_order: params.bodyOrder,
@@ -884,7 +892,7 @@ export async function createNBodyOctreeDefs<
   }
 
   function setupOctree(params: {
-    bodies: ReturnType<typeof bodiesFormat.instantiate>;
+    bodies: ReturnType<typeof bodiesFormat.new>;
     // extraPhysicsBuffers: BindGroupEntriesToBindGroups<
     //   FromEntries<ToKvPairs<ExtraPhysicsBuffers, "name">>
     // >;
@@ -892,31 +900,30 @@ export async function createNBodyOctreeDefs<
     octreeCapacity: number;
     octreeDepth: number;
   }) {
-    const octreeNodeBuffer = octreeNodeFormat.instantiate(
+    const octreeNodeBuffer = octreeNodeFormat.new(params.octreeCapacity);
+    const octreeMetadataBuffer = octreeMetadataFormat.new(
       params.octreeCapacity,
     );
-    const octreeMetadataBuffer = octreeMetadataFormat.instantiate(
+    const octreeCountersBuffer = octreeCountersFormat.new(
       params.octreeCapacity,
     );
-    const octreeCountersBuffer = octreeCountersFormat.instantiate(
-      params.octreeCapacity,
-    );
-    const bodiesOrderBuffer1 = bodyOrderFormat.instantiate(params.bodyCount);
-    const bodiesOrderBuffer2 = bodyOrderFormat.instantiate(params.bodyCount);
-    const nextfreesBuffer = nextfreesFormat.instantiate(1);
-    const nodeBodyAssignmentsBuffer = bodyNodeAssignmentsFormat.instantiate(
+    const bodiesOrderBuffer1 = bodyOrderFormat.new(params.bodyCount);
+    const bodiesOrderBuffer2 = bodyOrderFormat.new(params.bodyCount);
+    const nextfreesBuffer = nextfreesFormat.new(1);
+    const nodeBodyAssignmentsBuffer = bodyNodeAssignmentsFormat.new(
       params.bodyCount,
     );
-    const bodyNodeChildSubOffsetsBuffer =
-      bodyNodeChildSubOffsetsFormat.instantiate(params.bodyCount);
-    const activeNodesBuffer1 = bodyNodeAssignmentsFormat.instantiate(
+    const bodyNodeChildSubOffsetsBuffer = bodyNodeChildSubOffsetsFormat.new(
+      params.bodyCount,
+    );
+    const activeNodesBuffer1 = bodyNodeAssignmentsFormat.new(
       params.octreeCapacity,
     );
-    const activeNodesBuffer2 = bodyNodeAssignmentsFormat.instantiate(
+    const activeNodesBuffer2 = bodyNodeAssignmentsFormat.new(
       params.octreeCapacity,
     );
-    const activeNodesInfoBuffer = activeNodesInfoFormat.instantiate(1);
-    const computeIndirectBuffer = computeIndirectBufferFormat.instantiate(1);
+    const activeNodesInfoBuffer = activeNodesInfoFormat.new(1);
+    const computeIndirectBuffer = computeIndirectBufferFormat.new(1);
     const nonfinalIterBuffer = createNewNodesUniforms.quickCreate({
       is_final_iter: 0,
     });
@@ -925,7 +932,7 @@ export async function createNBodyOctreeDefs<
     });
 
     const assignBodiesBindGroups = range(2).map((i) =>
-      assignBodiesBindGroupFormat.instantiate({
+      assignBodiesBindGroupFormat.new({
         body_node_assignments: nodeBodyAssignmentsBuffer,
         body_node_child_sub_offsets: bodyNodeChildSubOffsetsBuffer,
         octree_counters: octreeCountersBuffer,
@@ -938,7 +945,7 @@ export async function createNBodyOctreeDefs<
 
     const createNewNodesBindGroup = range(2).map((j) =>
       range(2).map((i) =>
-        createNewNodesBindGroupFormat.instantiate({
+        createNewNodesBindGroupFormat.new({
           active_nodes_in: [activeNodesBuffer1, activeNodesBuffer2][i],
           active_nodes_out: [activeNodesBuffer2, activeNodesBuffer1][i],
           active_nodes_info: activeNodesInfoBuffer,
@@ -953,7 +960,7 @@ export async function createNBodyOctreeDefs<
     );
 
     const reorderBodiesBindGroups = range(2).map((i) =>
-      reorderBodiesBindGroupFormat.instantiate({
+      reorderBodiesBindGroupFormat.new({
         body_order_in: [bodiesOrderBuffer1, bodiesOrderBuffer2][i],
         body_order_out: [bodiesOrderBuffer2, bodiesOrderBuffer1][i],
         body_node_assignments: nodeBodyAssignmentsBuffer,
@@ -963,12 +970,11 @@ export async function createNBodyOctreeDefs<
       }),
     );
 
-    const setupNextIterationBindGroup =
-      setupNextIterationBindGroupFormat.instantiate({
-        compute_indirect: computeIndirectBuffer,
-        nextfrees: nextfreesBuffer,
-        active_nodes_info: activeNodesInfoBuffer,
-      });
+    const setupNextIterationBindGroup = setupNextIterationBindGroupFormat.new({
+      compute_indirect: computeIndirectBuffer,
+      nextfrees: nextfreesBuffer,
+      active_nodes_info: activeNodesInfoBuffer,
+    });
 
     const aggPrefixSum = setupAggregatedBodyPrefixSum({
       bodies: params.bodies,
@@ -981,7 +987,7 @@ export async function createNBodyOctreeDefs<
       count: params.bodyCount,
     });
 
-    const initRootNodeBindGroup = initRootNodeBindGroupFormat.instantiate({
+    const initRootNodeBindGroup = initRootNodeBindGroupFormat.new({
       bodies: params.bodies,
       octree_metadata: octreeMetadataBuffer,
       octree_nodes: octreeNodeBuffer,
@@ -992,18 +998,17 @@ export async function createNBodyOctreeDefs<
       active_nodes_info: activeNodesInfoBuffer,
       active_nodes_in: activeNodesBuffer1,
     });
-    const initRootNodeBindGroup2 = initRootNodeBindGroup2Format.instantiate({
+    const initRootNodeBindGroup2 = initRootNodeBindGroup2Format.new({
       compute_indirect: computeIndirectBuffer,
     });
 
-    const initPerBodyStateBindGroup =
-      initPerBodyStateBindGroupFormat.instantiate({
-        body_order: bodiesOrderBuffer1,
-        body_node_assignments: nodeBodyAssignmentsBuffer,
-      });
+    const initPerBodyStateBindGroup = initPerBodyStateBindGroupFormat.new({
+      body_order: bodiesOrderBuffer1,
+      body_node_assignments: nodeBodyAssignmentsBuffer,
+    });
 
     const aggregateMassInOctreeBindGroup =
-      aggregateMassInOctreeBindGroupFormat.instantiate({
+      aggregateMassInOctreeBindGroupFormat.new({
         octree_metadata: octreeMetadataBuffer,
         octree_nodes: octreeNodeBuffer,
         agg_bodies: aggPrefixSum.aggBodies,

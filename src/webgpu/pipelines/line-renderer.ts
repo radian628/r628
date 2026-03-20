@@ -1,5 +1,6 @@
 import { Mat4, scale4, Vec3, Vec4 } from "../../math/vector.generated";
 import { range, rangeFrom } from "../../range";
+import { typeDevice } from "../easygpu/easygpu";
 import {
   OutputFormat,
   pipelineRenderpass,
@@ -14,36 +15,44 @@ export async function lineRenderer(
   device: GPUDevice,
   outputFormat: GPUTextureFormat,
   settings?: {
-    multisample: GPUMultisampleState;
+    multisample: GPUMultisampleState & { count: 1 | 4 };
   },
 ) {
-  const wdevice = wrapDevice(device);
+  const td = typeDevice(device);
 
-  const depthTexFormat = wdevice.texture("depth", {
-    format: "depth32float",
-    multisampled: settings?.multisample?.count > 1,
-  });
+  const depthTexFormat = td.textureFormat(
+    {
+      name: "depth",
+      format: "depth32float",
+      sampleCount: settings?.multisample?.count ?? 1,
+      viewDimension: "2d",
+      visibility: ["fragment"],
+    },
+    "render-attachment",
+  );
 
-  const colorTexFormat = wdevice.texture("color", {
-    format: outputFormat,
-    multisampled: settings?.multisample?.count > 1,
-  });
+  const colorTexFormat = td.textureFormat(
+    {
+      name: "color",
+      format: outputFormat,
+      sampleCount: settings?.multisample?.count ?? 1,
+      viewDimension: "2d",
+      dimension: "2d",
+      visibility: ["fragment"],
+    },
+    "render-attachment",
+  );
 
   const EVERYWHERE =
     GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
 
-  const geometryBufferFormat = wdevice.vertexBuffer("geometry", {
-    types: [
-      {
-        name: "geometryPosition",
-        format: "float32x2",
-        offset: 0,
-      },
-    ] as const,
-    stride: 8,
-    stepMode: "vertex",
-    visibility: EVERYWHERE,
-  });
+  const geometryBufferFormat = td.vertexBufferFormat("geometry", 8, [
+    {
+      name: "geometryPosition",
+      format: "float32x2",
+      offset: 0,
+    },
+  ] as const);
 
   const quad = geometryBufferFormat.quickCreate([
     {
@@ -66,31 +75,28 @@ export async function lineRenderer(
     },
   ]);
 
-  const pointInstanceBufferFormat = wdevice.vertexBuffer("points", {
-    types: [
-      {
-        name: "position",
-        format: "float32x3",
-        offset: 0,
-      },
-      {
-        name: "size",
-        format: "float32",
-        offset: 12,
-      },
-      {
-        name: "color",
-        format: "unorm8x4",
-        offset: 16,
-      },
-    ] as const,
-    stride: 20,
-    stepMode: "instance",
-    visibility: EVERYWHERE,
-  });
+  const pointInstanceBufferFormat = td.instanceBufferFormat("points", 20, [
+    {
+      name: "position",
+      format: "float32x3",
+      offset: 0,
+    },
+    {
+      name: "size",
+      format: "float32",
+      offset: 12,
+    },
+    {
+      name: "color",
+      format: "unorm8x4",
+      offset: 16,
+    },
+  ] as const);
 
-  const lineSegInstanceBufferFormat1 = wdevice.vertexBuffer("lineSegments1", {
-    types: [
+  const lineSegInstanceBufferFormat1 = td.instanceBufferFormat(
+    "lineSegments1",
+    20,
+    [
       {
         name: "position1",
         format: "float32x3",
@@ -107,12 +113,11 @@ export async function lineRenderer(
         offset: 16,
       },
     ] as const,
-    stride: 20,
-    stepMode: "instance",
-    visibility: EVERYWHERE,
-  });
-  const lineSegInstanceBufferFormat2 = wdevice.vertexBuffer("lineSegments2", {
-    types: [
+  );
+  const lineSegInstanceBufferFormat2 = td.instanceBufferFormat(
+    "lineSegments2",
+    20,
+    [
       {
         name: "position2",
         format: "float32x3",
@@ -129,12 +134,9 @@ export async function lineRenderer(
         offset: 16,
       },
     ] as const,
-    stride: 20,
-    stepMode: "instance",
-    visibility: EVERYWHERE,
-  });
+  );
 
-  const uniforms = wdevice.uniformBuffer(
+  const uniforms = td.uniformBufferFormat(
     "params",
     struct("Params", {
       mvp: "mat4x4f",
@@ -142,7 +144,7 @@ export async function lineRenderer(
     }),
   );
 
-  const perFrameBindGroup = wdevice.bindGroup("perFrame", uniforms);
+  const perFrameBindGroup = td.bindGroupFormat("perFrame", uniforms);
 
   const blend: GPUBlendState | undefined = undefined; /* {
     color: {
@@ -162,14 +164,14 @@ export async function lineRenderer(
 
   // const blend = undefined;
 
-  const pointPipeline = await wdevice.pipeline({
-    multisample: settings.multisample,
+  const pointPipeline = await td.renderPipeline({
+    multisample: settings?.multisample,
     depthStencil: {
       format: "depth32float",
       depthCompare: "less",
       depthWriteEnabled: true,
     },
-    inputs: [pointInstanceBufferFormat, geometryBufferFormat] as const,
+    inputs: [geometryBufferFormat, pointInstanceBufferFormat] as const,
     outputs: {
       color: {
         format: outputFormat,
@@ -206,17 +208,17 @@ export async function lineRenderer(
     },
   });
 
-  const linePipeline = await wdevice.pipeline({
-    multisample: settings.multisample,
+  const linePipeline = await td.renderPipeline({
+    multisample: settings?.multisample,
     depthStencil: {
       format: "depth32float",
       depthCompare: "less",
       depthWriteEnabled: true,
     },
     inputs: [
+      geometryBufferFormat,
       lineSegInstanceBufferFormat1,
       lineSegInstanceBufferFormat2,
-      geometryBufferFormat,
     ] as const,
     outputs: {
       color: {
@@ -294,25 +296,22 @@ export async function lineRenderer(
     linePipeline,
     pointPipeline,
     createEmptyLines(count: number, depthLoadOp: "clear" | "load") {
-      const perFrameUniforms = uniforms.instantiate(1);
+      const perFrameUniforms = uniforms.new(1);
 
-      const perFrame = perFrameBindGroup.instantiate({
+      const perFrame = perFrameBindGroup.new({
         params: perFrameUniforms,
       });
 
-      const vertexBuf = pointInstanceBufferFormat.instantiate(count);
+      const vertexBuf = pointInstanceBufferFormat.new(count);
 
       const pass = device.createRenderBundleEncoder({
         colorFormats: [outputFormat],
-        depthStencilFormat: depthTexFormat.format,
+        depthStencilFormat: depthTexFormat.desc.format,
       });
 
       pass.setPipeline(pointPipeline);
 
-      pipelineRenderpass(
-        pointPipeline,
-        pass,
-      )({
+      pointPipeline.bind(pass, {
         points: vertexBuf,
         geometry: quad,
         perFrame,
@@ -321,11 +320,7 @@ export async function lineRenderer(
       pass.draw(6, count);
 
       pass.setPipeline(linePipeline);
-
-      pipelineRenderpass(
-        linePipeline,
-        pass,
-      )({
+      linePipeline.bind(pass, {
         lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
         lineSegments2: [
           lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
@@ -378,9 +373,9 @@ export async function lineRenderer(
       thickness: number,
       depthLoadOp: "clear" | "load",
     ) {
-      const perFrameUniforms = uniforms.instantiate(1);
+      const perFrameUniforms = uniforms.new(1);
 
-      const perFrame = perFrameBindGroup.instantiate({
+      const perFrame = perFrameBindGroup.new({
         params: perFrameUniforms,
       });
 
@@ -394,15 +389,12 @@ export async function lineRenderer(
 
       const pass = device.createRenderBundleEncoder({
         colorFormats: [outputFormat],
-        depthStencilFormat: depthTexFormat.format,
+        depthStencilFormat: depthTexFormat.desc.format,
       });
 
       pass.setPipeline(pointPipeline);
 
-      pipelineRenderpass(
-        pointPipeline,
-        pass,
-      )({
+      pointPipeline.bind(pass, {
         points: vertexBuf,
         geometry: quad,
         perFrame,
@@ -412,10 +404,7 @@ export async function lineRenderer(
 
       pass.setPipeline(linePipeline);
 
-      pipelineRenderpass(
-        linePipeline,
-        pass,
-      )({
+      linePipeline.bind(pass, {
         lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
         lineSegments2: [
           lineSegInstanceBufferFormat2.reinterpret(vertexBuf),
@@ -498,17 +487,14 @@ export async function lineRenderer(
 
       pass.setPipeline(pointPipeline);
 
-      const bg = perFrameBindGroup.instantiate({
+      const bg = perFrameBindGroup.new({
         params: uniforms.quickCreate({
           mvp: transform,
           aspect: target.width / target.height,
         }),
       });
 
-      pipelineRenderpass(
-        pointPipeline,
-        pass,
-      )({
+      pointPipeline.bind(pass, {
         points: vertexBuf,
         geometry: quad,
         perFrame: bg,
@@ -518,10 +504,7 @@ export async function lineRenderer(
 
       pass.setPipeline(linePipeline);
 
-      pipelineRenderpass(
-        linePipeline,
-        pass,
-      )({
+      linePipeline.bind(pass, {
         lineSegments1: lineSegInstanceBufferFormat1.reinterpret(vertexBuf),
         lineSegments2: [
           lineSegInstanceBufferFormat2.reinterpret(vertexBuf),

@@ -1,3 +1,4 @@
+"use strict";
 (() => {
   // src/range.ts
   function range(hi) {

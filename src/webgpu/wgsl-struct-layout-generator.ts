@@ -23,7 +23,7 @@ export type WGSLStructSpec =
     }
   | {
       type: "array";
-      count: number;
+      count?: number;
       member: WGSLStructSpec;
     };
 
@@ -87,6 +87,21 @@ export function array<
   };
 }
 
+export function runtimeArray<
+  Member extends WGSLStructSpec | keyof typeof WGSL_TYPE_ALIGNMENTS,
+>(
+  member: Member,
+): {
+  type: "array";
+  member: Member extends string ? { type: Member } : Member;
+} {
+  return {
+    type: "array",
+    // @ts-expect-error
+    member: typeof member === "string" ? { type: member } : member,
+  };
+}
+
 export function primitive<T extends keyof typeof WGSL_TYPE_ALIGNMENTS>(
   type: T,
 ) {
@@ -98,20 +113,26 @@ export type WGSLStructSpecWithOffsets =
       type: "struct";
       members: [string, { type: WGSLStructSpecWithOffsets; offset: number }][];
       size: number;
+      perElementSize: number;
       align: number;
       name: string;
+      runtimeSized: boolean;
     }
   | {
       type: keyof typeof WGSL_TYPE_SIZES;
       size: number;
+      perElementSize: number;
       align: number;
+      runtimeSized: boolean;
     }
   | {
       type: "array";
-      count: number;
+      count?: number;
       member: WGSLStructSpecWithOffsets;
       size: number;
+      perElementSize: number;
       align: number;
+      runtimeSized: boolean;
     };
 
 type ArrayToObject<A extends [keyof any, any][]> = A extends [
@@ -203,34 +224,69 @@ export function generateLayouts(
   const clone = structuredClone(specs) as WGSLStructSpecWithOffsets[];
 
   const determineIndividualLayoutSizeAndAlignment = memo(
-    (spec: WGSLStructSpecWithOffsets) => {
+    (
+      spec: WGSLStructSpecWithOffsets,
+      isLastStructMemberOrTopLevel: boolean,
+    ) => {
       if (spec.type === "struct") {
         let currOffset = 0;
+        let endsWithRuntimeSizedArray = false;
+        spec.runtimeSized = false;
 
         for (const [memberName, member] of spec.members) {
-          determineIndividualLayoutSizeAndAlignment(member.type);
+          determineIndividualLayoutSizeAndAlignment(
+            member.type,
+            member === spec.members.at(-1)?.[1],
+          );
+          spec.runtimeSized = spec.runtimeSized || member.type.runtimeSized;
+
           member.offset = roundUp(member.type.align, currOffset);
-          currOffset = member.offset + member.type.size;
+          if (member.type.size === Infinity) {
+            spec.perElementSize = member.type.perElementSize;
+            endsWithRuntimeSizedArray = true;
+          } else {
+            currOffset = member.offset + member.type.size;
+          }
         }
 
-        const lastMember = spec.members.at(-1)![1];
+        const lastMember = spec.members.at(
+          endsWithRuntimeSizedArray ? -2 : -1,
+        )![1];
         const justPastLastMember = lastMember.offset + lastMember.type.size;
 
         spec.align = Math.max(...spec.members.map((m) => m[1].type.align));
         spec.size = roundUp(spec.align, justPastLastMember);
       } else if (spec.type === "array") {
-        determineIndividualLayoutSizeAndAlignment(spec.member);
-        spec.size = spec.count * roundUp(spec.member.align, spec.member.size);
+        determineIndividualLayoutSizeAndAlignment(spec.member, false);
+        // ignore invalid runtime-sized arrays
+        if (spec.count === undefined && !isLastStructMemberOrTopLevel) {
+          console.error(specs);
+          throw new Error(
+            `Runtime-length array must either be top-level or final member of top-level struct.`,
+          );
+        }
+
+        if (spec.count === undefined) {
+          spec.runtimeSized = true;
+        }
+
+        spec.perElementSize = roundUp(spec.member.align, spec.member.size);
+        spec.size =
+          spec.count === undefined
+            ? Infinity
+            : spec.count * roundUp(spec.member.align, spec.member.size);
         spec.align = spec.member.align;
       } else {
+        spec.runtimeSized = false;
         spec.size = WGSL_TYPE_SIZES[spec.type];
+        spec.perElementSize = WGSL_TYPE_SIZES[spec.type];
         spec.align = WGSL_TYPE_ALIGNMENTS[spec.type];
       }
     },
   );
 
   for (const e of clone) {
-    determineIndividualLayoutSizeAndAlignment(e);
+    determineIndividualLayoutSizeAndAlignment(e, true);
   }
 
   return clone;
@@ -285,7 +341,7 @@ export function createLayoutGenerator<S extends WGSLStructSpecWithOffsets>(
 
       const elemSize = roundUp(spec.member.align, spec.member.size);
 
-      return `for (let ${iname} = 0; ${iname} < ${spec.count}; ${iname}++) {
+      return `for (let ${iname} = 0; ${iname} < ${spec.count !== undefined ? spec.count : accessor + ".length"}; ${iname}++) {
   ${createSetters(spec.member, baseOffset, arrayNestingLevel + 1, [...extraOffsets, `${iname} * ${elemSize}`], accessor + `[${iname}]`)} 
 }`;
     } else {
@@ -326,8 +382,12 @@ export function readWgslLayout<S extends WGSLStructSpecWithOffsets>(
     );
   } else if (spec.type === "array") {
     const elemSize = roundUp(spec.member.align, spec.member.size);
+    const count =
+      spec.count !== undefined
+        ? spec.count
+        : Math.floor((view.byteLength - offset) / spec.perElementSize);
     // @ts-expect-error
-    return range(spec.count).map((i) =>
+    return range(count).map((i) =>
       readWgslLayout(spec.member, view, offset + i * elemSize),
     );
   } else {
@@ -339,6 +399,7 @@ export function readWgslLayout<S extends WGSLStructSpecWithOffsets>(
     let arr: number[] = [];
 
     for (let i = 0; i < count; i++) {
+      // @ts-expect-error
       arr.push(view[getter](offset + i * elemSize, true));
     }
 
@@ -370,9 +431,11 @@ export function createWgslSerializers<SS extends WGSLStructSpec[]>(...ss: SS) {
   };
 }
 
-export function typeName(spec: WGSLStructSpec) {
+export function typeName(spec: WGSLStructSpec): string {
   if (spec.type === "struct") return spec.name;
-  if (spec.type === "array")
+  if (spec.type === "array") {
+    if (spec.count === undefined) return `array<${typeName(spec.member)}>`;
     return `array<${typeName(spec.member)}, ${spec.count}>`;
+  }
   return spec.type;
 }

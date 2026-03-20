@@ -1,3 +1,4 @@
+"use strict";
 (() => {
   // src/interpolation.ts
   function lerp(x, a, b) {

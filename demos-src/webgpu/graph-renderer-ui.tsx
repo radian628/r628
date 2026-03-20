@@ -126,17 +126,6 @@ export function graphRendererUI(params: {
 const NumberFieldM = mutatify(NumberField);
 const StringFieldM = mutatify(StringField);
 
-const ClampedNumberFieldM = using(mutatify(NumberField), {
-  min: 0,
-  max: 1,
-});
-
-const NonNegativeNumberFieldM = using(mutatify(NumberField), {
-  min: 0,
-});
-
-const TextareaM = using(StringFieldM, { isTextarea: true });
-
 // const RootUI = objectUIGeneric<UIState>((Field) => () => {
 //   return (
 //     <>

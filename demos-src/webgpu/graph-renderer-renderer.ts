@@ -25,6 +25,7 @@ import {
   quickMapWithFormat,
   rescale,
   rotate,
+  runtimeArray,
   scale3,
   scale4,
   splitBy,
@@ -41,6 +42,7 @@ import {
 import { graphRendererUI, PositionedNode } from "./graph-renderer-ui";
 import { createNBodyOctreeDefs } from "./n-body-octree";
 import { CANON_TAGS, SERIES_TAGS } from "./tags";
+import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
 
 type Node = {
   position: Vec3;
@@ -54,7 +56,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
   const canvas = document.createElement("canvas");
   canvas.style =
     "position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;";
-  const ctx = canvas.getContext("webgpu");
+  const ctx = canvas.getContext("webgpu")!;
   ctx.configure({
     device: device,
     format: navigator.gpu.getPreferredCanvasFormat(),
@@ -65,18 +67,18 @@ export async function setupGraphRenderer(device: GPUDevice) {
   function handleResize() {
     canvas.width = window.innerWidth * window.devicePixelRatio;
     canvas.height = window.innerHeight * window.devicePixelRatio;
-    depthTex = lines.depthTexFormat.instantiate(
+    depthTex = lines.depthTexFormat.new(
       [canvas.width, canvas.height],
-      GPUTextureUsage.RENDER_ATTACHMENT,
-      aaMode === "msaa" ? { sampleCount: 4 } : undefined,
+      // GPUTextureUsage.RENDER_ATTACHMENT,
+      // aaMode === "msaa" ? { sampleCount: 4 } : undefined,
     );
     if (aaMode === "msaa") {
-      multisampleTex = lines.colorTexFormat.instantiate(
+      multisampleTex = lines.colorTexFormat.new(
         [canvas.width, canvas.height],
-        GPUTextureUsage.RENDER_ATTACHMENT,
-        {
-          sampleCount: 4,
-        },
+        // GPUTextureUsage.RENDER_ATTACHMENT,
+        // {
+        //   sampleCount: 4,
+        // },
       );
     }
   }
@@ -87,13 +89,13 @@ export async function setupGraphRenderer(device: GPUDevice) {
     device,
     navigator.gpu.getPreferredCanvasFormat(),
     {
-      multisample: aaMode === "msaa" ? { count: 4 } : undefined,
+      multisample: aaMode === "msaa" ? { count: 4 } : (undefined as never),
     },
   );
 
-  let multisampleTex: ReturnType<typeof lines.colorTexFormat.instantiate>;
+  let multisampleTex: ReturnType<typeof lines.colorTexFormat.new>;
 
-  let depthTex: ReturnType<typeof lines.depthTexFormat.instantiate>;
+  let depthTex: ReturnType<typeof lines.depthTexFormat.new>;
 
   handleResize();
   window.addEventListener("resize", handleResize);
@@ -106,34 +108,31 @@ export async function setupGraphRenderer(device: GPUDevice) {
     },
   );
 
-  const wdevice = wrapDevice(device);
+  const td = typeDevice(device);
 
-  const highPerfLineBufferFormat = wdevice.vertexBuffer("line", {
-    stride: 16,
-    types: [
-      {
-        format: "float32x3",
-        name: "position",
-        offset: 0,
-      },
-      {
-        format: "unorm8x4",
-        name: "color",
-        offset: 12,
-      },
-    ] as const,
-    stepMode: "vertex",
-    visibility: GPUShaderStage.VERTEX,
-  });
+  const highPerfLineBufferFormat = td.vertexBufferFormat("line", 16, [
+    {
+      format: "float32x3",
+      name: "position",
+      offset: 0,
+    },
+    {
+      format: "unorm8x4",
+      name: "color",
+      offset: 12,
+    },
+  ] as const);
 
-  const accelsFormat = wdevice.storageBuffer(
+  const accelsFormat = td.storageBufferFormat(
     "accels",
-    struct("Accel", {
-      accel: "vec3f",
-    }),
+    runtimeArray(
+      struct("Accel", {
+        accel: "vec3f",
+      }),
+    ),
   );
 
-  const physicsUniformsFormat = wdevice.uniformBufferForComputeShader(
+  const physicsUniformsFormat = td.uniformBufferComputeFormat(
     "physics_params",
     struct("PhysicsParams", {
       repulsion_multiplier: "f32",
@@ -166,7 +165,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
 
   const bodiesFormat = nBodySim.bodiesFormat;
 
-  const highPerfLinePipeline = await wdevice.pipeline({
+  const highPerfLinePipeline = await td.renderPipeline({
     bindGroups: [lines.perFrameBindGroup] as const,
     depthStencil: {
       format: "depth32float",
@@ -201,23 +200,20 @@ export async function setupGraphRenderer(device: GPUDevice) {
     },
   });
 
-  const genericBufferFormat = await wdevice.uniformBuffer(
-    "generic",
-    struct("Generic", { data: "u32" }),
-    true,
-    {
-      visibility: GPUShaderStage.COMPUTE,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-    },
-  );
+  const genericBufferFormat = td
+    .storageBufferFormat(
+      "generic",
+      runtimeArray(struct("Generic", { data: "u32" })),
+    )
+    .usage("storage", "copy-src");
 
-  const transferBodyInfoToPointsBindGroupFormat = wdevice.bindGroup(
+  const transferBodyInfoToPointsBindGroupFormat = td.bindGroupFormat(
     "nbody",
     bodiesFormat,
     genericBufferFormat,
   );
 
-  const transferBodyInfoToPointsPipeline = await wdevice.compute({
+  const transferBodyInfoToPointsPipeline = await td.computePipeline({
     bindGroups: [transferBodyInfoToPointsBindGroupFormat],
     workgroupSize: [32, 1, 1],
     storageBufferAccess: {
@@ -235,55 +231,65 @@ export async function setupGraphRenderer(device: GPUDevice) {
     `,
   });
 
-  const edgesBufferFormat = wdevice.storageBuffer(
+  const edgesBufferFormat = td.storageBufferFormat(
     "edges",
-    struct("Edge", {
-      src: "u32",
-      dst: "u32",
-    }),
+    runtimeArray(
+      struct("Edge", {
+        src: "u32",
+        dst: "u32",
+      }),
+    ),
   );
 
-  const displayEdgesBufferFormat = wdevice.storageBuffer(
+  const displayEdgesBufferFormat = td.storageBufferFormat(
     "edges",
-    struct("Edge", {
-      src: "u32",
-      dst: "u32",
-      color_mul: "f32",
-    }),
+    runtimeArray(
+      struct("Edge", {
+        src: "u32",
+        dst: "u32",
+        color_mul: "f32",
+      }),
+    ),
   );
 
-  const weightedEdgesBufferFormat = wdevice.storageBuffer(
+  const weightedEdgesBufferFormat = td.storageBufferFormat(
     "edges",
-    struct("WeightedEdge", {
-      src: "u32",
-      dst: "u32",
-      weight: "f32",
-    }),
+    runtimeArray(
+      struct("WeightedEdge", {
+        src: "u32",
+        dst: "u32",
+        weight: "f32",
+      }),
+    ),
   );
 
-  const accelVectorPairsFormat = wdevice.storageBuffer(
+  const accelVectorPairsFormat = td.storageBufferFormat(
     "accel_vectors",
-    struct("AccelVectors", {
-      to_src: "vec3f",
-    }),
+    runtimeArray(
+      struct("AccelVectors", {
+        to_src: "vec3f",
+      }),
+    ),
   );
 
-  const edgeLocationMapFormat = wdevice.storageBuffer(
+  const edgeLocationMapFormat = td.storageBufferFormat(
     "edge_loc_map",
-    struct("EdgeLoc", {
-      location: "u32",
-      count: "u32",
-    }),
+    runtimeArray(
+      struct("EdgeLoc", {
+        location: "u32",
+        count: "u32",
+      }),
+    ),
   );
 
-  const calcEdgeForcesBindGroupFormat = wdevice.bindGroup(
+  const calcEdgeForcesBindGroupFormat = td.bindGroupFormat(
     "bg",
     weightedEdgesBufferFormat,
     accelVectorPairsFormat,
     bodiesFormat,
   );
 
-  const calcEdgeForcesPipeline = await wdevice.compute({
+  const calcEdgeForcesPipeline = await td.computePipeline({
     bindGroups: [calcEdgeForcesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     storageBufferAccess: {
@@ -317,14 +323,14 @@ export async function setupGraphRenderer(device: GPUDevice) {
     `,
   });
 
-  const sumEdgeForcesBindGroupFormat = wdevice.bindGroup(
+  const sumEdgeForcesBindGroupFormat = td.bindGroupFormat(
     "bg",
     accelVectorPairsFormat,
     edgeLocationMapFormat,
     accelsFormat,
   );
 
-  const sumEdgeForcesPipeline = await wdevice.compute({
+  const sumEdgeForcesPipeline = await td.computePipeline({
     bindGroups: [sumEdgeForcesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     storageBufferAccess: {
@@ -348,16 +354,16 @@ export async function setupGraphRenderer(device: GPUDevice) {
     `,
   });
 
-  const transferBodyInfoToLinesUniformsFormat =
-    wdevice.uniformBufferForComputeShader(
-      "params",
-      struct("Params", {
-        line_width_multiplier: "f32",
-        nan: "f32",
-      }),
-    );
+  const transferBodyInfoToLinesUniformsFormat = td.uniformBufferComputeFormat(
+    "params",
 
-  const transferBodyInfoToLinesBindGroupFormat = wdevice.bindGroup(
+    struct("Params", {
+      line_width_multiplier: "f32",
+      nan: "f32",
+    }),
+  );
+
+  const transferBodyInfoToLinesBindGroupFormat = td.bindGroupFormat(
     "nbody",
     bodiesFormat,
     genericBufferFormat,
@@ -365,7 +371,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
     transferBodyInfoToLinesUniformsFormat,
   );
 
-  const transferBodyInfoToLinesPipeline = await wdevice.compute({
+  const transferBodyInfoToLinesPipeline = await td.computePipeline({
     bindGroups: [transferBodyInfoToLinesBindGroupFormat],
     workgroupSize: [32, 1, 1],
     storageBufferAccess: {
@@ -536,7 +542,7 @@ user-select: none;
   mappedButton("Up", "up", " ");
   mappedButton("Down", "down", "shift");
 
-  function rotateBy(dx, dy) {
+  function rotateBy(dx: number, dy: number) {
     const localXAxis = mulVec4ByMat4([1, 0, 0, 0], rotationMatrix);
     const localYAxis = mulVec4ByMat4([0, -1, 0, 0], rotationMatrix);
 
@@ -567,7 +573,7 @@ user-select: none;
 
       graphData = graphData
         .filter(
-          (g) =>
+          (g: any) =>
             typeof g.x === "number" &&
             typeof g.y === "number" &&
             typeof g.z === "number" &&
@@ -576,11 +582,11 @@ user-select: none;
             !isNaN(g.z),
         )
         .filter(
-          (g) =>
+          (g: any) =>
             (positiveTags.length === 0 ||
-              g.tags?.some((t) => positiveTags.includes(t))) &&
+              g.tags?.some((t: any) => positiveTags.includes(t))) &&
             (negativeTags.length === 0 ||
-              !g.tags?.some((t) => negativeTags.includes(t))),
+              !g.tags?.some((t: any) => negativeTags.includes(t))),
         );
 
       let nodeMap = new Map<string, Vertex<Node, Vec4>>();
@@ -638,7 +644,7 @@ user-select: none;
 
       const nodePositions: PositionedNode[] = customPositions
         ? JSON.parse(await customPositions.text())
-        : graphData.map((g) => ({
+        : graphData.map((g: any) => ({
             position: scale3([g.x, g.y, g.z], 0.005),
             slug: g.url.replace("http://scp-wiki.wikidot.com/", "").trim(),
           }));
@@ -684,31 +690,19 @@ user-select: none;
 
       const vertGroups = splitBy(labelVertsArray, 500);
 
-      const vertices = lines.pointInstanceBufferFormat.instantiate(
-        graph.vertices.size,
-        {
-          usage:
-            GPUBufferUsage.VERTEX |
-            GPUBufferUsage.STORAGE |
-            GPUBufferUsage.COPY_SRC,
-        },
-      );
+      const vertices = lines.pointInstanceBufferFormat
+        .usage("vertex", "storage", "copy-src")
+        .new(graph.vertices.size);
 
       const edgeThickness = 0.2;
 
-      const edges = lines.pointInstanceBufferFormat.instantiate(
-        graph.edges.size * 7,
-        {
-          usage:
-            GPUBufferUsage.VERTEX |
-            GPUBufferUsage.STORAGE |
-            GPUBufferUsage.COPY_SRC,
-        },
-      );
+      const edges = lines.pointInstanceBufferFormat
+        .usage("vertex", "storage", "copy-src")
+        .new(graph.edges.size * 7);
 
-      const graphUniforms = lines.uniforms.instantiate(1);
+      const graphUniforms = lines.uniforms.new(1);
 
-      const graphPerFrameBindGroup = lines.perFrameBindGroup.instantiate({
+      const graphPerFrameBindGroup = lines.perFrameBindGroup.new({
         params: graphUniforms,
       });
 
@@ -792,18 +786,18 @@ user-select: none;
         edgeLocMap.push({ location, count });
       }
 
-      const edgesBuffer = weightedEdgesBufferFormat.quickCreateMany(edgeList);
-      const unidirectionalEdgesBuffer =
-        displayEdgesBufferFormat.quickCreateMany(unidirectionalEdgeList);
-      const edgeLocMapBuffer =
-        edgeLocationMapFormat.quickCreateMany(edgeLocMap);
+      const edgesBuffer = weightedEdgesBufferFormat.quickCreate(edgeList);
+      const unidirectionalEdgesBuffer = displayEdgesBufferFormat.quickCreate(
+        unidirectionalEdgeList,
+      );
+      const edgeLocMapBuffer = edgeLocationMapFormat.quickCreate(edgeLocMap);
 
-      const accelVectorPairsBuffer = accelVectorPairsFormat.instantiate(
+      const accelVectorPairsBuffer = accelVectorPairsFormat.new(
         edgeList.length,
       );
 
       const transferBodyInfoToLinesUniforms =
-        transferBodyInfoToLinesUniformsFormat.instantiate(1);
+        transferBodyInfoToLinesUniformsFormat.new(1);
 
       console.log(
         "MINS",
@@ -818,7 +812,7 @@ user-select: none;
         ] as Vec3),
       );
 
-      const bodies = bodiesFormat.quickCreateMany(
+      const bodies = bodiesFormat.quickCreate(
         [...graph.vertices].map((vert, i, a) => {
           return {
             mass: 1,
@@ -829,17 +823,15 @@ user-select: none;
         }),
       );
 
-      const accelsFinal = accelsFormat.instantiate(graph.vertices.size);
+      const accelsFinal = accelsFormat.new(graph.vertices.size);
 
-      const calcEdgeForcesBindGroup = calcEdgeForcesBindGroupFormat.instantiate(
-        {
-          edges: edgesBuffer,
-          bodies: bodies,
-          accel_vectors: accelVectorPairsBuffer,
-        },
-      );
+      const calcEdgeForcesBindGroup = calcEdgeForcesBindGroupFormat.new({
+        edges: edgesBuffer,
+        bodies: bodies,
+        accel_vectors: accelVectorPairsBuffer,
+      });
 
-      const sumEdgeForcesBindGroup = sumEdgeForcesBindGroupFormat.instantiate({
+      const sumEdgeForcesBindGroup = sumEdgeForcesBindGroupFormat.new({
         accel_vectors: accelVectorPairsBuffer,
         accels: accelsFinal,
         edge_loc_map: edgeLocMapBuffer,
@@ -857,10 +849,10 @@ user-select: none;
         timestep: 0.06,
       });
 
-      const physicsUniforms = physicsUniformsFormat.instantiate(1);
+      const physicsUniforms = physicsUniformsFormat.new(1);
 
       const applyBarnesHutBindGroup =
-        nBodySim.applyBarnesHutBindGroupFormat.instantiate({
+        nBodySim.applyBarnesHutBindGroupFormat.new({
           bodies: bodies,
           octree_metadata: octree.octreeMetadataBuffer,
           octree_nodes: octree.octreeNodeBuffer,
@@ -870,13 +862,13 @@ user-select: none;
         });
 
       const transferBodyInfoToPointsBindGroup =
-        transferBodyInfoToPointsBindGroupFormat.instantiate({
+        transferBodyInfoToPointsBindGroupFormat.new({
           bodies,
           generic: genericBufferFormat.reinterpret(vertices),
         });
 
       const transferBodyInfoToLinesBindGroup =
-        transferBodyInfoToLinesBindGroupFormat.instantiate({
+        transferBodyInfoToLinesBindGroupFormat.new({
           bodies,
           generic: genericBufferFormat.reinterpret(edges),
           edges: unidirectionalEdgesBuffer,
@@ -961,12 +953,16 @@ user-select: none;
       window.getBodyInfo = async () => {
         console.log(
           "bodies",
-          await quickMapWithFormat(bodiesFormat.format, device, bodies),
+          await quickMapWithFormat(
+            bodiesFormat.desc.format.spec,
+            device,
+            bodies,
+          ),
         );
         console.log(
           "nodes",
           await quickMapWithFormat(
-            nBodySim.octreeNodeFormat.format,
+            nBodySim.octreeNodeFormat.desc.format.spec,
             device,
             octree.octreeNodeBuffer,
           ),
@@ -974,10 +970,18 @@ user-select: none;
         console.log(
           "node metadata",
           await quickMapWithFormat(
-            nBodySim.octreeMetadataFormat.format,
+            nBodySim.octreeMetadataFormat.desc.format.spec,
             device,
             octree.octreeMetadataBuffer,
           ),
+        );
+      };
+
+      // @ts-expect-error
+      window.getDrawInfo = async () => {
+        console.log(
+          "verts",
+          new Float32Array(await quickMap(device, vertices)),
         );
       };
 
@@ -1103,17 +1107,6 @@ user-select: none;
             ),
             aspect: canvas.width / canvas.height,
           });
-          // const queryCount = 2;
-
-          // const queryResolveBuffer = device.createBuffer({
-          //   size: queryCount * 8,
-          //   usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
-          // });
-
-          // const stagingBuffer = device.createBuffer({
-          //   size: queryResolveBuffer.size,
-          //   usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-          // });
 
           const colorTex = ctx.getCurrentTexture();
 
@@ -1124,11 +1117,6 @@ user-select: none;
           }
 
           const enc = device.createCommandEncoder();
-
-          // const querySet = device.createQuerySet({
-          //   type: "timestamp",
-          //   count: queryCount,
-          // });
 
           const pass =
             aaMode === "msaa"
@@ -1147,11 +1135,6 @@ user-select: none;
                     depthLoadOp: "clear",
                     depthStoreOp: "store",
                   },
-                  // timestampWrites: {
-                  //   querySet,
-                  //   beginningOfPassWriteIndex: 0,
-                  //   endOfPassWriteIndex: 1,
-                  // },
                 })
               : enc.beginRenderPass({
                   colorAttachments: [
@@ -1167,18 +1150,10 @@ user-select: none;
                     depthLoadOp: "clear",
                     depthStoreOp: "store",
                   },
-                  // timestampWrites: {
-                  //   querySet,
-                  //   beginningOfPassWriteIndex: 0,
-                  //   endOfPassWriteIndex: 1,
-                  // },
                 });
 
           pass.setPipeline(lines.pointPipeline);
-          pipelineRenderpass(
-            lines.pointPipeline,
-            pass,
-          )({
+          lines.pointPipeline.bind(pass, {
             points: vertices,
             geometry: lines.quad,
             perFrame: graphPerFrameBindGroup,
@@ -1186,19 +1161,12 @@ user-select: none;
           pass.draw(6, graph.vertices.size);
 
           if (lineMode === "fancy") {
-            pipelineRenderpass(
-              lines.pointPipeline,
-              pass,
-            )({
+            lines.pointPipeline.bind(pass, {
               points: edges,
             });
             pass.draw(6, graph.edges.size * 7);
-
             pass.setPipeline(lines.linePipeline);
-            pipelineRenderpass(
-              lines.linePipeline,
-              pass,
-            )({
+            lines.linePipeline.bind(pass, {
               lineSegments1:
                 lines.lineSegInstanceBufferFormat1.reinterpret(edges),
               lineSegments2: [
@@ -1211,10 +1179,7 @@ user-select: none;
             pass.draw(6, graph.edges.size * 7 - 1);
           } else if (lineMode === "fast") {
             pass.setPipeline(highPerfLinePipeline);
-            pipelineRenderpass(
-              highPerfLinePipeline,
-              pass,
-            )({
+            highPerfLinePipeline.bind(pass, {
               perFrame: graphPerFrameBindGroup,
               line: edgesFast,
             });
@@ -1222,22 +1187,6 @@ user-select: none;
           }
 
           pass.end();
-
-          // enc.resolveQuerySet(
-          //   querySet,
-          //   0,
-          //   querySet.count,
-          //   queryResolveBuffer,
-          //   0,
-          // );
-
-          // enc.copyBufferToBuffer(
-          //   queryResolveBuffer,
-          //   0,
-          //   stagingBuffer,
-          //   0,
-          //   queryResolveBuffer.size,
-          // );
 
           device.queue.submit([enc.finish()]);
         },

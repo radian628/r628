@@ -151,6 +151,14 @@ export async function quickMapWithFormat<S extends WGSLStructSpec>(
 
   const v = new DataView(await quickMap(device, buf, size, offset));
 
+  console.log("layout", withLayouts);
+
+  if (withLayouts.runtimeSized) {
+    console.log("size", v, withLayouts);
+    // @ts-expect-error
+    return readWgslLayout(withLayouts, v, 0);
+  }
+
   // @ts-expect-error
   return range(Math.floor(v.byteLength / withLayouts.size)).map((i) =>
     readWgslLayout(withLayouts, v, i * withLayouts.size),

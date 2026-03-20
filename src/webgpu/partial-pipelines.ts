@@ -166,7 +166,7 @@ export type WrappedBindGroupVertexBuffer<
     dst?: ArrayBuffer,
     offset?: number,
   ): ArrayBuffer;
-  parametric(fn: (i: number) => VBufferParametric<Attrs>);
+  // parametric(fn: (i: number) => VBufferParametric<Attrs>);
   reinterpret: (buf: GPUBuffer) => GPUBuffer & {
     format: {
       type: "vertex";
@@ -455,7 +455,7 @@ export function pipelineRenderpass<Pipeline extends WrappedPipelineGeneric>(
   >,
 ) => void {
   const bindGroupNameToIndex = new Map(
-    pipeline.bindGroups.map((b, i) => [b.name, i]),
+    pipeline.bindGroups.flatMap((b, i) => (b ? [[b.name, i]] : [])),
   );
   const inputNameToIndex = new Map(pipeline.inputs.map((b, i) => [b.name, i]));
 
@@ -583,7 +583,7 @@ export function wrapDevice(device: GPUDevice) {
           bindingIndex: number,
           access: "read" | "write" | "read_write",
         ): string {
-          return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage, ${access}> ${name} : ${(settings.arrayify ?? true) ? `array<${typeName(spec)}>;` : typeName(spec) + ";"}`;
+          return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage, ${access}> ${name} : ${(settings?.arrayify ?? true) ? `array<${typeName(spec)}>;` : typeName(spec) + ";"}`;
         },
         // @ts-expect-error
         reinterpret(buf: GPUBuffer) {
@@ -663,6 +663,7 @@ export function wrapDevice(device: GPUDevice) {
                 const byteOffset = index * size + a.offset;
                 const elementOffset = byteOffset / elementSize + i;
                 view[elementOffset] =
+                  // @ts-expect-error
                   elementCount === 1 ? d[a.name] : d[a.name][i];
               }
             }

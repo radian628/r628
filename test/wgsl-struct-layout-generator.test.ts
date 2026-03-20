@@ -11,11 +11,12 @@ import {
 
 function roundtrip<S extends WGSLStructSpec>(
   s: S,
-  values: WGSLStructValues<S>
+  values: WGSLStructValues<S>,
+  size?: number,
 ) {
   const [withLayouts] = generateLayouts([s]);
   const gen = createLayoutGenerator(withLayouts);
-  const buf = new ArrayBuffer(withLayouts.size);
+  const buf = new ArrayBuffer(size ?? withLayouts.size);
   const view = new DataView(buf);
   gen(view, values);
   expect(readWgslLayout(withLayouts, view)).toEqual(values);
@@ -28,8 +29,8 @@ test("struct codegen", () => {
         a: "vec2f",
         b: "vec3f",
         c: "vec4f",
-      })
-    ).code
+      }),
+    ).code,
   ).toEqual(`struct Test {
   a: vec2f,
   b: vec3f,
@@ -48,7 +49,7 @@ test("struct helper methods", () => {
       a: [2, 3],
       b: [6, 7, 8],
       c: [1, 2, 7, 5],
-    }
+    },
   );
 });
 
@@ -64,7 +65,7 @@ test("struct encode/decode rountrips", () => {
   roundtrip({ type: "vec4f" }, [1.0, 2.0, 4.0, 0.5]);
   roundtrip(
     { type: "array", member: { type: "f32" }, count: 5 },
-    [2, 4, 8, 0.5, 0.25]
+    [2, 4, 8, 0.5, 0.25],
   );
   roundtrip({ type: "array", member: { type: "vec3f" }, count: 3 }, [
     [1, 2, 3],
@@ -110,11 +111,31 @@ test("struct encode/decode rountrips", () => {
         b: 200,
         c: 300,
       },
-    ]
+    ],
   );
 
   roundtrip(
     { type: "mat4x4f" },
-    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+  );
+  roundtrip(
+    { type: "array", member: { type: "f32" } },
+    [2, 4, 8, 0.5, 0.25],
+    20,
+  );
+  roundtrip(
+    {
+      type: "struct",
+      name: "A",
+      members: [
+        ["a", { type: { type: "vec3f" } }],
+        ["b", { type: { type: "array", member: { type: "f32" } } }],
+      ],
+    },
+    {
+      a: [2, 3, 4],
+      b: [5, 10, 15, 20, 25],
+    },
+    32,
   );
 });

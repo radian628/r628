@@ -15505,10 +15505,10 @@
                           end$jscomp$0
                         );
                         if (startMarker && endMarker && (1 !== selection.rangeCount || selection.anchorNode !== startMarker.node || selection.anchorOffset !== startMarker.offset || selection.focusNode !== endMarker.node || selection.focusOffset !== endMarker.offset)) {
-                          var range3 = doc.createRange();
-                          range3.setStart(startMarker.node, startMarker.offset);
+                          var range2 = doc.createRange();
+                          range2.setStart(startMarker.node, startMarker.offset);
                           selection.removeAllRanges();
-                          start$jscomp$0 > end$jscomp$0 ? (selection.addRange(range3), selection.extend(endMarker.node, endMarker.offset)) : (range3.setEnd(endMarker.node, endMarker.offset), selection.addRange(range3));
+                          start$jscomp$0 > end$jscomp$0 ? (selection.addRange(range2), selection.extend(endMarker.node, endMarker.offset)) : (range2.setEnd(endMarker.node, endMarker.offset), selection.addRange(range2));
                         }
                       }
                     }
@@ -22853,51 +22853,6 @@
     }
     return arr;
   }
-  function smartRangeMap(n, cb) {
-    const a = range(n);
-    const res1 = a.map((i, index, arr) => {
-      return {
-        remap(lo, hi, inclEnd) {
-          return i / (inclEnd ? n - 1 : n) * (hi - lo) + lo;
-        },
-        remapCenter(lo, hi) {
-          return (i + 1) / (n + 1) * (hi - lo) + lo;
-        },
-        segment(lo, hi) {
-          return [i / n * (hi - lo) + lo, (i + 1) / n * (hi - lo) + lo];
-        },
-        slidingWindow(arr2) {
-          return [arr2[i], arr2[i + 1]];
-        },
-        randkf() {
-          if (i === 0) return 0;
-          if (i === n - 1) return 100;
-          const lo = i / (n - 2) * 100;
-          const hi = (i + 1) / (n - 2) * 100;
-          return rand(lo, hi);
-        },
-        get(arr2) {
-          return arr2[i];
-        },
-        i,
-        next: i + 1,
-        end: () => i === n - 1,
-        start: () => i === 0
-      };
-    });
-    const res = res1.map(cb);
-    return res;
-  }
-  function smartRange(n) {
-    return smartRangeMap(n, id);
-  }
-  function id(x) {
-    return x;
-  }
-  function rand(lo, hi, random) {
-    if (!random) random = () => Math.random();
-    return random() * (hi - lo) + lo;
-  }
 
   // src/array-utils.ts
   function argmax(arr, f) {
@@ -22920,17 +22875,8 @@
   function lerp(x, a, b) {
     return a * (1 - x) + b * x;
   }
-  function unlerp(x, a, b) {
-    return (x - a) / (b - a);
-  }
-  function rescale(x, a1, b1, a2, b2) {
-    return lerp(unlerp(x, a1, b1), a2, b2);
-  }
   function clamp(x, lo, hi) {
     return Math.max(Math.min(x, hi), lo);
-  }
-  function modulo(a, b) {
-    return a - b * Math.floor(a / b);
   }
 
   // src/object-utils.ts
@@ -22939,6 +22885,9 @@
   }
   function arrayToObjKeys(arr, f) {
     return map2obj(arrayToMapKeys(arr, f));
+  }
+  function arrayToObjEntries(arr, f) {
+    return Object.fromEntries(arr.map(f));
   }
   function mapObjValues(obj, callback) {
     return mapObjEntries(obj, (k, v) => [k, callback(k, v)]);
@@ -23069,61 +23018,776 @@
     return fn;
   }
 
-  // src/math/intersections.ts
-  function rangeIntersects(a1, a2, b1, b2) {
-    return !(a1 > b2 || b1 > a2);
+  // src/math/round.ts
+  function roundUp(factor, x) {
+    return Math.ceil(x / factor) * factor;
   }
 
-  // src/1d-spatial-hash-table.ts
-  var OneDimensionalSpatialHashTable = class {
-    constructor(bucketCount, start, end, getBounds) {
-      this.start = start;
-      this.end = end;
-      this.buckets = range(bucketCount).map(() => /* @__PURE__ */ new Set());
-      this.objects = /* @__PURE__ */ new Map();
-      this.getBounds = getBounds;
-    }
-    positionToBucketIndex(pos) {
-      return modulo(
-        Math.floor(rescale(pos, this.start, this.end, 0, this.buckets.length)),
-        this.buckets.length
-      );
-    }
-    rangeToBucketSet(start, end) {
-      if (end - start >= this.end - this.start) {
-        return this.buckets;
-      } else {
-        const bucketStart = this.positionToBucketIndex(start);
-        const bucketEnd = this.positionToBucketIndex(end);
-        if (bucketStart >= bucketEnd) {
-          return this.buckets.slice(bucketStart).concat(this.buckets.slice(0, bucketEnd + 1));
-        } else {
-          return this.buckets.slice(bucketStart, bucketEnd + 1);
-        }
-      }
-    }
-    add(t) {
-      const bounds = this.getBounds(t);
-      const buckets = this.rangeToBucketSet(bounds.start, bounds.end);
-      for (const b of buckets) b.add(t);
-      this.objects.set(t, { buckets });
-    }
-    delete(t) {
-      const obj = this.objects.get(t);
-      for (const bkt of obj.buckets) {
-        bkt.delete(t);
-      }
-    }
-    query(start, end) {
-      const buckets = this.rangeToBucketSet(start, end);
-      return new Set(
-        buckets.flatMap((b) => Array.from(b)).filter((e) => {
-          const bounds = this.getBounds(e);
-          return rangeIntersects(bounds.start, bounds.end, start, end);
-        })
-      );
+  // src/webgpu/converters.ts
+  var TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT = {
+    r8unorm: "float",
+    r8snorm: "float",
+    r8uint: "uint",
+    r8sint: "sint",
+    r16unorm: "float",
+    r16snorm: "float",
+    r16uint: "uint",
+    r16sint: "sint",
+    r16float: "float",
+    rg8unorm: "float",
+    rg8snorm: "float",
+    rg8uint: "uint",
+    rg8sint: "sint",
+    r32uint: "uint",
+    r32sint: "sint",
+    r32float: "float",
+    rg16unorm: "float",
+    rg16snorm: "float",
+    rg16uint: "uint",
+    rg16sint: "sint",
+    rg16float: "float",
+    rgba8unorm: "float",
+    "rgba8unorm-srgb": "float",
+    rgba8snorm: "float",
+    rgba8uint: "uint",
+    rgba8sint: "sint",
+    bgra8unorm: "float",
+    "bgra8unorm-srgb": "float",
+    rgb9e5ufloat: "float",
+    rgb10a2uint: "uint",
+    rgb10a2unorm: "float",
+    rg11b10ufloat: "float",
+    rg32uint: "uint",
+    rg32sint: "sint",
+    rg32float: "float",
+    rgba16unorm: "float",
+    rgba16snorm: "float",
+    rgba16uint: "uint",
+    rgba16sint: "sint",
+    rgba16float: "float",
+    rgba32uint: "uint",
+    rgba32sint: "sint",
+    rgba32float: "float",
+    stencil8: "uint",
+    depth16unorm: "depth",
+    depth24plus: "depth",
+    "depth24plus-stencil8": "depth",
+    depth32float: "depth",
+    "depth32float-stencil8": "depth",
+    "bc1-rgba-unorm": "float",
+    "bc1-rgba-unorm-srgb": "float",
+    "bc2-rgba-unorm": "float",
+    "bc2-rgba-unorm-srgb": "float",
+    "bc3-rgba-unorm": "float",
+    "bc3-rgba-unorm-srgb": "float",
+    "bc4-r-unorm": "float",
+    "bc4-r-snorm": "float",
+    "bc5-rg-unorm": "float",
+    "bc5-rg-snorm": "float",
+    "bc6h-rgb-ufloat": "float",
+    "bc6h-rgb-float": "float",
+    "bc7-rgba-unorm": "float",
+    "bc7-rgba-unorm-srgb": "float",
+    "etc2-rgb8unorm": "float",
+    "etc2-rgb8unorm-srgb": "float",
+    "etc2-rgb8a1unorm": "float",
+    "etc2-rgb8a1unorm-srgb": "float",
+    "etc2-rgba8unorm": "float",
+    "etc2-rgba8unorm-srgb": "float",
+    "eac-r11unorm": "float",
+    "eac-r11snorm": "float",
+    "eac-rg11unorm": "float",
+    "eac-rg11snorm": "float",
+    "astc-4x4-unorm": "float",
+    "astc-4x4-unorm-srgb": "float",
+    "astc-5x4-unorm": "float",
+    "astc-5x4-unorm-srgb": "float",
+    "astc-5x5-unorm": "float",
+    "astc-5x5-unorm-srgb": "float",
+    "astc-6x5-unorm": "float",
+    "astc-6x5-unorm-srgb": "float",
+    "astc-6x6-unorm": "float",
+    "astc-6x6-unorm-srgb": "float",
+    "astc-8x5-unorm": "float",
+    "astc-8x5-unorm-srgb": "float",
+    "astc-8x6-unorm": "float",
+    "astc-8x6-unorm-srgb": "float",
+    "astc-8x8-unorm": "float",
+    "astc-8x8-unorm-srgb": "float",
+    "astc-10x5-unorm": "float",
+    "astc-10x5-unorm-srgb": "float",
+    "astc-10x6-unorm": "float",
+    "astc-10x6-unorm-srgb": "float",
+    "astc-10x8-unorm": "float",
+    "astc-10x8-unorm-srgb": "float",
+    "astc-10x10-unorm": "float",
+    "astc-10x10-unorm-srgb": "float",
+    "astc-12x10-unorm": "float",
+    "astc-12x10-unorm-srgb": "float",
+    "astc-12x12-unorm": "float",
+    "astc-12x12-unorm-srgb": "float"
+  };
+  var TEXTURE_FORMAT_TO_WGSL_TYPE_LUT = {
+    r8unorm: "f32",
+    r8snorm: "f32",
+    r8uint: "u32",
+    r8sint: "i32",
+    r16unorm: "u32",
+    r16snorm: "i32",
+    r16uint: "u32",
+    r16sint: "i32",
+    r16float: "f32",
+    rg8unorm: "vec2f",
+    rg8snorm: "vec2f",
+    rg8uint: "vec2u",
+    rg8sint: "vec2i",
+    r32uint: "u32",
+    r32sint: "i32",
+    r32float: "f32",
+    rg16unorm: "vec2f",
+    rg16snorm: "vec2f",
+    rg16uint: "vec2u",
+    rg16sint: "vec2i",
+    rg16float: "vec2f",
+    rgba8unorm: "vec4f",
+    "rgba8unorm-srgb": "vec4f",
+    rgba8snorm: "vec4f",
+    rgba8uint: "vec4u",
+    rgba8sint: "vec4i",
+    bgra8unorm: "vec4f",
+    "bgra8unorm-srgb": "vec4f",
+    rgb9e5ufloat: "vec4f",
+    rgb10a2uint: "vec4u",
+    rgb10a2unorm: "vec4f",
+    rg11b10ufloat: "vec4f",
+    rg32uint: "vec2u",
+    rg32sint: "vec2i",
+    rg32float: "vec2f",
+    rgba16unorm: "vec4u",
+    rgba16snorm: "vec4i",
+    rgba16uint: "vec4u",
+    rgba16sint: "vec4i",
+    rgba16float: "vec4f",
+    rgba32uint: "vec4u",
+    rgba32sint: "vec4i",
+    rgba32float: "vec4f",
+    stencil8: "u32",
+    depth16unorm: "f32",
+    depth24plus: "f32",
+    "depth24plus-stencil8": "f32",
+    depth32float: "f32",
+    "depth32float-stencil8": "f32",
+    "bc1-rgba-unorm": "vec4f",
+    "bc1-rgba-unorm-srgb": "vec4f",
+    "bc2-rgba-unorm": "vec4f",
+    "bc2-rgba-unorm-srgb": "vec4f",
+    "bc3-rgba-unorm": "vec4f",
+    "bc3-rgba-unorm-srgb": "vec4f",
+    "bc4-r-unorm": "f32",
+    "bc4-r-snorm": "f32",
+    "bc5-rg-unorm": "vec2f",
+    "bc5-rg-snorm": "vec2f",
+    "bc6h-rgb-ufloat": "vec3f",
+    "bc6h-rgb-float": "vec3f",
+    "bc7-rgba-unorm": "vec4f",
+    "bc7-rgba-unorm-srgb": "vec4f",
+    "etc2-rgb8unorm": "vec3f",
+    "etc2-rgb8unorm-srgb": "vec3f",
+    "etc2-rgb8a1unorm": "vec4f",
+    "etc2-rgb8a1unorm-srgb": "vec4f",
+    "etc2-rgba8unorm": "vec4f",
+    "etc2-rgba8unorm-srgb": "vec4f",
+    "eac-r11unorm": "f32",
+    "eac-r11snorm": "f32",
+    "eac-rg11unorm": "vec2f",
+    "eac-rg11snorm": "vec2f",
+    "astc-4x4-unorm": "vec4f",
+    "astc-4x4-unorm-srgb": "vec4f",
+    "astc-5x4-unorm": "vec4f",
+    "astc-5x4-unorm-srgb": "vec4f",
+    "astc-5x5-unorm": "vec4f",
+    "astc-5x5-unorm-srgb": "vec4f",
+    "astc-6x5-unorm": "vec4f",
+    "astc-6x5-unorm-srgb": "vec4f",
+    "astc-6x6-unorm": "vec4f",
+    "astc-6x6-unorm-srgb": "vec4f",
+    "astc-8x5-unorm": "vec4f",
+    "astc-8x5-unorm-srgb": "vec4f",
+    "astc-8x6-unorm": "vec4f",
+    "astc-8x6-unorm-srgb": "vec4f",
+    "astc-8x8-unorm": "vec4f",
+    "astc-8x8-unorm-srgb": "vec4f",
+    "astc-10x5-unorm": "vec4f",
+    "astc-10x5-unorm-srgb": "vec4f",
+    "astc-10x6-unorm": "vec4f",
+    "astc-10x6-unorm-srgb": "vec4f",
+    "astc-10x8-unorm": "vec4f",
+    "astc-10x8-unorm-srgb": "vec4f",
+    "astc-10x10-unorm": "vec4f",
+    "astc-10x10-unorm-srgb": "vec4f",
+    "astc-12x10-unorm": "vec4f",
+    "astc-12x10-unorm-srgb": "vec4f",
+    "astc-12x12-unorm": "vec4f",
+    "astc-12x12-unorm-srgb": "vec4f"
+  };
+  var WGSL_TYPE_SIZES = {
+    i32: 4,
+    u32: 4,
+    f32: 4,
+    f16: 2,
+    "atomic<u32>": 4,
+    "atomic<i32>": 4,
+    vec2i: 8,
+    vec2u: 8,
+    vec2f: 8,
+    vec2f16: 4,
+    vec3i: 12,
+    vec3u: 12,
+    vec3f: 12,
+    vec3f16: 6,
+    vec4i: 16,
+    vec4u: 16,
+    vec4f: 16,
+    vec4f16: 8,
+    mat2x2f: 16,
+    mat2x2f16: 8,
+    mat3x2f: 24,
+    mat3x2f16: 12,
+    mat4x2f: 32,
+    mat4x2f16: 16,
+    mat2x3f: 24,
+    mat2x3f16: 12,
+    mat3x3f: 48,
+    mat3x3f16: 24,
+    mat4x3f: 64,
+    mat4x3f16: 32,
+    mat2x4f: 32,
+    mat2x4f16: 16,
+    mat3x4f: 48,
+    mat3x4f16: 24,
+    mat4x4f: 64,
+    mat4x4f16: 32
+  };
+  var WGSL_TYPE_ALIGNMENTS = {
+    i32: 4,
+    u32: 4,
+    f32: 4,
+    f16: 2,
+    "atomic<u32>": 4,
+    "atomic<i32>": 4,
+    vec2i: 8,
+    vec2u: 8,
+    vec2f: 8,
+    vec2f16: 4,
+    vec3i: 16,
+    vec3u: 16,
+    vec3f: 16,
+    vec3f16: 8,
+    vec4i: 16,
+    vec4u: 16,
+    vec4f: 16,
+    vec4f16: 8,
+    mat2x2f: 8,
+    mat2x2f16: 4,
+    mat3x2f: 8,
+    mat3x2f16: 4,
+    mat4x2f: 8,
+    mat4x2f16: 4,
+    mat2x3f: 16,
+    mat2x3f16: 8,
+    mat3x3f: 16,
+    mat3x3f16: 8,
+    mat4x3f: 16,
+    mat4x3f16: 8,
+    mat2x4f: 16,
+    mat2x4f16: 8,
+    mat3x4f: 16,
+    mat3x4f16: 8,
+    mat4x4f: 16,
+    mat4x4f16: 8
+  };
+  var WGSL_TYPE_ELEMENT_COUNTS = {
+    i32: 1,
+    u32: 1,
+    f32: 1,
+    f16: 1,
+    "atomic<u32>": 1,
+    "atomic<i32>": 1,
+    vec2i: 2,
+    vec2u: 2,
+    vec2f: 2,
+    vec2f16: 2,
+    vec3i: 3,
+    vec3u: 3,
+    vec3f: 3,
+    vec3f16: 3,
+    vec4i: 4,
+    vec4u: 4,
+    vec4f: 4,
+    vec4f16: 4,
+    mat2x2f: 4,
+    mat2x2f16: 4,
+    mat3x2f: 6,
+    mat3x2f16: 6,
+    mat4x2f: 8,
+    mat4x2f16: 8,
+    mat2x3f: 6,
+    mat2x3f16: 6,
+    mat3x3f: 9,
+    mat3x3f16: 9,
+    mat4x3f: 12,
+    mat4x3f16: 12,
+    mat2x4f: 8,
+    mat2x4f16: 8,
+    mat3x4f: 12,
+    mat3x4f16: 12,
+    mat4x4f: 16,
+    mat4x4f16: 16
+  };
+  var WGSL_TYPE_DATATYPES = {
+    i32: "i32",
+    u32: "u32",
+    f32: "f32",
+    f16: "f16",
+    "atomic<u32>": "u32",
+    "atomic<i32>": "i32",
+    vec2i: "i32",
+    vec2u: "u32",
+    vec2f: "f32",
+    vec2f16: "f16",
+    vec3i: "i32",
+    vec3u: "u32",
+    vec3f: "f32",
+    vec3f16: "f16",
+    vec4i: "i32",
+    vec4u: "u32",
+    vec4f: "f32",
+    vec4f16: "f16",
+    mat2x2f: "f32",
+    mat2x2f16: "f16",
+    mat3x2f: "f32",
+    mat3x2f16: "f16",
+    mat4x2f: "f32",
+    mat4x2f16: "f16",
+    mat2x3f: "f32",
+    mat2x3f16: "f16",
+    mat3x3f: "f32",
+    mat3x3f16: "f16",
+    mat4x3f: "f32",
+    mat4x3f16: "f16",
+    mat2x4f: "f32",
+    mat2x4f16: "f16",
+    mat3x4f: "f32",
+    mat3x4f16: "f16",
+    mat4x4f: "f32",
+    mat4x4f16: "f16"
+  };
+  var VERTEX_FORMAT_TO_ELEMENT_SIZE = {
+    uint8: 1,
+    uint8x2: 1,
+    uint8x4: 1,
+    sint8: 1,
+    sint8x2: 1,
+    sint8x4: 1,
+    unorm8: 1,
+    unorm8x2: 1,
+    unorm8x4: 1,
+    snorm8: 1,
+    snorm8x2: 1,
+    snorm8x4: 1,
+    uint16: 2,
+    uint16x2: 2,
+    uint16x4: 2,
+    sint16: 2,
+    sint16x2: 2,
+    sint16x4: 2,
+    unorm16: 2,
+    unorm16x2: 2,
+    unorm16x4: 2,
+    snorm16: 2,
+    snorm16x2: 2,
+    snorm16x4: 2,
+    float16: 2,
+    float16x2: 2,
+    float16x4: 2,
+    float32: 4,
+    float32x2: 4,
+    float32x3: 4,
+    float32x4: 4,
+    uint32: 4,
+    uint32x2: 4,
+    uint32x3: 4,
+    uint32x4: 4,
+    sint32: 4,
+    sint32x2: 4,
+    sint32x3: 4,
+    sint32x4: 4,
+    "unorm10-10-10-2": 1,
+    "unorm8x4-bgra": 1
+  };
+  var VERTEX_FORMAT_TO_ELEMENT_COUNT = {
+    uint8: 1,
+    uint8x2: 2,
+    uint8x4: 4,
+    sint8: 1,
+    sint8x2: 2,
+    sint8x4: 4,
+    unorm8: 1,
+    unorm8x2: 2,
+    unorm8x4: 4,
+    snorm8: 1,
+    snorm8x2: 2,
+    snorm8x4: 4,
+    uint16: 1,
+    uint16x2: 2,
+    uint16x4: 4,
+    sint16: 1,
+    sint16x2: 2,
+    sint16x4: 4,
+    unorm16: 1,
+    unorm16x2: 2,
+    unorm16x4: 4,
+    snorm16: 1,
+    snorm16x2: 2,
+    snorm16x4: 4,
+    float16: 1,
+    float16x2: 2,
+    float16x4: 4,
+    float32: 1,
+    float32x2: 2,
+    float32x3: 3,
+    float32x4: 4,
+    uint32: 1,
+    uint32x2: 2,
+    uint32x3: 3,
+    uint32x4: 4,
+    sint32: 1,
+    sint32x2: 2,
+    sint32x3: 3,
+    sint32x4: 4,
+    "unorm10-10-10-2": 4,
+    "unorm8x4-bgra": 4
+  };
+  var VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR = {
+    uint8: Uint8Array,
+    uint8x2: Uint8Array,
+    uint8x4: Uint8Array,
+    sint8: Int8Array,
+    sint8x2: Int8Array,
+    sint8x4: Int8Array,
+    unorm8: Uint8Array,
+    unorm8x2: Uint8Array,
+    unorm8x4: Uint8Array,
+    snorm8: Int8Array,
+    snorm8x2: Int8Array,
+    snorm8x4: Int8Array,
+    uint16: Uint16Array,
+    uint16x2: Uint16Array,
+    uint16x4: Uint16Array,
+    sint16: Int16Array,
+    sint16x2: Int16Array,
+    sint16x4: Int16Array,
+    unorm16: Uint16Array,
+    unorm16x2: Uint16Array,
+    unorm16x4: Uint16Array,
+    snorm16: Int16Array,
+    snorm16x2: Int16Array,
+    snorm16x4: Int16Array,
+    float16: Float16Array,
+    float16x2: Float16Array,
+    float16x4: Float16Array,
+    float32: Float32Array,
+    float32x2: Float32Array,
+    float32x3: Float32Array,
+    float32x4: Float32Array,
+    uint32: Uint32Array,
+    uint32x2: Uint32Array,
+    uint32x3: Uint32Array,
+    uint32x4: Uint32Array,
+    sint32: Int32Array,
+    sint32x2: Int32Array,
+    sint32x3: Int32Array,
+    sint32x4: Int32Array,
+    "unorm10-10-10-2": Uint8Array,
+    "unorm8x4-bgra": Uint8Array
+  };
+  var VERTEX_FORMAT_TO_WGSL_BASE_TYPE = {
+    uint8: "u32",
+    uint8x2: "u32",
+    uint8x4: "u32",
+    sint8: "i32",
+    sint8x2: "i32",
+    sint8x4: "i32",
+    unorm8: "f32",
+    unorm8x2: "f32",
+    unorm8x4: "f32",
+    snorm8: "f32",
+    snorm8x2: "f32",
+    snorm8x4: "f32",
+    uint16: "u32",
+    uint16x2: "u32",
+    uint16x4: "u32",
+    sint16: "i32",
+    sint16x2: "i32",
+    sint16x4: "i32",
+    unorm16: "f32",
+    unorm16x2: "f32",
+    unorm16x4: "f32",
+    snorm16: "f32",
+    snorm16x2: "f32",
+    snorm16x4: "f32",
+    float16: "f32",
+    float16x2: "f32",
+    float16x4: "f32",
+    float32: "f32",
+    float32x2: "f32",
+    float32x3: "f32",
+    float32x4: "f32",
+    uint32: "u32",
+    uint32x2: "u32",
+    uint32x3: "u32",
+    uint32x4: "u32",
+    sint32: "i32",
+    sint32x2: "i32",
+    sint32x3: "i32",
+    sint32x4: "i32",
+    "unorm10-10-10-2": "f32",
+    "unorm8x4-bgra": "f32"
+  };
+  var WGSL_DATA_TYPES = {
+    f32: {
+      1: "f32",
+      2: "vec2f",
+      3: "vec3f",
+      4: "vec4f"
+    },
+    f16: {
+      1: "f16",
+      2: "vec2f16",
+      3: "vec3f16",
+      4: "vec4f16"
+    },
+    u32: {
+      1: "u32",
+      2: "vec2u",
+      3: "vec3u",
+      4: "vec4u"
+    },
+    i32: {
+      1: "i32",
+      2: "vec2i",
+      3: "vec3i",
+      4: "vec4i"
     }
   };
+  function vertexFormatToWgslType(vertexFormat) {
+    return WGSL_DATA_TYPES[VERTEX_FORMAT_TO_WGSL_BASE_TYPE[vertexFormat]][VERTEX_FORMAT_TO_ELEMENT_COUNT[vertexFormat]];
+  }
+
+  // src/webgpu/wgsl-struct-layout-generator.ts
+  function struct(name, members) {
+    return {
+      type: "struct",
+      name,
+      // @ts-expect-error
+      members: Object.entries(members).map(([k, v]) => [
+        k,
+        typeof v === "string" ? { type: { type: v } } : { type: v }
+      ])
+    };
+  }
+  function runtimeArray(member) {
+    return {
+      type: "array",
+      // @ts-expect-error
+      member: typeof member === "string" ? { type: member } : member
+    };
+  }
+  function primitive(type) {
+    return { type };
+  }
+  function getAllStructs(specs) {
+    const ret = [];
+    function r(spec) {
+      if (spec.type === "struct") {
+        ret.push(spec);
+        for (const [n, m] of Array.isArray(spec.members) ? spec.members : Object.entries(spec.members)) {
+          r(m.type);
+        }
+      } else if (spec.type === "array") {
+        r(spec.member);
+      }
+    }
+    for (const s of specs) r(s);
+    return ret;
+  }
+  function makeCodeForType(type) {
+    if (type.type === "struct") return type.name;
+    if (type.type === "array")
+      return `array<${makeCodeForType(type.member)}${type.count ? ", " + type.count : ""}>`;
+    return type.type;
+  }
+  function structsCode(spec) {
+    let out = "";
+    const allTypesToDefine = new Map(
+      getAllStructs(spec).map((s) => [s.name, s])
+    ).values();
+    for (const t of allTypesToDefine) {
+      out += `struct ${t.name} {
+  ${(Array.isArray(t.members) ? t.members : Object.entries(t.members)).map((m) => `${m[0]}: ${makeCodeForType(m[1].type)},`).join("\n  ")}
+}`;
+    }
+    return out;
+  }
+  function generateLayouts(specs) {
+    const clone = structuredClone(specs);
+    const determineIndividualLayoutSizeAndAlignment = memo(
+      (spec, isLastStructMemberOrTopLevel) => {
+        if (spec.type === "struct") {
+          let currOffset = 0;
+          let endsWithRuntimeSizedArray = false;
+          spec.runtimeSized = false;
+          for (const [memberName, member] of spec.members) {
+            determineIndividualLayoutSizeAndAlignment(
+              member.type,
+              member === spec.members.at(-1)?.[1]
+            );
+            spec.runtimeSized = spec.runtimeSized || member.type.runtimeSized;
+            member.offset = roundUp(member.type.align, currOffset);
+            if (member.type.size === Infinity) {
+              spec.perElementSize = member.type.perElementSize;
+              endsWithRuntimeSizedArray = true;
+            } else {
+              currOffset = member.offset + member.type.size;
+            }
+          }
+          const lastMember = spec.members.at(
+            endsWithRuntimeSizedArray ? -2 : -1
+          )[1];
+          const justPastLastMember = lastMember.offset + lastMember.type.size;
+          spec.align = Math.max(...spec.members.map((m) => m[1].type.align));
+          spec.size = roundUp(spec.align, justPastLastMember);
+        } else if (spec.type === "array") {
+          determineIndividualLayoutSizeAndAlignment(spec.member, false);
+          if (spec.count === void 0 && !isLastStructMemberOrTopLevel) {
+            console.error(specs);
+            throw new Error(
+              `Runtime-length array must either be top-level or final member of top-level struct.`
+            );
+          }
+          if (spec.count === void 0) {
+            spec.runtimeSized = true;
+          }
+          spec.perElementSize = roundUp(spec.member.align, spec.member.size);
+          spec.size = spec.count === void 0 ? Infinity : spec.count * roundUp(spec.member.align, spec.member.size);
+          spec.align = spec.member.align;
+        } else {
+          spec.runtimeSized = false;
+          spec.size = WGSL_TYPE_SIZES[spec.type];
+          spec.perElementSize = WGSL_TYPE_SIZES[spec.type];
+          spec.align = WGSL_TYPE_ALIGNMENTS[spec.type];
+        }
+      }
+    );
+    for (const e of clone) {
+      determineIndividualLayoutSizeAndAlignment(e, true);
+    }
+    return clone;
+  }
+  function wgslDataTypeToDataViewSetter(dt) {
+    return {
+      i32: "setInt32",
+      u32: "setUint32",
+      f32: "setFloat32",
+      f16: "setFloat16"
+    }[dt];
+  }
+  function wgslDataTypeToDataViewGetter(dt) {
+    return {
+      i32: "getInt32",
+      u32: "getUint32",
+      f32: "getFloat32",
+      f16: "getFloat16"
+    }[dt];
+  }
+  function createLayoutGenerator(spec) {
+    function createSetters(spec2, baseOffset, arrayNestingLevel, extraOffsets, accessor) {
+      if (spec2.type === "struct") {
+        return spec2.members.map(
+          ([name, member]) => createSetters(
+            member.type,
+            baseOffset + member.offset,
+            arrayNestingLevel,
+            extraOffsets,
+            accessor + `.${name}`
+          )
+        ).join("\n");
+      } else if (spec2.type === "array") {
+        const iname = `i${arrayNestingLevel}`;
+        const elemSize = roundUp(spec2.member.align, spec2.member.size);
+        return `for (let ${iname} = 0; ${iname} < ${spec2.count !== void 0 ? spec2.count : accessor + ".length"}; ${iname}++) {
+  ${createSetters(spec2.member, baseOffset, arrayNestingLevel + 1, [...extraOffsets, `${iname} * ${elemSize}`], accessor + `[${iname}]`)} 
+}`;
+      } else {
+        const iname = `i${arrayNestingLevel}`;
+        const primitiveCount = WGSL_TYPE_ELEMENT_COUNTS[spec2.type];
+        return `for (let ${iname} = 0; ${iname} < ${WGSL_TYPE_ELEMENT_COUNTS[spec2.type]}; ${iname}++) {
+  dst.${wgslDataTypeToDataViewSetter(WGSL_TYPE_DATATYPES[spec2.type])}(
+    ${baseOffset} + ${extraOffsets.join(" + ")} + ${iname} * ${WGSL_TYPE_SIZES[WGSL_TYPE_DATATYPES[spec2.type]]},
+    ${primitiveCount > 1 ? accessor + `[${iname}]` : accessor},
+    true
+  );
+}`;
+      }
+    }
+    const fnbody = createSetters(spec, 0, 0, [], "src");
+    return new Function("dst", "src", fnbody);
+  }
+  function readWgslLayout(spec, view, offset = 0) {
+    if (spec.type === "struct") {
+      return Object.fromEntries(
+        spec.members.map(([name, value]) => [
+          name,
+          readWgslLayout(value.type, view, offset + value.offset)
+        ])
+      );
+    } else if (spec.type === "array") {
+      const elemSize = roundUp(spec.member.align, spec.member.size);
+      const count = spec.count !== void 0 ? spec.count : Math.floor((view.byteLength - offset) / spec.perElementSize);
+      return range(count).map(
+        (i) => readWgslLayout(spec.member, view, offset + i * elemSize)
+      );
+    } else {
+      const count = WGSL_TYPE_ELEMENT_COUNTS[spec.type];
+      const elemType = WGSL_TYPE_DATATYPES[spec.type];
+      const getter = wgslDataTypeToDataViewGetter(elemType);
+      const elemSize = WGSL_TYPE_SIZES[elemType];
+      let arr = [];
+      for (let i = 0; i < count; i++) {
+        arr.push(view[getter](offset + i * elemSize, true));
+      }
+      return count === 1 ? arr[0] : arr;
+    }
+  }
+  function createWgslSerializers(...ss) {
+    const layouts = generateLayouts(ss);
+    const gens = layouts.map((l) => ({
+      dataLayout: l,
+      gen: createLayoutGenerator(l)
+    }));
+    return {
+      code: structsCode(layouts),
+      generators: gens
+    };
+  }
+  function typeName(spec) {
+    if (spec.type === "struct") return spec.name;
+    if (spec.type === "array") {
+      if (spec.count === void 0) return `array<${typeName(spec.member)}>`;
+      return `array<${typeName(spec.member)}, ${spec.count}>`;
+    }
+    return spec.type;
+  }
 
   // src/webgpu/wgsl-snippets.ts
   var WgslSnippets = {
@@ -23642,61 +24306,53 @@ fn perlinNoise3(P: vec3f) -> f32 {
     }
   };
 
+  // src/webgpu/readpixels.ts
+  async function quickMap(device, buf, size, offset) {
+    const staging = device.createBuffer({
+      size: size ?? buf.size,
+      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+    });
+    const enc = device.createCommandEncoder();
+    enc.copyBufferToBuffer(buf, offset ?? 0, staging, 0, size ?? buf.size);
+    device.queue.submit([enc.finish()]);
+    await device.queue.onSubmittedWorkDone();
+    await staging.mapAsync(GPUMapMode.READ, offset ?? 0, size ?? buf.size);
+    const range2 = staging.getMappedRange(0, size ?? buf.size).slice();
+    staging.unmap();
+    return range2;
+  }
+  async function quickMapWithFormat(format, device, buf, size, offset) {
+    const [withLayouts] = generateLayouts([format]);
+    const v = new DataView(await quickMap(device, buf, size, offset));
+    console.log("layout", withLayouts);
+    if (withLayouts.runtimeSized) {
+      console.log("size", v, withLayouts);
+      return readWgslLayout(withLayouts, v, 0);
+    }
+    return range(Math.floor(v.byteLength / withLayouts.size)).map(
+      (i) => readWgslLayout(withLayouts, v, i * withLayouts.size)
+    );
+  }
+
   // src/audio/stream-audio.ts
   var import_fft = __toESM(require_fft());
-  function createTrack(channels, sampleRate, constituents) {
-    const maxlen = Math.max(
-      ...constituents.map((c) => c.start + c.audio.duration)
-    );
-    const sht = new OneDimensionalSpatialHashTable(constituents.length, 0, maxlen, (a) => ({
-      start: a.start,
-      end: a.start + a.audio.duration
-    }));
-    for (const c of constituents) sht.add(c);
-    return new AudioStream({
-      channels,
-      sampleRate,
-      duration: maxlen,
-      async getRange(start, count) {
-        const startTime = start / sampleRate;
-        const endTime = (start + count) / sampleRate;
-        const audio = sht.query(startTime, endTime);
-        const out = {};
-        const inputs = await Promise.all(
-          [...audio].map(
-            (e) => e.audio.getRange(start - Math.ceil(e.start * sampleRate), count)
-          )
-        );
-        for (const ch of channels) {
-          const a = new Float32Array(count);
-          for (const inp of inputs) {
-            for (let i = 0; i < count; i++) {
-              a[i] += inp[ch][i] ?? 0;
-            }
-          }
-          out[ch] = a;
-        }
-        return out;
-      }
-    });
-  }
   var AudioStream = class _AudioStream {
     constructor(params) {
       this.getRange = async (start, count) => {
         const estimatedLength = Math.ceil(this.sampleRate * this.duration);
         const clampedStart = clamp(start, 0, estimatedLength);
         const clampedEnd = clamp(start + count, 0, estimatedLength);
-        const range3 = await params.getRange(
+        const range2 = await params.getRange(
           clampedStart,
           clampedEnd - clampedStart
         );
-        if (clampedEnd - clampedStart == count) return range3;
+        if (clampedEnd - clampedStart == count) return range2;
         const out = {};
         const padStart = -Math.min(0, start);
         for (const ch of this.channels) {
           console.log("eeeee", count);
           const o = new Float32Array(count);
-          const i = range3[ch];
+          const i = range2[ch];
           for (let idx = 0; idx < i.length; idx++) {
             o[idx + padStart] = i[idx];
           }
@@ -23846,23 +24502,6 @@ fn perlinNoise3(P: vec3f) -> f32 {
       duration: params.duration
     });
   }
-  function sameSignalOnData(sampleRate, channels, duration, f) {
-    return createSignal({
-      channels,
-      duration,
-      sampleRate,
-      length: Math.ceil(duration * sampleRate),
-      constructors: arrayToObjKeys(channels, () => f)
-    });
-  }
-  function waveform(sampleRate, channels, seconds, frequency, amplitude, phase, profile) {
-    return sameSignalOnData(
-      sampleRate,
-      channels,
-      seconds,
-      (t) => amplitude * profile((t * frequency + phase) % 1)
-    );
-  }
   async function getRangeAndResample(src, dstStart, dstCount, dstSampleRate) {
     if (src.sampleRate === dstSampleRate) {
       return await src.getRange(dstStart, dstCount);
@@ -23958,231 +24597,7 @@ fn perlinNoise3(P: vec3f) -> f32 {
       }).preload();
     }
   );
-  var AudioBuilder = class {
-    constructor(channels, sampleRate) {
-      this.channels = channels;
-      this.sampleRate = sampleRate;
-    }
-    lpf(freq, cycles = 16) {
-      return createLowPassFilter(
-        this.channels,
-        this.sampleRate,
-        freq,
-        cycles
-      );
-    }
-    signal(duration, constructors) {
-      return createSignal({
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        constructors,
-        duration,
-        length: Math.ceil(duration * this.sampleRate)
-      });
-    }
-    waveform(frequency, amplitude, phase, profile) {
-      return waveform(
-        this.sampleRate,
-        this.channels,
-        Infinity,
-        frequency,
-        amplitude,
-        phase,
-        profile
-      );
-    }
-    constant(x) {
-      return createSignal({
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        duration: Infinity,
-        length: Infinity,
-        constructors: arrayToObjKeys(this.channels, () => () => x)
-      });
-    }
-    sine(frequency, amplitude = 1, phase = 0) {
-      return this.waveform(
-        frequency,
-        amplitude,
-        phase,
-        (x) => Math.sin(x * Math.PI * 2)
-      );
-    }
-    square(frequency, amplitude = 1, phase = 0) {
-      return this.waveform(
-        frequency,
-        amplitude,
-        phase,
-        (x) => x > 0.5 ? -1 : 1
-      );
-    }
-    saw(frequency, amplitude = 1, phase = 0) {
-      return this.waveform(frequency, amplitude, phase, (x) => x * 2 - 1);
-    }
-    noise(amplitude = 1) {
-      return createSignal({
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        duration: Infinity,
-        length: Infinity,
-        constructors: arrayToObjKeys(
-          this.channels,
-          () => () => (Math.random() * 2 - 1) * amplitude
-        )
-      });
-    }
-    adsrgen(a, d, s, r) {
-      return (at, dt, st, rt) => {
-        return sameSignalOnData(this.sampleRate, this.channels, rt, (t) => {
-          if (t < at) return rescale(t, 0, at, 0, a);
-          if (t < dt) return rescale(t, at, dt, a, d);
-          if (t < st) return rescale(t, dt, st, d, s);
-          if (t < rt) return rescale(t, st, rt, s, r);
-          return 0;
-        });
-      };
-    }
-    boxcar(length, area = 1) {
-      const sampleCount = Math.ceil(length * this.sampleRate);
-      return this.constant(area / sampleCount).clip(
-        0,
-        sampleCount / this.sampleRate
-      );
-    }
-    adsr(a, at, d, dt, s, st, r, rt) {
-      return this.adsrgen(a, d, s, r)(at, dt, st, rt);
-    }
-    broadcast(mono) {
-      return broadcastTo(this.channels, this.sampleRate, mono);
-    }
-    createTrack(constituents) {
-      return createTrack(this.channels, this.sampleRate, constituents);
-    }
-  };
-  function isWorklet() {
-    return globalThis.registerProcessor !== void 0;
-  }
-  async function initBufferStreamerWorklet(src) {
-    if (isWorklet()) {
-      globalThis.registerProcessor(
-        "buffer-streamer",
-        // @ts-expect-error
-        class extends AudioWorkletProcessor {
-          constructor() {
-            super();
-            this.buffers = [];
-            this.offsetIntoCurrentBuffer = 0;
-            this.port.onmessage = async (e) => {
-              const data = e.data;
-              if (data.type === "buffer") {
-                this.buffers.push({
-                  left: new Float32Array(data.buffers.left),
-                  right: new Float32Array(data.buffers.right)
-                });
-              }
-            };
-          }
-          process(inputs, outputs, parameters) {
-            const output = outputs[0];
-            const outputLength = output[0].length;
-            for (let i = 0; i < outputLength; i++) {
-              if (this.buffers.length > 0) {
-                output[0][i] = this.buffers[0].left[this.offsetIntoCurrentBuffer];
-                if (output[1]) {
-                  output[1][i] = this.buffers[0].right[this.offsetIntoCurrentBuffer];
-                }
-                this.offsetIntoCurrentBuffer++;
-                if (this.offsetIntoCurrentBuffer >= this.buffers[0]?.left.length) {
-                  this.offsetIntoCurrentBuffer = 0;
-                  this.buffers.shift();
-                }
-              } else {
-                output[0][i] = 0;
-                if (output[1]) {
-                  output[1][i] = 0;
-                }
-              }
-            }
-            return true;
-          }
-        }
-      );
-    } else {
-      return async (ctx) => {
-        await ctx.audioWorklet.addModule(src);
-        return () => {
-          const worklet = new AudioWorkletNode(ctx, "buffer-streamer");
-          return {
-            worklet,
-            pushData(left, right) {
-              worklet.port.postMessage(
-                {
-                  type: "buffer",
-                  buffers: {
-                    left: left.buffer,
-                    right: right.buffer
-                  }
-                },
-                [left.buffer, right.buffer]
-              );
-            }
-          };
-        };
-      };
-    }
-  }
   var CHUNKSIZE = 2048 * 16;
-  function streamAudioToWorklet(stream, bs) {
-    let t = 0;
-    const loop = async () => {
-      const { left, right } = await stream.getRange(t, CHUNKSIZE);
-      bs.pushData(new Float32Array(left), new Float32Array(right));
-      t += CHUNKSIZE;
-      if (t <= Math.max(stream.duration * stream.sampleRate)) {
-        setTimeout(loop);
-      }
-    };
-    loop();
-  }
-  function displayAudioSamples(samples, size, amp = 1) {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = size[0];
-    canvas.height = size[1];
-    ctx.beginPath();
-    for (const i of smartRange(samples.length)) {
-      ctx.lineTo(
-        i.remap(0, canvas.width),
-        rescale(samples[i.i], -amp, amp, 0, size[1])
-      );
-    }
-    ctx.stroke();
-    return canvas;
-  }
-  async function displayAudio(stream, amp = 1, res = [1e3, 200], chunks = 1) {
-    const len = Math.ceil(stream.duration * stream.sampleRate);
-    const left = new Float32Array(len);
-    const right = new Float32Array(len);
-    let divisions = smartRange(chunks + 1).map(
-      (c) => Math.floor(c.remap(0, len, true))
-    );
-    for (let i of range(chunks)) {
-      const audio = await stream.getRange(
-        divisions[i],
-        divisions[i + 1] - divisions[i]
-      );
-      const l = new Float32Array(audio.left);
-      const r = new Float32Array(audio.right);
-      for (let j = 0; j < l.length; j++) {
-        left[j + divisions[i]] = l[j];
-        right[j + divisions[i]] = r[j];
-      }
-    }
-    return [
-      displayAudioSamples(left, res, amp),
-      displayAudioSamples(right, res, amp)
-    ];
-  }
 
   // src/audio/notes.ts
   var import_typescript_parsec = __toESM(require_lib());
@@ -24237,96 +24652,624 @@ fn perlinNoise3(P: vec3f) -> f32 {
   chord_inner.setPattern((0, import_typescript_parsec.alt_sc)(primitive_note, compound_note));
   var note = (0, import_typescript_parsec.alt_sc)(chord, compound_note, primitive_note);
   var track = (0, import_typescript_parsec.rep_sc)(note);
-  function parseNotes(src) {
-    const tokens = noteLexer.parse(src);
-    return (0, import_typescript_parsec.expectSingleResult)((0, import_typescript_parsec.expectEOF)(track.parse(tokens)));
-  }
-  function getBeatCount(notes) {
-    return notes.reduce((p, c) => p + c.timing, 0);
-  }
-  function createTrackSpecForNoteSequence(startTime, duration, notes, lastFreq, patch) {
-    let time = startTime;
-    let freq = lastFreq;
-    let spec = [];
-    const timingTotal = getBeatCount(notes);
-    for (const n of notes) {
-      const thisNoteDuration = duration * n.timing / timingTotal;
-      const data = createTrackSpecForNote(time, thisNoteDuration, n, freq, patch);
-      spec.push(...data.trackSpec);
-      time += thisNoteDuration;
-      freq = data.freq;
-    }
-    return {
-      freq,
-      trackSpec: spec
-    };
-  }
-  function createTrackSpecForNote(startTime, duration, note2, lastFreq, patch) {
-    if (note2.type === "note") {
-      const freq = note2freq(note2.noteData, lastFreq);
-      return {
-        freq,
-        trackSpec: [
-          {
-            start: startTime,
-            audio: patch(freq, duration)
-          }
-        ]
-      };
-    } else if (note2.type === "chord") {
-      const results = note2.notes.map(
-        (n) => createTrackSpecForNote(startTime, duration * n.timing, n, lastFreq, patch)
-      );
-      return {
-        freq: results.at(-1).freq,
-        trackSpec: results.flatMap((x) => x.trackSpec)
-      };
-    } else if (note2.type === "compound") {
-      return createTrackSpecForNoteSequence(
-        startTime,
-        duration,
-        note2.notes,
-        lastFreq,
-        patch
-      );
-    }
-  }
-  function createTrackSpec(track2, bpm, patch) {
-    return createTrackSpecForNoteSequence(
-      0,
-      getBeatCount(track2) * 60 / bpm,
-      track2,
-      440,
-      patch
-    ).trackSpec;
-  }
-  function note2freq(note2, lastfreq) {
-    if (note2[0].match(/[a-gA-G]/g)) {
-      let semitone = {
-        a: 0,
-        b: 2,
-        c: 3,
-        d: 5,
-        e: 7,
-        f: 8,
-        g: 10
-      }[note2[0].toLowerCase()];
-      let i;
-      for (i = 1; note2[i] === "b" || note2[i] === "#"; i++) {
-        semitone += note2[i] === "#" ? 1 : -1;
-      }
-      let octave = parseInt(note2.slice(i));
-      if (isNaN(octave)) octave = 4;
-      semitone += (octave - 4) * 12;
-      return Math.pow(2, semitone / 12) * 440;
-    } else {
-      return (lastfreq ?? 440) * Math.pow(2, parseInt(note2) / 12);
-    }
-  }
 
   // node_modules/ml-convolution/src/fftConvolution.js
   var import_fft2 = __toESM(require_fft());
   var import_next_power_of_two = __toESM(require_next_power_of_two());
+
+  // src/webgpu/easygpu/common.ts
+  function mapFlags(flags) {
+    if (flags.length === 0) return {};
+    return {
+      [flags[0]]: true,
+      ...mapFlags(flags.slice(1))
+    };
+  }
+
+  // src/webgpu/easygpu/buffer.ts
+  function bufferUsageFlagsMap(flags) {
+    return mapFlags(flags);
+  }
+  function parseBufferUsageFlags(flags) {
+    if (flags.length === 0) return 0;
+    return {
+      storage: GPUBufferUsage.STORAGE,
+      vertex: GPUBufferUsage.VERTEX,
+      index: GPUBufferUsage.INDEX,
+      "map-read": GPUBufferUsage.MAP_READ,
+      "map-write": GPUBufferUsage.MAP_WRITE,
+      "copy-src": GPUBufferUsage.COPY_SRC,
+      "copy-dst": GPUBufferUsage.COPY_DST,
+      indirect: GPUBufferUsage.INDIRECT,
+      uniform: GPUBufferUsage.UNIFORM,
+      "query-resolve": GPUBufferUsage.QUERY_RESOLVE
+    }[flags[0]] | parseBufferUsageFlags(flags.slice(1));
+  }
+  function getBufferPerUnitSize(fmt) {
+    if (fmt.type === "vertex") {
+      return fmt.arrayStride;
+    } else {
+      const [layout] = generateLayouts([fmt.spec]);
+      return layout.runtimeSized ? layout.perElementSize : 0;
+    }
+  }
+  function getBufferFixedSize(fmt) {
+    if (fmt.type === "vertex") {
+      return 0;
+    } else {
+      const [layout] = generateLayouts([fmt.spec]);
+      return layout.size === Infinity ? layout.type === "struct" ? layout.size : 0 : layout.size;
+    }
+  }
+  function createVertexBufferFillFunction(device, fmt) {
+    return function(buf, offset, data) {
+      const cpubuf = new ArrayBuffer(buf.size);
+      const attrViews = arrayToObjEntries(fmt.attributes, (attr) => [
+        attr.name,
+        new VERTEX_FORMAT_TO_TYPEDARRAY_CONSTRUCTOR[attr.format](cpubuf)
+      ]);
+      let index = 0;
+      for (const d of data) {
+        for (const a of fmt.attributes) {
+          const view = attrViews[a.name];
+          const elementSize = VERTEX_FORMAT_TO_ELEMENT_SIZE[a.format];
+          const elementCount = VERTEX_FORMAT_TO_ELEMENT_COUNT[a.format];
+          for (let i = 0; i < elementCount; i++) {
+            const byteOffset = index * fmt.arrayStride + a.offset;
+            const elementOffset = byteOffset / elementSize + i;
+            view[elementOffset] = elementCount === 1 ? d[a.name] : d[a.name][i];
+          }
+        }
+        index++;
+      }
+      device.queue.writeBuffer(buf, 0, cpubuf);
+    };
+  }
+  function createWgslDataStructureBufferFillFunction(device, fmt) {
+    const [withLayouts] = generateLayouts([fmt.spec]);
+    const gen = createLayoutGenerator(withLayouts);
+    const perUnit = getBufferPerUnitSize(fmt);
+    const fixed = getBufferFixedSize(fmt);
+    return function(buf, offset, data) {
+      const unitCount = withLayouts.runtimeSized ? Array.isArray(data) ? data.length : Object.values(data).at(-1).length : 1;
+      const buflen = withLayouts.runtimeSized ? fixed + perUnit * unitCount : withLayouts.size;
+      const cpubuf = new ArrayBuffer(buflen);
+      gen(new DataView(cpubuf), data);
+      device.queue.writeBuffer(buf, offset, cpubuf);
+    };
+  }
+  function bufferWgsl(groupIndex, bindingIndex, name, spec) {
+    return `@group(${groupIndex}) @binding(${bindingIndex}) var<uniform> ${name} : ${typeName(spec)};`;
+  }
+  function bufferWgslStorage(groupIndex, bindingIndex, name, spec) {
+    return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage, read_write> ${name} : ${typeName(spec)};`;
+  }
+
+  // src/webgpu/easygpu/pipeline.ts
+  function getStructDefsAndBindings(bindGroups) {
+    const requiredStructDefs = bindGroups.flatMap(
+      (bg) => bg.desc.entries.flatMap((e) => {
+        if (e.desc.type === "buffer" && e.desc.format.type === "wgsl-data-structure") {
+          return [e.desc.format.spec];
+        } else {
+          return [];
+        }
+      })
+    );
+    const requiredBindings = bindGroups.flatMap(
+      (bg, groupIndex) => bg.desc.entries.flatMap((e, bindingIndex) => {
+        if (e.desc.type === "buffer") {
+          if (e.desc.format.type === "wgsl-data-structure") {
+            if (e.desc.format.treatAs === "uniform") {
+              return bufferWgsl(
+                groupIndex,
+                bindingIndex,
+                e.desc.name,
+                e.desc.format.spec
+              );
+            } else {
+              return bufferWgslStorage(
+                groupIndex,
+                bindingIndex,
+                e.desc.name,
+                e.desc.format.spec
+              );
+            }
+          }
+        } else {
+          return "";
+        }
+      })
+    ).join("\n");
+    return {
+      requiredStructDefs,
+      requiredBindings
+    };
+  }
+
+  // src/webgpu/easygpu/shader.ts
+  function shaderStageFlagsMap(flags) {
+    return mapFlags(flags);
+  }
+  function parseShaderStages(flags) {
+    if (flags.length === 0) return 0;
+    return {
+      vertex: GPUShaderStage.VERTEX,
+      fragment: GPUShaderStage.FRAGMENT,
+      compute: GPUShaderStage.COMPUTE
+    }[flags[0]] | parseShaderStages(flags.slice(1));
+  }
+
+  // src/webgpu/easygpu/texture.ts
+  function textureUsageFlagsMap(flags) {
+    return mapFlags(flags);
+  }
+  function parseTextureUsageFlags(flags) {
+    if (flags.length === 0) return 0;
+    return {
+      "copy-src": GPUTextureUsage.COPY_SRC,
+      "copy-dst": GPUTextureUsage.COPY_DST,
+      "render-attachment": GPUTextureUsage.RENDER_ATTACHMENT,
+      "storage-binding": GPUTextureUsage.STORAGE_BINDING,
+      "texture-binding": GPUTextureUsage.TEXTURE_BINDING
+    }[flags[0]] | parseTextureUsageFlags(flags.slice(1));
+  }
+
+  // src/webgpu/easygpu/easygpu.ts
+  function typeDevice(device) {
+    const dev = {
+      device,
+      bufferFormat(params, ...usage) {
+        const perUnitSize = getBufferPerUnitSize(params.format);
+        const fixedSize = getBufferFixedSize(params.format);
+        const flags = parseBufferUsageFlags(usage);
+        const [withLayouts] = params.format.type === "wgsl-data-structure" ? generateLayouts([params.format.spec]) : [void 0];
+        console.log("layout", withLayouts);
+        const fill = params.format.type === "vertex" ? createVertexBufferFillFunction(device, params.format) : createWgslDataStructureBufferFillFunction(device, params.format);
+        return {
+          visibility: shaderStageFlagsMap(params.visibility),
+          desc: {
+            type: "buffer",
+            name: params.name,
+            format: params.format,
+            usage: bufferUsageFlagsMap(usage)
+          },
+          new(count) {
+            return device.createBuffer({
+              label: params.label ?? params.name,
+              usage: flags,
+              size: count * perUnitSize + fixedSize
+            });
+          },
+          reinterpret(buf) {
+            return buf;
+          },
+          fill,
+          quickCreate(data) {
+            const buf = this.new(
+              params.format.type === "vertex" ? (
+                // @ts-expect-error
+                data.length
+              ) : withLayouts?.runtimeSized ? Array.isArray(data) ? data.length : Object.values(data).at(-1).length : 1
+            );
+            this.fill(buf, 0, data);
+            return buf;
+          },
+          name(name2) {
+            return dev.bufferFormat(
+              {
+                ...params,
+                name: name2
+              },
+              ...usage
+            );
+          },
+          viz(v) {
+            return dev.bufferFormat(
+              {
+                ...params,
+                visibility: v
+              },
+              ...usage
+            );
+          },
+          usage(...usage2) {
+            return dev.bufferFormat(params, ...usage2);
+          },
+          stepMode: (mode) => {
+            if (params.format.type === "wgsl-data-structure") {
+              throw new Error("stepMode can only be called on a vertex buffer!");
+            }
+            return dev.bufferFormat(
+              {
+                ...params,
+                format: {
+                  ...params.format,
+                  stepMode: mode
+                }
+              },
+              ...usage
+            );
+          }
+        };
+      },
+      uniformBufferFormat(name, spec) {
+        return this.bufferFormat(
+          {
+            name,
+            format: {
+              type: "wgsl-data-structure",
+              spec,
+              treatAs: "uniform"
+            },
+            visibility: ["vertex", "fragment"]
+          },
+          "uniform",
+          "copy-dst"
+        );
+      },
+      uniformBufferComputeFormat(name, spec) {
+        return this.bufferFormat(
+          {
+            name,
+            format: {
+              type: "wgsl-data-structure",
+              spec,
+              treatAs: "uniform"
+            },
+            visibility: ["compute"]
+          },
+          "uniform",
+          "copy-dst"
+        );
+      },
+      storageBufferFormat(name, spec) {
+        return this.bufferFormat(
+          {
+            name,
+            format: {
+              type: "wgsl-data-structure",
+              spec,
+              treatAs: "storage"
+            },
+            visibility: ["compute"]
+          },
+          "storage",
+          "copy-dst"
+        );
+      },
+      vertexBufferFormat(name, stride, attrs) {
+        return this.bufferFormat(
+          {
+            name,
+            format: {
+              type: "vertex",
+              attributes: attrs,
+              arrayStride: stride,
+              stepMode: "vertex"
+            },
+            visibility: ["vertex"]
+          },
+          "vertex",
+          "copy-dst"
+        );
+      },
+      instanceBufferFormat(name, stride, attrs) {
+        return this.bufferFormat(
+          {
+            name,
+            format: {
+              type: "vertex",
+              attributes: attrs,
+              arrayStride: stride,
+              stepMode: "instance"
+            },
+            visibility: ["vertex"]
+          },
+          "vertex",
+          "copy-dst"
+        );
+      },
+      textureFormat(params, ...usage) {
+        const flags = parseTextureUsageFlags(usage);
+        return {
+          visibility: shaderStageFlagsMap(params.visibility),
+          desc: {
+            type: "texture",
+            name: params.name,
+            usage: textureUsageFlagsMap(usage),
+            format: params.format,
+            viewDimension: params.viewDimension,
+            sampleCount: params.sampleCount
+          },
+          new(resolution) {
+            return device.createTexture({
+              label: params.label ?? params.name,
+              size: resolution,
+              format: params.format,
+              usage: flags,
+              mipLevelCount: params.mipLevelCount,
+              viewFormats: params.viewFormats,
+              sampleCount: params.sampleCount,
+              dimension: params.dimension,
+              textureBindingViewDimension: params.textureBindingViewDimension
+            });
+          },
+          name(name2) {
+            return dev.textureFormat(
+              {
+                ...params,
+                name: name2
+              },
+              ...usage
+            );
+          },
+          viz(v) {
+            return dev.textureFormat(
+              {
+                ...params,
+                visibility: v
+              },
+              ...usage
+            );
+          },
+          usage(...usage2) {
+            return dev.textureFormat(params, ...usage2);
+          }
+        };
+      },
+      sampler(name, params) {
+        return {
+          visibility: params.visibility,
+          desc: {
+            type: params.type,
+            name
+          },
+          new(desc) {
+            return device.createSampler({});
+          }
+        };
+      },
+      bindGroupFormat(name, ...entries) {
+        const layout = device.createBindGroupLayout({
+          entries: entries.map((e, i) => {
+            const visibility = parseShaderStages(
+              Object.keys(e.visibility)
+            );
+            if (e.desc.type === "texture") {
+              return {
+                binding: i,
+                visibility,
+                texture: {
+                  sampleType: TEXTURE_FORMAT_TO_SAMPLER_TYPE_LUT[e.desc.format],
+                  multisampled: e.desc.sampleCount > 1,
+                  viewDimension: e.desc.viewDimension
+                }
+              };
+            } else if (e.desc.type === "buffer") {
+              if (e.desc.format.type === "vertex") {
+                return {
+                  binding: i,
+                  visibility,
+                  buffer: {
+                    type: "storage"
+                  }
+                };
+              } else {
+                if (e.desc.format.treatAs === "storage") {
+                  return {
+                    binding: i,
+                    visibility,
+                    buffer: {
+                      type: "storage"
+                    }
+                  };
+                } else {
+                  return {
+                    binding: i,
+                    visibility,
+                    buffer: {
+                      type: "uniform"
+                    }
+                  };
+                }
+              }
+            } else {
+              return {
+                binding: i,
+                visibility,
+                sampler: {
+                  type: e.desc.samplerType
+                }
+              };
+            }
+          })
+        });
+        return {
+          desc: {
+            name,
+            layout,
+            entries
+          },
+          new(params) {
+            return device.createBindGroup({
+              layout,
+              entries: entries.map((e, i) => ({
+                binding: i,
+                // @ts-expect-error
+                resource: params[e.desc.name]
+              }))
+            });
+          }
+        };
+      },
+      shader(code, ...stages) {
+        const module = device.createShaderModule({
+          code
+        });
+        console.log(code);
+        module._typeInfo = { stages: shaderStageFlagsMap(stages) };
+        return module;
+      },
+      async renderPipelineRaw(params) {
+        const fragment = params.shader._typeInfo.stages.fragment ? {
+          module: params.shader,
+          targets: Object.values(params.outputs).map((o) => {
+            if (typeof o === "string") {
+              return { format: o };
+            } else if (o?.type === "texture") {
+              return {
+                format: o.format
+              };
+            } else {
+              return o;
+            }
+          })
+        } : void 0;
+        let shaderLoc = 0;
+        const ppln = await device.createRenderPipelineAsync({
+          layout: device.createPipelineLayout({
+            bindGroupLayouts: params.bindGroups.map((bg) => bg.desc.layout)
+          }),
+          label: params.label,
+          primitive: params.primitive,
+          vertex: {
+            module: params.shader,
+            buffers: params.inputs.map((b) => ({
+              arrayStride: b.desc.format.arrayStride,
+              stepMode: b.desc.format.stepMode,
+              attributes: b.desc.format.attributes.map((a) => ({
+                format: a.format,
+                offset: a.offset,
+                shaderLocation: shaderLoc++
+              }))
+            }))
+          },
+          multisample: params.multisample,
+          fragment,
+          depthStencil: params.depthStencil
+        });
+        const bindGroupNameToIndex = new Map(
+          params.bindGroups.flatMap((b, i) => b ? [[b.desc.name, i]] : [])
+        );
+        const inputNameToIndex = new Map(
+          params.inputs.map((b, i) => [b.desc.name, i])
+        );
+        ppln.bind = (pass, bindings) => {
+          for (const [k, v] of Object.entries(bindings)) {
+            const bindGroupIndex = bindGroupNameToIndex.get(k);
+            if (bindGroupIndex !== void 0) {
+              pass.setBindGroup(bindGroupIndex, v);
+              continue;
+            }
+            const inputIndex = inputNameToIndex.get(k);
+            if (inputIndex !== void 0) {
+              pass.setVertexBuffer(
+                inputIndex,
+                ...Array.isArray(v) ? v : [v]
+              );
+              continue;
+            }
+            throw new Error(`Bound pipeline does not have attribute '${k}'.`);
+          }
+        };
+        return ppln;
+      },
+      async computePipelineRaw(params) {
+        const ppln = await device.createComputePipelineAsync({
+          layout: device.createPipelineLayout({
+            bindGroupLayouts: params.bindGroups.map((bg) => bg.desc.layout)
+          }),
+          label: params.label,
+          compute: {
+            module: params.shader
+          }
+        });
+        const bindGroupNameToIndex = new Map(
+          params.bindGroups.flatMap((b, i) => b ? [[b.desc.name, i]] : [])
+        );
+        ppln.bind = (pass, bindings) => {
+          for (const [k, v] of Object.entries(bindings)) {
+            const bindGroupIndex = bindGroupNameToIndex.get(k);
+            if (bindGroupIndex !== void 0) {
+              pass.setBindGroup(bindGroupIndex, v);
+              continue;
+            }
+            throw new Error(`Bound pipeline does not have attribute '${k}'.`);
+          }
+        };
+        return ppln;
+      },
+      async computePipeline(params) {
+        const { requiredStructDefs, requiredBindings } = getStructDefsAndBindings(
+          params.bindGroups
+        );
+        const shaderSource = `
+${createWgslSerializers(...requiredStructDefs).code}          
+${requiredBindings}
+${params.globals ?? ""}
+
+@compute
+@workgroup_size(${params.workgroupSize.join(", ")})
+fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocation_id) local_id: vec3u) {
+  ${params.shader}
+}
+          `;
+        return this.computePipelineRaw({
+          bindGroups: params.bindGroups,
+          shader: this.shader(shaderSource, "compute")
+        });
+      },
+      async renderPipeline(params) {
+        const { requiredStructDefs, requiredBindings } = getStructDefsAndBindings(
+          params.bindGroups
+        );
+        let shaderLoc = 0;
+        const vertexStruct = params.inputs.length > 0 ? `struct Vertex {
+        ${params.inputs.flatMap((i) => i.desc.format.attributes.map((attr) => `@location(${shaderLoc++}) ${attr.name}: ${vertexFormatToWgslType(attr.format)}`)).join(",\n")}
+      }` : "";
+        return dev.renderPipelineRaw({
+          multisample: params.multisample,
+          primitive: params.primitive,
+          bindGroups: params.bindGroups,
+          inputs: params.inputs,
+          outputs: params.outputs,
+          depthStencil: params.depthStencil,
+          shader: this.shader(
+            `
+        ${createWgslSerializers(...requiredStructDefs).code}
+        ${requiredBindings}
+        ${params.globals ?? ""}
+        ${vertexStruct}
+
+        struct FragInput {
+          ${params.fragment?.struct ?? ""}
+        }
+
+        struct FragOutput {
+          ${params.fragment?.extraOutputs ?? ""}
+          ${Object.entries(params.outputs).map(
+              ([name, value], i) => `@location(${i}) ${name} : ${TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[typeof value === "string" ? value : value.format]}`
+            ).join(",\n  ")}
+        }
+
+        @vertex
+        fn VSMain(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32, ${vertexStruct ? "vertex: Vertex" : ""}) -> FragInput {
+          ${params.vertex} 
+        }
+
+      ${params.fragment ? `@fragment
+        fn FSMain(input : FragInput) -> FragOutput {
+          ${params.fragment.function}
+        }` : ""}
+        `,
+            ...params.fragment ? ["vertex", "fragment"] : ["vertex"]
+          )
+        });
+      }
+    };
+    return dev;
+  }
 
   // src/webgpu/gpudoc/ui.tsx
   var import_react4 = __toESM(require_react());
@@ -24389,64 +25332,198 @@ fn perlinNoise3(P: vec3f) -> f32 {
   var import_react18 = __toESM(require_react());
   var import_client2 = __toESM(require_client());
 
-  // demos-src/audio-stream.demo.ts
-  var initWorklet = initBufferStreamerWorklet("audio-stream.demo.js");
-  if (!isWorklet()) {
-    (async () => {
-      const a = new AudioBuilder(["left", "right"], 44100);
-      const m = new AudioBuilder(["center"], 44100);
-      const adsr = m.adsrgen(1, 0.2, 0.2, 0);
-      const adsrn = (a2, d, s, r) => (len) => adsr(a2 * len, d * len, s * len, r * len);
-      const KERNSIZE = 100;
-      const clap = (freq, duration) => a.noise().convolve(a.lpf(freq * 2, 32)).gain(m.constant(400 / Math.log(freq) ** 3)).clip(0, 0.05).gain(adsr(0, 5e-3, 0.025, 0.05));
-      const melody = (freq, duration) => {
-        console.log("duration", duration);
-        return a.sine(freq).gain(m.constant(0.5)).add(a.square(freq * 0.5).gain(m.constant(0.2))).clip(0, duration).gain(adsrn(0.1, 0.3, 0.6, 1)(duration));
-      };
-      const track2 = parseNotes(`
-      4:(
-      c4 3 4  
-      c4 3 4  
-      c4 3 4  
-      c4 3 4  
-      c4 3 4  
-      c4
-      )/c2
-
-      4:(
-      b4 4 4
-      b4 4 4
-      b4 4 4
-      b4 4 4
-      b4 4 4
-      b4
-      )/b2
-
-      4:(
-      bb4 5 4
-      bb4 5 4
-      bb4 5 4
-      bb4 5 4
-      bb4 5 4
-      bb4
-      )/bb2
-      `);
-      console.log(track2);
-      const trackSpec = createTrackSpec(track2, 120, melody);
-      const w = a.createTrack(trackSpec).preload();
-      for (const c of await displayAudio(w.clip(0, 4), 1, [4e3, 100], 1)) {
-        document.body.appendChild(c);
+  // demos-src/webgpu/easygpu-test.demo.ts
+  (async () => {
+    function fail(msg) {
+      window.alert(msg);
+      throw new Error(msg);
+    }
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) {
+      fail("No GPU adapter!");
+      return;
+    }
+    const device = await adapter.requestDevice({
+      requiredFeatures: [
+        //  "timestamp-query"
+      ]
+    });
+    device.addEventListener(
+      "uncapturederror",
+      (event) => console.error(event.error)
+    );
+    if (!device) {
+      fail("No GPU device!");
+    }
+    const td = typeDevice(device);
+    await testRuntimeArray(td);
+    await testRuntimeArrayStruct(td);
+    await testSingleStruct(td);
+    await testTriangle(td);
+  })();
+  async function testRuntimeArray(td) {
+    const fBuf = td.storageBufferFormat("floats", runtimeArray("f32")).usage("copy-dst", "copy-src", "storage");
+    const fBindGroup = td.bindGroupFormat("bg", fBuf);
+    const ppln = await td.computePipeline({
+      bindGroups: [fBindGroup],
+      workgroupSize: [32, 1, 1],
+      shader: `
+    if (id.x >= arrayLength(&floats)) { return; }
+    floats[id.x] += 1.0; 
+    `
+    });
+    const buf = fBuf.quickCreate([1, 2, 3, 4, 5]);
+    const bindGroup = fBindGroup.new({
+      floats: buf
+    });
+    const enc = td.device.createCommandEncoder();
+    const pass = enc.beginComputePass();
+    pass.setPipeline(ppln);
+    ppln.bind(pass, {
+      bg: bindGroup
+    });
+    pass.dispatchWorkgroups(1, 1, 1);
+    pass.end();
+    td.device.queue.submit([enc.finish()]);
+    console.log(await quickMapWithFormat(fBuf.desc.format.spec, td.device, buf));
+  }
+  async function testRuntimeArrayStruct(td) {
+    const fBuf = td.storageBufferFormat(
+      "struct_test",
+      struct("StructTest", {
+        a: "f32",
+        b: runtimeArray("f32")
+      })
+    ).usage("copy-dst", "copy-src", "storage");
+    const fBindGroup = td.bindGroupFormat("bg", fBuf);
+    const ppln = await td.computePipeline({
+      bindGroups: [fBindGroup],
+      workgroupSize: [32, 1, 1],
+      shader: `
+    if (id.x >= arrayLength(&struct_test.b)) { return; }
+    struct_test.b[id.x] += struct_test.a; 
+    `
+    });
+    const buf = fBuf.quickCreate({
+      a: 69,
+      b: [1, 2, 3, 4]
+    });
+    const bindGroup = fBindGroup.new({
+      struct_test: buf
+    });
+    const enc = td.device.createCommandEncoder();
+    const pass = enc.beginComputePass();
+    pass.setPipeline(ppln);
+    ppln.bind(pass, {
+      bg: bindGroup
+    });
+    pass.dispatchWorkgroups(1, 1, 1);
+    pass.end();
+    td.device.queue.submit([enc.finish()]);
+    console.log(await quickMapWithFormat(fBuf.desc.format.spec, td.device, buf));
+  }
+  async function testSingleStruct(td) {
+    const fBuf = td.storageBufferFormat("counter", primitive("atomic<u32>")).usage("copy-dst", "copy-src", "storage");
+    const fBindGroup = td.bindGroupFormat("bg", fBuf);
+    const ppln = await td.computePipeline({
+      bindGroups: [fBindGroup],
+      workgroupSize: [32, 1, 1],
+      shader: `
+      atomicAdd(&counter, 1u);
+    `
+    });
+    const buf = fBuf.quickCreate(5);
+    const bindGroup = fBindGroup.new({
+      counter: buf
+    });
+    const enc = td.device.createCommandEncoder();
+    const pass = enc.beginComputePass();
+    pass.setPipeline(ppln);
+    ppln.bind(pass, {
+      bg: bindGroup
+    });
+    pass.dispatchWorkgroups(1, 1, 1);
+    pass.end();
+    td.device.queue.submit([enc.finish()]);
+    console.log(await quickMapWithFormat(fBuf.desc.format.spec, td.device, buf));
+  }
+  async function testTriangle(td) {
+    const fVertBuf = td.vertexBufferFormat("vertices", 16, [
+      {
+        name: "pos",
+        format: "float32x3",
+        offset: 0
+      },
+      {
+        name: "color",
+        format: "unorm8x4",
+        offset: 12
       }
-      document.onclick = async () => {
-        const ctx = new AudioContext();
-        const createWorklet = await (await initWorklet)(ctx);
-        const bufferStreamer = createWorklet();
-        streamAudioToWorklet(w, bufferStreamer);
-        const osc = new OscillatorNode(ctx);
-        osc.connect(bufferStreamer.worklet).connect(ctx.destination);
-        osc.start();
-      };
-    })();
+    ]);
+    const canvasFmt = navigator.gpu.getPreferredCanvasFormat();
+    const pl = await td.renderPipeline({
+      bindGroups: [],
+      inputs: [fVertBuf],
+      outputs: {
+        color: canvasFmt
+      },
+      vertex: `
+    var v: FragInput;
+    v.position = vec4f(vertex.pos, 1.0); 
+    v.color = vertex.color;
+    return v;
+    `,
+      fragment: {
+        function: `
+      var f: FragOutput;
+      f.color = input.color;
+      return f;
+      `,
+        struct: `
+      @builtin(position) position: vec4f,
+      @location(0) color: vec4f,`
+      }
+    });
+    const canvas = document.createElement("canvas");
+    document.body.appendChild(canvas);
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext("webgpu");
+    ctx.configure({
+      device: td.device,
+      format: canvasFmt
+    });
+    const vertBuf = fVertBuf.quickCreate([
+      {
+        pos: [0, 1, 0.5],
+        color: [255, 0, 0, 255]
+      },
+      {
+        pos: [-1, -1, 0.5],
+        color: [0, 255, 0, 255]
+      },
+      {
+        pos: [1, -1, 0.5],
+        color: [0, 0, 255, 255]
+      }
+    ]);
+    const enc = td.device.createCommandEncoder();
+    const pass = enc.beginRenderPass({
+      colorAttachments: [
+        {
+          view: ctx.getCurrentTexture().createView(),
+          loadOp: "clear",
+          storeOp: "store"
+        }
+      ]
+    });
+    pass.setPipeline(pl);
+    pl.bind(pass, {
+      vertices: vertBuf
+    });
+    pass.draw(3);
+    pass.end();
+    td.device.queue.submit([enc.finish()]);
   }
 })();
 /*! Bundled license information:

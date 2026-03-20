@@ -1,3 +1,4 @@
+"use strict";
 (() => {
   // src/math/vector.generated.ts
   function cross(a, b) {

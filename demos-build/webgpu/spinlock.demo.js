@@ -1,3 +1,4 @@
+"use strict";
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -23297,10 +23298,10 @@
     "etc2-rgb8a1unorm-srgb": "float",
     "etc2-rgba8unorm": "float",
     "etc2-rgba8unorm-srgb": "float",
-    "eac-r11unorm": "f32",
-    "eac-r11snorm": "f32",
-    "eac-rg11unorm": "vec2f",
-    "eac-rg11snorm": "vec2f",
+    "eac-r11unorm": "float",
+    "eac-r11snorm": "float",
+    "eac-rg11unorm": "float",
+    "eac-rg11snorm": "float",
     "astc-4x4-unorm": "float",
     "astc-4x4-unorm-srgb": "float",
     "astc-5x4-unorm": "float",
@@ -23962,30 +23963,55 @@
   function generateLayouts(specs) {
     const clone = structuredClone(specs);
     const determineIndividualLayoutSizeAndAlignment = memo(
-      (spec) => {
+      (spec, isLastStructMemberOrTopLevel) => {
         if (spec.type === "struct") {
           let currOffset = 0;
+          let endsWithRuntimeSizedArray = false;
+          spec.runtimeSized = false;
           for (const [memberName, member] of spec.members) {
-            determineIndividualLayoutSizeAndAlignment(member.type);
+            determineIndividualLayoutSizeAndAlignment(
+              member.type,
+              member === spec.members.at(-1)?.[1]
+            );
+            spec.runtimeSized = spec.runtimeSized || member.type.runtimeSized;
             member.offset = roundUp(member.type.align, currOffset);
-            currOffset = member.offset + member.type.size;
+            if (member.type.size === Infinity) {
+              spec.perElementSize = member.type.perElementSize;
+              endsWithRuntimeSizedArray = true;
+            } else {
+              currOffset = member.offset + member.type.size;
+            }
           }
-          const lastMember = spec.members.at(-1)[1];
+          const lastMember = spec.members.at(
+            endsWithRuntimeSizedArray ? -2 : -1
+          )[1];
           const justPastLastMember = lastMember.offset + lastMember.type.size;
           spec.align = Math.max(...spec.members.map((m) => m[1].type.align));
           spec.size = roundUp(spec.align, justPastLastMember);
         } else if (spec.type === "array") {
-          determineIndividualLayoutSizeAndAlignment(spec.member);
-          spec.size = spec.count * roundUp(spec.member.align, spec.member.size);
+          determineIndividualLayoutSizeAndAlignment(spec.member, false);
+          if (spec.count === void 0 && !isLastStructMemberOrTopLevel) {
+            console.error(specs);
+            throw new Error(
+              `Runtime-length array must either be top-level or final member of top-level struct.`
+            );
+          }
+          if (spec.count === void 0) {
+            spec.runtimeSized = true;
+          }
+          spec.perElementSize = roundUp(spec.member.align, spec.member.size);
+          spec.size = spec.count === void 0 ? Infinity : spec.count * roundUp(spec.member.align, spec.member.size);
           spec.align = spec.member.align;
         } else {
+          spec.runtimeSized = false;
           spec.size = WGSL_TYPE_SIZES[spec.type];
+          spec.perElementSize = WGSL_TYPE_SIZES[spec.type];
           spec.align = WGSL_TYPE_ALIGNMENTS[spec.type];
         }
       }
     );
     for (const e of clone) {
-      determineIndividualLayoutSizeAndAlignment(e);
+      determineIndividualLayoutSizeAndAlignment(e, true);
     }
     return clone;
   }
@@ -24012,7 +24038,7 @@
       } else if (spec2.type === "array") {
         const iname = `i${arrayNestingLevel}`;
         const elemSize = roundUp(spec2.member.align, spec2.member.size);
-        return `for (let ${iname} = 0; ${iname} < ${spec2.count}; ${iname}++) {
+        return `for (let ${iname} = 0; ${iname} < ${spec2.count !== void 0 ? spec2.count : accessor + ".length"}; ${iname}++) {
   ${createSetters(spec2.member, baseOffset, arrayNestingLevel + 1, [...extraOffsets, `${iname} * ${elemSize}`], accessor + `[${iname}]`)} 
 }`;
       } else {
@@ -24043,8 +24069,10 @@
   }
   function typeName(spec) {
     if (spec.type === "struct") return spec.name;
-    if (spec.type === "array")
+    if (spec.type === "array") {
+      if (spec.count === void 0) return `array<${typeName(spec.member)}>`;
       return `array<${typeName(spec.member)}, ${spec.count}>`;
+    }
     return spec.type;
   }
 
@@ -24962,7 +24990,7 @@ struct Params {
             return `@group(${groupIndex}) @binding(${bindingIndex}) var<uniform> ${name} : ${typeName(spec)};`;
           },
           wgslStorage(groupIndex, bindingIndex, access) {
-            return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage, ${access}> ${name} : ${settings.arrayify ?? true ? `array<${typeName(spec)}>;` : typeName(spec) + ";"}`;
+            return `@group(${groupIndex}) @binding(${bindingIndex}) var<storage, ${access}> ${name} : ${settings?.arrayify ?? true ? `array<${typeName(spec)}>;` : typeName(spec) + ";"}`;
           },
           // @ts-expect-error
           reinterpret(buf) {
@@ -25008,7 +25036,8 @@ struct Params {
                 for (let i = 0; i < elementCount; i++) {
                   const byteOffset = index * size + a.offset;
                   const elementOffset = byteOffset / elementSize + i;
-                  view[elementOffset] = elementCount === 1 ? d[a.name] : d[a.name][i];
+                  view[elementOffset] = // @ts-expect-error
+                  elementCount === 1 ? d[a.name] : d[a.name][i];
                 }
               }
               index++;

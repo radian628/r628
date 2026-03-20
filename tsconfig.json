@@ -7,6 +7,7 @@
     "lib": ["dom", "ESNext"],
     "esModuleInterop": true,
     "noEmit": true,
-    "jsx": "react"
+    "jsx": "react",
+    "strict": true
   }
 }
