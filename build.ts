@@ -69,17 +69,7 @@ if (whatToBuild === "lib") {
     platform: "node",
     external: ["esbuild"],
     format: "esm",
-    plugins: [
-      rawQueryParamPlugin,
-      copy({
-        resolveFrom: "cwd",
-        assets: {
-          from: ["./assets/*"],
-          to: ["./demos-build/assets"],
-        },
-      }),
-      buildNotifyPlugin("LIBNODE"),
-    ],
+    plugins: [rawQueryParamPlugin, buildNotifyPlugin("LIBNODE")],
   });
 
   await Promise.all([buildNode.watch(), buildLib.watch()]);
@@ -112,7 +102,7 @@ if (whatToBuild === "lib") {
     setup(build) {
       build.onEnd(() => {
         for (const client of clients) {
-          client.send({ type: "reload" });
+          client.send(JSON.stringify({ type: "reload" }));
         }
       });
     },
@@ -153,6 +143,13 @@ if (whatToBuild === "lib") {
       rawQueryParamPlugin,
       buildNotifyPlugin("DEMOS"),
       autoReloadPlugin,
+      copy({
+        resolveFrom: "cwd",
+        assets: {
+          from: ["./assets/*"],
+          to: ["./demos-build/assets"],
+        },
+      }),
     ],
   });
 
