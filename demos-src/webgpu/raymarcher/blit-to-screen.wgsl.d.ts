@@ -8,13 +8,13 @@ declare module "blit-to-screen.wgsl" {
           "name": "sampler",
           "attributes": [
             {
-              "id": 2654,
+              "id": 9434,
               "line": 10,
               "name": "group",
               "value": "0"
             },
             {
-              "id": 2655,
+              "id": 9435,
               "line": 10,
               "name": "binding",
               "value": "0"
@@ -28,13 +28,13 @@ declare module "blit-to-screen.wgsl" {
         "binding": 0,
         "attributes": [
           {
-            "id": 2654,
+            "id": 9434,
             "line": 10,
             "name": "group",
             "value": "0"
           },
           {
-            "id": 2655,
+            "id": 9435,
             "line": 10,
             "name": "binding",
             "value": "0"
@@ -49,13 +49,13 @@ declare module "blit-to-screen.wgsl" {
           "name": "texture_2d_array",
           "attributes": [
             {
-              "id": 2658,
+              "id": 9438,
               "line": 11,
               "name": "group",
               "value": "0"
             },
             {
-              "id": 2659,
+              "id": 9439,
               "line": 11,
               "name": "binding",
               "value": "1"
@@ -73,13 +73,13 @@ declare module "blit-to-screen.wgsl" {
         "binding": 1,
         "attributes": [
           {
-            "id": 2658,
+            "id": 9438,
             "line": 11,
             "name": "group",
             "value": "0"
           },
           {
-            "id": 2659,
+            "id": 9439,
             "line": 11,
             "name": "binding",
             "value": "1"

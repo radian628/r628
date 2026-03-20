@@ -29,6 +29,7 @@ input {
   background-color: var(--bg);
   color: var(--fg);
   font-family: var(--font);
+  accent-color: var(--highlight);
 }
 
 .ui-array {
@@ -105,11 +106,12 @@ input {
   gap: var(--gap-big);
 }
 
-.ui-object > input {
+.ui-object > :nth-child(2n) {
   justify-self: right;
 }
 
-.ui-container button {
+.ui-container button,
+.ui-container input::file-selector-button {
   background-color: var(--bg-button);
   border: none;
   border-radius: 5px;
@@ -117,7 +119,8 @@ input {
   cursor: pointer;
 }
 
-.ui-container button:hover {
+.ui-container button:hover,
+.ui-container input::file-selector-button:hover {
   background-color: var(--bg-button-hover);
 }
 
@@ -140,4 +143,10 @@ input {
 
 .button-set {
   margin-block: var(--gap-big);
+}
+
+select {
+  color: var(--fg);
+  background-color: var(--bg-lighter);
+  border: var(--border);
 }
