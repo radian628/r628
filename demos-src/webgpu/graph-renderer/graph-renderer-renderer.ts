@@ -1124,6 +1124,8 @@ user-select: none;
         moveBodies();
       };
 
+      let destroyed = false;
+
       return {
         moveBodies,
         updateViewer(dt: number) {
@@ -1194,6 +1196,8 @@ user-select: none;
           if (loopIter % 5 === 0) {
             (async () => {
               const buf = new Float32Array(await quickMap(device, vertices));
+
+              if (destroyed) return;
 
               let stride = 5;
               let i = 0;
@@ -1316,6 +1320,7 @@ user-select: none;
           device.queue.submit([enc.finish()]);
         },
         destroy() {
+          destroyed = true;
           for (const { elem } of labels.values()) {
             elem.parentElement?.removeChild(elem);
           }
