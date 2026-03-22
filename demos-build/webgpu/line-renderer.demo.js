@@ -26345,6 +26345,38 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
             ...params.fragment ? ["vertex", "fragment"] : ["vertex"]
           )
         });
+      },
+      async computePipelineBundled(shader, workgroupSize, ...bindGroupEntries) {
+        const bgf = dev.bindGroupFormat("bg", ...bindGroupEntries);
+        const pl = await dev.computePipeline({
+          bindGroups: [bgf],
+          shader,
+          workgroupSize,
+          globals: shader.match(/\/\*globals[\s\S]+\*\//g)?.[0]?.slice(9, -2) ?? void 0
+        });
+        return {
+          pl,
+          bgf,
+          new(params) {
+            return {
+              bg: bgf.new(params),
+              bindAndDispatch(pass, x, y, z) {
+                pass.setBindGroup(0, this.bg);
+                pass.dispatchWorkgroups(x, y, z);
+              },
+              run(pass, x, y, z) {
+                pass.setPipeline(pl);
+                pass.setBindGroup(0, this.bg);
+                pass.dispatchWorkgroups(x, y, z);
+              },
+              runIndirect(pass, indirect, offset) {
+                pass.setPipeline(pl);
+                pass.setBindGroup(0, this.bg);
+                pass.dispatchWorkgroupsIndirect(indirect, offset ?? 0);
+              }
+            };
+          }
+        };
       }
     };
     return dev;

@@ -181,21 +181,8 @@ export async function createNBodyOctreeDefs<
     }),
   );
 
-  const assignBodiesBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    bodyNodeAssignmentsFormat,
-    bodyNodeChildSubOffsetsFormat,
-    octreeNodeFormat,
-    octreeCountersFormat,
-    bodyOrderFormat,
-    bodiesFormat,
-    octreeMetadataFormat,
-  );
-
-  const assignBodiesPipelinePromise = td.computePipeline({
-    bindGroups: [assignBodiesBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    shader: `
+  const assignBodiesPipelinePromise = td.computePipelineBundled(
+    `
     if (id.x >= arrayLength(&body_node_assignments)) {
       return; 
     }
@@ -229,24 +216,18 @@ export async function createNBodyOctreeDefs<
     body_node_assignments[body_idx] = 
       parent_node.child_idx + child_offset;
     `,
-  });
-
-  const createNewNodesBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    activeNodesInFormat,
-    activeNodesOutFormat,
-    octreeMetadataFormat,
-    nextfreesFormat,
+    [32, 1, 1],
+    bodyNodeAssignmentsFormat,
+    bodyNodeChildSubOffsetsFormat,
     octreeNodeFormat,
-    octreeCountersNonatomicFormat,
-    activeNodesInfoFormat,
-    createNewNodesUniforms,
+    octreeCountersFormat,
+    bodyOrderFormat,
+    bodiesFormat,
+    octreeMetadataFormat,
   );
 
-  const createNewNodesPipelinePromise = td.computePipeline({
-    bindGroups: [createNewNodesBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    shader: `
+  const createNewNodesPipelinePromise = td.computePipelineBundled(
+    `
     if (id.x >= active_nodes_info.count) {
       return; 
     } 
@@ -324,22 +305,19 @@ export async function createNBodyOctreeDefs<
     }
 
     `,
-  });
-
-  const reorderBodiesBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    bodyOrderInFormat,
-    bodyOrderOutFormat,
-    bodyNodeAssignmentsFormat,
-    bodyNodeChildSubOffsetsFormat,
+    [32, 1, 1],
+    activeNodesInFormat,
+    activeNodesOutFormat,
+    octreeMetadataFormat,
+    nextfreesFormat,
     octreeNodeFormat,
-    bodiesFormat,
+    octreeCountersNonatomicFormat,
+    activeNodesInfoFormat,
+    createNewNodesUniforms,
   );
 
-  const reorderBodiesPipelinePromise = td.computePipeline({
-    bindGroups: [reorderBodiesBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    shader: `
+  const reorderBodiesPipelinePromise = td.computePipelineBundled(
+    `
     if (id.x >= arrayLength(&body_node_assignments)) {
       return; 
     }
@@ -354,19 +332,17 @@ export async function createNBodyOctreeDefs<
 
     body_order_out[start + sub_offset] = body_idx;
     `,
-  });
-
-  const setupNextIterationBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    computeIndirectBufferFormat,
-    nextfreesFormat,
-    activeNodesInfoFormat,
+    [32, 1, 1],
+    bodyOrderInFormat,
+    bodyOrderOutFormat,
+    bodyNodeAssignmentsFormat,
+    bodyNodeChildSubOffsetsFormat,
+    octreeNodeFormat,
+    bodiesFormat,
   );
 
-  const setupNextIterationPipelinePromise = td.computePipeline({
-    bindGroups: [setupNextIterationBindGroupFormat] as const,
-    workgroupSize: [1, 1, 1],
-    shader: `
+  const setupNextIterationPipelinePromise = td.computePipelineBundled(
+    `
       let active_nodes_count = atomicLoad(&nextfrees.active_nodes_index);
       compute_indirect.workgroups = vec3u(
         active_nodes_count / 32 + 1u,
@@ -376,7 +352,11 @@ export async function createNBodyOctreeDefs<
       active_nodes_info.count = active_nodes_count;
       atomicStore(&nextfrees.active_nodes_index, 0u);
     `,
-  });
+    [1, 1, 1],
+    computeIndirectBufferFormat,
+    nextfreesFormat,
+    activeNodesInfoFormat,
+  );
 
   const prefixSumAggBodiesUniformFormat = td.uniformBufferComputeFormat(
     "params",
@@ -386,16 +366,8 @@ export async function createNBodyOctreeDefs<
     }),
   );
 
-  const prefixSumAggBodiesBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    prefixSumAggBodiesUniformFormat,
-    aggregatedBodiesFormat,
-  );
-
-  const prefixSumAggBodiesUpstrokePipelinePromise = td.computePipeline({
-    bindGroups: [prefixSumAggBodiesBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    shader: `
+  const prefixSumAggBodiesUpstrokePipelinePromise = td.computePipelineBundled(
+    `
       if (id.x >= params.count) {
         return; 
       }
@@ -413,7 +385,10 @@ export async function createNBodyOctreeDefs<
       agg_bodies[dst_idx].mass = m1 + m2;
       agg_bodies[dst_idx].center_of_mass = (cm1 * m1 + cm2 * m2) / (m1 + m2);
     `,
-  });
+    [32, 1, 1],
+    prefixSumAggBodiesUniformFormat,
+    aggregatedBodiesFormat,
+  );
 
   const setupPrefixSumBodiesDownstrokeUniformFormat =
     td.uniformBufferComputeFormat(
@@ -423,26 +398,19 @@ export async function createNBodyOctreeDefs<
       }),
     );
 
-  const setupPrefixSumBodiesDownstrokeBindGroupFormat =
-    await td.bindGroupFormat(
-      "bg",
+  const setupPrefixSumBodiesDownstrokePipelinePromise =
+    td.computePipelineBundled(
+      `
+    agg_bodies[params.end - 1].mass = 0;
+    agg_bodies[params.end - 1].center_of_mass = vec3f(0.0);
+    `,
+      [1, 1, 1],
       aggregatedBodiesFormat,
       setupPrefixSumBodiesDownstrokeUniformFormat,
     );
 
-  const setupPrefixSumBodiesDownstrokePipelinePromise = td.computePipeline({
-    bindGroups: [setupPrefixSumBodiesDownstrokeBindGroupFormat] as const,
-    workgroupSize: [1, 1, 1],
-    shader: `
-    agg_bodies[params.end - 1].mass = 0;
-    agg_bodies[params.end - 1].center_of_mass = vec3f(0.0);
-    `,
-  });
-
-  const prefixSumAggBodiesDownstrokePipelinePromise = td.computePipeline({
-    bindGroups: [prefixSumAggBodiesBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    shader: `
+  const prefixSumAggBodiesDownstrokePipelinePromise = td.computePipelineBundled(
+    `
     if (id.x >= params.count) {
       return; 
     }
@@ -461,19 +429,13 @@ export async function createNBodyOctreeDefs<
     agg_bodies[src_idx2].mass = m1 + m2;
     agg_bodies[src_idx2].center_of_mass = (cm1 * m1 + cm2 * m2) / (m1 + m2);
     `,
-  });
-
-  const initAggregatedBodiesBindGroupFormat = td.bindGroupFormat(
-    "bg",
+    [32, 1, 1],
+    prefixSumAggBodiesUniformFormat,
     aggregatedBodiesFormat,
-    bodiesFormat,
-    bodyOrderFormat,
   );
 
-  const initAggregatedBodiesPipelinePromise = td.computePipeline({
-    bindGroups: [initAggregatedBodiesBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    shader: `
+  const initAggregatedBodiesPipelinePromise = td.computePipelineBundled(
+    `
     if (id.x >= arrayLength(&agg_bodies)) {
       return; 
     }
@@ -489,20 +451,14 @@ export async function createNBodyOctreeDefs<
     }
 
     `,
-  });
-
-  const aggregateMassInOctreeBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    octreeNodeFormat,
-    octreeMetadataFormat,
+    [32, 1, 1],
     aggregatedBodiesFormat,
-    nextfreesNonatomicFormat,
+    bodiesFormat,
+    bodyOrderFormat,
   );
 
-  const aggregateMassInOctreePipelinePromise = td.computePipeline({
-    bindGroups: [aggregateMassInOctreeBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    shader: `
+  const aggregateMassInOctreePipelinePromise = td.computePipelineBundled(
+    `
     if (id.x >= nextfrees.node) {
       return; 
     }
@@ -522,21 +478,17 @@ export async function createNBodyOctreeDefs<
       (agg_bodies[end].center_of_mass * agg_bodies[end].mass
         - agg_bodies[start].mass * agg_bodies[start].center_of_mass) / mass;
     `,
-  });
-
-  const applyBarnesHutBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    bodiesFormat,
+    [32, 1, 1],
     octreeNodeFormat,
     octreeMetadataFormat,
-    barnesHutUniformsFormat,
-    ...params.extraPhysicsBuffers,
+    aggregatedBodiesFormat,
+    nextfreesNonatomicFormat,
   );
 
-  const applyBarnesHutPipelinePromise = td.computePipeline({
-    bindGroups: [applyBarnesHutBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    globals: `
+  const applyBarnesHutPipelinePromise = td.computePipelineBundled(
+    `
+/*globals
+
       struct StackFrame {
         node_idx: u32,
         next_child_idx: u32,
@@ -555,8 +507,9 @@ export async function createNBodyOctreeDefs<
       }
 
       const STACK_CAP = 20u;
-    `,
-    shader: `
+
+*/
+
       if (id.x >= arrayLength(&bodies)) {
         return; 
       }
@@ -620,18 +573,16 @@ export async function createNBodyOctreeDefs<
 
       apply_forces(id.x, total_impulse);
     `,
-  });
-
-  const reduceMinMaxBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    minMaxFormat,
-    minMaxUniformsFormat,
+    [32, 1, 1],
+    bodiesFormat,
+    octreeNodeFormat,
+    octreeMetadataFormat,
+    barnesHutUniformsFormat,
+    ...params.extraPhysicsBuffers,
   );
 
-  const reduceMinMaxPipelinePromise = td.computePipeline({
-    bindGroups: [reduceMinMaxBindGroupFormat],
-    workgroupSize: [32, 1, 1],
-    shader: `
+  const reduceMinMaxPipelinePromise = td.computePipelineBundled(
+    `
     if (id.x >= params.count) {
       return; 
     }
@@ -647,18 +598,13 @@ export async function createNBodyOctreeDefs<
     vecs[src_idx1].min = min(min1, min2);
     vecs[src_idx1].max = max(max1, max2);
     `,
-  });
-
-  const initMinMaxBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    bodiesFormat,
+    [32, 1, 1],
     minMaxFormat,
+    minMaxUniformsFormat,
   );
 
-  const initMinMaxPipelinePromise = td.computePipeline({
-    bindGroups: [initMinMaxBindGroupFormat],
-    workgroupSize: [32, 1, 1],
-    shader: `
+  const initMinMaxPipelinePromise = td.computePipelineBundled(
+    `
     if (id.x >= arrayLength(&vecs)) {
       return; 
     }
@@ -672,24 +618,13 @@ export async function createNBodyOctreeDefs<
       vecs[id.x].max = -vec3f(99999999999999999.0, 999999999999999999.0, 9999999999999999.0);
     }
     `,
-  });
-
-  const initRootNodeBindGroupFormat = td.bindGroupFormat(
-    "bg",
+    [32, 1, 1],
     bodiesFormat,
     minMaxFormat,
-    octreeNodeFormat,
-    octreeMetadataFormat,
-    octreeCountersNonatomicFormat,
-    nextfreesNonatomicFormat,
-    activeNodesInfoFormat,
-    activeNodesInFormat,
   );
 
-  const initRootNodePipelinePromise = td.computePipeline({
-    bindGroups: [initRootNodeBindGroupFormat],
-    workgroupSize: [1, 1, 1],
-    shader: `
+  const initRootNodePipelinePromise = td.computePipelineBundled(
+    `
     octree_nodes[0].data_start_idx = 0u;
     octree_nodes[0].data_end_idx = arrayLength(&bodies);
     octree_nodes[0].child_idx = 1u;
@@ -716,31 +651,27 @@ export async function createNBodyOctreeDefs<
     active_nodes_info.count = 1u;
     active_nodes_in[0] = 0u;
     `,
-  });
+    [1, 1, 1],
+    bodiesFormat,
+    minMaxFormat,
+    octreeNodeFormat,
+    octreeMetadataFormat,
+    octreeCountersNonatomicFormat,
+    nextfreesNonatomicFormat,
+    activeNodesInfoFormat,
+    activeNodesInFormat,
+  );
 
-  const initRootNodeBindGroup2Format = td.bindGroupFormat(
-    "bg",
+  const initRootNodePipeline2Promise = td.computePipelineBundled(
+    `
+    compute_indirect.workgroups = vec3u(1, 1, 1);
+    `,
+    [1, 1, 1],
     computeIndirectBufferFormat,
   );
 
-  const initRootNodePipeline2Promise = td.computePipeline({
-    bindGroups: [initRootNodeBindGroup2Format],
-    workgroupSize: [1, 1, 1],
-    shader: `
-    compute_indirect.workgroups = vec3u(1, 1, 1);
-    `,
-  });
-
-  const initPerBodyStateBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    bodyOrderFormat,
-    bodyNodeAssignmentsFormat,
-  );
-
-  const initPerBodyStatePipelinePromise = td.computePipeline({
-    bindGroups: [initPerBodyStateBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    shader: `
+  const initPerBodyStatePipelinePromise = td.computePipelineBundled(
+    `
     if (id.x >= arrayLength(&body_order)) {
       return;
     }
@@ -748,7 +679,10 @@ export async function createNBodyOctreeDefs<
     body_order[id.x] = id.x;
     body_node_assignments[id.x] = 0u;
     `,
-  });
+    [32, 1, 1],
+    bodyOrderFormat,
+    bodyNodeAssignmentsFormat,
+  );
 
   const {
     assignBodiesPipeline,
@@ -799,7 +733,7 @@ export async function createNBodyOctreeDefs<
       const count = nextPowerOfTwo / stride / 2;
       const workgroups = Math.ceil(count / 32);
       return {
-        bg: reduceMinMaxBindGroupFormat.new({
+        bg: reduceMinMaxPipeline.new({
           vecs: minmax,
           params: minMaxUniformsFormat.quickCreate({
             stride,
@@ -814,21 +748,18 @@ export async function createNBodyOctreeDefs<
 
     console.log(steps);
 
-    const initMinMaxBindGroup = initMinMaxBindGroupFormat.new({
+    const initMinMax = initMinMaxPipeline.new({
       bodies: params.bodies,
       vecs: minmax,
     });
 
     return {
       run: (pass: GPUComputePassEncoder) => {
-        pass.setPipeline(initMinMaxPipeline);
-        pass.setBindGroup(0, initMinMaxBindGroup);
-        pass.dispatchWorkgroups(Math.ceil(nextPowerOfTwo / 32));
+        initMinMax.run(pass, Math.ceil(nextPowerOfTwo / 32));
 
-        pass.setPipeline(reduceMinMaxPipeline);
+        pass.setPipeline(reduceMinMaxPipeline.pl);
         for (const { workgroups, bg } of steps) {
-          pass.setBindGroup(0, bg);
-          pass.dispatchWorkgroups(workgroups);
+          bg.bindAndDispatch(pass, workgroups);
         }
       },
       minmax,
@@ -853,11 +784,10 @@ export async function createNBodyOctreeDefs<
         end: nextPowerOfTwo,
       });
 
-    const setupDownstrokeBindGroup =
-      setupPrefixSumBodiesDownstrokeBindGroupFormat.new({
-        agg_bodies: aggBodies,
-        params: setupDownstrokeUniforms,
-      });
+    const setupDownstroke = setupPrefixSumBodiesDownstrokePipeline.new({
+      agg_bodies: aggBodies,
+      params: setupDownstrokeUniforms,
+    });
 
     const uniformBufs = range(iterSteps).map((i) =>
       prefixSumAggBodiesUniformFormat.quickCreate({
@@ -866,21 +796,21 @@ export async function createNBodyOctreeDefs<
       }),
     );
 
-    const upstrokeBindGroups = range(iterSteps).map((i) =>
-      prefixSumAggBodiesBindGroupFormat.new({
+    const upstroke = range(iterSteps).map((i) =>
+      prefixSumAggBodiesUpstrokePipeline.new({
         agg_bodies: aggBodies,
         params: uniformBufs[i],
       }),
     );
 
-    const downstrokeBindGroups = range(iterSteps).map((i) =>
-      prefixSumAggBodiesBindGroupFormat.new({
+    const downstroke = range(iterSteps).map((i) =>
+      prefixSumAggBodiesDownstrokePipeline.new({
         agg_bodies: aggBodies,
         params: uniformBufs[iterSteps - i - 1],
       }),
     );
 
-    const initBg = initAggregatedBodiesBindGroupFormat.new({
+    const initBg = initAggregatedBodiesPipeline.new({
       agg_bodies: aggBodies,
       bodies: params.bodies,
       body_order: params.bodyOrder,
@@ -890,28 +820,22 @@ export async function createNBodyOctreeDefs<
 
     return {
       run: (pass: GPUComputePassEncoder) => {
-        pass.setPipeline(initAggregatedBodiesPipeline);
-        pass.setBindGroup(0, initBg);
-        pass.dispatchWorkgroups(dispatchCount);
+        initBg.run(pass, dispatchCount);
 
-        pass.setPipeline(prefixSumAggBodiesUpstrokePipeline);
+        pass.setPipeline(prefixSumAggBodiesUpstrokePipeline.pl);
         for (let i = 0; i < iterSteps; i++) {
           const dispatchCount = Math.ceil(nextPowerOfTwo / 2 ** i / 32);
-          pass.setBindGroup(0, upstrokeBindGroups[i]);
-          pass.dispatchWorkgroups(dispatchCount);
+          upstroke[i].run(pass, dispatchCount);
         }
 
-        pass.setPipeline(setupPrefixSumBodiesDownstrokePipeline);
-        pass.setBindGroup(0, setupDownstrokeBindGroup);
-        pass.dispatchWorkgroups(1);
+        setupDownstroke.run(pass, 1);
 
-        pass.setPipeline(prefixSumAggBodiesDownstrokePipeline);
+        pass.setPipeline(prefixSumAggBodiesDownstrokePipeline.pl);
         for (let i = 0; i < iterSteps; i++) {
           const dispatchCount = Math.ceil(
             nextPowerOfTwo / 2 ** (iterSteps - i - 1) / 32,
           );
-          pass.setBindGroup(0, downstrokeBindGroups[i]);
-          pass.dispatchWorkgroups(dispatchCount);
+          downstroke[i].run(pass, dispatchCount);
         }
       },
       aggBodies,
@@ -920,9 +844,6 @@ export async function createNBodyOctreeDefs<
 
   function setupOctree(params: {
     bodies: ReturnType<typeof bodiesFormat.new>;
-    // extraPhysicsBuffers: BindGroupEntriesToBindGroups<
-    //   FromEntries<ToKvPairs<ExtraPhysicsBuffers, "name">>
-    // >;
     bodyCount: number;
     octreeCapacity: number;
     octreeDepth: number;
@@ -958,8 +879,8 @@ export async function createNBodyOctreeDefs<
       is_final_iter: 1,
     });
 
-    const assignBodiesBindGroups = range(2).map((i) =>
-      assignBodiesBindGroupFormat.new({
+    const assignBodies = range(2).map((i) =>
+      assignBodiesPipeline.new({
         body_node_assignments: nodeBodyAssignmentsBuffer,
         body_node_child_sub_offsets: bodyNodeChildSubOffsetsBuffer,
         octree_counters: octreeCountersBuffer,
@@ -970,24 +891,35 @@ export async function createNBodyOctreeDefs<
       }),
     );
 
-    const createNewNodesBindGroup = range(2).map((j) =>
-      range(2).map((i) =>
-        createNewNodesBindGroupFormat.new({
-          active_nodes_in: [activeNodesBuffer1, activeNodesBuffer2][i],
-          active_nodes_out: [activeNodesBuffer2, activeNodesBuffer1][i],
-          active_nodes_info: activeNodesInfoBuffer,
-          nextfrees: nextfreesBuffer,
-          octree_nodes: octreeNodeBuffer,
-          octree_metadata: octreeMetadataBuffer,
-          octree_counters:
-            octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer),
-          params: [nonfinalIterBuffer, finalIterBuffer][j],
-        }),
-      ),
-    );
+    const commonCreateNewNodesArgs = {
+      active_nodes_info: activeNodesInfoBuffer,
+      nextfrees: nextfreesBuffer,
+      octree_nodes: octreeNodeBuffer,
+      octree_metadata: octreeMetadataBuffer,
+      octree_counters:
+        octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer),
+    };
 
-    const reorderBodiesBindGroups = range(2).map((i) =>
-      reorderBodiesBindGroupFormat.new({
+    const createNewNodes = range(2).map((i) => {
+      const flipFlopArgs = {
+        ...commonCreateNewNodesArgs,
+        active_nodes_in: [activeNodesBuffer1, activeNodesBuffer2][i],
+        active_nodes_out: [activeNodesBuffer2, activeNodesBuffer1][i],
+      };
+      return {
+        final: createNewNodesPipeline.new({
+          ...flipFlopArgs,
+          params: finalIterBuffer,
+        }),
+        nonfinal: createNewNodesPipeline.new({
+          ...flipFlopArgs,
+          params: nonfinalIterBuffer,
+        }),
+      };
+    });
+
+    const reorderBodies = range(2).map((i) =>
+      reorderBodiesPipeline.new({
         body_order_in: [bodiesOrderBuffer1, bodiesOrderBuffer2][i],
         body_order_out: [bodiesOrderBuffer2, bodiesOrderBuffer1][i],
         body_node_assignments: nodeBodyAssignmentsBuffer,
@@ -997,7 +929,7 @@ export async function createNBodyOctreeDefs<
       }),
     );
 
-    const setupNextIterationBindGroup = setupNextIterationBindGroupFormat.new({
+    const setupNextIteration = setupNextIterationPipeline.new({
       compute_indirect: computeIndirectBuffer,
       nextfrees: nextfreesBuffer,
       active_nodes_info: activeNodesInfoBuffer,
@@ -1014,7 +946,7 @@ export async function createNBodyOctreeDefs<
       count: params.bodyCount,
     });
 
-    const initRootNodeBindGroup = initRootNodeBindGroupFormat.new({
+    const initRootNode = initRootNodePipeline.new({
       bodies: params.bodies,
       octree_metadata: octreeMetadataBuffer,
       octree_nodes: octreeNodeBuffer,
@@ -1025,22 +957,21 @@ export async function createNBodyOctreeDefs<
       active_nodes_info: activeNodesInfoBuffer,
       active_nodes_in: activeNodesBuffer1,
     });
-    const initRootNodeBindGroup2 = initRootNodeBindGroup2Format.new({
+    const initRootNode2 = initRootNodePipeline2.new({
       compute_indirect: computeIndirectBuffer,
     });
 
-    const initPerBodyStateBindGroup = initPerBodyStateBindGroupFormat.new({
+    const initPerBodyState = initPerBodyStatePipeline.new({
       body_order: bodiesOrderBuffer1,
       body_node_assignments: nodeBodyAssignmentsBuffer,
     });
 
-    const aggregateMassInOctreeBindGroup =
-      aggregateMassInOctreeBindGroupFormat.new({
-        octree_metadata: octreeMetadataBuffer,
-        octree_nodes: octreeNodeBuffer,
-        agg_bodies: aggPrefixSum.aggBodies,
-        nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
-      });
+    const aggregateMassInOctree = aggregateMassInOctreePipeline.new({
+      octree_metadata: octreeMetadataBuffer,
+      octree_nodes: octreeNodeBuffer,
+      agg_bodies: aggPrefixSum.aggBodies,
+      nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
+    });
 
     const perBodyWorkgroupCount = Math.ceil(params.bodyCount / 32);
 
@@ -1072,46 +1003,36 @@ export async function createNBodyOctreeDefs<
       run: (pass: GPUComputePassEncoder) => {
         minMaxReduce.run(pass);
 
-        pass.setPipeline(initRootNodePipeline);
-        pass.setBindGroup(0, initRootNodeBindGroup);
-        pass.dispatchWorkgroups(1, 1, 1);
-
-        pass.setPipeline(initRootNodePipeline2);
-        pass.setBindGroup(0, initRootNodeBindGroup2);
-        pass.dispatchWorkgroups(1, 1, 1);
-
-        pass.setPipeline(initPerBodyStatePipeline);
-        pass.setBindGroup(0, initPerBodyStateBindGroup);
-        pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+        initRootNode.run(pass, 1);
+        initRootNode2.run(pass, 1);
+        initPerBodyState.run(pass, perBodyWorkgroupCount);
 
         for (let i = 0; i < params.octreeDepth; i++) {
-          pass.setPipeline(assignBodiesPipeline);
-          pass.setBindGroup(0, assignBodiesBindGroups[i % 2]);
-          pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+          const isFinalIter = i === params.octreeDepth - 1;
+          assignBodies[i % 2].run(pass, perBodyWorkgroupCount, 1, 1);
 
-          pass.setPipeline(createNewNodesPipeline);
-          pass.setBindGroup(
-            0,
-            createNewNodesBindGroup[i === params.octreeDepth - 1 ? 1 : 0][
-              i % 2
-            ],
-          );
-          pass.dispatchWorkgroupsIndirect(computeIndirectBuffer, 0);
+          const createNewNodesRunners = createNewNodes[i % 2];
 
-          pass.setPipeline(reorderBodiesPipeline);
-          pass.setBindGroup(0, reorderBodiesBindGroups[i % 2]);
-          pass.dispatchWorkgroups(perBodyWorkgroupCount, 1, 1);
+          if (isFinalIter) {
+            createNewNodesRunners.final.runIndirect(
+              pass,
+              computeIndirectBuffer,
+              0,
+            );
+          } else {
+            createNewNodesRunners.nonfinal.runIndirect(
+              pass,
+              computeIndirectBuffer,
+              0,
+            );
+          }
 
-          pass.setPipeline(setupNextIterationPipeline);
-          pass.setBindGroup(0, setupNextIterationBindGroup);
-          pass.dispatchWorkgroups(1, 1, 1);
+          reorderBodies[i % 2].run(pass, perBodyWorkgroupCount);
+          setupNextIteration.run(pass, 1);
         }
 
         aggPrefixSum.run(pass);
-
-        pass.setPipeline(aggregateMassInOctreePipeline);
-        pass.setBindGroup(0, aggregateMassInOctreeBindGroup);
-        pass.dispatchWorkgroups(params.octreeCapacity / 32, 1, 1);
+        aggregateMassInOctree.run(pass, params.octreeCapacity / 32);
       },
     };
   }
@@ -1140,47 +1061,19 @@ export async function createNBodyOctreeDefs<
     prefixSumAggBodiesUniformFormat,
     setupPrefixSumBodiesDownstrokeUniformFormat,
 
-    assignBodiesBindGroupFormat,
     assignBodiesPipeline,
-
-    createNewNodesBindGroupFormat,
     createNewNodesPipeline,
-
-    reorderBodiesBindGroupFormat,
     reorderBodiesPipeline,
-
-    setupNextIterationBindGroupFormat,
     setupNextIterationPipeline,
-
-    prefixSumAggBodiesBindGroupFormat,
     prefixSumAggBodiesUpstrokePipeline,
     prefixSumAggBodiesDownstrokePipeline,
-
-    setupPrefixSumBodiesDownstrokeBindGroupFormat,
     setupPrefixSumBodiesDownstrokePipeline,
-
-    initAggregatedBodiesBindGroupFormat,
     initAggregatedBodiesPipeline,
-
-    aggregateMassInOctreeBindGroupFormat,
-    aggregateMassInOctreePipeline,
-
-    applyBarnesHutBindGroupFormat,
     applyBarnesHutPipeline,
-
-    reduceMinMaxBindGroupFormat,
     reduceMinMaxPipeline,
-
-    initMinMaxBindGroupFormat,
     initMinMaxPipeline,
-
-    initRootNodeBindGroupFormat,
     initRootNodePipeline,
-
-    initRootNodeBindGroup2Format,
     initRootNodePipeline2,
-
-    initPerBodyStateBindGroupFormat,
     initPerBodyStatePipeline,
 
     setupAggregatedBodyPrefixSum,

@@ -723,6 +723,61 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
         ),
       });
     },
+
+    async computePipelineBundled<Entries extends TypedBindGroupEntry[]>(
+      shader: string,
+      workgroupSize: Vec3,
+      ...bindGroupEntries: Entries
+    ) {
+      const bgf = dev.bindGroupFormat("bg", ...bindGroupEntries);
+
+      const pl = await dev.computePipeline({
+        bindGroups: [bgf] as const,
+        shader,
+        workgroupSize,
+        globals:
+          shader.match(/\/\*globals[\s\S]+\*\//g)?.[0]?.slice(9, -2) ??
+          undefined,
+      });
+
+      return {
+        pl,
+        bgf,
+        new(params: InstantiateBindGroupEntries<Entries>) {
+          return {
+            bg: bgf.new(params),
+            bindAndDispatch(
+              pass: GPUComputePassEncoder,
+              x: number,
+              y?: number,
+              z?: number,
+            ) {
+              pass.setBindGroup(0, this.bg);
+              pass.dispatchWorkgroups(x, y, z);
+            },
+            run(
+              pass: GPUComputePassEncoder,
+              x: number,
+              y?: number,
+              z?: number,
+            ) {
+              pass.setPipeline(pl);
+              pass.setBindGroup(0, this.bg);
+              pass.dispatchWorkgroups(x, y, z);
+            },
+            runIndirect(
+              pass: GPUComputePassEncoder,
+              indirect: GPUBuffer,
+              offset?: number,
+            ) {
+              pass.setPipeline(pl);
+              pass.setBindGroup(0, this.bg);
+              pass.dispatchWorkgroupsIndirect(indirect, offset ?? 0);
+            },
+          };
+        },
+      };
+    },
   };
 
   return dev;

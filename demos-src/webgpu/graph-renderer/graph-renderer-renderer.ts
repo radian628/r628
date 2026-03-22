@@ -948,15 +948,14 @@ user-select: none;
 
       const physicsUniforms = physicsUniformsFormat.new(1);
 
-      const applyBarnesHutBindGroup =
-        nBodySim.applyBarnesHutBindGroupFormat.new({
-          bodies: bodies,
-          octree_metadata: octree.octreeMetadataBuffer,
-          octree_nodes: octree.octreeNodeBuffer,
-          params: barnesHutUniforms,
-          accels: accelsFinal,
-          physics_params: physicsUniforms,
-        });
+      const applyBarnesHut = nBodySim.applyBarnesHutPipeline.new({
+        bodies: bodies,
+        octree_metadata: octree.octreeMetadataBuffer,
+        octree_nodes: octree.octreeNodeBuffer,
+        params: barnesHutUniforms,
+        accels: accelsFinal,
+        physics_params: physicsUniforms,
+      });
 
       const transferBodyInfoToPointsBindGroup =
         transferBodyInfoToPointsBindGroupFormat.new({
@@ -1061,9 +1060,7 @@ user-select: none;
 
         octree.run(pass);
 
-        pass.setPipeline(nBodySim.applyBarnesHutPipeline);
-        pass.setBindGroup(0, applyBarnesHutBindGroup);
-        pass.dispatchWorkgroups(perBodyWorkgroups, 1, 1);
+        applyBarnesHut.run(pass, perBodyWorkgroups);
 
         updateGeometry(pass);
 

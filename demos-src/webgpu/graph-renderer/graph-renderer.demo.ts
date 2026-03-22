@@ -69,7 +69,7 @@ document.head.innerHTML += `<meta name="viewport"
   document.body.appendChild(ui.dom);
 
   async function loop(t: number) {
-    if (document.hasFocus()) {
+    if (document.hasFocus() && document.visibilityState === "visible") {
       loadingMsg.style.display = "none";
 
       let dt = (t - lastT) / 1000;
