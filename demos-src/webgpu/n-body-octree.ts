@@ -9,6 +9,10 @@ import {
 import { TypedBindGroupEntry } from "../../src/webgpu/easygpu/bind-group";
 import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
 import { namedPromiseAll } from "../../src/unpromise";
+import {
+  createPrefixSumFormat,
+  createReductionFormat,
+} from "../../src/webgpu/pipelines/reduce";
 
 export async function createNBodyOctreeDefs<
   ExtraBodyFields extends Record<
@@ -83,16 +87,6 @@ export async function createNBodyOctreeDefs<
     ),
   );
 
-  const aggregatedBodiesFormat = td.storageBufferFormat(
-    "agg_bodies",
-    runtimeArray(
-      struct("AggBody", {
-        center_of_mass: "vec3f",
-        mass: "f32",
-      }),
-    ),
-  );
-
   const createNewNodesUniforms = td.uniformBufferComputeFormat(
     "params",
     struct("Params", {
@@ -163,15 +157,10 @@ export async function createNBodyOctreeDefs<
     }),
   );
 
-  const minMaxFormat = td.storageBufferFormat(
-    "vecs",
-    runtimeArray(
-      struct("MinMax", {
-        min: "vec3f",
-        max: "vec3f",
-      }),
-    ),
-  );
+  const minMaxStruct = struct("MinMax", {
+    min: "vec3f",
+    max: "vec3f",
+  });
 
   const minMaxUniformsFormat = td.uniformBufferComputeFormat(
     "params",
@@ -358,81 +347,18 @@ export async function createNBodyOctreeDefs<
     activeNodesInfoFormat,
   );
 
-  const prefixSumAggBodiesUniformFormat = td.uniformBufferComputeFormat(
-    "params",
-    struct("Params", {
-      stride: "u32",
-      count: "u32",
+  const aggBodiesPrefixSumPromise = createPrefixSumFormat({
+    device,
+    type: struct("AggBody", {
+      center_of_mass: "vec3f",
+      mass: "f32",
     }),
-  );
-
-  const prefixSumAggBodiesUpstrokePipelinePromise = td.computePipelineBundled(
-    `
-      if (id.x >= params.count) {
-        return; 
-      }
-
-      let src_idx1 = id.x * params.stride * 2u + params.stride - 1u;
-      let src_idx2 = src_idx1 + params.stride;
-      let dst_idx = src_idx2;
-      
-      let m1 = agg_bodies[src_idx1].mass;
-      let m2 = agg_bodies[src_idx2].mass;
-
-      let cm1 = agg_bodies[src_idx1].center_of_mass;
-      let cm2 = agg_bodies[src_idx2].center_of_mass;
-
-      agg_bodies[dst_idx].mass = m1 + m2;
-      agg_bodies[dst_idx].center_of_mass = (cm1 * m1 + cm2 * m2) / (m1 + m2);
-    `,
-    [32, 1, 1],
-    prefixSumAggBodiesUniformFormat,
-    aggregatedBodiesFormat,
-  );
-
-  const setupPrefixSumBodiesDownstrokeUniformFormat =
-    td.uniformBufferComputeFormat(
-      "params",
-      struct("Params", {
-        end: "u32",
-      }),
-    );
-
-  const setupPrefixSumBodiesDownstrokePipelinePromise =
-    td.computePipelineBundled(
-      `
-    agg_bodies[params.end - 1].mass = 0;
-    agg_bodies[params.end - 1].center_of_mass = vec3f(0.0);
-    `,
-      [1, 1, 1],
-      aggregatedBodiesFormat,
-      setupPrefixSumBodiesDownstrokeUniformFormat,
-    );
-
-  const prefixSumAggBodiesDownstrokePipelinePromise = td.computePipelineBundled(
-    `
-    if (id.x >= params.count) {
-      return; 
-    }
-
-    let src_idx1 = id.x * params.stride * 2u + params.stride - 1u;
-    let src_idx2 = src_idx1 + params.stride; 
-
-    let m1 = agg_bodies[src_idx1].mass;
-    let m2 = agg_bodies[src_idx2].mass;
-
-    let cm1 = agg_bodies[src_idx1].center_of_mass;
-    let cm2 = agg_bodies[src_idx2].center_of_mass;
-
-    agg_bodies[src_idx1].mass = agg_bodies[src_idx2].mass;
-    agg_bodies[src_idx1].center_of_mass = agg_bodies[src_idx2].center_of_mass;
-    agg_bodies[src_idx2].mass = m1 + m2;
-    agg_bodies[src_idx2].center_of_mass = (cm1 * m1 + cm2 * m2) / (m1 + m2);
-    `,
-    [32, 1, 1],
-    prefixSumAggBodiesUniformFormat,
-    aggregatedBodiesFormat,
-  );
+    reduce: `return AggBody(
+      (a.center_of_mass * a.mass + b.center_of_mass * b.mass) / (a.mass + b.mass),
+      a.mass + b.mass
+    );`,
+    zero: `return AggBody(vec3f(0.0, 0.0, 0.0), 0.0);`,
+  });
 
   const initAggregatedBodiesPipelinePromise = td.computePipelineBundled(
     `
@@ -452,7 +378,7 @@ export async function createNBodyOctreeDefs<
 
     `,
     [32, 1, 1],
-    aggregatedBodiesFormat,
+    (await aggBodiesPrefixSumPromise).prefixSumArrayFormat.name("agg_bodies"),
     bodiesFormat,
     bodyOrderFormat,
   );
@@ -481,7 +407,7 @@ export async function createNBodyOctreeDefs<
     [32, 1, 1],
     octreeNodeFormat,
     octreeMetadataFormat,
-    aggregatedBodiesFormat,
+    (await aggBodiesPrefixSumPromise).prefixSumArrayFormat.name("agg_bodies"),
     nextfreesNonatomicFormat,
   );
 
@@ -581,27 +507,13 @@ export async function createNBodyOctreeDefs<
     ...params.extraPhysicsBuffers,
   );
 
-  const reduceMinMaxPipelinePromise = td.computePipelineBundled(
-    `
-    if (id.x >= params.count) {
-      return; 
-    }
-
-    let src_idx1 = id.x * params.stride * 2u;
-    let src_idx2 = src_idx1 + params.stride; 
-
-    let min1 = vecs[src_idx1].min;
-    let min2 = vecs[src_idx2].min;
-    let max1 = vecs[src_idx1].max;
-    let max2 = vecs[src_idx2].max;
-
-    vecs[src_idx1].min = min(min1, min2);
-    vecs[src_idx1].max = max(max1, max2);
+  const reduceMinMaxPromise = createReductionFormat({
+    device: td.device,
+    type: minMaxStruct,
+    reduce: `
+      return MinMax(min(a.min, b.min), max(a.max, b.max)); 
     `,
-    [32, 1, 1],
-    minMaxFormat,
-    minMaxUniformsFormat,
-  );
+  });
 
   const initMinMaxPipelinePromise = td.computePipelineBundled(
     `
@@ -620,7 +532,7 @@ export async function createNBodyOctreeDefs<
     `,
     [32, 1, 1],
     bodiesFormat,
-    minMaxFormat,
+    (await reduceMinMaxPromise).reductionArrayFormat,
   );
 
   const initRootNodePipelinePromise = td.computePipelineBundled(
@@ -653,13 +565,13 @@ export async function createNBodyOctreeDefs<
     `,
     [1, 1, 1],
     bodiesFormat,
-    minMaxFormat,
     octreeNodeFormat,
     octreeMetadataFormat,
     octreeCountersNonatomicFormat,
     nextfreesNonatomicFormat,
     activeNodesInfoFormat,
     activeNodesInFormat,
+    (await reduceMinMaxPromise).reductionArrayFormat,
   );
 
   const initRootNodePipeline2Promise = td.computePipelineBundled(
@@ -688,34 +600,30 @@ export async function createNBodyOctreeDefs<
     assignBodiesPipeline,
     createNewNodesPipeline,
     reorderBodiesPipeline,
-    prefixSumAggBodiesUpstrokePipeline,
-    setupPrefixSumBodiesDownstrokePipeline,
     initAggregatedBodiesPipeline,
     initMinMaxPipeline,
     initRootNodePipeline,
-    reduceMinMaxPipeline,
+    reduceMinMax,
     applyBarnesHutPipeline,
     initPerBodyStatePipeline,
     aggregateMassInOctreePipeline,
     initRootNodePipeline2,
-    prefixSumAggBodiesDownstrokePipeline,
     setupNextIterationPipeline,
+    aggBodiesPrefixSum,
   } = await namedPromiseAll({
     assignBodiesPipelinePromise,
     createNewNodesPipelinePromise,
     reorderBodiesPipelinePromise,
-    prefixSumAggBodiesUpstrokePipelinePromise,
-    setupPrefixSumBodiesDownstrokePipelinePromise,
     initAggregatedBodiesPipelinePromise,
     initMinMaxPipelinePromise,
     initRootNodePipelinePromise,
-    reduceMinMaxPipelinePromise,
+    reduceMinMaxPromise,
     applyBarnesHutPipelinePromise,
     initPerBodyStatePipelinePromise,
     aggregateMassInOctreePipelinePromise,
     initRootNodePipeline2Promise,
-    prefixSumAggBodiesDownstrokePipelinePromise,
     setupNextIterationPipelinePromise,
+    aggBodiesPrefixSumPromise,
   });
 
   function setupMinMaxReduction(params: {
@@ -726,39 +634,17 @@ export async function createNBodyOctreeDefs<
     const nextPowerOfTwo = 2 ** countExponent;
     const iterSteps = countExponent;
 
-    const minmax = minMaxFormat.new(nextPowerOfTwo);
-
-    const steps = range(iterSteps).map((i) => {
-      const stride = 2 ** i;
-      const count = nextPowerOfTwo / stride / 2;
-      const workgroups = Math.ceil(count / 32);
-      return {
-        bg: reduceMinMaxPipeline.new({
-          vecs: minmax,
-          params: minMaxUniformsFormat.quickCreate({
-            stride,
-            count,
-          }),
-        }),
-        stride,
-        count,
-        workgroups,
-      };
-    });
+    const minmax = reduceMinMax.new(nextPowerOfTwo);
 
     const initMinMax = initMinMaxPipeline.new({
       bodies: params.bodies,
-      vecs: minmax,
+      vecs: minmax.reductionArray,
     });
 
     return {
       run: (pass: GPUComputePassEncoder) => {
         initMinMax.run(pass, Math.ceil(nextPowerOfTwo / 32));
-
-        pass.setPipeline(reduceMinMaxPipeline.pl);
-        for (const { workgroups, bg } of steps) {
-          bg.bindAndDispatch(pass, workgroups);
-        }
+        minmax.run(pass);
       },
       minmax,
     };
@@ -769,72 +655,20 @@ export async function createNBodyOctreeDefs<
     bodyOrder: ReturnType<typeof bodyOrderFormat.new>;
     count: number;
   }) {
-    const countWithExtra = params.count + 1;
-    const countExponent = Math.ceil(Math.log2(countWithExtra));
-    const nextPowerOfTwo = 2 ** countExponent;
-
-    const iterSteps = countExponent;
-
-    const aggBodies = aggregatedBodiesFormat.new(nextPowerOfTwo);
-
-    const setupDownstrokeUniforms =
-      setupPrefixSumBodiesDownstrokeUniformFormat.quickCreate({
-        end: nextPowerOfTwo,
-      });
-
-    const setupDownstroke = setupPrefixSumBodiesDownstrokePipeline.new({
-      agg_bodies: aggBodies,
-      params: setupDownstrokeUniforms,
-    });
-
-    const uniformBufs = range(iterSteps).map((i) =>
-      prefixSumAggBodiesUniformFormat.quickCreate({
-        count: nextPowerOfTwo / 2 ** i,
-        stride: 2 ** i,
-      }),
-    );
-
-    const upstroke = range(iterSteps).map((i) =>
-      prefixSumAggBodiesUpstrokePipeline.new({
-        agg_bodies: aggBodies,
-        params: uniformBufs[i],
-      }),
-    );
-
-    const downstroke = range(iterSteps).map((i) =>
-      prefixSumAggBodiesDownstrokePipeline.new({
-        agg_bodies: aggBodies,
-        params: uniformBufs[iterSteps - i - 1],
-      }),
-    );
+    const aggBodies = aggBodiesPrefixSum.new(params.count);
 
     const initBg = initAggregatedBodiesPipeline.new({
-      agg_bodies: aggBodies,
+      agg_bodies: aggBodies.prefixSumArray,
       bodies: params.bodies,
       body_order: params.bodyOrder,
     });
 
-    const dispatchCount = Math.ceil(nextPowerOfTwo / 32);
+    const dispatchCount = Math.ceil(aggBodies.nextPowerOfTwo / 32);
 
     return {
       run: (pass: GPUComputePassEncoder) => {
         initBg.run(pass, dispatchCount);
-
-        pass.setPipeline(prefixSumAggBodiesUpstrokePipeline.pl);
-        for (let i = 0; i < iterSteps; i++) {
-          const dispatchCount = Math.ceil(nextPowerOfTwo / 2 ** i / 32);
-          upstroke[i].run(pass, dispatchCount);
-        }
-
-        setupDownstroke.run(pass, 1);
-
-        pass.setPipeline(prefixSumAggBodiesDownstrokePipeline.pl);
-        for (let i = 0; i < iterSteps; i++) {
-          const dispatchCount = Math.ceil(
-            nextPowerOfTwo / 2 ** (iterSteps - i - 1) / 32,
-          );
-          downstroke[i].run(pass, dispatchCount);
-        }
+        aggBodies.run(pass);
       },
       aggBodies,
     };
@@ -949,11 +783,11 @@ export async function createNBodyOctreeDefs<
       octree_metadata: octreeMetadataBuffer,
       octree_nodes: octreeNodeBuffer,
       nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
-      vecs: minMaxReduce.minmax,
       octree_counters:
         octreeCountersNonatomicFormat.reinterpret(octreeCountersBuffer),
       active_nodes_info: activeNodesInfoBuffer,
       active_nodes_in: activeNodesBuffer1,
+      vecs: minMaxReduce.minmax.reductionArray,
     });
     const initRootNode2 = initRootNodePipeline2.new({
       compute_indirect: computeIndirectBuffer,
@@ -967,7 +801,7 @@ export async function createNBodyOctreeDefs<
     const aggregateMassInOctree = aggregateMassInOctreePipeline.new({
       octree_metadata: octreeMetadataBuffer,
       octree_nodes: octreeNodeBuffer,
-      agg_bodies: aggPrefixSum.aggBodies,
+      agg_bodies: aggPrefixSum.aggBodies.prefixSumArray,
       nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
     });
 
@@ -1041,7 +875,6 @@ export async function createNBodyOctreeDefs<
     octreeCountersFormat,
     octreeCountersNonatomicFormat,
     bodiesFormat,
-    aggregatedBodiesFormat,
     nextfreesFormat,
     nextfreesNonatomicFormat,
     bodyNodeAssignmentsFormat,
@@ -1054,26 +887,21 @@ export async function createNBodyOctreeDefs<
     activeNodesOutFormat,
     computeIndirectBufferFormat,
     barnesHutUniformsFormat,
-    minMaxFormat,
     minMaxUniformsFormat,
-    prefixSumAggBodiesUniformFormat,
-    setupPrefixSumBodiesDownstrokeUniformFormat,
 
     assignBodiesPipeline,
     createNewNodesPipeline,
     reorderBodiesPipeline,
     setupNextIterationPipeline,
-    prefixSumAggBodiesUpstrokePipeline,
-    prefixSumAggBodiesDownstrokePipeline,
-    setupPrefixSumBodiesDownstrokePipeline,
     initAggregatedBodiesPipeline,
     applyBarnesHutPipeline,
-    reduceMinMaxPipeline,
     initMinMaxPipeline,
     initRootNodePipeline,
     initRootNodePipeline2,
     initPerBodyStatePipeline,
 
+    reduceMinMax,
+    aggBodiesPrefixSum,
     setupAggregatedBodyPrefixSum,
     setupMinMaxReduction,
     setupOctree,
