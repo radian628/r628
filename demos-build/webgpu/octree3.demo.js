@@ -27900,6 +27900,15 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     return { keysDown };
   }
 
+  // src/unpromise.ts
+  async function namedPromiseAll(promises) {
+    return Object.fromEntries(
+      await Promise.all(
+        Object.entries(promises).map(async ([k, v]) => [k.slice(0, -7), await v])
+      )
+    );
+  }
+
   // demos-src/webgpu/n-body-octree.ts
   async function createNBodyOctreeDefs(device, params) {
     const td = typeDevice(device);
@@ -28047,7 +28056,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       bodiesFormat,
       octreeMetadataFormat
     );
-    const assignBodiesPipeline = await td.computePipeline({
+    const assignBodiesPipelinePromise = td.computePipeline({
       bindGroups: [assignBodiesBindGroupFormat],
       workgroupSize: [32, 1, 1],
       shader: `
@@ -28096,7 +28105,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       activeNodesInfoFormat,
       createNewNodesUniforms
     );
-    const createNewNodesPipeline = await td.computePipeline({
+    const createNewNodesPipelinePromise = td.computePipeline({
       bindGroups: [createNewNodesBindGroupFormat],
       workgroupSize: [32, 1, 1],
       shader: `
@@ -28187,7 +28196,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       octreeNodeFormat,
       bodiesFormat
     );
-    const reorderBodiesPipeline = await td.computePipeline({
+    const reorderBodiesPipelinePromise = td.computePipeline({
       bindGroups: [reorderBodiesBindGroupFormat],
       workgroupSize: [32, 1, 1],
       shader: `
@@ -28212,7 +28221,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       nextfreesFormat,
       activeNodesInfoFormat
     );
-    const setupNextIterationPipeline = await td.computePipeline({
+    const setupNextIterationPipelinePromise = td.computePipeline({
       bindGroups: [setupNextIterationBindGroupFormat],
       workgroupSize: [1, 1, 1],
       shader: `
@@ -28238,7 +28247,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       prefixSumAggBodiesUniformFormat,
       aggregatedBodiesFormat
     );
-    const prefixSumAggBodiesUpstrokePipeline = await td.computePipeline({
+    const prefixSumAggBodiesUpstrokePipelinePromise = td.computePipeline({
       bindGroups: [prefixSumAggBodiesBindGroupFormat],
       workgroupSize: [32, 1, 1],
       shader: `
@@ -28271,7 +28280,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       aggregatedBodiesFormat,
       setupPrefixSumBodiesDownstrokeUniformFormat
     );
-    const setupPrefixSumBodiesDownstrokePipeline = await td.computePipeline({
+    const setupPrefixSumBodiesDownstrokePipelinePromise = td.computePipeline({
       bindGroups: [setupPrefixSumBodiesDownstrokeBindGroupFormat],
       workgroupSize: [1, 1, 1],
       shader: `
@@ -28279,7 +28288,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     agg_bodies[params.end - 1].center_of_mass = vec3f(0.0);
     `
     });
-    const prefixSumAggBodiesDownstrokePipeline = await td.computePipeline({
+    const prefixSumAggBodiesDownstrokePipelinePromise = td.computePipeline({
       bindGroups: [prefixSumAggBodiesBindGroupFormat],
       workgroupSize: [32, 1, 1],
       shader: `
@@ -28308,7 +28317,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       bodiesFormat,
       bodyOrderFormat
     );
-    const initAggregatedBodiesPipeline = await td.computePipeline({
+    const initAggregatedBodiesPipelinePromise = td.computePipeline({
       bindGroups: [initAggregatedBodiesBindGroupFormat],
       workgroupSize: [32, 1, 1],
       shader: `
@@ -28335,7 +28344,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       aggregatedBodiesFormat,
       nextfreesNonatomicFormat
     );
-    const aggregateMassInOctreePipeline = await td.computePipeline({
+    const aggregateMassInOctreePipelinePromise = td.computePipeline({
       bindGroups: [aggregateMassInOctreeBindGroupFormat],
       workgroupSize: [32, 1, 1],
       shader: `
@@ -28367,7 +28376,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       barnesHutUniformsFormat,
       ...params.extraPhysicsBuffers
     );
-    const applyBarnesHutPipeline = await td.computePipeline({
+    const applyBarnesHutPipelinePromise = td.computePipeline({
       bindGroups: [applyBarnesHutBindGroupFormat],
       workgroupSize: [32, 1, 1],
       globals: `
@@ -28460,7 +28469,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       minMaxFormat,
       minMaxUniformsFormat
     );
-    const reduceMinMaxPipeline = await td.computePipeline({
+    const reduceMinMaxPipelinePromise = td.computePipeline({
       bindGroups: [reduceMinMaxBindGroupFormat],
       workgroupSize: [32, 1, 1],
       shader: `
@@ -28485,7 +28494,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       bodiesFormat,
       minMaxFormat
     );
-    const initMinMaxPipeline = await td.computePipeline({
+    const initMinMaxPipelinePromise = td.computePipeline({
       bindGroups: [initMinMaxBindGroupFormat],
       workgroupSize: [32, 1, 1],
       shader: `
@@ -28514,7 +28523,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       activeNodesInfoFormat,
       activeNodesInFormat
     );
-    const initRootNodePipeline = await td.computePipeline({
+    const initRootNodePipelinePromise = td.computePipeline({
       bindGroups: [initRootNodeBindGroupFormat],
       workgroupSize: [1, 1, 1],
       shader: `
@@ -28549,7 +28558,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       "bg",
       computeIndirectBufferFormat
     );
-    const initRootNodePipeline2 = await td.computePipeline({
+    const initRootNodePipeline2Promise = td.computePipeline({
       bindGroups: [initRootNodeBindGroup2Format],
       workgroupSize: [1, 1, 1],
       shader: `
@@ -28561,7 +28570,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       bodyOrderFormat,
       bodyNodeAssignmentsFormat
     );
-    const initPerBodyStatePipeline = await td.computePipeline({
+    const initPerBodyStatePipelinePromise = td.computePipeline({
       bindGroups: [initPerBodyStateBindGroupFormat],
       workgroupSize: [32, 1, 1],
       shader: `
@@ -28572,6 +28581,39 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     body_order[id.x] = id.x;
     body_node_assignments[id.x] = 0u;
     `
+    });
+    const {
+      assignBodiesPipeline,
+      createNewNodesPipeline,
+      reorderBodiesPipeline,
+      prefixSumAggBodiesUpstrokePipeline,
+      setupPrefixSumBodiesDownstrokePipeline,
+      initAggregatedBodiesPipeline,
+      initMinMaxPipeline,
+      initRootNodePipeline,
+      reduceMinMaxPipeline,
+      applyBarnesHutPipeline,
+      initPerBodyStatePipeline,
+      aggregateMassInOctreePipeline,
+      initRootNodePipeline2,
+      prefixSumAggBodiesDownstrokePipeline,
+      setupNextIterationPipeline
+    } = await namedPromiseAll({
+      assignBodiesPipelinePromise,
+      createNewNodesPipelinePromise,
+      reorderBodiesPipelinePromise,
+      prefixSumAggBodiesUpstrokePipelinePromise,
+      setupPrefixSumBodiesDownstrokePipelinePromise,
+      initAggregatedBodiesPipelinePromise,
+      initMinMaxPipelinePromise,
+      initRootNodePipelinePromise,
+      reduceMinMaxPipelinePromise,
+      applyBarnesHutPipelinePromise,
+      initPerBodyStatePipelinePromise,
+      aggregateMassInOctreePipelinePromise,
+      initRootNodePipeline2Promise,
+      prefixSumAggBodiesDownstrokePipelinePromise,
+      setupNextIterationPipelinePromise
     });
     function setupMinMaxReduction(params2) {
       const countExponent = Math.ceil(Math.log2(params2.count));

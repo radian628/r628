@@ -8,6 +8,7 @@ import {
 } from "../../src";
 import { TypedBindGroupEntry } from "../../src/webgpu/easygpu/bind-group";
 import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
+import { namedPromiseAll } from "../../src/unpromise";
 
 export async function createNBodyOctreeDefs<
   ExtraBodyFields extends Record<
@@ -191,7 +192,7 @@ export async function createNBodyOctreeDefs<
     octreeMetadataFormat,
   );
 
-  const assignBodiesPipeline = await td.computePipeline({
+  const assignBodiesPipelinePromise = td.computePipeline({
     bindGroups: [assignBodiesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -242,7 +243,7 @@ export async function createNBodyOctreeDefs<
     createNewNodesUniforms,
   );
 
-  const createNewNodesPipeline = await td.computePipeline({
+  const createNewNodesPipelinePromise = td.computePipeline({
     bindGroups: [createNewNodesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -335,7 +336,7 @@ export async function createNBodyOctreeDefs<
     bodiesFormat,
   );
 
-  const reorderBodiesPipeline = await td.computePipeline({
+  const reorderBodiesPipelinePromise = td.computePipeline({
     bindGroups: [reorderBodiesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -362,7 +363,7 @@ export async function createNBodyOctreeDefs<
     activeNodesInfoFormat,
   );
 
-  const setupNextIterationPipeline = await td.computePipeline({
+  const setupNextIterationPipelinePromise = td.computePipeline({
     bindGroups: [setupNextIterationBindGroupFormat] as const,
     workgroupSize: [1, 1, 1],
     shader: `
@@ -391,7 +392,7 @@ export async function createNBodyOctreeDefs<
     aggregatedBodiesFormat,
   );
 
-  const prefixSumAggBodiesUpstrokePipeline = await td.computePipeline({
+  const prefixSumAggBodiesUpstrokePipelinePromise = td.computePipeline({
     bindGroups: [prefixSumAggBodiesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -429,7 +430,7 @@ export async function createNBodyOctreeDefs<
       setupPrefixSumBodiesDownstrokeUniformFormat,
     );
 
-  const setupPrefixSumBodiesDownstrokePipeline = await td.computePipeline({
+  const setupPrefixSumBodiesDownstrokePipelinePromise = td.computePipeline({
     bindGroups: [setupPrefixSumBodiesDownstrokeBindGroupFormat] as const,
     workgroupSize: [1, 1, 1],
     shader: `
@@ -438,7 +439,7 @@ export async function createNBodyOctreeDefs<
     `,
   });
 
-  const prefixSumAggBodiesDownstrokePipeline = await td.computePipeline({
+  const prefixSumAggBodiesDownstrokePipelinePromise = td.computePipeline({
     bindGroups: [prefixSumAggBodiesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -469,7 +470,7 @@ export async function createNBodyOctreeDefs<
     bodyOrderFormat,
   );
 
-  const initAggregatedBodiesPipeline = await td.computePipeline({
+  const initAggregatedBodiesPipelinePromise = td.computePipeline({
     bindGroups: [initAggregatedBodiesBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -498,7 +499,7 @@ export async function createNBodyOctreeDefs<
     nextfreesNonatomicFormat,
   );
 
-  const aggregateMassInOctreePipeline = await td.computePipeline({
+  const aggregateMassInOctreePipelinePromise = td.computePipeline({
     bindGroups: [aggregateMassInOctreeBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -532,7 +533,7 @@ export async function createNBodyOctreeDefs<
     ...params.extraPhysicsBuffers,
   );
 
-  const applyBarnesHutPipeline = await td.computePipeline({
+  const applyBarnesHutPipelinePromise = td.computePipeline({
     bindGroups: [applyBarnesHutBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     globals: `
@@ -627,7 +628,7 @@ export async function createNBodyOctreeDefs<
     minMaxUniformsFormat,
   );
 
-  const reduceMinMaxPipeline = await td.computePipeline({
+  const reduceMinMaxPipelinePromise = td.computePipeline({
     bindGroups: [reduceMinMaxBindGroupFormat],
     workgroupSize: [32, 1, 1],
     shader: `
@@ -654,7 +655,7 @@ export async function createNBodyOctreeDefs<
     minMaxFormat,
   );
 
-  const initMinMaxPipeline = await td.computePipeline({
+  const initMinMaxPipelinePromise = td.computePipeline({
     bindGroups: [initMinMaxBindGroupFormat],
     workgroupSize: [32, 1, 1],
     shader: `
@@ -685,7 +686,7 @@ export async function createNBodyOctreeDefs<
     activeNodesInFormat,
   );
 
-  const initRootNodePipeline = await td.computePipeline({
+  const initRootNodePipelinePromise = td.computePipeline({
     bindGroups: [initRootNodeBindGroupFormat],
     workgroupSize: [1, 1, 1],
     shader: `
@@ -722,7 +723,7 @@ export async function createNBodyOctreeDefs<
     computeIndirectBufferFormat,
   );
 
-  const initRootNodePipeline2 = await td.computePipeline({
+  const initRootNodePipeline2Promise = td.computePipeline({
     bindGroups: [initRootNodeBindGroup2Format],
     workgroupSize: [1, 1, 1],
     shader: `
@@ -736,7 +737,7 @@ export async function createNBodyOctreeDefs<
     bodyNodeAssignmentsFormat,
   );
 
-  const initPerBodyStatePipeline = await td.computePipeline({
+  const initPerBodyStatePipelinePromise = td.computePipeline({
     bindGroups: [initPerBodyStateBindGroupFormat] as const,
     workgroupSize: [32, 1, 1],
     shader: `
@@ -747,6 +748,40 @@ export async function createNBodyOctreeDefs<
     body_order[id.x] = id.x;
     body_node_assignments[id.x] = 0u;
     `,
+  });
+
+  const {
+    assignBodiesPipeline,
+    createNewNodesPipeline,
+    reorderBodiesPipeline,
+    prefixSumAggBodiesUpstrokePipeline,
+    setupPrefixSumBodiesDownstrokePipeline,
+    initAggregatedBodiesPipeline,
+    initMinMaxPipeline,
+    initRootNodePipeline,
+    reduceMinMaxPipeline,
+    applyBarnesHutPipeline,
+    initPerBodyStatePipeline,
+    aggregateMassInOctreePipeline,
+    initRootNodePipeline2,
+    prefixSumAggBodiesDownstrokePipeline,
+    setupNextIterationPipeline,
+  } = await namedPromiseAll({
+    assignBodiesPipelinePromise,
+    createNewNodesPipelinePromise,
+    reorderBodiesPipelinePromise,
+    prefixSumAggBodiesUpstrokePipelinePromise,
+    setupPrefixSumBodiesDownstrokePipelinePromise,
+    initAggregatedBodiesPipelinePromise,
+    initMinMaxPipelinePromise,
+    initRootNodePipelinePromise,
+    reduceMinMaxPipelinePromise,
+    applyBarnesHutPipelinePromise,
+    initPerBodyStatePipelinePromise,
+    aggregateMassInOctreePipelinePromise,
+    initRootNodePipeline2Promise,
+    prefixSumAggBodiesDownstrokePipelinePromise,
+    setupNextIterationPipelinePromise,
   });
 
   function setupMinMaxReduction(params: {
