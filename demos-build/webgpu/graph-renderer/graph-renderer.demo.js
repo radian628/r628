@@ -30329,6 +30329,8 @@ h2 {
     ).filter(
       (g) => (positiveTags.length === 0 || g.tags?.some((t) => positiveTags.includes(t))) && (negativeTags.length === 0 || !g.tags?.some((t) => negativeTags.includes(t)))
     );
+    graphData = [...new Map(graphData.map((g) => [g.url, g])).values()];
+    console.log("graphData", graphData);
     let nodeMap = /* @__PURE__ */ new Map();
     let urlToNodeData = /* @__PURE__ */ new Map();
     for (const n of graphData) {
