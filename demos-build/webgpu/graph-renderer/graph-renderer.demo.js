@@ -15505,10 +15505,10 @@
                           end$jscomp$0
                         );
                         if (startMarker && endMarker && (1 !== selection.rangeCount || selection.anchorNode !== startMarker.node || selection.anchorOffset !== startMarker.offset || selection.focusNode !== endMarker.node || selection.focusOffset !== endMarker.offset)) {
-                          var range3 = doc.createRange();
-                          range3.setStart(startMarker.node, startMarker.offset);
+                          var range2 = doc.createRange();
+                          range2.setStart(startMarker.node, startMarker.offset);
                           selection.removeAllRanges();
-                          start$jscomp$0 > end$jscomp$0 ? (selection.addRange(range3), selection.extend(endMarker.node, endMarker.offset)) : (range3.setEnd(endMarker.node, endMarker.offset), selection.addRange(range3));
+                          start$jscomp$0 > end$jscomp$0 ? (selection.addRange(range2), selection.extend(endMarker.node, endMarker.offset)) : (range2.setEnd(endMarker.node, endMarker.offset), selection.addRange(range2));
                         }
                       }
                     }
@@ -23675,14 +23675,14 @@
           }
           return r2;
         }, a = 0, s = n.forwardRef((function(e2, t2) {
-          var r2 = e2.title, o2 = void 0 === r2 ? null : r2, s2 = e2.description, c2 = void 0 === s2 ? null : s2, u2 = e2.size, p2 = void 0 === u2 ? null : u2, f2 = e2.color, d2 = void 0 === f2 ? "currentColor" : f2, y = e2.horizontal, v = void 0 === y ? null : y, b = e2.vertical, m = void 0 === b ? null : b, h = e2.rotate, g = void 0 === h ? null : h, O = e2.spin, w2 = void 0 === O ? null : O, j = e2.style, z = void 0 === j ? {} : j, E = e2.children, P = i(e2, ["title", "description", "size", "color", "horizontal", "vertical", "rotate", "spin", "style", "children"]);
+          var r2 = e2.title, o2 = void 0 === r2 ? null : r2, s2 = e2.description, c2 = void 0 === s2 ? null : s2, u2 = e2.size, p2 = void 0 === u2 ? null : u2, f2 = e2.color, d2 = void 0 === f2 ? "currentColor" : f2, y = e2.horizontal, v = void 0 === y ? null : y, b = e2.vertical, m = void 0 === b ? null : b, h = e2.rotate, g = void 0 === h ? null : h, O = e2.spin, w = void 0 === O ? null : O, j = e2.style, z = void 0 === j ? {} : j, E = e2.children, P = i(e2, ["title", "description", "size", "color", "horizontal", "vertical", "rotate", "spin", "style", "children"]);
           a++;
-          var S, x = null !== w2 && w2, _ = n.Children.map(E, (function(e3) {
+          var S, x = null !== w && w, _ = n.Children.map(E, (function(e3) {
             var t3 = e3;
-            true !== x && (x = true === (null === w2 ? t3.props.spin : w2));
+            true !== x && (x = true === (null === w ? t3.props.spin : w));
             var r3 = t3.props.size;
             "number" == typeof p2 && "number" == typeof t3.props.size && (r3 = t3.props.size / p2);
-            var o3 = { size: r3, color: null === d2 ? t3.props.color : d2, horizontal: null === v ? t3.props.horizontal : v, vertical: null === m ? t3.props.vertical : m, rotate: null === g ? t3.props.rotate : g, spin: null === w2 ? t3.props.spin : w2, inStack: true };
+            var o3 = { size: r3, color: null === d2 ? t3.props.color : d2, horizontal: null === v ? t3.props.horizontal : v, vertical: null === m ? t3.props.vertical : m, rotate: null === g ? t3.props.rotate : g, spin: null === w ? t3.props.spin : w, inStack: true };
             return n.cloneElement(t3, o3);
           }));
           null !== p2 && (z.width = "string" == typeof p2 ? p2 : 1.5 * p2 + "rem");
@@ -23712,7 +23712,7 @@
           }
           return r2;
         }, f = 0, d = n.forwardRef((function(e2, t2) {
-          var r2 = e2.path, o2 = e2.id, l2 = void 0 === o2 ? ++f : o2, i2 = e2.title, a2 = void 0 === i2 ? null : i2, s2 = e2.description, c2 = void 0 === s2 ? null : s2, d2 = e2.size, y = void 0 === d2 ? null : d2, v = e2.color, b = void 0 === v ? "currentColor" : v, m = e2.horizontal, h = void 0 !== m && m, g = e2.vertical, O = void 0 !== g && g, w2 = e2.rotate, j = void 0 === w2 ? 0 : w2, z = e2.spin, E = void 0 !== z && z, P = e2.style, S = void 0 === P ? {} : P, x = e2.inStack, _ = void 0 !== x && x, k = p(e2, ["path", "id", "title", "description", "size", "color", "horizontal", "vertical", "rotate", "spin", "style", "inStack"]), T = {}, q = [];
+          var r2 = e2.path, o2 = e2.id, l2 = void 0 === o2 ? ++f : o2, i2 = e2.title, a2 = void 0 === i2 ? null : i2, s2 = e2.description, c2 = void 0 === s2 ? null : s2, d2 = e2.size, y = void 0 === d2 ? null : d2, v = e2.color, b = void 0 === v ? "currentColor" : v, m = e2.horizontal, h = void 0 !== m && m, g = e2.vertical, O = void 0 !== g && g, w = e2.rotate, j = void 0 === w ? 0 : w, z = e2.spin, E = void 0 !== z && z, P = e2.style, S = void 0 === P ? {} : P, x = e2.inStack, _ = void 0 !== x && x, k = p(e2, ["path", "id", "title", "description", "size", "color", "horizontal", "vertical", "rotate", "spin", "style", "inStack"]), T = {}, q = [];
           null !== y && (_ ? q.push("scale(" + y + ")") : (S.width = "string" == typeof y ? y : 1.5 * y + "rem", S.height = S.width)), h && q.push("scaleX(-1)"), O && q.push("scaleY(-1)"), 0 !== j && q.push("rotate(" + j + "deg)"), null !== b && (T.fill = b);
           var M = n.createElement("path", u({ d: r2, style: T }, _ ? k : {})), C = M;
           q.length > 0 && (S.transform = q.join(" "), S.transformOrigin = "center", _ && (C = n.createElement("g", { style: S }, M, n.createElement("rect", { width: "24", height: "24", fill: "transparent" }))));
@@ -24160,6 +24160,23 @@
       map.delete(serializeParams(params));
     };
     fn.getCache = () => map;
+    return fn;
+  }
+  function memoOnce(callback, equal) {
+    if (!equal) equal = (a, b) => a.every((e, i) => e === b[i]);
+    let initialized = false;
+    let lastRet;
+    let lastParams;
+    const fn = (...params) => {
+      if (initialized && equal(params, lastParams)) {
+        return lastRet;
+      }
+      initialized = true;
+      const ret = callback(...params);
+      lastRet = ret;
+      lastParams = params;
+      return ret;
+    };
     return fn;
   }
 
@@ -25969,9 +25986,9 @@ struct Params {
     device.queue.submit([enc.finish()]);
     await device.queue.onSubmittedWorkDone();
     await buf.mapAsync(GPUMapMode.READ);
-    const range3 = buf.getMappedRange();
+    const range2 = buf.getMappedRange();
     return {
-      range: range3,
+      range: range2,
       bytesPerRow,
       rowsPerImage
     };
@@ -26010,9 +26027,9 @@ struct Params {
     device.queue.submit([enc.finish()]);
     await device.queue.onSubmittedWorkDone();
     await staging.mapAsync(GPUMapMode.READ, offset ?? 0, size ?? buf.size);
-    const range3 = staging.getMappedRange(0, size ?? buf.size).slice();
+    const range2 = staging.getMappedRange(0, size ?? buf.size).slice();
     staging.unmap();
-    return range3;
+    return range2;
   }
   async function quickMapWithFormat(format, device, buf, size, offset) {
     const [withLayouts] = generateLayouts([format]);
@@ -26477,17 +26494,17 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
         const estimatedLength = Math.ceil(this.sampleRate * this.duration);
         const clampedStart = clamp(start, 0, estimatedLength);
         const clampedEnd = clamp(start + count, 0, estimatedLength);
-        const range3 = await params.getRange(
+        const range2 = await params.getRange(
           clampedStart,
           clampedEnd - clampedStart
         );
-        if (clampedEnd - clampedStart == count) return range3;
+        if (clampedEnd - clampedStart == count) return range2;
         const out = {};
         const padStart = -Math.min(0, start);
         for (const ch of this.channels) {
           console.log("eeeee", count);
           const o = new Float32Array(count);
-          const i = range3[ch];
+          const i = range2[ch];
           for (let idx = 0; idx < i.length; idx++) {
             o[idx + padStart] = i[idx];
           }
@@ -27407,30 +27424,8 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
   }
 
   // src/webgpu/pipelines/line-renderer.ts
-  async function lineRenderer(device, outputFormat, settings) {
+  function linesRendererBufferDefs(device) {
     const td = typeDevice(device);
-    const depthTexFormat = td.textureFormat(
-      {
-        name: "depth",
-        format: "depth32float",
-        sampleCount: settings?.multisample?.count ?? 1,
-        viewDimension: "2d",
-        visibility: ["fragment"]
-      },
-      "render-attachment"
-    );
-    const colorTexFormat = td.textureFormat(
-      {
-        name: "color",
-        format: outputFormat,
-        sampleCount: settings?.multisample?.count ?? 1,
-        viewDimension: "2d",
-        dimension: "2d",
-        visibility: ["fragment"]
-      },
-      "render-attachment"
-    );
-    const EVERYWHERE = GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
     const geometryBufferFormat = td.vertexBufferFormat("geometry", 8, [
       {
         name: "geometryPosition",
@@ -27525,6 +27520,49 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
       })
     );
     const perFrameBindGroup = td.bindGroupFormat("perFrame", uniforms);
+    return {
+      lineSegInstanceBufferFormat1,
+      lineSegInstanceBufferFormat2,
+      uniforms,
+      perFrameBindGroup,
+      geometryBufferFormat,
+      quad,
+      pointInstanceBufferFormat
+    };
+  }
+  async function lineRenderer(device, outputFormat, settings) {
+    const {
+      lineSegInstanceBufferFormat1,
+      lineSegInstanceBufferFormat2,
+      uniforms,
+      perFrameBindGroup,
+      geometryBufferFormat,
+      quad,
+      pointInstanceBufferFormat
+    } = linesRendererBufferDefs(device);
+    const td = typeDevice(device);
+    const depthTexFormat = td.textureFormat(
+      {
+        name: "depth",
+        format: "depth32float",
+        sampleCount: settings?.multisample?.count ?? 1,
+        viewDimension: "2d",
+        visibility: ["fragment"]
+      },
+      "render-attachment"
+    );
+    const colorTexFormat = td.textureFormat(
+      {
+        name: "color",
+        format: outputFormat,
+        sampleCount: settings?.multisample?.count ?? 1,
+        viewDimension: "2d",
+        dimension: "2d",
+        visibility: ["fragment"]
+      },
+      "render-attachment"
+    );
+    const EVERYWHERE = GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
     const blend = void 0;
     const pointPipeline = await td.renderPipeline({
       multisample: settings?.multisample,
@@ -27920,10 +27958,10 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
         const pass2 = encoder.beginRenderPass({
           colorAttachments: [
             {
-              view: tex.createView(),
+              view: tex,
               loadOp: "clear",
               storeOp: "store",
-              resolveTarget: resolveTarget?.createView()
+              resolveTarget
             }
           ]
         });
@@ -28508,8 +28546,8 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
               tab,
               key: t.id,
               win: t,
-              setWin: (w2) => props.setTab(
-                (oldtab) => xray(oldtab).texelInspectorWindows.$i(i).$(w2).$v
+              setWin: (w) => props.setTab(
+                (oldtab) => xray(oldtab).texelInspectorWindows.$i(i).$(w).$v
               )
             }
           )),
@@ -28887,7 +28925,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
             props.setValue(() => e.currentTarget.value);
           }
         },
-        props.variants.map((v) => /* @__PURE__ */ import_react13.default.createElement("option", { value: v[0], key: v[0] }, v[1]))
+        props.variants.map((v) => /* @__PURE__ */ import_react13.default.createElement("option", { value: v[0], key: v[0], title: v[1] }, v[1]))
       );
     }
     return /* @__PURE__ */ import_react13.default.createElement("div", { className: "enum-ui" }, props.variants.map((v) => /* @__PURE__ */ import_react13.default.createElement(
@@ -28945,6 +28983,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
   // demos-src/webgpu/graph-renderer/graph-renderer-ui.tsx
   var DEFAULT_UI_STATE = {
     uiMode: "auto",
+    antialiasing: "msaa",
     viewerSpeed: 1,
     lineWidth: 0.2,
     farPlane: 2e3,
@@ -29095,6 +29134,15 @@ h2 {
             ["auto", "Auto-Detect"],
             ["desktop", "Desktop"],
             ["mobile", "Mobile"]
+          ]
+        }
+      ), /* @__PURE__ */ import_react19.default.createElement("label", null, "Antialiasing"), /* @__PURE__ */ import_react19.default.createElement(
+        EnumField,
+        {
+          ...prop("antialiasing"),
+          variants: [
+            ["msaa", "MSAA"],
+            ["none", "None"]
           ]
         }
       ), /* @__PURE__ */ import_react19.default.createElement("label", null, "Movement Speed"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("viewerSpeed") }), /* @__PURE__ */ import_react19.default.createElement("label", null, "Line Thickness"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("lineWidth") }), /* @__PURE__ */ import_react19.default.createElement("label", null, "Far Plane"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("farPlane"), min: 0 }), /* @__PURE__ */ import_react19.default.createElement("label", null, "Show Label Threshold"), /* @__PURE__ */ import_react19.default.createElement(NumberFieldM, { ...prop("showLabelThreshold"), min: 0 })),
@@ -30358,46 +30406,84 @@ h2 {
     ctx.configure({
       device,
       format: navigator.gpu.getPreferredCanvasFormat(),
-      // alphaMode: "premultiplied",
       alphaMode: "opaque"
     });
-    function handleResize() {
-      canvas.width = window.innerWidth * window.devicePixelRatio;
-      canvas.height = window.innerHeight * window.devicePixelRatio;
-      depthTex = lines.depthTexFormat.new(
-        [canvas.width, canvas.height]
-        // GPUTextureUsage.RENDER_ATTACHMENT,
-        // aaMode === "msaa" ? { sampleCount: 4 } : undefined,
-      );
-      if (aaMode === "msaa") {
-        multisampleTex = lines.colorTexFormat.new(
-          [canvas.width, canvas.height]
-          // GPUTextureUsage.RENDER_ATTACHMENT,
-          // {
-          //   sampleCount: 4,
-          // },
-        );
-      }
-    }
-    const aaMode = "msaa";
-    const lines = await lineRenderer(
-      device,
-      navigator.gpu.getPreferredCanvasFormat(),
-      {
-        multisample: aaMode === "msaa" ? { count: 4 } : void 0
+    const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+    const mResizeCanvas = memoOnce((size) => {
+      canvas.width = size[0];
+      canvas.height = size[1];
+    });
+    const mLinesRenderer = memoOnce(
+      (antialiasMode) => lineRenderer(device, canvasFormat, {
+        multisample: antialiasMode === "msaa" ? { count: 4 } : void 0
+      })
+    );
+    const mClearRenderer = memoOnce(
+      (antialiasMode) => clearRenderer(device, canvasFormat, {
+        multisample: antialiasMode === "msaa" ? { count: 4 } : void 0
+      })
+    );
+    const mDepthTex = memoOnce(
+      (width, height, lineRenderer2) => lineRenderer2.depthTexFormat.new([width, height])
+    );
+    const mMultisampleTex = memoOnce(
+      (width, height, lineRenderer2) => lineRenderer2.colorTexFormat.new([width, height])
+    );
+    const mClearPass = memoOnce(
+      (clear, antialiasMode) => {
+        if (antialiasMode === "msaa") {
+          return (canvasTex, multisampleTex) => clear.clear(multisampleTex, [0, 0, 0, 255], canvasTex);
+        } else {
+          return (canvasTex, multisampleTex) => clear.clear(canvasTex, [0, 0, 0, 255]);
+        }
       }
     );
-    let multisampleTex;
-    let depthTex;
+    const mRenderPass = memoOnce((antialiasMode) => {
+      if (antialiasMode === "msaa") {
+        return (params) => params.enc.beginRenderPass({
+          colorAttachments: [
+            {
+              view: params.multisample,
+              loadOp: "load",
+              storeOp: "store",
+              resolveTarget: params.color
+            }
+          ],
+          depthStencilAttachment: {
+            view: params.depth,
+            depthClearValue: 1,
+            depthLoadOp: "clear",
+            depthStoreOp: "store"
+          }
+        });
+      } else {
+        return (params) => params.enc.beginRenderPass({
+          colorAttachments: [
+            {
+              view: params.color,
+              loadOp: "load",
+              storeOp: "store"
+            }
+          ],
+          depthStencilAttachment: {
+            view: params.depth,
+            depthClearValue: 1,
+            depthLoadOp: "clear",
+            depthStoreOp: "store"
+          }
+        });
+      }
+    });
+    let windowSize;
+    function handleResize() {
+      windowSize = [
+        Math.round(window.innerWidth * window.devicePixelRatio),
+        Math.round(window.innerHeight * window.devicePixelRatio)
+      ];
+    }
     handleResize();
     window.addEventListener("resize", handleResize);
-    const clear = await clearRenderer(
-      device,
-      navigator.gpu.getPreferredCanvasFormat(),
-      {
-        multisample: aaMode === "msaa" ? { count: 4 } : void 0
-      }
-    );
+    const linesFormats = linesRendererBufferDefs(device);
     const td = typeDevice(device);
     const highPerfLineBufferFormat = td.vertexBufferFormat("line", 16, [
       {
@@ -30443,7 +30529,7 @@ h2 {
     });
     const bodiesFormat = nBodySim.bodiesFormat;
     const highPerfLinePipeline = await td.renderPipeline({
-      bindGroups: [lines.perFrameBindGroup],
+      bindGroups: [linesFormats.perFrameBindGroup],
       depthStencil: {
         format: "depth32float",
         depthCompare: "less",
@@ -30452,8 +30538,7 @@ h2 {
       inputs: [highPerfLineBufferFormat],
       outputs: {
         color: {
-          format: navigator.gpu.getPreferredCanvasFormat(),
-          blend: lines.blend
+          format: navigator.gpu.getPreferredCanvasFormat()
         }
       },
       vertex: `
@@ -30798,11 +30883,11 @@ user-select: none;
           ...vert.data
         }));
         const vertGroups = splitBy(labelVertsArray, 500);
-        const vertices = lines.pointInstanceBufferFormat.usage("vertex", "storage", "copy-src").new(graph.vertices.size);
+        const vertices = linesFormats.pointInstanceBufferFormat.usage("vertex", "storage", "copy-src").new(graph.vertices.size);
         const edgeThickness = 0.2;
-        const edges = lines.pointInstanceBufferFormat.usage("vertex", "storage", "copy-src").new(graph.edges.size * 7);
-        const graphUniforms = lines.uniforms.new(1);
-        const graphPerFrameBindGroup = lines.perFrameBindGroup.new({
+        const edges = linesFormats.pointInstanceBufferFormat.usage("vertex", "storage", "copy-src").new(graph.edges.size * 7);
+        const graphUniforms = linesFormats.uniforms.new(1);
+        const graphPerFrameBindGroup = linesFormats.perFrameBindGroup.new({
           params: graphUniforms
         });
         const edgesFast = highPerfLineBufferFormat.quickCreate(
@@ -31104,8 +31189,18 @@ user-select: none;
               }
             }
           },
-          draw(lineMode) {
-            lines.uniforms.fill(graphUniforms, 0, {
+          async draw(lineMode) {
+            const aa = params.ui.state.antialiasing;
+            const linesRenderer = await mLinesRenderer(aa);
+            const clearRenderer2 = await mClearRenderer(aa);
+            mResizeCanvas(windowSize);
+            const canvasTex = ctx.getCurrentTexture();
+            const size = [canvasTex.width, canvasTex.height];
+            const depthTex = mDepthTex(...size, linesRenderer);
+            const multisampleTex = mMultisampleTex(...size, linesRenderer);
+            const clearPass = mClearPass(clearRenderer2, aa);
+            const renderPass = mRenderPass(aa);
+            linesFormats.uniforms.fill(graphUniforms, 0, {
               mvp: multiTransform(
                 perspectiveWebgpu(
                   Math.PI / 2,
@@ -31117,64 +31212,35 @@ user-select: none;
               ),
               aspect: canvas.width / canvas.height
             });
-            const colorTex = ctx.getCurrentTexture();
-            if (aaMode === "msaa") {
-              clear.clear(multisampleTex, [0, 0, 0, 255], colorTex);
-            } else {
-              clear.clear(colorTex, [0, 0, 0, 255]);
-            }
+            clearPass(canvasTex.createView(), multisampleTex?.createView());
             const enc2 = device.createCommandEncoder();
-            const pass2 = aaMode === "msaa" ? enc2.beginRenderPass({
-              colorAttachments: [
-                {
-                  view: multisampleTex.createView(),
-                  loadOp: "load",
-                  storeOp: "store",
-                  resolveTarget: colorTex
-                }
-              ],
-              depthStencilAttachment: {
-                view: depthTex.createView(),
-                depthClearValue: 1,
-                depthLoadOp: "clear",
-                depthStoreOp: "store"
-              }
-            }) : enc2.beginRenderPass({
-              colorAttachments: [
-                {
-                  view: colorTex.createView(),
-                  loadOp: "load",
-                  storeOp: "store"
-                }
-              ],
-              depthStencilAttachment: {
-                view: depthTex.createView(),
-                depthClearValue: 1,
-                depthLoadOp: "clear",
-                depthStoreOp: "store"
-              }
+            const pass2 = renderPass({
+              enc: enc2,
+              color: canvasTex.createView(),
+              depth: depthTex.createView(),
+              multisample: multisampleTex.createView()
             });
-            pass2.setPipeline(lines.pointPipeline);
-            lines.pointPipeline.bind(pass2, {
+            pass2.setPipeline(linesRenderer.pointPipeline);
+            linesRenderer.pointPipeline.bind(pass2, {
               points: vertices,
-              geometry: lines.quad,
+              geometry: linesRenderer.quad,
               perFrame: graphPerFrameBindGroup
             });
             pass2.draw(6, graph.vertices.size);
             if (lineMode === "fancy") {
-              lines.pointPipeline.bind(pass2, {
+              linesRenderer.pointPipeline.bind(pass2, {
                 points: edges
               });
               pass2.draw(6, graph.edges.size * 7);
-              pass2.setPipeline(lines.linePipeline);
-              lines.linePipeline.bind(pass2, {
-                lineSegments1: lines.lineSegInstanceBufferFormat1.reinterpret(edges),
+              pass2.setPipeline(linesRenderer.linePipeline);
+              linesRenderer.linePipeline.bind(pass2, {
+                lineSegments1: linesRenderer.lineSegInstanceBufferFormat1.reinterpret(edges),
                 lineSegments2: [
-                  lines.lineSegInstanceBufferFormat2.reinterpret(edges),
+                  linesRenderer.lineSegInstanceBufferFormat2.reinterpret(edges),
                   20
                 ],
                 perFrame: graphPerFrameBindGroup,
-                geometry: lines.quad
+                geometry: linesRenderer.quad
               });
               pass2.draw(6, graph.edges.size * 7 - 1);
             } else if (lineMode === "fast") {
@@ -31269,7 +31335,7 @@ user-select: none;
     document.body.appendChild(graphRenderer.canvas);
     document.body.appendChild(ui.dom);
     async function loop(t) {
-      if (!document.hidden) {
+      if (document.hasFocus()) {
         loadingMsg.style.display = "none";
         let dt = (t - lastT) / 1e3;
         lastT = t;
@@ -31279,7 +31345,7 @@ user-select: none;
           graphRendererInstance.moveBodies();
         }
         graphRendererInstance.updateLabels();
-        graphRendererInstance.draw(lineMode);
+        await graphRendererInstance.draw(lineMode);
         loopIter++;
       }
       if (window.mozInnerScreenX) {

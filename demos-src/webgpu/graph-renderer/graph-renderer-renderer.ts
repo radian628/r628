@@ -3,14 +3,18 @@ import {
   add3,
   addEdge,
   addVertex,
+  ClearRenderer,
   clearRenderer,
   createGraph,
   distance3,
   Graph,
   lerp,
+  LineRenderer,
   lineRenderer,
+  linesRendererBufferDefs,
   Mat4,
   max3,
+  memoOnce,
   min3,
   mix3,
   mix4,
@@ -23,6 +27,8 @@ import {
   pipelineRenderpass,
   quickMap,
   quickMapWithFormat,
+  reactive,
+  reactiveSource,
   rescale,
   rotate,
   runtimeArray,
@@ -32,6 +38,7 @@ import {
   struct,
   translate,
   variadify,
+  Vec2,
   Vec3,
   Vec4,
   Vertex,
@@ -53,53 +60,111 @@ export async function setupGraphRenderer(device: GPUDevice) {
   ctx.configure({
     device: device,
     format: navigator.gpu.getPreferredCanvasFormat(),
-    // alphaMode: "premultiplied",
     alphaMode: "opaque",
   });
 
-  function handleResize() {
-    canvas.width = window.innerWidth * window.devicePixelRatio;
-    canvas.height = window.innerHeight * window.devicePixelRatio;
-    depthTex = lines.depthTexFormat.new(
-      [canvas.width, canvas.height],
-      // GPUTextureUsage.RENDER_ATTACHMENT,
-      // aaMode === "msaa" ? { sampleCount: 4 } : undefined,
-    );
-    if (aaMode === "msaa") {
-      multisampleTex = lines.colorTexFormat.new(
-        [canvas.width, canvas.height],
-        // GPUTextureUsage.RENDER_ATTACHMENT,
-        // {
-        //   sampleCount: 4,
-        // },
-      );
-    }
-  }
+  const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
 
-  const aaMode = "msaa" as "none" | "msaa";
+  const mResizeCanvas = memoOnce((size: Vec2) => {
+    canvas.width = size[0];
+    canvas.height = size[1];
+  });
 
-  const lines = await lineRenderer(
-    device,
-    navigator.gpu.getPreferredCanvasFormat(),
-    {
-      multisample: aaMode === "msaa" ? { count: 4 } : (undefined as never),
+  const mLinesRenderer = memoOnce((antialiasMode: "msaa" | "none") =>
+    lineRenderer(device, canvasFormat, {
+      multisample: antialiasMode === "msaa" ? { count: 4 } : undefined,
+    }),
+  );
+
+  const mClearRenderer = memoOnce((antialiasMode: "msaa" | "none") =>
+    clearRenderer(device, canvasFormat, {
+      multisample: antialiasMode === "msaa" ? { count: 4 } : undefined,
+    }),
+  );
+
+  const mDepthTex = memoOnce(
+    (width: number, height: number, lineRenderer: LineRenderer) =>
+      lineRenderer.depthTexFormat.new([width, height]),
+  );
+
+  const mMultisampleTex = memoOnce(
+    (width: number, height: number, lineRenderer: LineRenderer) =>
+      lineRenderer.colorTexFormat.new([width, height]),
+  );
+
+  const mClearPass = memoOnce(
+    (clear: ClearRenderer, antialiasMode: "msaa" | "none") => {
+      if (antialiasMode === "msaa") {
+        return (
+          canvasTex: GPUTextureView,
+          multisampleTex: GPUTextureView | undefined,
+        ) => clear.clear(multisampleTex!, [0, 0, 0, 255], canvasTex);
+      } else {
+        return (
+          canvasTex: GPUTextureView,
+          multisampleTex: GPUTextureView | undefined,
+        ) => clear.clear(canvasTex, [0, 0, 0, 255]);
+      }
     },
   );
 
-  let multisampleTex: ReturnType<typeof lines.colorTexFormat.new>;
+  const mRenderPass = memoOnce((antialiasMode: "msaa" | "none") => {
+    type Params = {
+      enc: GPUCommandEncoder;
+      color: GPUTextureView;
+      depth: GPUTextureView;
+      multisample: GPUTextureView | undefined;
+    };
+    if (antialiasMode === "msaa") {
+      return (params: Params) =>
+        params.enc.beginRenderPass({
+          colorAttachments: [
+            {
+              view: params.multisample!,
+              loadOp: "load",
+              storeOp: "store",
+              resolveTarget: params.color,
+            },
+          ],
+          depthStencilAttachment: {
+            view: params.depth,
+            depthClearValue: 1.0,
+            depthLoadOp: "clear",
+            depthStoreOp: "store",
+          },
+        });
+    } else {
+      return (params: Params) =>
+        params.enc.beginRenderPass({
+          colorAttachments: [
+            {
+              view: params.color,
+              loadOp: "load",
+              storeOp: "store",
+            },
+          ],
+          depthStencilAttachment: {
+            view: params.depth,
+            depthClearValue: 1.0,
+            depthLoadOp: "clear",
+            depthStoreOp: "store",
+          },
+        });
+    }
+  });
 
-  let depthTex: ReturnType<typeof lines.depthTexFormat.new>;
+  let windowSize: Vec2;
 
+  function handleResize() {
+    windowSize = [
+      Math.round(window.innerWidth * window.devicePixelRatio),
+      Math.round(window.innerHeight * window.devicePixelRatio),
+    ];
+  }
   handleResize();
   window.addEventListener("resize", handleResize);
 
-  const clear = await clearRenderer(
-    device,
-    navigator.gpu.getPreferredCanvasFormat(),
-    {
-      multisample: aaMode === "msaa" ? { count: 4 } : undefined,
-    },
-  );
+  const linesFormats = linesRendererBufferDefs(device);
 
   const td = typeDevice(device);
 
@@ -152,7 +217,7 @@ export async function setupGraphRenderer(device: GPUDevice) {
   const bodiesFormat = nBodySim.bodiesFormat;
 
   const highPerfLinePipeline = await td.renderPipeline({
-    bindGroups: [lines.perFrameBindGroup] as const,
+    bindGroups: [linesFormats.perFrameBindGroup] as const,
     depthStencil: {
       format: "depth32float",
       depthCompare: "less",
@@ -162,7 +227,6 @@ export async function setupGraphRenderer(device: GPUDevice) {
     outputs: {
       color: {
         format: navigator.gpu.getPreferredCanvasFormat(),
-        blend: lines.blend,
       },
     },
     vertex: `
@@ -558,19 +622,19 @@ user-select: none;
 
       const vertGroups = splitBy(labelVertsArray, 500);
 
-      const vertices = lines.pointInstanceBufferFormat
+      const vertices = linesFormats.pointInstanceBufferFormat
         .usage("vertex", "storage", "copy-src")
         .new(graph.vertices.size);
 
       const edgeThickness = 0.2;
 
-      const edges = lines.pointInstanceBufferFormat
+      const edges = linesFormats.pointInstanceBufferFormat
         .usage("vertex", "storage", "copy-src")
         .new(graph.edges.size * 7);
 
-      const graphUniforms = lines.uniforms.new(1);
+      const graphUniforms = linesFormats.uniforms.new(1);
 
-      const graphPerFrameBindGroup = lines.perFrameBindGroup.new({
+      const graphPerFrameBindGroup = linesFormats.perFrameBindGroup.new({
         params: graphUniforms,
       });
 
@@ -962,8 +1026,20 @@ user-select: none;
             }
           }
         },
-        draw(lineMode: "fast" | "fancy" | "none") {
-          lines.uniforms.fill(graphUniforms, 0, {
+        async draw(lineMode: "fast" | "fancy" | "none") {
+          const aa = params.ui.state.antialiasing;
+          const linesRenderer = await mLinesRenderer(aa);
+          const clearRenderer = await mClearRenderer(aa);
+          mResizeCanvas(windowSize);
+          const canvasTex = ctx.getCurrentTexture();
+          const size: Vec2 = [canvasTex.width, canvasTex.height];
+          const depthTex = mDepthTex(...size, linesRenderer);
+          const multisampleTex = mMultisampleTex(...size, linesRenderer);
+
+          const clearPass = mClearPass(clearRenderer, aa);
+          const renderPass = mRenderPass(aa);
+
+          linesFormats.uniforms.fill(graphUniforms, 0, {
             mvp: multiTransform(
               perspectiveWebgpu(
                 Math.PI / 2,
@@ -976,73 +1052,40 @@ user-select: none;
             aspect: canvas.width / canvas.height,
           });
 
-          const colorTex = ctx.getCurrentTexture();
-
-          if (aaMode === "msaa") {
-            clear.clear(multisampleTex, [0, 0, 0, 255], colorTex);
-          } else {
-            clear.clear(colorTex, [0, 0, 0, 255]);
-          }
+          clearPass(canvasTex.createView(), multisampleTex?.createView());
 
           const enc = device.createCommandEncoder();
 
-          const pass =
-            aaMode === "msaa"
-              ? enc.beginRenderPass({
-                  colorAttachments: [
-                    {
-                      view: multisampleTex.createView(),
-                      loadOp: "load",
-                      storeOp: "store",
-                      resolveTarget: colorTex,
-                    },
-                  ],
-                  depthStencilAttachment: {
-                    view: depthTex.createView(),
-                    depthClearValue: 1.0,
-                    depthLoadOp: "clear",
-                    depthStoreOp: "store",
-                  },
-                })
-              : enc.beginRenderPass({
-                  colorAttachments: [
-                    {
-                      view: colorTex.createView(),
-                      loadOp: "load",
-                      storeOp: "store",
-                    },
-                  ],
-                  depthStencilAttachment: {
-                    view: depthTex.createView(),
-                    depthClearValue: 1.0,
-                    depthLoadOp: "clear",
-                    depthStoreOp: "store",
-                  },
-                });
+          const pass = renderPass({
+            enc,
+            color: canvasTex.createView(),
+            depth: depthTex.createView(),
+            multisample: multisampleTex.createView(),
+          });
 
-          pass.setPipeline(lines.pointPipeline);
-          lines.pointPipeline.bind(pass, {
+          pass.setPipeline(linesRenderer.pointPipeline);
+          linesRenderer.pointPipeline.bind(pass, {
             points: vertices,
-            geometry: lines.quad,
+            geometry: linesRenderer.quad,
             perFrame: graphPerFrameBindGroup,
           });
           pass.draw(6, graph.vertices.size);
 
           if (lineMode === "fancy") {
-            lines.pointPipeline.bind(pass, {
+            linesRenderer.pointPipeline.bind(pass, {
               points: edges,
             });
             pass.draw(6, graph.edges.size * 7);
-            pass.setPipeline(lines.linePipeline);
-            lines.linePipeline.bind(pass, {
+            pass.setPipeline(linesRenderer.linePipeline);
+            linesRenderer.linePipeline.bind(pass, {
               lineSegments1:
-                lines.lineSegInstanceBufferFormat1.reinterpret(edges),
+                linesRenderer.lineSegInstanceBufferFormat1.reinterpret(edges),
               lineSegments2: [
-                lines.lineSegInstanceBufferFormat2.reinterpret(edges),
+                linesRenderer.lineSegInstanceBufferFormat2.reinterpret(edges),
                 20,
               ],
               perFrame: graphPerFrameBindGroup,
-              geometry: lines.quad,
+              geometry: linesRenderer.quad,
             });
             pass.draw(6, graph.edges.size * 7 - 1);
           } else if (lineMode === "fast") {

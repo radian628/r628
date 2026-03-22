@@ -26440,30 +26440,8 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
   }
 
   // src/webgpu/pipelines/line-renderer.ts
-  async function lineRenderer(device, outputFormat, settings) {
+  function linesRendererBufferDefs(device) {
     const td = typeDevice(device);
-    const depthTexFormat = td.textureFormat(
-      {
-        name: "depth",
-        format: "depth32float",
-        sampleCount: settings?.multisample?.count ?? 1,
-        viewDimension: "2d",
-        visibility: ["fragment"]
-      },
-      "render-attachment"
-    );
-    const colorTexFormat = td.textureFormat(
-      {
-        name: "color",
-        format: outputFormat,
-        sampleCount: settings?.multisample?.count ?? 1,
-        viewDimension: "2d",
-        dimension: "2d",
-        visibility: ["fragment"]
-      },
-      "render-attachment"
-    );
-    const EVERYWHERE = GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
     const geometryBufferFormat = td.vertexBufferFormat("geometry", 8, [
       {
         name: "geometryPosition",
@@ -26558,6 +26536,49 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
       })
     );
     const perFrameBindGroup = td.bindGroupFormat("perFrame", uniforms);
+    return {
+      lineSegInstanceBufferFormat1,
+      lineSegInstanceBufferFormat2,
+      uniforms,
+      perFrameBindGroup,
+      geometryBufferFormat,
+      quad,
+      pointInstanceBufferFormat
+    };
+  }
+  async function lineRenderer(device, outputFormat, settings) {
+    const {
+      lineSegInstanceBufferFormat1,
+      lineSegInstanceBufferFormat2,
+      uniforms,
+      perFrameBindGroup,
+      geometryBufferFormat,
+      quad,
+      pointInstanceBufferFormat
+    } = linesRendererBufferDefs(device);
+    const td = typeDevice(device);
+    const depthTexFormat = td.textureFormat(
+      {
+        name: "depth",
+        format: "depth32float",
+        sampleCount: settings?.multisample?.count ?? 1,
+        viewDimension: "2d",
+        visibility: ["fragment"]
+      },
+      "render-attachment"
+    );
+    const colorTexFormat = td.textureFormat(
+      {
+        name: "color",
+        format: outputFormat,
+        sampleCount: settings?.multisample?.count ?? 1,
+        viewDimension: "2d",
+        dimension: "2d",
+        visibility: ["fragment"]
+      },
+      "render-attachment"
+    );
+    const EVERYWHERE = GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
     const blend = void 0;
     const pointPipeline = await td.renderPipeline({
       multisample: settings?.multisample,
@@ -26953,10 +26974,10 @@ fn ComputeMain(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocati
         const pass2 = encoder.beginRenderPass({
           colorAttachments: [
             {
-              view: tex.createView(),
+              view: tex,
               loadOp: "clear",
               storeOp: "store",
-              resolveTarget: resolveTarget?.createView()
+              resolveTarget
             }
           ]
         });

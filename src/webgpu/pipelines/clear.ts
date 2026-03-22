@@ -2,6 +2,8 @@ import { Vec4 } from "../../math/vector.generated";
 import { pipelineRenderpass, wrapDevice } from "../partial-pipelines";
 import { struct } from "../wgsl-struct-layout-generator";
 
+export type ClearRenderer = Awaited<ReturnType<typeof clearRenderer>>;
+
 export async function clearRenderer(
   device: GPUDevice,
   outputFormat: GPUTextureFormat,
@@ -103,7 +105,7 @@ export async function clearRenderer(
   const bundle = pass.finish();
 
   return {
-    clear(tex: GPUTexture, color: Vec4, resolveTarget?: GPUTexture) {
+    clear(tex: GPUTextureView, color: Vec4, resolveTarget?: GPUTextureView) {
       uniforms.fill(perFrameUniforms, 0, {
         clearColor: color,
       });
@@ -113,10 +115,10 @@ export async function clearRenderer(
       const pass = encoder.beginRenderPass({
         colorAttachments: [
           {
-            view: tex.createView(),
+            view: tex,
             loadOp: "clear",
             storeOp: "store",
-            resolveTarget: resolveTarget?.createView(),
+            resolveTarget: resolveTarget,
           },
         ],
       });

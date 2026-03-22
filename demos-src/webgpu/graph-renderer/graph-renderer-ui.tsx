@@ -6,10 +6,7 @@ import {
   getSetProp,
   mutatify,
   NumberField,
-  objectUI,
-  objectUIGeneric as objectUIGeneric,
   StringField,
-  using,
   Vec3,
 } from "../../../src";
 import { BooleanField } from "../../../src/ui/react-boolean-field";
@@ -20,6 +17,7 @@ import { mdiCog } from "@mdi/js";
 
 export type UIState = {
   uiMode: "auto" | "desktop" | "mobile";
+  antialiasing: "none" | "msaa";
   viewerSpeed: number;
   lineWidth: number;
   farPlane: number;
@@ -40,6 +38,7 @@ export type UIState = {
 
 const DEFAULT_UI_STATE: UIState = {
   uiMode: "auto",
+  antialiasing: "msaa",
 
   viewerSpeed: 1,
   lineWidth: 0.2,
@@ -243,6 +242,14 @@ h2 {
               ["auto", "Auto-Detect"],
               ["desktop", "Desktop"],
               ["mobile", "Mobile"],
+            ]}
+          ></EnumField>
+          <label>Antialiasing</label>
+          <EnumField
+            {...prop("antialiasing")}
+            variants={[
+              ["msaa", "MSAA"],
+              ["none", "None"],
             ]}
           ></EnumField>
           <label>Movement Speed</label>

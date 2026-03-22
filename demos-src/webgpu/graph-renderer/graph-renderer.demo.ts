@@ -1,52 +1,5 @@
-import Matrix, { inverse } from "ml-matrix";
-import {
-  add3,
-  addEdge,
-  addVertex,
-  argmax,
-  clamp,
-  clearRenderer,
-  createGraph,
-  distance3,
-  generateLayouts,
-  getDepthFirstTraversalOrder,
-  Graph,
-  hookGPUDevice,
-  lerp,
-  lineRenderer,
-  Mat4,
-  mix3,
-  mix4,
-  mul3,
-  mul4,
-  mulMat4,
-  mulMat4ByVec4,
-  mulVec4ByMat4,
-  parallelSum,
-  perspectiveWebgpu,
-  pickrand,
-  pipelineRenderpass,
-  quickMap,
-  range,
-  rescale,
-  rotate,
-  scale3,
-  scale4,
-  spatialHashTable,
-  splitBy,
-  struct,
-  translate,
-  variadify,
-  Vec3,
-  Vec4,
-  Vertex,
-  w,
-  wrapDevice,
-  xyz,
-} from "../../../src";
-import stringHash from "string-hash";
-import { createNBodyOctreeDefs } from "../n-body-octree";
-import { graphRendererUI, PositionedNode } from "./graph-renderer-ui";
+import { hookGPUDevice } from "../../../src";
+import { graphRendererUI } from "./graph-renderer-ui";
 import { setupGraphRenderer } from "./graph-renderer-renderer";
 
 document.head.innerHTML += `<meta name="viewport" 
@@ -116,7 +69,7 @@ document.head.innerHTML += `<meta name="viewport"
   document.body.appendChild(ui.dom);
 
   async function loop(t: number) {
-    if (!document.hidden) {
+    if (document.hasFocus()) {
       loadingMsg.style.display = "none";
 
       let dt = (t - lastT) / 1000;
@@ -132,7 +85,7 @@ document.head.innerHTML += `<meta name="viewport"
 
       graphRendererInstance.updateLabels();
 
-      graphRendererInstance.draw(lineMode);
+      await graphRendererInstance.draw(lineMode);
 
       loopIter++;
     }

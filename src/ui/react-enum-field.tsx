@@ -13,7 +13,7 @@ export function EnumField<T extends string>(
         }}
       >
         {props.variants.map((v) => (
-          <option value={v[0]} key={v[0]}>
+          <option value={v[0]} key={v[0]} title={v[1]}>
             {v[1]}
           </option>
         ))}

@@ -11,41 +11,10 @@ import {
 } from "../partial-pipelines";
 import { struct, WGSLStructSpec } from "../wgsl-struct-layout-generator";
 
-export async function lineRenderer(
-  device: GPUDevice,
-  outputFormat: GPUTextureFormat,
-  settings?: {
-    multisample: GPUMultisampleState & { count: 1 | 4 };
-  },
-) {
+export type LineRenderer = Awaited<ReturnType<typeof lineRenderer>>;
+
+export function linesRendererBufferDefs(device: GPUDevice) {
   const td = typeDevice(device);
-
-  const depthTexFormat = td.textureFormat(
-    {
-      name: "depth",
-      format: "depth32float",
-      sampleCount: settings?.multisample?.count ?? 1,
-      viewDimension: "2d",
-      visibility: ["fragment"],
-    },
-    "render-attachment",
-  );
-
-  const colorTexFormat = td.textureFormat(
-    {
-      name: "color",
-      format: outputFormat,
-      sampleCount: settings?.multisample?.count ?? 1,
-      viewDimension: "2d",
-      dimension: "2d",
-      visibility: ["fragment"],
-    },
-    "render-attachment",
-  );
-
-  const EVERYWHERE =
-    GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
-
   const geometryBufferFormat = td.vertexBufferFormat("geometry", 8, [
     {
       name: "geometryPosition",
@@ -145,6 +114,61 @@ export async function lineRenderer(
   );
 
   const perFrameBindGroup = td.bindGroupFormat("perFrame", uniforms);
+  return {
+    lineSegInstanceBufferFormat1,
+    lineSegInstanceBufferFormat2,
+    uniforms,
+    perFrameBindGroup,
+    geometryBufferFormat,
+    quad,
+    pointInstanceBufferFormat,
+  };
+}
+
+export async function lineRenderer(
+  device: GPUDevice,
+  outputFormat: GPUTextureFormat,
+  settings?: {
+    multisample: (GPUMultisampleState & { count: 1 | 4 }) | undefined;
+  },
+) {
+  const {
+    lineSegInstanceBufferFormat1,
+    lineSegInstanceBufferFormat2,
+    uniforms,
+    perFrameBindGroup,
+    geometryBufferFormat,
+    quad,
+    pointInstanceBufferFormat,
+  } = linesRendererBufferDefs(device);
+
+  const td = typeDevice(device);
+
+  const depthTexFormat = td.textureFormat(
+    {
+      name: "depth",
+      format: "depth32float",
+      sampleCount: settings?.multisample?.count ?? 1,
+      viewDimension: "2d",
+      visibility: ["fragment"],
+    },
+    "render-attachment",
+  );
+
+  const colorTexFormat = td.textureFormat(
+    {
+      name: "color",
+      format: outputFormat,
+      sampleCount: settings?.multisample?.count ?? 1,
+      viewDimension: "2d",
+      dimension: "2d",
+      visibility: ["fragment"],
+    },
+    "render-attachment",
+  );
+
+  const EVERYWHERE =
+    GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
 
   const blend: GPUBlendState | undefined = undefined; /* {
     color: {
