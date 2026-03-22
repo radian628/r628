@@ -34,6 +34,8 @@ export type UIState = {
   dataSourceUrl: string;
   tags: string;
   positions: Blob | undefined;
+
+  showOctree: boolean;
 };
 
 const DEFAULT_UI_STATE: UIState = {
@@ -56,6 +58,8 @@ const DEFAULT_UI_STATE: UIState = {
   dataSourceUrl: "../../assets/crosslinksv3_(RELOADED).json",
   tags: "",
   positions: undefined,
+
+  showOctree: false,
 };
 
 export type GraphRendererUI = {
@@ -320,6 +324,11 @@ h2 {
           >
             Export Current Node Positions
           </button>
+        </div>
+        <h2>Debug</h2>
+        <div className="ui-object">
+          <label>Show Octree</label>
+          <BooleanField {...prop("showOctree")}></BooleanField>
         </div>
       </div>
     </>

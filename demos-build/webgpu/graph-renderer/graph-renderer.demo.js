@@ -28997,7 +28997,8 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
     timestep: 0.06,
     dataSourceUrl: "../../assets/crosslinksv3_(RELOADED).json",
     tags: "",
-    positions: void 0
+    positions: void 0,
+    showOctree: false
   };
   function graphRendererUI(params) {
     const root = document.createElement("div");
@@ -29185,7 +29186,9 @@ h2 {
           }
         },
         "Export Current Node Positions"
-      ))
+      )),
+      /* @__PURE__ */ import_react19.default.createElement("h2", null, "Debug"),
+      /* @__PURE__ */ import_react19.default.createElement("div", { className: "ui-object" }, /* @__PURE__ */ import_react19.default.createElement("label", null, "Show Octree"), /* @__PURE__ */ import_react19.default.createElement(BooleanField, { ...prop("showOctree") }))
     ));
   }
 
@@ -30760,6 +30763,188 @@ fn set_point(idx: u32, across: f32, width: f32) {
       set_point(ipt + 6, params.nan, 1.0);
     `
     });
+    const visualizeOctreeCubePositionFormat = td.instanceBufferFormat("cube_position", 28, [
+      {
+        name: "min_corner",
+        format: "float32x3",
+        offset: 0
+      },
+      {
+        name: "max_corner",
+        format: "float32x3",
+        offset: 12
+      },
+      {
+        name: "depth",
+        format: "float32",
+        offset: 24
+      }
+    ]).usage("vertex", "storage");
+    const visualizeOctreeGeometryFormat = td.vertexBufferFormat("position", 12, [
+      {
+        name: "position",
+        format: "float32x3",
+        offset: 0
+      }
+    ]);
+    const indexFormat = td.vertexBufferFormat("index", 4, [
+      {
+        name: "index",
+        format: "uint32",
+        offset: 0
+      }
+    ]).usage("index", "copy-dst");
+    const visualizeOctreeConstructionBindGroupFormat = td.bindGroupFormat(
+      "bg",
+      nBodySim.octreeNodeFormat,
+      nBodySim.octreeMetadataFormat,
+      genericBufferFormat,
+      nBodySim.nextfreesNonatomicFormat
+    );
+    const visualizeOctreeConstructionPipeline = await td.computePipeline({
+      bindGroups: [visualizeOctreeConstructionBindGroupFormat],
+      workgroupSize: [32, 1, 1],
+      shader: `
+    let i = id.x;
+    if (i >= nextfrees.node) { return; }
+    let ri = nextfrees.node - i - 1u;
+    let metadata_idx = octree_nodes[ri].metadata_idx;
+    let metadata = octree_metadata[metadata_idx];
+
+    generic[i * 7] = bitcast<u32>(metadata.min_corner.x);
+    generic[i * 7 + 1] = bitcast<u32>(metadata.min_corner.y);
+    generic[i * 7 + 2] = bitcast<u32>(metadata.min_corner.z);
+    generic[i * 7 + 3] = bitcast<u32>(metadata.max_corner.x);
+    generic[i * 7 + 4] = bitcast<u32>(metadata.max_corner.y);
+    generic[i * 7 + 5] = bitcast<u32>(metadata.max_corner.z);
+
+    let depth = (10.0 - log2(distance(metadata.max_corner, metadata.min_corner))) / 10.0;
+
+    generic[i * 7 + 6] = bitcast<u32>(depth);
+
+    `
+    });
+    const mVisualizeOctreePipeline = memoOnce(
+      (aa) => td.renderPipeline({
+        bindGroups: [linesFormats.perFrameBindGroup],
+        inputs: [
+          visualizeOctreeCubePositionFormat,
+          visualizeOctreeGeometryFormat
+        ],
+        outputs: {
+          color: canvasFormat
+        },
+        multisample: aa === "msaa" ? { count: 4 } : void 0,
+        depthStencil: {
+          format: "depth32float",
+          depthCompare: "less",
+          depthWriteEnabled: true
+        },
+        vertex: `
+    var frag: FragInput;
+    let l = (vertex.position - vec3f(0.5)) * 1.0 + vec3f(0.5);
+    frag.position = params.mvp * vec4f(mix(vertex.min_corner, vertex.max_corner, l), 1.0);
+    frag.depth = vertex.depth;
+    return frag;
+    `,
+        fragment: {
+          function: `
+      var pixel: FragOutput;
+      pixel.color = vec4f(input.depth, 0.0, 1.0 - input.depth, 1.0); 
+      return pixel;
+      `,
+          struct: `@location(0) color: vec4f, @builtin(position) position : vec4f, @location(1) depth : f32,`
+        },
+        primitive: {
+          topology: "line-list"
+        }
+      })
+    );
+    const drawIndirectBufferFormat = td.storageBufferFormat(
+      "draw_indirect",
+      struct("DrawIndirect", {
+        index_count: "u32",
+        instance_count: "u32",
+        first_index: "u32",
+        base_vertex: "u32",
+        first_instance: "u32"
+      })
+    ).usage("indirect", "storage");
+    const determineNumberOfOctreeNodesToDrawBindGroupFormat = td.bindGroupFormat(
+      "bg",
+      nBodySim.nextfreesNonatomicFormat,
+      drawIndirectBufferFormat,
+      nBodySim.computeIndirectBufferFormat
+    );
+    const determineNumberOfOctreeNodesToDrawPipeline = await td.computePipeline({
+      bindGroups: [determineNumberOfOctreeNodesToDrawBindGroupFormat],
+      workgroupSize: [1, 1, 1],
+      shader: `
+    draw_indirect.index_count = 24u;
+    draw_indirect.instance_count = nextfrees.node;
+    draw_indirect.first_index = 0u;
+    draw_indirect.base_vertex = 0u;
+    draw_indirect.first_instance = 0u;
+    
+    compute_indirect.workgroups = vec3u(
+      (nextfrees.node / 32u) + 1u, 1u, 1u
+    );
+    `
+    });
+    const cubeVertsBuffer = visualizeOctreeGeometryFormat.quickCreate([
+      {
+        position: [0, 0, 0]
+      },
+      {
+        position: [1, 0, 0]
+      },
+      {
+        position: [0, 1, 0]
+      },
+      {
+        position: [1, 1, 0]
+      },
+      {
+        position: [0, 0, 1]
+      },
+      {
+        position: [1, 0, 1]
+      },
+      {
+        position: [0, 1, 1]
+      },
+      {
+        position: [1, 1, 1]
+      }
+    ]);
+    const cubeEdgesIndexBuffer = indexFormat.quickCreate(
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        0,
+        2,
+        1,
+        3,
+        4,
+        6,
+        5,
+        7,
+        0,
+        4,
+        1,
+        5,
+        2,
+        6,
+        3,
+        7
+      ].map((i) => ({ index: i }))
+    );
     let keysDown = /* @__PURE__ */ new Set();
     let isDesktop = true;
     const multiTransform = variadify(mulMat4);
@@ -31012,6 +31197,26 @@ user-select: none;
           edges: unidirectionalEdgesBuffer,
           params: transferBodyInfoToLinesUniforms
         });
+        const octreeVizBuffer = visualizeOctreeCubePositionFormat.new(2e5);
+        const octreeNodeDrawCountIndirectBuffer = drawIndirectBufferFormat.new(1);
+        const octreeNodeComputeCountIndirectBuffer = nBodySim.computeIndirectBufferFormat.new(1);
+        const determineNumberOfOctreeNodesToDrawBindGroup = determineNumberOfOctreeNodesToDrawBindGroupFormat.new({
+          nextfrees: nBodySim.nextfreesNonatomicFormat.reinterpret(
+            octree.nextfreesBuffer
+          ),
+          draw_indirect: octreeNodeDrawCountIndirectBuffer,
+          compute_indirect: octreeNodeComputeCountIndirectBuffer
+        });
+        const vizOctreeBindGroup = visualizeOctreeConstructionBindGroupFormat.new(
+          {
+            octree_nodes: octree.octreeNodeBuffer,
+            octree_metadata: octree.octreeMetadataBuffer,
+            generic: genericBufferFormat.reinterpret(octreeVizBuffer),
+            nextfrees: nBodySim.nextfreesNonatomicFormat.reinterpret(
+              octree.nextfreesBuffer
+            )
+          }
+        );
         function updateGeometry(pass2) {
           transferBodyInfoToLinesUniformsFormat.fill(
             transferBodyInfoToLinesUniforms,
@@ -31028,6 +31233,17 @@ user-select: none;
           pass2.setPipeline(transferBodyInfoToLinesPipeline);
           pass2.setBindGroup(0, transferBodyInfoToLinesBindGroup);
           pass2.dispatchWorkgroups(Math.ceil(unidirectionalEdgeList.length / 32));
+          if (params.ui.state.showOctree) {
+            pass2.setPipeline(determineNumberOfOctreeNodesToDrawPipeline);
+            pass2.setBindGroup(0, determineNumberOfOctreeNodesToDrawBindGroup);
+            pass2.dispatchWorkgroups(1);
+            pass2.setPipeline(visualizeOctreeConstructionPipeline);
+            pass2.setBindGroup(0, vizOctreeBindGroup);
+            pass2.dispatchWorkgroupsIndirect(
+              octreeNodeComputeCountIndirectBuffer,
+              0
+            );
+          }
         }
         function moveBodies() {
           physicsUniformsFormat.fill(physicsUniforms, 0, {
@@ -31193,6 +31409,7 @@ user-select: none;
             const aa = params.ui.state.antialiasing;
             const linesRenderer = await mLinesRenderer(aa);
             const clearRenderer2 = await mClearRenderer(aa);
+            const visualizeOctreePipeline = await mVisualizeOctreePipeline(aa);
             mResizeCanvas(windowSize);
             const canvasTex = ctx.getCurrentTexture();
             const size = [canvasTex.width, canvasTex.height];
@@ -31250,6 +31467,16 @@ user-select: none;
                 line: edgesFast
               });
               pass2.draw(graph.edges.size * 2);
+            }
+            if (params.ui.state.showOctree) {
+              pass2.setPipeline(visualizeOctreePipeline);
+              visualizeOctreePipeline.bind(pass2, {
+                perFrame: graphPerFrameBindGroup,
+                position: cubeVertsBuffer,
+                cube_position: octreeVizBuffer
+              });
+              pass2.setIndexBuffer(cubeEdgesIndexBuffer, "uint32");
+              pass2.drawIndexedIndirect(octreeNodeDrawCountIndirectBuffer, 0);
             }
             pass2.end();
             device.queue.submit([enc2.finish()]);
