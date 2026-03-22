@@ -23981,12 +23981,6 @@
   function sub3(a, b) {
     return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
   }
-  function min3(a, b) {
-    return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.min(a[2], b[2])];
-  }
-  function max3(a, b) {
-    return [Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.max(a[2], b[2])];
-  }
   function length2(a) {
     return Math.sqrt(dot2(a, a));
   }
@@ -31063,7 +31057,6 @@ user-select: none;
           positiveTags,
           negativeTags,
           positions: params.ui.state.positions,
-          // url: `../../assets/crosslinksv3_(RELOADED).json`,
           url: params.ui.state.dataSourceUrl
         });
         const labelVertsArray = [...graph.vertices].map((vert) => ({
@@ -31133,22 +31126,6 @@ user-select: none;
           edgeList.length
         );
         const transferBodyInfoToLinesUniforms = transferBodyInfoToLinesUniformsFormat.new(1);
-        console.log(
-          "MINS",
-          [...graph.vertices].reduce((a, b) => min3(a, b.data.position), [
-            0,
-            0,
-            0
-          ])
-        );
-        console.log(
-          "MAXES",
-          [...graph.vertices].reduce((a, b) => max3(a, b.data.position), [
-            0,
-            0,
-            0
-          ])
-        );
         const bodies = bodiesFormat.quickCreate(
           [...graph.vertices].map((vert, i, a) => {
             return {

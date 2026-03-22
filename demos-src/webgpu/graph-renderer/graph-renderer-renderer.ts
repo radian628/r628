@@ -792,7 +792,6 @@ user-select: none;
         positiveTags,
         negativeTags,
         positions: params.ui.state.positions,
-        // url: `../../assets/crosslinksv3_(RELOADED).json`,
         url: params.ui.state.dataSourceUrl,
       });
 
@@ -871,7 +870,6 @@ user-select: none;
         );
 
       for (const vert of graph.vertices) {
-        // let location = edgeList.length;
         for (const outgoing of vert.outgoing) {
           const startIndex = vertToIndexMap.get(vert)!;
           const endIndex = vertToIndexMap.get(outgoing.endpoints[1])!;
@@ -910,19 +908,6 @@ user-select: none;
 
       const transferBodyInfoToLinesUniforms =
         transferBodyInfoToLinesUniformsFormat.new(1);
-
-      console.log(
-        "MINS",
-        [...graph.vertices].reduce((a, b) => min3(a, b.data.position), [
-          0, 0, 0,
-        ] as Vec3),
-      );
-      console.log(
-        "MAXES",
-        [...graph.vertices].reduce((a, b) => max3(a, b.data.position), [
-          0, 0, 0,
-        ] as Vec3),
-      );
 
       const bodies = bodiesFormat.quickCreate(
         [...graph.vertices].map((vert, i, a) => {

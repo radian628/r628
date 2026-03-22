@@ -64,13 +64,6 @@ export async function fetchGraphRendererData(params: {
           !g.tags?.some((t: any) => negativeTags.includes(t))),
     );
 
-  // graphData = graphData.map((g) => ({
-  //   ...g,
-  //   x: g.x + Math.random() * 0,
-  //   y: g.y + Math.random() * 0,
-  //   z: g.z + Math.random() * 0,
-  // }));
-
   // remove duplicates
   graphData = [...new Map(graphData.map((g: any) => [g.url, g])).values()];
 

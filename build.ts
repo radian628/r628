@@ -77,7 +77,16 @@ if (whatToBuild === "lib") {
   const clients: Set<WebSocket> = new Set();
 
   const server = express();
-  server.use("/demos-build", express.static("demos-build"));
+  server.use(
+    "/demos-build",
+    express.static("demos-build", {
+      setHeaders(res, path, stat) {
+        if (path.endsWith(".json")) {
+          res.set("Cache-Control", "max-age=604800");
+        }
+      },
+    }),
+  );
 
   const serverWs = expressWs(server);
 
