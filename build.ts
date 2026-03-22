@@ -143,7 +143,7 @@ if (whatToBuild === "lib") {
   const buildDemos = await esbuild.context({
     entryPoints: ["demos-src/**/*.demo.*"],
     outdir: "demos-build",
-    minify: false,
+    minify: true,
     bundle: true,
     format: "iife",
     plugins: [

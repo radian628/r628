@@ -746,8 +746,6 @@ export async function createNBodyOctreeDefs<
       };
     });
 
-    console.log(steps);
-
     const initMinMax = initMinMaxPipeline.new({
       bodies: params.bodies,
       vecs: minmax,
