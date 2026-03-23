@@ -852,7 +852,7 @@ dst = (pixel - params.blackEquiv) / (params.whiteEquiv - params.blackEquiv);
       return FragOutput(
         textureSample(tex, samp, smpl(uv) * 0.5 + 0.5)
       );
-      `}}),d=c.quickCreate([{uv:[0,0]},{uv:[1,0]},{uv:[0,1]},{uv:[1,0]},{uv:[0,1]},{uv:[1,1]}]),v=await createImageBitmap(await(await fetch("../assets/elonmusk8.png")).blob()),T=a.new([v.width,v.height]),E=l.new({addressModeU:"repeat",addressModeV:"repeat"});n.queue.copyExternalImageToTexture({source:v},{texture:T},[v.width,v.height]);let y=s.new(1),m=p.new({tex:T,samp:E,params:y}),x=0;function g(){s.fill(y,0,{angle:x*.01,mulBy:[Math.cos(x*.01),x*.01]});let S=n.createCommandEncoder(),V=S.beginRenderPass({colorAttachments:[{view:u.getCurrentTexture().createView(),loadOp:"clear",storeOp:"store"}]});V.setPipeline(f),V.setVertexBuffer(0,d),V.setBindGroup(0,m),V.draw(6),V.end(),n.queue.submit([S.finish()]),x++,setTimeout(g,25)}g()})();})();
+      `}}),d=c.quickCreate([{uv:[0,0]},{uv:[1,0]},{uv:[0,1]},{uv:[1,0]},{uv:[0,1]},{uv:[1,1]}]);console.log("please work");let v=await createImageBitmap(await(await fetch("../assets/elonmusk8.png")).blob()),T=a.new([v.width,v.height]),E=l.new({addressModeU:"repeat",addressModeV:"repeat"});n.queue.copyExternalImageToTexture({source:v},{texture:T},[v.width,v.height]);let y=s.new(1),m=p.new({tex:T,samp:E,params:y}),x=0;function g(){s.fill(y,0,{angle:x*.01,mulBy:[Math.cos(x*.01),x*.01]});let S=n.createCommandEncoder(),V=S.beginRenderPass({colorAttachments:[{view:u.getCurrentTexture().createView(),loadOp:"clear",storeOp:"store"}]});V.setPipeline(f),V.setVertexBuffer(0,d),V.setBindGroup(0,m),V.draw(6),V.end(),n.queue.submit([S.finish()]),x++,setTimeout(g,25)}g()})();})();
 /*! Bundled license information:
 
 react/cjs/react.production.js:
