@@ -171,7 +171,7 @@ import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
   ]);
 
   const elonmusk = await createImageBitmap(
-    await (await fetch("../../demos-build/assets/elonmusk8.png")).blob(),
+    await (await fetch("../assets/elonmusk8.png")).blob(),
   );
 
   const tex = texFormat.new([elonmusk.width, elonmusk.height]);
