@@ -46,6 +46,7 @@ import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
     },
     "copy-dst",
     "texture-binding",
+    "render-attachment",
   );
 
   const geometryBufferFormat = td.vertexBufferFormat("geometry", 12, [
@@ -65,7 +66,7 @@ import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
     "params",
     struct("Params", {
       angle: "f32",
-      mulBy: "vec2f",
+      scale: "f32",
     }),
   );
 
@@ -111,6 +112,8 @@ import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
     }
 
     fn smpl(z: vec2f) -> vec2f {
+    let factor = 25.0;
+
       var dist_from_center = max(
         abs(fract(z.x * 0.5 + 0.5) * 2.0 - 1.0), 
         abs(fract(z.y * 0.5 + 0.5) * 2.0 - 1.0) 
@@ -118,9 +121,9 @@ import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
       var z2 = z;
       var i = 0;
 
-      while (dist_from_center < 0.2 && i < 10) {
-        z2 *= 5.0; 
-        dist_from_center *= 5.0;
+      while (dist_from_center < 1.0 / factor && i < 10) {
+        z2 *= factor; 
+        dist_from_center *= factor;
         i += 1;
       }
       
@@ -134,16 +137,19 @@ import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
       `,
       function: `
       var uv = input.uv * 2.0 - 1.0;
-      uv *= 10.0;
+      uv *= 0.4;
+      // uv *= 3.141592;
+      // uv.x -= 4.0;
       uv = logc(uv);
       uv *= mat2x2f(
         cos(params.angle), -sin(params.angle),
         sin(params.angle), cos(params.angle) 
       );
+      uv *= params.scale;
       uv = expc(uv);
 
       return FragOutput(
-        textureSample(tex, samp, smpl(uv) * 0.5 + 0.5)
+        textureSample(tex, samp, smpl(uv) * 0.5 + 0.5) * 3.0
       );
       `,
     },
@@ -199,10 +205,29 @@ import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
 
   let iter = 0;
 
+  let mousedown = false;
+
+  document.addEventListener("mousedown", () => {
+    mousedown = true;
+  });
+  document.addEventListener("mouseup", () => {
+    mousedown = false;
+  });
+
+  let angle = 0.5;
+  let scale = 0.5;
+
+  document.addEventListener("mousemove", (e) => {
+    if (mousedown) {
+      angle = e.clientX / window.innerWidth;
+      scale = (e.clientY / window.innerHeight) * 2.0;
+    }
+  });
+
   function loop() {
     uniformsFormat.fill(params, 0, {
-      angle: iter * 0.01,
-      mulBy: [Math.cos(iter * 0.01), iter * 0.01],
+      angle,
+      scale,
     });
     const enc = device.createCommandEncoder();
     const pass = enc.beginRenderPass({

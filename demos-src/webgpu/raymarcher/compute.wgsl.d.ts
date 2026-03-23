@@ -8,13 +8,13 @@ declare module "compute.wgsl" {
           "name": "texture_storage_2d_array",
           "attributes": [
             {
-              "id": 19747,
+              "id": 37375,
               "line": 17,
               "name": "group",
               "value": "0"
             },
             {
-              "id": 19748,
+              "id": 37376,
               "line": 17,
               "name": "binding",
               "value": "0"
@@ -32,13 +32,13 @@ declare module "compute.wgsl" {
         "binding": 0,
         "attributes": [
           {
-            "id": 19747,
+            "id": 37375,
             "line": 17,
             "name": "group",
             "value": "0"
           },
           {
-            "id": 19748,
+            "id": 37376,
             "line": 17,
             "name": "binding",
             "value": "0"
@@ -53,13 +53,13 @@ declare module "compute.wgsl" {
           "name": "texture_storage_2d_array",
           "attributes": [
             {
-              "id": 19751,
+              "id": 37379,
               "line": 18,
               "name": "group",
               "value": "0"
             },
             {
-              "id": 19752,
+              "id": 37380,
               "line": 18,
               "name": "binding",
               "value": "1"
@@ -77,13 +77,13 @@ declare module "compute.wgsl" {
         "binding": 1,
         "attributes": [
           {
-            "id": 19751,
+            "id": 37379,
             "line": 18,
             "name": "group",
             "value": "0"
           },
           {
-            "id": 19752,
+            "id": 37380,
             "line": 18,
             "name": "binding",
             "value": "1"
@@ -216,13 +216,13 @@ declare module "compute.wgsl" {
         "binding": 0,
         "attributes": [
           {
-            "id": 19755,
+            "id": 37383,
             "line": 20,
             "name": "group",
             "value": "1"
           },
           {
-            "id": 19756,
+            "id": 37384,
             "line": 20,
             "name": "binding",
             "value": "0"
