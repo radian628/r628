@@ -163,7 +163,7 @@ export type BufferFillData<Fmt extends BufferFormat> =
       ? WGSLDataStructureBufferFillData<Spec>
       : never;
 
-type BufferFillFunction<Fmt extends BufferFormat> = (
+export type BufferFillFunction<Fmt extends BufferFormat> = (
   buf: GPUBuffer,
   offset: number,
   data: BufferFillData<Fmt>,

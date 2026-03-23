@@ -44,6 +44,7 @@ import {
   RenderPipelineBindings,
   TypedOutputFormat,
 } from "./pipeline";
+import { GPUSamplerType } from "./sampler";
 import {
   parseShaderStages,
   shaderStageFlagsMap,
@@ -346,23 +347,24 @@ export function typeDevice(device: GPUDevice) {
       Type extends GPUSamplerType,
       Visibility extends TypedShaderStage[],
     >(
-      name: string,
+      name: Name,
       params: {
         type: Type;
         visibility: Visibility;
       },
     ) {
       return {
-        visibility: params.visibility,
+        visibility: shaderStageFlagsMap(params.visibility),
         desc: {
-          type: params.type,
+          type: "sampler" as "sampler",
+          samplerType: params.type,
           name,
         },
         new(
           desc?: GPUSamplerDescriptor,
-        ): GPUSampler & { _typeInfo: { type: Type } } {
+        ): GPUSampler & { _typeInfo: { type: "sampler"; samplerType: Type } } {
           // @ts-expect-error
-          return device.createSampler({});
+          return device.createSampler(desc);
         },
       };
     },

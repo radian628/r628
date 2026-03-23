@@ -110,6 +110,7 @@ if (whatToBuild === "lib") {
     name: "autoReload",
     setup(build) {
       build.onEnd(() => {
+        console.log("sending reload prompt");
         for (const client of clients) {
           client.send(JSON.stringify({ type: "reload" }));
         }

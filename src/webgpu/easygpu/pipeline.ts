@@ -1,4 +1,8 @@
 import {
+  TEXTURE_FORMAT_TO_WGSL_TYPE_LUT,
+  WGSL_TYPE_DATATYPES,
+} from "../converters";
+import {
   TypedBindGroupDescGeneric,
   TypedBindGroupLayoutDescGeneric,
 } from "./bind-group";
@@ -73,6 +77,12 @@ export function getStructDefsAndBindings<
               );
             }
           }
+        } else if (e.desc.type === "texture") {
+          return `@group(${
+            groupIndex
+          }) @binding(${bindingIndex}) var ${e.desc.name}: texture_${e.desc.viewDimension.replace("-", "_")}<${WGSL_TYPE_DATATYPES[TEXTURE_FORMAT_TO_WGSL_TYPE_LUT[e.desc.format]]}>;`;
+        } else if (e.desc.type === "sampler") {
+          return `@group(${groupIndex}) @binding(${bindingIndex}) var ${e.desc.name}: sampler;`;
         } else {
           return "";
         }

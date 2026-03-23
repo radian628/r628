@@ -1,58 +1,37 @@
-import stringHash from "string-hash";
 import {
-  add3,
-  addEdge,
-  addVertex,
   ClearRenderer,
   clearRenderer,
-  createGraph,
   distance3,
-  Graph,
-  lerp,
   LineRenderer,
   lineRenderer,
   linesRendererBufferDefs,
-  Mat4,
-  max3,
   memoOnce,
-  min3,
-  mix3,
-  mix4,
-  mul3,
   mul4,
   mulMat4,
   mulMat4ByVec4,
-  mulVec4ByMat4,
   perspectiveWebgpu,
-  pipelineRenderpass,
   quickMap,
   quickMapWithFormat,
-  reactive,
-  reactiveSource,
   rescale,
-  rotate,
   runtimeArray,
   scale3,
   scale4,
   splitBy,
   struct,
-  translate,
   variadify,
   Vec2,
-  Vec3,
   Vec4,
-  Vertex,
-  WGSLStructValues,
-  wrapDevice,
-  xyz,
 } from "../../../src";
 import { graphRendererUI, PositionedNode } from "./graph-renderer-ui";
 import { createNBodyOctreeDefs } from "../n-body-octree";
-import { CANON_TAGS, SERIES_TAGS } from "./tags";
 import { typeDevice } from "../../../src/webgpu/easygpu/easygpu";
 import { Node, fetchGraphRendererData } from "./fetch-data";
+import { graphRendererControls } from "./graph-renderer-controls";
 
-export async function setupGraphRenderer(device: GPUDevice) {
+export async function setupGraphRenderer(
+  device: GPUDevice,
+  params: { ui: ReturnType<typeof graphRendererUI> },
+) {
   const canvas = document.createElement("canvas");
   canvas.style =
     "position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;";
@@ -254,16 +233,8 @@ export async function setupGraphRenderer(device: GPUDevice) {
     .storageBufferFormat("generic", runtimeArray("u32"))
     .usage("storage", "copy-src");
 
-  const transferBodyInfoToPointsBindGroupFormat = td.bindGroupFormat(
-    "nbody",
-    bodiesFormat,
-    genericBufferFormat.name("points"),
-  );
-
-  const transferBodyInfoToPointsPipeline = await td.computePipeline({
-    bindGroups: [transferBodyInfoToPointsBindGroupFormat],
-    workgroupSize: [32, 1, 1],
-    shader: `
+  const transferBodyInfoToPointsPipeline = await td.computePipelineBundled(
+    `
       let i = id.x;
       if (i >= arrayLength(&bodies)) { return; }
       points[i * 5] = bitcast<u32>(bodies[i].position.x);
@@ -272,7 +243,10 @@ export async function setupGraphRenderer(device: GPUDevice) {
       points[i * 5 + 3] = bitcast<u32>(0.5);
       points[i * 5 + 4] = pack4x8unorm(bodies[i].color);
     `,
-  });
+    [32, 1, 1],
+    bodiesFormat,
+    genericBufferFormat.name("points"),
+  );
 
   const edgesBufferFormat = td.storageBufferFormat(
     "edges",
@@ -325,22 +299,8 @@ export async function setupGraphRenderer(device: GPUDevice) {
     ),
   );
 
-  const calcEdgeForcesBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    weightedEdgesBufferFormat,
-    accelVectorPairsFormat,
-    bodiesFormat,
-  );
-
-  const calcEdgeForcesPipeline = await td.computePipeline({
-    bindGroups: [calcEdgeForcesBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    storageBufferAccess: {
-      bodies: "read_write",
-      edges: "read_write",
-      accel_vectors: "read_write",
-    },
-    shader: `
+  const calcEdgeForcesPipeline = await td.computePipelineBundled(
+    `
     let i = id.x;
     if (i >= arrayLength(&edges)) {
       return;
@@ -364,24 +324,14 @@ export async function setupGraphRenderer(device: GPUDevice) {
     accel_vectors[i].to_src = mag * offset_norm * edge.weight;
     // accel_vectors[i].to_src = vec3f(1.0, 0.0, 0.0);
     `,
-  });
-
-  const sumEdgeForcesBindGroupFormat = td.bindGroupFormat(
-    "bg",
+    [32, 1, 1],
+    weightedEdgesBufferFormat,
     accelVectorPairsFormat,
-    edgeLocationMapFormat,
-    accelsFormat,
+    bodiesFormat,
   );
 
-  const sumEdgeForcesPipeline = await td.computePipeline({
-    bindGroups: [sumEdgeForcesBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    storageBufferAccess: {
-      accel_vectors: "read_write",
-      edge_loc_map: "read_write",
-      accels: "read_write",
-    },
-    shader: `
+  const sumEdgeForcesPipeline = await td.computePipelineBundled(
+    `
     let i = id.x;
     if (i >= arrayLength(&accels)) {
       return; 
@@ -395,7 +345,11 @@ export async function setupGraphRenderer(device: GPUDevice) {
     }
 
     `,
-  });
+    [32, 1, 1],
+    accelVectorPairsFormat,
+    edgeLocationMapFormat,
+    accelsFormat,
+  );
 
   const transferBodyInfoToLinesUniformsFormat = td.uniformBufferComputeFormat(
     "params",
@@ -406,24 +360,10 @@ export async function setupGraphRenderer(device: GPUDevice) {
     }),
   );
 
-  const transferBodyInfoToLinesBindGroupFormat = td.bindGroupFormat(
-    "nbody",
-    bodiesFormat,
-    genericBufferFormat.name("lines"),
-    displayEdgesBufferFormat,
-    transferBodyInfoToLinesUniformsFormat,
-  );
+  const transferBodyInfoToLinesPipeline = await td.computePipelineBundled(
+    `
 
-  const transferBodyInfoToLinesPipeline = await td.computePipeline({
-    bindGroups: [transferBodyInfoToLinesBindGroupFormat],
-    workgroupSize: [32, 1, 1],
-    storageBufferAccess: {
-      bodies: "read_write",
-      generic: "read_write",
-      edges: "read_write",
-    },
-    globals: `
-
+/*globals
 var<private> endpoint1: vec3f;
 var<private> endpoint2: vec3f;
 var<private> color1: vec4f;
@@ -439,8 +379,8 @@ fn set_point(idx: u32, across: f32, width: f32) {
   lines[i + 3] = bitcast<u32>(width * params.line_width_multiplier);
   lines[i + 4] = pack4x8unorm(mix(color1, color2, across) * vec4f(vec3f(color_mul), 1.0));
 }    
-    `,
-    shader: `
+*/ 
+
       let i = id.x;
       if (i >= arrayLength(&edges)) { return; }
 
@@ -465,7 +405,12 @@ fn set_point(idx: u32, across: f32, width: f32) {
       set_point(ipt + 5, 1.0, 1.0);
       set_point(ipt + 6, params.nan, 1.0);
     `,
-  });
+    [32, 1, 1],
+    bodiesFormat,
+    genericBufferFormat.name("lines"),
+    displayEdgesBufferFormat,
+    transferBodyInfoToLinesUniformsFormat,
+  );
 
   const visualizeOctreeCubePositionFormat = td
     .instanceBufferFormat("cube_position", 28, [
@@ -505,18 +450,8 @@ fn set_point(idx: u32, across: f32, width: f32) {
     ] as const)
     .usage("index", "copy-dst");
 
-  const visualizeOctreeConstructionBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    nBodySim.octreeNodeFormat,
-    nBodySim.octreeMetadataFormat,
-    genericBufferFormat,
-    nBodySim.nextfreesNonatomicFormat,
-  );
-
-  const visualizeOctreeConstructionPipeline = await td.computePipeline({
-    bindGroups: [visualizeOctreeConstructionBindGroupFormat] as const,
-    workgroupSize: [32, 1, 1],
-    shader: `
+  const visualizeOctreeConstructionPipeline = await td.computePipelineBundled(
+    `
     let i = id.x;
     if (i >= nextfrees.node) { return; }
     let ri = nextfrees.node - i - 1u;
@@ -535,7 +470,12 @@ fn set_point(idx: u32, across: f32, width: f32) {
     generic[i * 7 + 6] = bitcast<u32>(depth);
 
     `,
-  });
+    [32, 1, 1],
+    nBodySim.octreeNodeFormat,
+    nBodySim.octreeMetadataFormat,
+    genericBufferFormat,
+    nBodySim.nextfreesNonatomicFormat,
+  );
 
   const mVisualizeOctreePipeline = memoOnce((aa: "msaa" | "none") =>
     td.renderPipeline({
@@ -587,17 +527,9 @@ fn set_point(idx: u32, across: f32, width: f32) {
     )
     .usage("indirect", "storage");
 
-  const determineNumberOfOctreeNodesToDrawBindGroupFormat = td.bindGroupFormat(
-    "bg",
-    nBodySim.nextfreesNonatomicFormat,
-    drawIndirectBufferFormat,
-    nBodySim.computeIndirectBufferFormat,
-  );
-
-  const determineNumberOfOctreeNodesToDrawPipeline = await td.computePipeline({
-    bindGroups: [determineNumberOfOctreeNodesToDrawBindGroupFormat] as const,
-    workgroupSize: [1, 1, 1],
-    shader: `
+  const determineNumberOfOctreeNodesToDrawPipeline =
+    await td.computePipelineBundled(
+      `
     draw_indirect.index_count = 24u;
     draw_indirect.instance_count = nextfrees.node;
     draw_indirect.first_index = 0u;
@@ -608,7 +540,11 @@ fn set_point(idx: u32, across: f32, width: f32) {
       (nextfrees.node / 32u) + 1u, 1u, 1u
     );
     `,
-  });
+      [1, 1, 1],
+      nBodySim.nextfreesNonatomicFormat,
+      drawIndirectBufferFormat,
+      nBodySim.computeIndirectBufferFormat,
+    );
 
   const cubeVertsBuffer = visualizeOctreeGeometryFormat.quickCreate([
     {
@@ -647,137 +583,17 @@ fn set_point(idx: u32, across: f32, width: f32) {
     ].map((i) => ({ index: i })),
   );
 
-  let keysDown = new Set<string>();
-
-  let isDesktop = true;
-
   const multiTransform = variadify(mulMat4);
 
-  let rotationMatrix: Mat4 = rotate([0, 1, 0], 0.1);
-
-  document.addEventListener("keydown", (e) => {
-    keysDown.add(e.key.toLowerCase());
+  const controls = graphRendererControls({
+    canvas,
+    ui: params.ui,
   });
-  document.addEventListener("keyup", (e) => {
-    keysDown.delete(e.key.toLowerCase());
-  });
-
-  document.addEventListener("mousedown", (e) => {
-    if (!(e.target instanceof HTMLCanvasElement)) {
-      return;
-    }
-
-    if (isDesktop) {
-      canvas.requestPointerLock();
-    }
-  });
-
-  const touches = new Map<number, { touch: Touch }>();
-
-  function updateTouches(e: TouchEvent) {
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      const t = e.changedTouches[i];
-      touches.set(t.identifier, {
-        touch: t,
-      });
-    }
-  }
-
-  canvas.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    updateTouches(e);
-  });
-
-  canvas.addEventListener("touchmove", (e) => {
-    e.preventDefault();
-    if (e.changedTouches.length === 1) {
-      const t = e.changedTouches[0];
-      const prevT = touches.get(t.identifier)?.touch;
-
-      if (prevT) {
-        const dx = t.clientX - prevT.clientX;
-        const dy = t.clientY - prevT.clientY;
-
-        rotateBy(dx * 0.005, -dy * 0.005);
-      }
-    }
-    updateTouches(e);
-  });
-
-  canvas.addEventListener("touchend", (e) => {
-    e.preventDefault();
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      const t = e.changedTouches[i];
-      touches.delete(t.identifier);
-    }
-  });
-
-  document.addEventListener("mousemove", (e) => {
-    if (document.pointerLockElement !== canvas) return;
-    rotateBy(-e.movementX * 0.003, e.movementY * 0.003);
-  });
-
-  const moveControls = document.createElement("div");
-  document.body.appendChild(moveControls);
-  moveControls.style = `
-position: absolute;
-bottom: 10px;
-left: 10px;    
-display: grid;
-z-index: 2;
-grid-template-areas:
-    ". up ."
-    ". forward ."
-    "left . right"
-    ". backward ."
-    ". down ."
-    `;
-
-  function mappedButton(text: string, gridArea: string, key: string) {
-    const forwardButton = document.createElement("button");
-    forwardButton.innerText = text;
-    forwardButton.style = `
-grid-area: ${gridArea};    
-height: 30px;
-border-radius: 5px;
-border: 1px solid #888;
-background-color: #000a; 
-color: white;
-margin: 2px;
-user-select: none;
--webkit-user-select: none;
--webkit-touch-callout: none;
-    `;
-    forwardButton.addEventListener("touchstart", () => {
-      keysDown.add(key);
-    });
-    forwardButton.addEventListener("touchend", () => {
-      keysDown.delete(key);
-    });
-
-    moveControls.appendChild(forwardButton);
-  }
-
-  mappedButton("Forward", "forward", "w");
-  mappedButton("Left", "left", "a");
-  mappedButton("Backward", "backward", "s");
-  mappedButton("Right", "right", "d");
-  mappedButton("Up", "up", " ");
-  mappedButton("Down", "down", "shift");
-
-  function rotateBy(dx: number, dy: number) {
-    const localXAxis = mulVec4ByMat4([1, 0, 0, 0], rotationMatrix);
-    const localYAxis = mulVec4ByMat4([0, -1, 0, 0], rotationMatrix);
-
-    const r1 = rotate(xyz(localYAxis), dx);
-    const r2 = rotate(xyz(localXAxis), dy);
-
-    rotationMatrix = mulMat4(rotationMatrix, mulMat4(r1, r2));
-  }
+  controls.init();
 
   return {
     canvas,
-    async createGraph(params: { ui: ReturnType<typeof graphRendererUI> }) {
+    async createGraph() {
       let tags = params.ui.state.tags
         .split(",")
         .map((t) => t.trim())
@@ -922,13 +738,13 @@ user-select: none;
 
       const accelsFinal = accelsFormat.new(graph.vertices.size);
 
-      const calcEdgeForcesBindGroup = calcEdgeForcesBindGroupFormat.new({
+      const calcEdgeForces = calcEdgeForcesPipeline.new({
         edges: edgesBuffer,
         bodies: bodies,
         accel_vectors: accelVectorPairsBuffer,
       });
 
-      const sumEdgeForcesBindGroup = sumEdgeForcesBindGroupFormat.new({
+      const sumEdgeForces = sumEdgeForcesPipeline.new({
         accel_vectors: accelVectorPairsBuffer,
         accels: accelsFinal,
         edge_loc_map: edgeLocMapBuffer,
@@ -957,19 +773,17 @@ user-select: none;
         physics_params: physicsUniforms,
       });
 
-      const transferBodyInfoToPointsBindGroup =
-        transferBodyInfoToPointsBindGroupFormat.new({
-          bodies,
-          points: genericBufferFormat.reinterpret(vertices),
-        });
+      const transferBodyInfoToPoints = transferBodyInfoToPointsPipeline.new({
+        bodies,
+        points: genericBufferFormat.reinterpret(vertices),
+      });
 
-      const transferBodyInfoToLinesBindGroup =
-        transferBodyInfoToLinesBindGroupFormat.new({
-          bodies,
-          lines: genericBufferFormat.reinterpret(edges),
-          edges: unidirectionalEdgesBuffer,
-          params: transferBodyInfoToLinesUniforms,
-        });
+      const transferBodyInfoToLines = transferBodyInfoToLinesPipeline.new({
+        bodies,
+        lines: genericBufferFormat.reinterpret(edges),
+        edges: unidirectionalEdgesBuffer,
+        params: transferBodyInfoToLinesUniforms,
+      });
 
       const octreeVizBuffer = visualizeOctreeCubePositionFormat.new(200000);
 
@@ -978,8 +792,8 @@ user-select: none;
       const octreeNodeComputeCountIndirectBuffer =
         nBodySim.computeIndirectBufferFormat.new(1);
 
-      const determineNumberOfOctreeNodesToDrawBindGroup =
-        determineNumberOfOctreeNodesToDrawBindGroupFormat.new({
+      const determineNumberOfOctreeNodesToDraw =
+        determineNumberOfOctreeNodesToDrawPipeline.new({
           nextfrees: nBodySim.nextfreesNonatomicFormat.reinterpret(
             octree.nextfreesBuffer,
           ),
@@ -987,16 +801,14 @@ user-select: none;
           compute_indirect: octreeNodeComputeCountIndirectBuffer,
         });
 
-      const vizOctreeBindGroup = visualizeOctreeConstructionBindGroupFormat.new(
-        {
-          octree_nodes: octree.octreeNodeBuffer,
-          octree_metadata: octree.octreeMetadataBuffer,
-          generic: genericBufferFormat.reinterpret(octreeVizBuffer),
-          nextfrees: nBodySim.nextfreesNonatomicFormat.reinterpret(
-            octree.nextfreesBuffer,
-          ),
-        },
-      );
+      const vizOctree = visualizeOctreeConstructionPipeline.new({
+        octree_nodes: octree.octreeNodeBuffer,
+        octree_metadata: octree.octreeMetadataBuffer,
+        generic: genericBufferFormat.reinterpret(octreeVizBuffer),
+        nextfrees: nBodySim.nextfreesNonatomicFormat.reinterpret(
+          octree.nextfreesBuffer,
+        ),
+      });
 
       function updateGeometry(pass: GPUComputePassEncoder) {
         transferBodyInfoToLinesUniformsFormat.fill(
@@ -1009,25 +821,15 @@ user-select: none;
         );
 
         const perBodyWorkgroups = Math.ceil(graph.vertices.size / 32);
-        pass.setPipeline(transferBodyInfoToPointsPipeline);
-        pass.setBindGroup(0, transferBodyInfoToPointsBindGroup);
-        pass.dispatchWorkgroups(perBodyWorkgroups);
-
-        pass.setPipeline(transferBodyInfoToLinesPipeline);
-        pass.setBindGroup(0, transferBodyInfoToLinesBindGroup);
-        pass.dispatchWorkgroups(Math.ceil(unidirectionalEdgeList.length / 32));
+        transferBodyInfoToPoints.run(pass, perBodyWorkgroups);
+        transferBodyInfoToLines.run(
+          pass,
+          Math.ceil(unidirectionalEdgeList.length / 32),
+        );
 
         if (params.ui.state.showOctree) {
-          pass.setPipeline(determineNumberOfOctreeNodesToDrawPipeline);
-          pass.setBindGroup(0, determineNumberOfOctreeNodesToDrawBindGroup);
-          pass.dispatchWorkgroups(1);
-
-          pass.setPipeline(visualizeOctreeConstructionPipeline);
-          pass.setBindGroup(0, vizOctreeBindGroup);
-          pass.dispatchWorkgroupsIndirect(
-            octreeNodeComputeCountIndirectBuffer,
-            0,
-          );
+          determineNumberOfOctreeNodesToDraw.run(pass, 1);
+          vizOctree.runIndirect(pass, octreeNodeComputeCountIndirectBuffer);
         }
       }
 
@@ -1049,14 +851,10 @@ user-select: none;
         enc.clearBuffer(accelsFinal);
         let pass = enc.beginComputePass();
 
-        pass.setPipeline(calcEdgeForcesPipeline);
-        pass.setBindGroup(0, calcEdgeForcesBindGroup);
         const perEdgeWorkgroups = Math.ceil(edgeList.length / 32);
-        pass.dispatchWorkgroups(perEdgeWorkgroups);
 
-        pass.setPipeline(sumEdgeForcesPipeline);
-        pass.setBindGroup(0, sumEdgeForcesBindGroup);
-        pass.dispatchWorkgroups(perBodyWorkgroups);
+        calcEdgeForces.run(pass, perEdgeWorkgroups);
+        sumEdgeForces.run(pass, perBodyWorkgroups);
 
         octree.run(pass);
 
@@ -1077,11 +875,6 @@ user-select: none;
       let loopIter = 0;
 
       const labels = new Map<string, { elem: HTMLElement; vert: Node }>();
-
-      let currTransform = translate([0, 0, 0]);
-
-      let viewerPos = [0, 0, -150] as Vec3;
-      let viewerVel = [0, 0, 0] as Vec3;
 
       // @ts-expect-error
       window.getBodyInfo = async () => {
@@ -1129,45 +922,13 @@ user-select: none;
       return {
         moveBodies,
         updateViewer(dt: number) {
-          viewerPos = add3(viewerPos, scale3(viewerVel, dt));
-
-          const accel = scale4(
-            mulVec4ByMat4(
-              [
-                keysDown.has("d") ? -1 : keysDown.has("a") ? 1 : 0,
-                keysDown.has("shift") ? 1 : keysDown.has(" ") ? -1 : 0,
-                keysDown.has("w") ? 1 : keysDown.has("s") ? -1 : 0,
-                0,
-              ],
-              rotationMatrix,
-            ),
-            params.ui.state.viewerSpeed,
-          );
-
-          viewerVel = add3(viewerVel, xyz(accel));
-          viewerVel = scale3(viewerVel, 0.1 ** dt);
-          if (Math.hypot(...viewerVel) < 0.2) {
-            viewerVel = [0, 0, 0];
-          }
-
-          currTransform = mulMat4(rotationMatrix, translate(viewerPos));
-
-          isDesktop =
-            params.ui.state.uiMode === "auto"
-              ? window.matchMedia("(pointer: fine)").matches
-              : params.ui.state.uiMode === "desktop";
-
-          if (isDesktop) {
-            moveControls.style.display = "none";
-          } else {
-            moveControls.style.display = "grid";
-          }
+          controls.updateViewer(dt);
         },
         updateLabels() {
           loopIter++;
           for (const n of vertGroups[loopIter % vertGroups.length]) {
             const isNearby =
-              distance3(n.position, scale3(viewerPos, -1)) <
+              distance3(n.position, scale3(controls.viewerPos, -1)) <
               params.ui.state.showLabelThreshold;
 
             const labelElem = labels.get(n.label);
@@ -1215,7 +976,7 @@ user-select: none;
           for (const [id, { elem, vert }] of labels) {
             const worldSpace: Vec4 = vert.position.concat(1) as Vec4;
 
-            const clipSpace = mulMat4ByVec4(currTransform, worldSpace);
+            const clipSpace = mulMat4ByVec4(controls.currTransform, worldSpace);
 
             const x = clipSpace[0] / clipSpace[2];
             const y = clipSpace[1] / clipSpace[2];
@@ -1254,7 +1015,7 @@ user-select: none;
                 0.1,
                 params.ui.state.farPlane,
               ),
-              currTransform,
+              controls.currTransform,
             ),
             aspect: canvas.width / canvas.height,
           });

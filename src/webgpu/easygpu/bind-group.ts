@@ -4,6 +4,7 @@ import {
   TypedBufferDescGeneric,
   TypedBufferUsageFlags,
 } from "./buffer";
+import { GPUSamplerType, TypedSamplerDesc } from "./sampler";
 import { TypedShaderStage, TypedShaderStageMapGeneric } from "./shader";
 import {
   GPUSampleCount,

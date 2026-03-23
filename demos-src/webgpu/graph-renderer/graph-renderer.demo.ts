@@ -46,14 +46,14 @@ document.head.innerHTML += `<meta name="viewport"
   const ui = graphRendererUI({
     async updateRenderer() {
       graphRendererInstance.destroy();
-      graphRendererInstance = await graphRenderer.createGraph({ ui });
+      graphRendererInstance = await graphRenderer.createGraph();
     },
     exportPositions() {
       return graphRendererInstance.exportPositions();
     },
   });
-  const graphRenderer = await setupGraphRenderer(device);
-  let graphRendererInstance = await graphRenderer.createGraph({ ui });
+  const graphRenderer = await setupGraphRenderer(device, { ui });
+  let graphRendererInstance = await graphRenderer.createGraph();
 
   let lastT = 0;
   let loopIter = 0;
