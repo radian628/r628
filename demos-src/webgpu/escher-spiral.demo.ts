@@ -1,4 +1,4 @@
-import { hookGPUDevice, struct } from "../../src";
+import { hookGPUDevice, struct, Vec2 } from "../../src";
 import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
 
 (async () => {
@@ -112,18 +112,28 @@ import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
     }
 
     fn smpl(z: vec2f) -> vec2f {
-    let factor = 25.0;
+      let factor = 2.0;
 
       var dist_from_center = max(
-        abs(fract(z.x * 0.5 + 0.5) * 2.0 - 1.0), 
-        abs(fract(z.y * 0.5 + 0.5) * 2.0 - 1.0) 
+        abs(z.x),
+        abs(z.y)
       );
       var z2 = z;
       var i = 0;
 
-      while (dist_from_center < 1.0 / factor && i < 10) {
+      i = 0;
+
+      while (dist_from_center < 1.0 / factor && i < 40) {
         z2 *= factor; 
         dist_from_center *= factor;
+        i += 1;
+      }
+        
+      i = 0;
+
+      while (dist_from_center > 1.0 && i < 40) {
+        z2 /= factor; 
+        dist_from_center /= factor;
         i += 1;
       }
       
@@ -137,9 +147,7 @@ import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
       `,
       function: `
       var uv = input.uv * 2.0 - 1.0;
-      uv *= 0.4;
-      // uv *= 3.141592;
-      // uv.x -= 4.0;
+      uv *= 0.1;
       uv = logc(uv);
       uv *= mat2x2f(
         cos(params.angle), -sin(params.angle),
@@ -214,13 +222,20 @@ import { typeDevice } from "../../src/webgpu/easygpu/easygpu";
     mousedown = false;
   });
 
-  let angle = 0.5;
-  let scale = 0.5;
+  const scaleFactor = 2.0;
+
+  const topLeftCorner: Vec2 = [-1 / scaleFactor, -1 / scaleFactor];
+
+  const logSpaceDx = Math.log(scaleFactor) * 1;
+  const logSpaceDy = Math.PI * 2;
+
+  let angle = Math.atan2(logSpaceDy, logSpaceDx) - Math.PI / 2;
+  let scale = 1 / ((Math.PI * 2) / Math.hypot(logSpaceDx, logSpaceDy));
 
   document.addEventListener("mousemove", (e) => {
     if (mousedown) {
-      angle = e.clientX / window.innerWidth;
-      scale = (e.clientY / window.innerHeight) * 2.0;
+      // angle = e.clientX / window.innerWidth;
+      // scale = (e.clientY / window.innerHeight) * 2.0;
     }
   });
 
