@@ -44,11 +44,11 @@ async function getFilesFromCommit(commit: number) {
     await fs.mkdir(dirpath + "/graph-renderer");
     await fs.writeFile(
       dirpath + "/graph-renderer/graph-renderer.html",
-      rendererHtml1!,
+      rendererHtml2!,
     );
     await fs.writeFile(
       dirpath + "/graph-renderer/graph-renderer.demo.js",
-      rendererJs1!,
+      rendererJs2!,
     );
   }
 }
