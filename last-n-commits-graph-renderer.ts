@@ -2,7 +2,12 @@ import * as fs from "node:fs/promises";
 
 async function getFileFromCommit(filepath: string, commit: number) {
   const proc = Bun.spawn(
-    ["git", "--no-pager", "show", `HEAD~${commit}:${filepath}`],
+    [
+      "git",
+      "--no-pager",
+      "show",
+      `fa3b6d6fe5e0aabcaee857e8a8f1f3d4d871a5ee~${commit}:${filepath}`,
+    ],
     {},
   );
 

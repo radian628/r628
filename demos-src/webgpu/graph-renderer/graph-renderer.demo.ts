@@ -5,6 +5,35 @@ import { setupGraphRenderer } from "./graph-renderer-renderer";
 document.head.innerHTML += `<meta name="viewport" 
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>`;
 
+const errorLogs = document.createElement("div");
+errorLogs.style = `
+     position: absolute;
+     top: 0;
+     left: 0;
+     max-height: 100vh;
+     max-width: 100vw;
+     border: 2px solid red;
+     color: red;
+     background-color: #300;
+     display: none;
+      `;
+document.body.appendChild(errorLogs);
+const copyErrorsButton = document.createElement("button");
+copyErrorsButton.innerText = "Copy Errors to Clipboard";
+copyErrorsButton.onclick = () => {
+  navigator.clipboard
+    .writeText(errorText.textContent)
+    .then(() => {
+      copyErrorsButton.innerText = "Copied successfully.";
+    })
+    .catch(() => {
+      copyErrorsButton.innerText = "Failed to copy.";
+    });
+};
+errorLogs.appendChild(copyErrorsButton);
+const errorText = new Text();
+errorLogs.appendChild(errorText);
+
 (async () => {
   const loadingMsg = document.createElement("div");
   loadingMsg.innerText = "Loading...";
@@ -33,9 +62,12 @@ document.head.innerHTML += `<meta name="viewport"
       ],
     }),
   );
-  device.addEventListener("uncapturederror", (event) =>
-    console.error(event.error),
-  );
+  device.addEventListener("uncapturederror", (event) => {
+    console.error(event.error);
+
+    errorLogs.style.display = "block";
+    errorText.textContent += "\n\n" + event.error.message;
+  });
 
   if (!device) {
     fail("No GPU device!");
