@@ -221,26 +221,34 @@ fn reduce(a: ${typename}, b: ${typename}) -> ${typename} {
         params: setupDownstrokeUniforms,
       });
 
-      const uniformBufs = range(iterSteps).map((i) =>
-        prefixSumUniformFormat.quickCreate({
-          count: nextPowerOfTwo / 2 ** (i + 1),
-          stride: 2 ** i,
-        }),
-      );
+      const uniformBufs = range(iterSteps).map((i) => {
+        const count = nextPowerOfTwo / 2 ** (i + 1);
+        const stride = 2 ** i;
+        return {
+          count,
+          stride,
+          buf: prefixSumUniformFormat.quickCreate({
+            count,
+            stride,
+          }),
+        };
+      });
 
-      const upstroke = range(iterSteps).map((i) =>
-        prefixSumUpstrokePipeline.new({
+      const upstroke = range(iterSteps).map((i) => ({
+        dispatchCount: Math.ceil(uniformBufs[i].count / 32),
+        bg: prefixSumUpstrokePipeline.new({
           arr: prefixSumArray,
-          params: uniformBufs[i],
+          params: uniformBufs[i].buf,
         }),
-      );
+      }));
 
-      const downstroke = range(iterSteps).map((i) =>
-        prefixSumDownstrokePipeline.new({
+      const downstroke = range(iterSteps).map((i) => ({
+        dispatchCount: Math.ceil(uniformBufs[iterSteps - i - 1].count / 32),
+        bg: prefixSumDownstrokePipeline.new({
           arr: prefixSumArray,
-          params: uniformBufs[iterSteps - i - 1],
+          params: uniformBufs[iterSteps - i - 1].buf,
         }),
-      );
+      }));
 
       const dispatchCount = Math.ceil(nextPowerOfTwo / 32);
 
@@ -248,19 +256,15 @@ fn reduce(a: ${typename}, b: ${typename}) -> ${typename} {
         nextPowerOfTwo,
         run: (pass: GPUComputePassEncoder) => {
           pass.setPipeline(prefixSumUpstrokePipeline.pl);
-          for (let i = 0; i < iterSteps; i++) {
-            const dispatchCount = Math.ceil(nextPowerOfTwo / 2 ** i / 32);
-            upstroke[i].run(pass, dispatchCount);
+          for (const { bg, dispatchCount } of upstroke) {
+            bg.run(pass, dispatchCount);
           }
 
           setupDownstroke.run(pass, 1);
 
           pass.setPipeline(prefixSumDownstrokePipeline.pl);
-          for (let i = 0; i < iterSteps; i++) {
-            const dispatchCount = Math.ceil(
-              nextPowerOfTwo / 2 ** (iterSteps - i - 1) / 32,
-            );
-            downstroke[i].run(pass, dispatchCount);
+          for (const { bg, dispatchCount } of downstroke) {
+            bg.run(pass, dispatchCount);
           }
         },
         prefixSumArray,
