@@ -250,16 +250,6 @@ export async function setupGraphRenderer(
     genericBufferFormat.name("points"),
   );
 
-  const edgesBufferFormat = td.storageBufferFormat(
-    "edges",
-    runtimeArray(
-      struct("Edge", {
-        src: "u32",
-        dst: "u32",
-      }),
-    ),
-  );
-
   const displayEdgesBufferFormat = td.storageBufferFormat(
     "edges",
     runtimeArray(
