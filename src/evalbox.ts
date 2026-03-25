@@ -37,7 +37,7 @@ export function createEvalbox(): Promise<Evalbox> {
                           typeof e.data.payload === "string"
                             ? e.data.payload
                             : "No Error Provided",
-                      }
+                      },
                 );
                 window.removeEventListener("message", listener);
               }
@@ -50,7 +50,7 @@ export function createEvalbox(): Promise<Evalbox> {
                 payload: str,
                 type: "eval",
               },
-              "*"
+              "*",
             );
           });
         },
@@ -69,7 +69,6 @@ export function createEvalbox(): Promise<Evalbox> {
         },
       });
     };
-    evalbox.addEventListener("load", initLoadListener);
     evalbox.style.display = "none";
     document.body.appendChild(evalbox);
     evalbox.srcdoc = `
@@ -100,5 +99,6 @@ export function createEvalbox(): Promise<Evalbox> {
   </body>
 </html>
 `;
+    evalbox.addEventListener("load", initLoadListener);
   });
 }

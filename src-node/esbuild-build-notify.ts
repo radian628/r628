@@ -4,7 +4,7 @@ export const buildNotifyPlugin = (buildName: string) =>
   ({
     name: "raw",
     setup(build) {
-      let startTime;
+      let startTime: number;
       build.onStart(() => {
         console.log(buildName + ": Build starting...");
         startTime = Date.now();

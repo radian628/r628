@@ -56,7 +56,7 @@ const DEFAULT_UI_STATE: UIState = {
   timestep: 0.06,
 
   dataSourceUrl: "../../assets/crosslinksv3_(RELOADED).json",
-  tags: "",
+  tags: "third-law",
   positions: undefined,
 
   showOctree: false,

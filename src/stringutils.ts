@@ -12,11 +12,11 @@ export async function smartAsyncReplaceAll(
   callback: (
     str: string,
     pos: number,
-    cursor: number | undefined
+    cursor: number | undefined,
   ) => Promise<SARCallbackRetVal> | SARCallbackRetVal,
   options?: {
     cursor?: number;
-  }
+  },
 ): Promise<SmartAsyncReplaceAllRet> {
   if (!options) options = {};
   if (options.cursor === undefined) options.cursor = 0;
@@ -50,9 +50,9 @@ export async function smartAsyncReplaceAll(
         cursorPos: calcCursorPos(
           options.cursor,
           prevIndex,
-          precedingFragment.length
+          precedingFragment.length,
         ),
-      })
+      }),
     );
 
     if (matches[i] === undefined) break;
@@ -62,14 +62,14 @@ export async function smartAsyncReplaceAll(
         const res = await callback(
           matchedFragment,
           currIndex,
-          calcCursorPos(options.cursor ?? 0, currIndex, matchedFragment.length)
+          calcCursorPos(options.cursor ?? 0, currIndex, matchedFragment.length),
         );
         return {
           beforeStr: matchedFragment,
           afterStr: typeof res === "string" ? res : res.str,
           cursorPos: typeof res === "string" ? undefined : res.cursorPos,
         };
-      })()
+      })(),
     );
   }
 
@@ -91,7 +91,12 @@ export async function smartAsyncReplaceAll(
   };
 }
 
-export function multiDelimit(str: string, delimiters: string[]) {
+type NestedStringList = string | NestedStringList[];
+
+export function multiDelimit(
+  str: string,
+  delimiters: string[],
+): NestedStringList {
   if (delimiters.length === 0) return str;
   return str
     .split(delimiters[0])
@@ -102,7 +107,7 @@ export function randUnicode(
   lo: number,
   hi: number,
   count: number,
-  random?: () => number
+  random?: () => number,
 ) {
   if (!random) random = () => Math.random();
   return ""
@@ -131,7 +136,7 @@ export function getLinesAndCols(str: string): [number, number][] {
 export function delimitedSequenceRegex(start: string, end: string) {
   return new RegExp(
     RegExp.escape(start) + "[\\s\\S]*?" + RegExp.escape(end),
-    "g"
+    "g",
   );
 }
 
@@ -150,15 +155,14 @@ export function makeDelimitedReplacements(
         start?: undefined;
         end?: undefined;
       }
-  )[]
+  )[],
 ) {
   for (const r of replacements) {
     str = str.replaceAll(
       typeof r.delimiter === "string"
         ? delimitedSequenceRegex(r.delimiter, r.delimiter)
-        : // @ts-expect-error
-          delimitedSequenceRegex(r.start, r.end),
-      r.replaceWith
+        : delimitedSequenceRegex(r.start, r.end),
+      r.replaceWith,
     );
   }
   return str;

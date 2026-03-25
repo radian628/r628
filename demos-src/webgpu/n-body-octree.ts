@@ -360,6 +360,10 @@ export async function createNBodyOctreeDefs<
     zero: `return AggBody(vec3f(0.0, 0.0, 0.0), 0.0);`,
   });
 
+  const aggBodiesFormat = (
+    await aggBodiesPrefixSumPromise
+  ).prefixSumArrayFormat.name("agg_bodies");
+
   const initAggregatedBodiesPipelinePromise = td.computePipelineBundled(
     `
     if (id.x >= arrayLength(&agg_bodies)) {
@@ -378,7 +382,7 @@ export async function createNBodyOctreeDefs<
 
     `,
     [32, 1, 1],
-    (await aggBodiesPrefixSumPromise).prefixSumArrayFormat.name("agg_bodies"),
+    aggBodiesFormat,
     bodiesFormat,
     bodyOrderFormat,
   );
@@ -407,7 +411,7 @@ export async function createNBodyOctreeDefs<
     [32, 1, 1],
     octreeNodeFormat,
     octreeMetadataFormat,
-    (await aggBodiesPrefixSumPromise).prefixSumArrayFormat.name("agg_bodies"),
+    aggBodiesFormat,
     nextfreesNonatomicFormat,
   );
 

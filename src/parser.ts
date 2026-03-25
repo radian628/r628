@@ -21,12 +21,12 @@ export function chainParser(parser: Parser<any, any>): any {
 
 export function domQueryAll<TIn extends HTMLElement, TOut>(
   selector: string,
-  parser: Parser<TIn, TOut>
+  parser: Parser<TIn, TOut>,
 ): Parser<TIn, TOut[]> {
   return {
     parse(e) {
-      return [...e.querySelectorAll(selector)].map((e) =>
-        parser.parse(e as TIn)
+      return Array.from(e.querySelectorAll(selector)).map((e) =>
+        parser.parse(e as TIn),
       );
     },
     $: chainParser,
@@ -36,7 +36,7 @@ export function domQueryAll<TIn extends HTMLElement, TOut>(
 export function domQuery<TIn extends HTMLElement, TOut>(
   selector: string,
   doesExist: (e: TIn) => TOut,
-  doesNotExist: () => TOut
+  doesNotExist: () => TOut,
 ): Parser<HTMLElement, TOut> {
   return {
     parse(e) {
@@ -62,7 +62,7 @@ export function domQueryObj<
   return {
     parse(e): D2JObjectOut<Fields> {
       return Object.fromEntries(
-        Object.entries(fields).map(([k, v]) => [k, v.parse(e)])
+        Object.entries(fields).map(([k, v]) => [k, v.parse(e)]),
       ) as D2JObjectOut<Fields>;
     },
     $: chainParser,
@@ -70,7 +70,7 @@ export function domQueryObj<
 }
 
 export function get<TIn extends Record<any, any>, Prop extends keyof TIn>(
-  prop: Prop
+  prop: Prop,
 ): Parser<TIn, TIn[Prop]> {
   return parser((t) => t[prop]);
 }
@@ -94,7 +94,7 @@ export const ud = () => undefined;
 
 export function str2int<T>(
   fallback: () => T,
-  radix?: number
+  radix?: number,
 ): Parser<string, number | T> {
   return parser((s) => {
     const i = parseInt(s, radix);
@@ -117,11 +117,11 @@ export function innerTextRegex(
   selector: string,
   regex: RegExp,
   fallbackIfNotExist: string,
-  fallbackIfNoMatch: (e: HTMLElement) => string
+  fallbackIfNoMatch: (e: HTMLElement) => string,
 ): Parser<HTMLElement, string> {
   return domQuery(
     selector,
     (e) => e.innerText.match(regex)?.[0] ?? fallbackIfNoMatch(e),
-    () => fallbackIfNotExist
+    () => fallbackIfNotExist,
   );
 }

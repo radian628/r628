@@ -207,6 +207,8 @@ fn reduce(a: ${typename}, b: ${typename}) -> ${typename} {
 
       const iterSteps = countExponent;
 
+      console.log("debug", count, nextPowerOfTwo, iterSteps);
+
       const prefixSumArray = prefixSumArrayFormat.new(nextPowerOfTwo);
 
       const setupDownstrokeUniforms =
@@ -221,7 +223,7 @@ fn reduce(a: ${typename}, b: ${typename}) -> ${typename} {
 
       const uniformBufs = range(iterSteps).map((i) =>
         prefixSumUniformFormat.quickCreate({
-          count: nextPowerOfTwo / 2 ** i,
+          count: nextPowerOfTwo / 2 ** (i + 1),
           stride: 2 ** i,
         }),
       );

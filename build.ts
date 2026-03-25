@@ -14,42 +14,52 @@ import { WebSocket } from "ws";
 
 const whatToBuild = process.argv[2];
 
-chokidar
-  // watch for lib files
-  .watch(["src/**/*.ts", "src/**/*.tsx"], {
-    ignored: ["src/index.ts"],
-  })
-  .on("all", async (evt, pathname) => {
-    // regenerate codegen
+async function runCodegenFor(pathname: string) {
+  const relpath = path.relative(process.cwd(), pathname);
+  console.log("Running codegen for", relpath);
+  const output = await Bun.spawn(["bun", "run", pathname]);
+  if (output.exitCode === 0) {
+    console.log("Done running codegen for", relpath);
+  } else {
+    console.log("Failed to run codegen for", relpath);
+  }
+}
+
+async function regenerateCodegen(pathname?: string) {
+  // regenerate codegen
+  if (pathname) {
     const filename = path.basename(pathname);
-    const relpath = path.relative(process.cwd(), pathname);
     if (filename.endsWith(".codegen.ts")) {
-      console.log("Running codegen for", relpath);
-      const output = await Bun.spawn(["bun", "run", pathname]);
-      if (output.exitCode === 0) {
-        console.log("Done running codegen for", relpath);
-      } else {
-        console.log("Failed to run codegen for", relpath);
-      }
+      await runCodegenFor(pathname);
     }
-
-    console.log("Getting all library file names...");
-    // get all library files
-    const libFiles = [
-      ...(await glob("src/**/*.ts")),
-      ...(await glob("src/**/*.tsx")),
-    ].filter((f) => !f.endsWith(".codegen.ts"));
-
-    // regenerate index
-    console.log("Regenerating index.ts...");
-    await fs.writeFile(
-      "src/index.ts",
-      libFiles.map((e) => `export * from "./${path.relative("src", e)}"\n`),
+  } else {
+    await Promise.all(
+      (await glob("src/**/*.codegen.ts")).map((p) => runCodegenFor(p)),
     );
-    console.log("Done regenerating index.ts!");
-  });
+  }
+
+  console.log("Getting all library file names...");
+  // get all library files
+  const libFiles = [
+    ...(await glob("src/**/*.ts")),
+    ...(await glob("src/**/*.tsx")),
+  ].filter((f) => !f.endsWith(".codegen.ts"));
+
+  // regenerate index
+  console.log("Regenerating index.ts...");
+  await fs.writeFile(
+    "src/index.ts",
+    libFiles.map(
+      (e) =>
+        `export * from "./${path.relative("src", e).replaceAll(path.sep, "/")}"\n`,
+    ),
+  );
+  console.log("Done regenerating index.ts!");
+}
 
 if (whatToBuild === "lib") {
+  await regenerateCodegen();
+
   // build r628 library
   const buildLib = await esbuild.context({
     entryPoints: ["src/index.ts"],
@@ -72,8 +82,19 @@ if (whatToBuild === "lib") {
     plugins: [rawQueryParamPlugin, buildNotifyPlugin("LIBNODE")],
   });
 
-  await Promise.all([buildNode.watch(), buildLib.watch()]);
+  await Promise.all([buildNode.rebuild(), buildLib.rebuild()]);
+
+  process.exit(0);
 } else if (whatToBuild === "demos") {
+  chokidar
+    // watch for lib files
+    .watch(["src/**/*.ts", "src/**/*.tsx"], {
+      ignored: ["src/index.ts"],
+    })
+    .on("all", async (evt, pathname) => {
+      regenerateCodegen(pathname);
+    });
+
   const clients: Set<WebSocket> = new Set();
 
   const server = express();

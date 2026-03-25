@@ -296,6 +296,7 @@ export function createCombinedRoundRobinThreadpool<
   // @ts-expect-error
   if (self.WorkerGlobalScope) {
     createRoundRobinThread(getInterface(false), serialization);
+    // @ts-expect-error
     return;
   } else {
     return createRoundRobinThreadpool(
