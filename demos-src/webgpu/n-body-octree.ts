@@ -387,6 +387,18 @@ export async function createNBodyOctreeDefs<
     bodyOrderFormat,
   );
 
+  const determineOctreeMassAggregationInvocationCountPipelinePromise =
+    td.computePipelineBundled(
+      `
+    compute_indirect.workgroups = vec3u(
+      (nextfrees.node / 32) + 1u, 1u, 1u 
+    );
+    `,
+      [1, 1, 1],
+      nextfreesNonatomicFormat,
+      computeIndirectBufferFormat,
+    );
+
   const aggregateMassInOctreePipelinePromise = td.computePipelineBundled(
     `
     if (id.x >= nextfrees.node) {
@@ -614,6 +626,7 @@ export async function createNBodyOctreeDefs<
     initRootNodePipeline2,
     setupNextIterationPipeline,
     aggBodiesPrefixSum,
+    determineOctreeMassAggregationInvocationCountPipeline,
   } = await namedPromiseAll({
     assignBodiesPipelinePromise,
     createNewNodesPipelinePromise,
@@ -628,6 +641,7 @@ export async function createNBodyOctreeDefs<
     initRootNodePipeline2Promise,
     setupNextIterationPipelinePromise,
     aggBodiesPrefixSumPromise,
+    determineOctreeMassAggregationInvocationCountPipelinePromise,
   });
 
   function setupMinMaxReduction(params: {
@@ -802,6 +816,12 @@ export async function createNBodyOctreeDefs<
       body_node_assignments: nodeBodyAssignmentsBuffer,
     });
 
+    const determineOctreeMassAggregationInvocationCount =
+      determineOctreeMassAggregationInvocationCountPipeline.new({
+        nextfrees: nextfreesNonatomicFormat.reinterpret(nextfreesBuffer),
+        compute_indirect: computeIndirectBuffer,
+      });
+
     const aggregateMassInOctree = aggregateMassInOctreePipeline.new({
       octree_metadata: octreeMetadataBuffer,
       octree_nodes: octreeNodeBuffer,
@@ -868,7 +888,8 @@ export async function createNBodyOctreeDefs<
         }
 
         aggPrefixSum.run(pass);
-        aggregateMassInOctree.run(pass, params.octreeCapacity / 32);
+        determineOctreeMassAggregationInvocationCount.run(pass, 1);
+        aggregateMassInOctree.runIndirect(pass, computeIndirectBuffer);
       },
     };
   }

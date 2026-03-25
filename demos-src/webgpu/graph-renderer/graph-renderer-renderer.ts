@@ -1,6 +1,7 @@
 import {
   ClearRenderer,
   clearRenderer,
+  createPrefixSumFormat,
   distance3,
   LineRenderer,
   lineRenderer,
@@ -10,6 +11,7 @@ import {
   mulMat4,
   mulMat4ByVec4,
   perspectiveWebgpu,
+  primitive,
   quickMap,
   quickMapWithFormat,
   rescale,
@@ -280,15 +282,6 @@ export async function setupGraphRenderer(
     ),
   );
 
-  const accelVectorPairsFormat = td.storageBufferFormat(
-    "accel_vectors",
-    runtimeArray(
-      struct("AccelVectors", {
-        to_src: "vec3f",
-      }),
-    ),
-  );
-
   const edgeLocationMapFormat = td.storageBufferFormat(
     "edge_loc_map",
     runtimeArray(
@@ -299,10 +292,25 @@ export async function setupGraphRenderer(
     ),
   );
 
+  const forcesPrefixSumFormat = await createPrefixSumFormat({
+    device,
+    type: primitive("vec3f"),
+    reduce: `return a + b;`,
+    zero: `return vec3f(0.0);`,
+  });
+
+  const forceVectorsFormat =
+    forcesPrefixSumFormat.prefixSumArrayFormat.name("force_vectors");
+
   const calcEdgeForcesPipeline = await td.computePipelineBundled(
     `
     let i = id.x;
+    if (i >= arrayLength(&force_vectors)) {
+      return;
+    } 
+
     if (i >= arrayLength(&edges)) {
+      force_vectors[i] = vec3f(0.0);
       return;
     } 
 
@@ -321,12 +329,11 @@ export async function setupGraphRenderer(
 
     let mag = dist * 0.02;
 
-    accel_vectors[i].to_src = mag * offset_norm * edge.weight;
-    // accel_vectors[i].to_src = vec3f(1.0, 0.0, 0.0);
+    force_vectors[i] = mag * offset_norm * edge.weight;
     `,
     [32, 1, 1],
     weightedEdgesBufferFormat,
-    accelVectorPairsFormat,
+    forceVectorsFormat,
     bodiesFormat,
   );
 
@@ -340,13 +347,11 @@ export async function setupGraphRenderer(
     let edge_index_start = edge_loc_map[i].location;
     let edge_index_end = edge_index_start + edge_loc_map[i].count;
 
-    for (var j = edge_index_start; j < edge_index_end; j++) {
-      accels[i] += accel_vectors[j].to_src;
-    }
+    accels[i] = force_vectors[edge_index_end] - force_vectors[edge_index_start];
 
     `,
     [32, 1, 1],
-    accelVectorPairsFormat,
+    forceVectorsFormat,
     edgeLocationMapFormat,
     accelsFormat,
   );
@@ -718,10 +723,6 @@ fn set_point(idx: u32, across: f32, width: f32) {
       );
       const edgeLocMapBuffer = edgeLocationMapFormat.quickCreate(edgeLocMap);
 
-      const accelVectorPairsBuffer = accelVectorPairsFormat.new(
-        edgeList.length,
-      );
-
       const transferBodyInfoToLinesUniforms =
         transferBodyInfoToLinesUniformsFormat.new(1);
 
@@ -738,14 +739,16 @@ fn set_point(idx: u32, across: f32, width: f32) {
 
       const accelsFinal = accelsFormat.new(graph.vertices.size);
 
+      const forcesPrefixSum = forcesPrefixSumFormat.new(edgeList.length);
+
       const calcEdgeForces = calcEdgeForcesPipeline.new({
         edges: edgesBuffer,
         bodies: bodies,
-        accel_vectors: accelVectorPairsBuffer,
+        force_vectors: forcesPrefixSum.prefixSumArray,
       });
 
       const sumEdgeForces = sumEdgeForcesPipeline.new({
-        accel_vectors: accelVectorPairsBuffer,
+        force_vectors: forcesPrefixSum.prefixSumArray,
         accels: accelsFinal,
         edge_loc_map: edgeLocMapBuffer,
       });
@@ -853,7 +856,11 @@ fn set_point(idx: u32, across: f32, width: f32) {
 
         const perEdgeWorkgroups = Math.ceil(edgeList.length / 32);
 
-        calcEdgeForces.run(pass, perEdgeWorkgroups);
+        calcEdgeForces.run(
+          pass,
+          Math.ceil(forcesPrefixSum.nextPowerOfTwo / 32),
+        );
+        forcesPrefixSum.run(pass);
         sumEdgeForces.run(pass, perBodyWorkgroups);
 
         octree.run(pass);
