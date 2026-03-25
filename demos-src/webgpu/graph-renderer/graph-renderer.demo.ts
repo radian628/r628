@@ -16,6 +16,8 @@ errorLogs.style = `
      color: red;
      background-color: #300;
      display: none;
+     overflow: auto;
+     z-index: 99999; 
       `;
 document.body.appendChild(errorLogs);
 const copyErrorsButton = document.createElement("button");
@@ -62,11 +64,20 @@ errorLogs.appendChild(errorText);
       ],
     }),
   );
+
+  let errcount = 0;
+
   device.addEventListener("uncapturederror", (event) => {
     console.error(event.error);
 
-    errorLogs.style.display = "block";
-    errorText.textContent += "\n\n" + event.error.message;
+    if (errcount < 100) {
+      errorLogs.style.display = "block";
+      errorText.textContent += "\n\n" + event.error.message;
+      errcount++;
+    } else {
+      errorText.textContent +=
+        "\n\n Reached error limit; no longer printing errors.";
+    }
   });
 
   if (!device) {
